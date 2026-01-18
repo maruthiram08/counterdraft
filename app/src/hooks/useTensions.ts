@@ -19,16 +19,14 @@ export function useTensions() {
             try {
                 setLoading(true);
 
-                // 1. Get Test User ID
-                const { data: user, error: userError } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('email', 'test@counterdraft.com')
-                    .single();
+                // 1. Get authenticated user ID from API
+                const userRes = await fetch('/api/user');
+                const userData = await userRes.json();
 
-                if (userError || !user) {
-                    console.warn("Test user not found");
+                if (!userData.authenticated || !userData.userId) {
+                    console.warn("User not authenticated");
                     setTensions([]);
+                    setLoading(false);
                     return;
                 }
 
@@ -36,7 +34,7 @@ export function useTensions() {
                 const { data, error: tensionsError } = await supabase
                     .from('tensions')
                     .select('id, tension_summary, user_classification, belief_a_text, belief_b_text')
-                    .eq('user_id', user.id)
+                    .eq('user_id', userData.userId)
                     .order('created_at', { ascending: false });
 
                 if (tensionsError) throw tensionsError;
@@ -86,3 +84,4 @@ export function useTensions() {
 
     return { tensions, loading, error, classifyTension };
 }
+

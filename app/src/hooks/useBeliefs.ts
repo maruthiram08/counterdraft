@@ -19,30 +19,31 @@ export function useBeliefs() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchBeliefs() {
             try {
                 setLoading(true);
 
-                // 1. Get Test User ID
-                const { data: user, error: userError } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('email', 'test@counterdraft.com')
-                    .single();
+                // 1. Get authenticated user ID from API
+                const userRes = await fetch('/api/user');
+                const userData = await userRes.json();
 
-                if (userError || !user) {
-                    console.warn("Test user not found");
+                if (!userData.authenticated || !userData.userId) {
+                    console.warn("User not authenticated");
+                    setLoading(false);
                     return;
                 }
+
+                setUserId(userData.userId);
 
                 // 2. Fetch Beliefs (excluding already confirmed ones)
                 const { data, error: beliefsError } = await supabase
                     .from('beliefs')
                     .select('*')
-                    .eq('user_id', user.id)
-                    .eq('user_confirmed', false) // Only show unconfirmed
+                    .eq('user_id', userData.userId)
+                    .eq('user_confirmed', false)
                     .order('created_at', { ascending: false });
 
                 if (beliefsError) throw beliefsError;
@@ -90,24 +91,15 @@ export function useBeliefs() {
             // Update belief as confirmed
             const { error: updateError } = await supabase
                 .from('beliefs')
-                .update({
-                    user_confirmed: true,
-                    // Optionally store the feedback type in a new column or user_feedback table
-                })
+                .update({ user_confirmed: true })
                 .eq('id', beliefId);
 
             if (updateError) throw updateError;
 
-            // Also insert into user_feedback table for analytics
-            const { data: user } = await supabase
-                .from('users')
-                .select('id')
-                .eq('email', 'test@counterdraft.com')
-                .single();
-
-            if (user) {
+            // Insert into user_feedback table for analytics
+            if (userId) {
                 await supabase.from('user_feedback').insert({
-                    user_id: user.id,
+                    user_id: userId,
                     entity_type: 'belief',
                     entity_id: beliefId,
                     feedback_type: feedback
@@ -133,4 +125,5 @@ export function useBeliefs() {
 
     return { beliefs, loading, error, submitFeedback };
 }
+
 
