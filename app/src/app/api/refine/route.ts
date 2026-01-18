@@ -24,30 +24,56 @@ export async function POST(req: NextRequest) {
         }
 
         const systemPrompt = `You are a helpful writing assistant. 
-        Your goal is to refine the user's draft based on their specific instruction.
-        
-        Context (Belief): "${beliefContext || 'General'}"
-        
-        Rules:
-        1. Return ONLY the refined content. Do not add conversational filler like "Here is the rewritten text".
-        2. Maintain the core meaning of the original text unless asked to change it.
-        3. If the instruction is a question, answer it concisely.
-        `;
+        const { currentContent, instruction, beliefContext, selection, context } = await req.json();
 
-        const response = await openai.chat.completions.create({
+        // If selection is provided, we are in "Contextual Edit/Rewrite" mode
+        // Otherwise, we are in "Global Refinement" mode
+        
+        let prompt = "";
+        
+        if (selection) {
+            prompt = `
+You are an expert editor.rewrite the selected text below based on the instruction.
+Ensure the rewritten text flows naturally with the surrounding context.
+
+CONTEXT BEFORE: "${context?.before || ''}"
+CONTEXT AFTER: "${context?.after || ''}"
+
+SELECTED TEXT TO REWRITE: "${selection}"
+
+        INSTRUCTION: ${ instruction }
+
+Return ONLY the rewritten text for the replacement.Do not include quotes or explanations.
+`;
+        } else {
+            prompt = `
+You are an expert editor.Refine the following content based on the user's instruction.
+Keep the original meaning but improve clarity, tone, and impact.
+
+BELIEF CONTEXT: "${beliefContext || 'None provided'}"
+
+CURRENT CONTENT:
+        "${currentContent}"
+
+        INSTRUCTION: ${ instruction }
+
+Return ONLY the refined content.Do not include markdown code blocks if not necessary.
+`;
+        }
+
+        const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: `Current Content:\n${currentContent}\n\nInstruction: ${instruction}` }
+                { role: "system", content: "You are a precise and high-quality writing assistant." },
+                { role: "user", content: prompt }
             ],
-            temperature: 0.7,
         });
 
-        const refinedContent = response.choices[0].message.content?.trim();
+        const refinedContent = completion.choices[0].message.content;
 
         return NextResponse.json({ refinedContent });
-    } catch (error: any) {
-        console.error('[POST /api/refine] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        console.error("Refinement error:", error);
+        return NextResponse.json({ error: "Failed to refine content" }, { status: 500 });
     }
 }
