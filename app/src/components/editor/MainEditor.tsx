@@ -116,7 +116,9 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
             const data = await response.json();
 
-            if (data.refinedContent) {
+            // Check if refinedContent exists, including empty string (for deletions)
+            // We strictly check undefined/null, but allow ""
+            if (data.refinedContent !== undefined && data.refinedContent !== null) {
                 // Replace only the selected part
                 const newContent = content.substring(0, selectionRange.start)
                     + data.refinedContent
@@ -135,109 +137,126 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
         }
     };
 
-    if (!draft) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] p-8 bg-white">
-                <p className="font-serif italic text-lg opacity-50">Select a draft to start writing...</p>
-            </div>
-        );
-    }
+    // ... rest of the file ...
 
+    // Update textarea to use font-sans for cleaner ID matches
+    // className="... font-sans ..."
+    // Returning just the function for Context replacement context matching needs careful range.
+
+    // Let's rely on the replace_content matching the function first.
     return (
-        <div className="flex flex-col h-full relative group bg-white">
+        // ...
+    );
+};
+// Wait, I can't put comments in the replacement content inside the method body easily if the instruction spans multiple blocks.
+// I will target the handleExecuteRefinement separately from the className update to be safe, or just do one big replace if possible.
+// The file is small enough (240 lines). 
+// I will split this into two calls for safety. First, fix the logic.
 
-            {/* Contextual Toolbar */}
-            {toolbarPosition && (
-                <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-[60]">
-                    {/* Placeholder for hierarchy, component is rendered below */}
-                </div>
-            )}
 
-            {/* Minimal Header / Status - Floating Pill */}
-            <div className="absolute top-6 right-8 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm shadow-sm border border-gray-100 rounded-full px-4 py-1.5">
-                    <span className="text-xs text-[var(--text-muted)] font-medium mr-2">
-                        {saving ? "Saving..." : saved ? "Saved" : "Draft"}
-                    </span>
-                    <div className="w-px h-4 bg-gray-200 mx-1"></div>
-                    <button
-                        onClick={handleCopy}
-                        className="text-xs font-medium text-gray-500 hover:text-[var(--foreground)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
-                    >
-                        {copied ? "Copied" : "Copy"}
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="text-xs font-medium text-gray-500 hover:text-[var(--accent)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
-                    >
-                        Save
-                    </button>
-                </div>
+if (!draft) {
+    return (
+        <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] p-8 bg-white">
+            <p className="font-serif italic text-lg opacity-50">Select a draft to start writing...</p>
+        </div>
+    );
+}
+
+return (
+    <div className="flex flex-col h-full relative group bg-white">
+
+        {/* Contextual Toolbar */}
+        {toolbarPosition && (
+            <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-[60]">
+                {/* Placeholder for hierarchy, component is rendered below */}
             </div>
+        )}
 
-            {/* Document Surface */}
-            <div className="flex-1 overflow-y-auto relative">
-                {/* Note: Added relative here to anchor toolbar */}
-                <div className="max-w-4xl mx-auto py-20 px-16 min-h-full relative">
+        {/* Minimal Header / Status - Floating Pill */}
+        <div className="absolute top-6 right-8 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm shadow-sm border border-gray-100 rounded-full px-4 py-1.5">
+                <span className="text-xs text-[var(--text-muted)] font-medium mr-2">
+                    {saving ? "Saving..." : saved ? "Saved" : "Draft"}
+                </span>
+                <div className="w-px h-4 bg-gray-200 mx-1"></div>
+                <button
+                    onClick={handleCopy}
+                    className="text-xs font-medium text-gray-500 hover:text-[var(--foreground)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
+                >
+                    {copied ? "Copied" : "Copy"}
+                </button>
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="text-xs font-medium text-gray-500 hover:text-[var(--accent)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
+                >
+                    Save
+                </button>
+            </div>
+        </div>
 
-                    {/* Toolbar anchored relative to this container */}
-                    {/* adjusting left/top by adding padding offsets? 
+        {/* Document Surface */}
+        <div className="flex-1 overflow-y-auto relative">
+            {/* Note: Added relative here to anchor toolbar */}
+            <div className="max-w-4xl mx-auto py-20 px-16 min-h-full relative">
+
+                {/* Toolbar anchored relative to this container */}
+                {/* adjusting left/top by adding padding offsets? 
                         getCaretCoordinates includes padding/border in its calculation relative to the element (textarea).
                         So if textarea is here, we can place toolbar here. 
                     */}
-                    {toolbarPosition && (
-                        <ContextualToolbar
-                            position={toolbarPosition}
-                            onOptionSelect={handleExecuteRefinement}
-                            onCustomInput={handleExecuteRefinement}
-                            onClose={() => setToolbarPosition(null)}
-                            loading={refining}
-                        />
-                    )}
-
-                    {/* Title / Context - Refined Typography */}
-                    <div className="mb-12 select-none">
-                        <h2 className="text-3xl font-serif font-medium text-gray-800 leading-tight mb-6">
-                            {draft.belief_text}
-                        </h2>
-                        {/* Subtle separator */}
-                        <div className="flex justify-center">
-                            <div className="w-8 h-1 bg-[var(--accent)]/10 rounded-full mb-8"></div>
-                        </div>
-                    </div>
-
-                    {/* Editor */}
-                    <textarea
-                        ref={textareaRef}
-                        value={content}
-                        onChange={(e) => {
-                            setContent(e.target.value);
-                            // Auto-resize on input
-                            e.target.style.height = 'auto';
-                            e.target.style.height = e.target.scrollHeight + 'px';
-                        }}
-                        onSelect={handleSelect}
-                        onClick={() => {
-                            // Clicking might clear selection or start new one
-                            // handleSelect fires on click too if care position changes
-                        }}
-                        onBlur={() => {
-                            // Small delay to allow clicking toolbar buttons
-                            blurTimeoutRef.current = setTimeout(() => {
-                                // Careful! Don't clear if we clicked the toolbar
-                                // This is tricky. Better to let clicking outside clear it via onOptionSelect or similar
-                                // or use a click-away listener on the container.
-                                // For now, rely on explicit close or re-selection.
-                            }, 200);
-                        }}
-                        className="w-full min-h-[60vh] resize-none text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
-                        style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
-                        placeholder="Start writing..."
-                        spellCheck={false}
+                {toolbarPosition && (
+                    <ContextualToolbar
+                        position={toolbarPosition}
+                        onOptionSelect={handleExecuteRefinement}
+                        onCustomInput={handleExecuteRefinement}
+                        onClose={() => setToolbarPosition(null)}
+                        loading={refining}
                     />
+                )}
+
+                {/* Title / Context - Refined Typography */}
+                <div className="mb-12 select-none">
+                    <h2 className="text-3xl font-serif font-medium text-gray-800 leading-tight mb-6">
+                        {draft.belief_text}
+                    </h2>
+                    {/* Subtle separator */}
+                    <div className="flex justify-center">
+                        <div className="w-8 h-1 bg-[var(--accent)]/10 rounded-full mb-8"></div>
+                    </div>
                 </div>
+
+                {/* Editor */}
+                <textarea
+                    ref={textareaRef}
+                    value={content}
+                    onChange={(e) => {
+                        setContent(e.target.value);
+                        // Auto-resize on input
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    onSelect={handleSelect}
+                    onClick={() => {
+                        // Clicking might clear selection or start new one
+                        // handleSelect fires on click too if care position changes
+                    }}
+                    onBlur={() => {
+                        // Small delay to allow clicking toolbar buttons
+                        blurTimeoutRef.current = setTimeout(() => {
+                            // Careful! Don't clear if we clicked the toolbar
+                            // This is tricky. Better to let clicking outside clear it via onOptionSelect or similar
+                            // or use a click-away listener on the container.
+                            // For now, rely on explicit close or re-selection.
+                        }, 200);
+                    }}
+                    className="w-full min-h-[60vh] resize-none text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
+                    style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
+                    placeholder="Start writing..."
+                    spellCheck={false}
+                />
             </div>
         </div>
-    );
+    </div>
+);
 }
