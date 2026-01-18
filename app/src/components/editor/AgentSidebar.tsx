@@ -184,7 +184,7 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams }: A
                                         <Sparkles size={10} />
                                         Suggestion
                                     </div>
-                                    <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap mb-3 font-serif">
+                                    <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap mb-3 font-sans">
                                         {msg.suggestion}
                                     </p>
                                     <button
