@@ -8,7 +8,7 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
     try {
-        const { beliefStatement, tone = "professional" } = await req.json();
+        const { beliefStatement, tone = "professional", instruction } = await req.json();
 
         if (!beliefStatement) {
             return NextResponse.json({ error: "Belief statement is required" }, { status: 400 });
@@ -31,11 +31,16 @@ Given a core belief, write a compelling ~200 word LinkedIn post or essay opening
 Tone: ${tone}
 Write in first person. Be direct and assertive. Avoid clichés.`;
 
+        let userPrompt = `Write a post based on this belief: "${beliefStatement}"`;
+        if (instruction) {
+            userPrompt += `\n\nFocus specifically on this angle/direction: "${instruction}"`;
+        }
+
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: `Write a post based on this belief: "${beliefStatement}"` }
+                { role: "user", content: userPrompt }
             ],
             max_tokens: 500,
             temperature: 0.8,
