@@ -14,26 +14,23 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { currentContent, instruction, beliefContext } = await req.json();
+        const { currentContent, instruction, beliefContext, selection, context } = await req.json();
 
-        if (!currentContent || !instruction) {
+        if (!currentContent && !selection) {
             return NextResponse.json(
-                { error: 'currentContent and instruction are required' },
+                { error: 'currentContent or selection is required' },
                 { status: 400 }
             );
         }
 
-        const systemPrompt = `You are a helpful writing assistant. 
-        const { currentContent, instruction, beliefContext, selection, context } = await req.json();
-
         // If selection is provided, we are in "Contextual Edit/Rewrite" mode
         // Otherwise, we are in "Global Refinement" mode
-        
+
         let prompt = "";
-        
+
         if (selection) {
             prompt = `
-You are an expert editor.rewrite the selected text below based on the instruction.
+You are an expert editor. rewrite the selected text below based on the instruction.
 Ensure the rewritten text flows naturally with the surrounding context.
 
 CONTEXT BEFORE: "${context?.before || ''}"
@@ -41,23 +38,23 @@ CONTEXT AFTER: "${context?.after || ''}"
 
 SELECTED TEXT TO REWRITE: "${selection}"
 
-        INSTRUCTION: ${ instruction }
+INSTRUCTION: ${instruction}
 
-Return ONLY the rewritten text for the replacement.Do not include quotes or explanations.
+Return ONLY the rewritten text for the replacement. Do not include quotes or explanations.
 `;
         } else {
             prompt = `
-You are an expert editor.Refine the following content based on the user's instruction.
+You are an expert editor. Refine the following content based on the user's instruction.
 Keep the original meaning but improve clarity, tone, and impact.
 
 BELIEF CONTEXT: "${beliefContext || 'None provided'}"
 
 CURRENT CONTENT:
-        "${currentContent}"
+"${currentContent}"
 
-        INSTRUCTION: ${ instruction }
+INSTRUCTION: ${instruction}
 
-Return ONLY the refined content.Do not include markdown code blocks if not necessary.
+Return ONLY the refined content. Do not include markdown code blocks if not necessary.
 `;
         }
 
