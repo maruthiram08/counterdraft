@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Check, Copy } from "lucide-react";
+// Icons removed - using text labels instead
 import { Draft } from "@/hooks/useDrafts";
 import { ContextualToolbar } from "./ContextualToolbar";
 import { getCaretCoordinates } from "@/lib/textarea-utils";

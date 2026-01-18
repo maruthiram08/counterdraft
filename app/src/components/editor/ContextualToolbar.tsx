@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, Type, Eraser } from "lucide-react";
+import { Sparkles, Eraser } from "lucide-react";
 
 interface ContextualToolbarProps {
     position: { top: number; left: number } | null;

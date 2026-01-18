@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Pen } from "lucide-react";
+import { Pen } from "lucide-react";
 
 interface DirectionCardProps {
     title: string;

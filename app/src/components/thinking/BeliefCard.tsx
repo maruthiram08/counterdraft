@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, MessageSquare, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
+import { Check, X, MessageSquare } from "lucide-react";
 
 interface BeliefCardProps {
     belief: string;

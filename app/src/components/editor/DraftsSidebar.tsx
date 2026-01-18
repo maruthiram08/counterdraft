@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search, Clock } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Draft } from "@/hooks/useDrafts";
 import { useState } from "react";
 

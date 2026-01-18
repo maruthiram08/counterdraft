@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, Bot, User, Wand2, X } from "lucide-react";
+import { Sparkles, Send, Bot, User, Wand2 } from "lucide-react";
 
 interface AgentSidebarProps {
     currentContent: string | null;
