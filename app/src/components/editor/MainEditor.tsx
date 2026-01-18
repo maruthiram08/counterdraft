@@ -69,17 +69,16 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
         }
 
         // Calculate Pixel Coordinates
+        // Calculate Pixel Coordinates
         const { top, left, height } = getCaretCoordinates(textareaRef.current, start);
 
-        // Offset logic:
-        // We want the toolbar slightly above the start of the selection
-        // The getCaretCoordinates returns "top" relative to the textarea's top-left
-        // We need to account for textarea's position in the viewport if we used fixed positioning,
-        // but here we render ContextualToolbar absolute relative to the container.
-        // We just need to ensure the container has relative positioning.
+        // FIX: Add offset of the textarea within the container
+        // The toolbar is absolute in the container, but coordinates are relative to the textarea.
+        const absTop = top + textareaRef.current.offsetTop;
+        const absLeft = left + textareaRef.current.offsetLeft;
 
         setSelectionRange({ start, end });
-        setToolbarPosition({ top: top, left: left });
+        setToolbarPosition({ top: absTop, left: absLeft });
     };
 
     const handleExecuteRefinement = async (instruction: string) => {
