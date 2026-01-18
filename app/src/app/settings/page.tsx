@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Settings, Link2, Loader2, Check, X, ExternalLink } from "lucide-react";
+import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw } from "lucide-react";
 
 interface IntegrationStatus {
     platform: string;
@@ -39,6 +39,8 @@ export default function SettingsPage() {
     const [integrations, setIntegrations] = useState<IntegrationStatus[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [syncing, setSyncing] = useState<string | null>(null);
+    const [syncResult, setSyncResult] = useState<{ synced: number; eligible: number } | null>(null);
 
     const fetchIntegrations = useCallback(async () => {
         try {
@@ -74,6 +76,25 @@ export default function SettingsPage() {
             }
         } catch (err) {
             console.error('Failed to disconnect:', err);
+        }
+    };
+
+    const handleSync = async (platform: string) => {
+        try {
+            setSyncing(platform);
+            setSyncResult(null);
+            const res = await fetch(`/api/${platform}/sync`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                setSyncResult({ synced: data.synced, eligible: data.eligible });
+            } else {
+                setError(data.error || 'Sync failed');
+            }
+        } catch (err) {
+            console.error('Failed to sync:', err);
+            setError('Failed to sync posts');
+        } finally {
+            setSyncing(null);
         }
     };
 
@@ -132,6 +153,9 @@ export default function SettingsPage() {
                                             available={info.available}
                                             onConnect={() => handleConnect(integration.platform)}
                                             onDisconnect={() => handleDisconnect(integration.platform)}
+                                            onSync={() => handleSync(integration.platform)}
+                                            syncing={syncing === integration.platform}
+                                            lastSyncResult={syncResult}
                                         />
                                     );
                                 })}
@@ -158,9 +182,13 @@ interface IntegrationCardProps {
     available: boolean;
     onConnect: () => void;
     onDisconnect: () => void;
+    onSync?: () => Promise<void>;
+    syncing?: boolean;
+    lastSyncResult?: { synced: number; eligible: number } | null;
 }
 
 function IntegrationCard({
+    platform,
     name,
     description,
     icon,
@@ -170,13 +198,16 @@ function IntegrationCard({
     available,
     onConnect,
     onDisconnect,
+    onSync,
+    syncing,
+    lastSyncResult,
 }: IntegrationCardProps) {
     return (
         <div className={`p-5 border rounded-lg transition-colors ${connected
-                ? 'border-green-200 bg-green-50/30'
-                : available
-                    ? 'border-[var(--border)] hover:border-[var(--border-hover)]'
-                    : 'border-[var(--border)] opacity-60'
+            ? 'border-green-200 bg-green-50/30'
+            : available
+                ? 'border-[var(--border)] hover:border-[var(--border-hover)]'
+                : 'border-[var(--border)] opacity-60'
             }`}>
             <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
@@ -212,15 +243,27 @@ function IntegrationCard({
                     </div>
                 </div>
 
-                <div className="shrink-0">
+                <div className="shrink-0 flex items-center gap-2">
                     {connected ? (
-                        <button
-                            onClick={onDisconnect}
-                            className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
-                        >
-                            <X size={14} />
-                            Disconnect
-                        </button>
+                        <>
+                            {platform === 'linkedin' && onSync && (
+                                <button
+                                    onClick={onSync}
+                                    disabled={syncing}
+                                    className="flex items-center gap-1.5 text-sm font-medium text-[var(--foreground)] bg-[var(--surface)] border border-[var(--border)] px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                >
+                                    <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+                                    {syncing ? 'Syncing...' : 'Sync Posts'}
+                                </button>
+                            )}
+                            <button
+                                onClick={onDisconnect}
+                                className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+                            >
+                                <X size={14} />
+                                Disconnect
+                            </button>
+                        </>
                     ) : available ? (
                         <button
                             onClick={onConnect}
@@ -238,6 +281,15 @@ function IntegrationCard({
                         </button>
                     )}
                 </div>
+
+                {/* Sync Result */}
+                {lastSyncResult && platform === 'linkedin' && (
+                    <div className="mt-3 pt-3 border-t border-[var(--border)] text-sm text-[var(--text-secondary)]">
+                        <span className="text-green-600 font-medium">{lastSyncResult.synced} posts synced</span>
+                        {' · '}
+                        <span>{lastSyncResult.eligible} eligible for beliefs</span>
+                    </div>
+                )}
             </div>
         </div>
     );
