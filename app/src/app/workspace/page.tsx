@@ -282,7 +282,9 @@ export default function WorkspacePage() {
                                             reason={d.rationale}
                                             relatedBelief={d.strengthensBelief}
                                             onDraft={(topic) => {
-                                                setSelectedBelief(topic); // For drafts from directions, topic = belief/theme
+                                                // Should use the full belief statement for better drafting context
+                                                const beliefToUse = d.strengthensBelief || topic;
+                                                setSelectedBelief(beliefToUse);
                                                 setDraftModalOpen(true);
                                             }}
                                         />
