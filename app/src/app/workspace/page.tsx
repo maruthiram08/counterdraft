@@ -140,7 +140,7 @@ export default function WorkspacePage() {
                 {/* CONTENT AREA: Scrollable Container for Non-Drafts */}
                 {activeSection !== 'drafts' && (
                     <div className="flex-1 overflow-y-auto">
-                        <div className="container py-8 max-w-4xl mx-auto animate-fade-in space-y-6">
+                        <div className="container pt-16 pb-8 max-w-4xl mx-auto animate-fade-in space-y-6">
 
                             {/* BELIEFS SECTION */}
                             {activeSection === 'beliefs' && (
