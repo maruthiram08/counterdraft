@@ -14,6 +14,10 @@ import { Layers, Zap, Compass, Plus, CheckCircle, Sparkles, Loader2, FileText } 
 import { useDirections } from "@/hooks/useDirections";
 import { useTensions } from "@/hooks/useTensions";
 import { useDrafts, Draft } from "@/hooks/useDrafts";
+import { ThreePaneLayout } from "@/components/editor/ThreePaneLayout";
+import { DraftsSidebar } from "@/components/editor/DraftsSidebar";
+import { MainEditor } from "@/components/editor/MainEditor";
+import { AgentSidebar } from "@/components/editor/AgentSidebar";
 
 export default function WorkspacePage() {
     const [activeSection, setActiveSection] = useState<'beliefs' | 'tensions' | 'directions' | 'drafts'>('beliefs');
@@ -22,8 +26,22 @@ export default function WorkspacePage() {
     const { directions, loading: directionsLoading, generateDirections, generated } = useDirections();
     const { tensions, loading: tensionsLoading, classifyTension } = useTensions();
     const [classifiedTensionIds, setClassifiedTensionIds] = useState<Set<string>>(new Set());
-    const { drafts, loading: draftsLoading, saveDraft, deleteDraft } = useDrafts();
-    const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
+    const { drafts, loading: draftsLoading, saveDraft, deleteDraft, updateDraft } = useDrafts();
+    const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+    const selectedDraft = drafts.find(d => d.id === selectedDraftId) || null;
+
+    // Agent update handler
+    const handleAgentApply = (refinedContent: string) => {
+        if (selectedDraftId) {
+            // We update the local drafts state immediately via optimistic update if we could, 
+            // but here we just update the specific draft content in memory if it was a lifted state.
+            // But simpler: Update the DB and then refresh? Or update specific draft in memory?
+            // Since MainEditor is controlled by `draft` prop, if we update the `draft` object in `selectedDraft`, it works.
+            // But `selectedDraft` is derived from `drafts` which comes from `useDrafts`.
+            // So we should call `updateDraft` to save AND update local state.
+            updateDraft(selectedDraftId, { content: refinedContent });
+        }
+    };
 
     // Modal state
     const [draftModalOpen, setDraftModalOpen] = useState(false);
@@ -314,47 +332,42 @@ export default function WorkspacePage() {
                     )}
 
                     {/* DRAFTS SECTION */}
+                    {/* DRAFTS SECTION - 3-Pane Editor */}
                     {activeSection === 'drafts' && (
-                        <div className="space-y-6">
-                            {/* Guidance Banner */}
-                            {!draftsLoading && drafts.length > 0 && (
-                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                    <p className="text-sm text-emerald-800">
-                                        <strong>Your saved drafts:</strong> Click on a draft to edit, copy to clipboard, or delete. These are your starting points for content.
-                                    </p>
-                                </div>
-                            )}
-
-                            {draftsLoading && (
-                                <div className="text-center py-16">
-                                    <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
-                                    <p className="text-[var(--text-muted)]">Loading your drafts...</p>
-                                </div>
-                            )}
-
-                            {!draftsLoading && drafts.length === 0 && (
-                                <div className="text-center py-16 border border-dashed border-[var(--border)] rounded-lg">
-                                    <FileText size={48} className="mx-auto text-[var(--text-muted)] mb-4" />
-                                    <h3 className="text-xl font-medium mb-2">No drafts yet</h3>
-                                    <p className="text-[var(--text-muted)] mb-6">Go to the Directions tab and click "Draft Post" to generate your first draft.</p>
-                                </div>
-                            )}
-
-                            {!draftsLoading && drafts.length > 0 && (
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    {drafts.map((draft) => (
-                                        <DraftCard
-                                            key={draft.id}
-                                            draft={draft}
-                                            onDelete={deleteDraft}
-                                            onEdit={(d) => {
-                                                setSelectedBelief(d.belief_text);
-                                                setDraftModalOpen(true);
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                        <div className="h-[calc(100vh-140px)] -mx-8 -my-8 border-t border-[var(--border)] mt-4">
+                            <ThreePaneLayout
+                                leftPane={
+                                    <DraftsSidebar
+                                        drafts={drafts}
+                                        selectedDraftId={selectedDraftId}
+                                        onSelect={(draft) => setSelectedDraftId(draft.id)}
+                                        onNew={() => {
+                                            setSelectedBelief("");
+                                            setDraftModalOpen(true);
+                                        }}
+                                    />
+                                }
+                                middlePane={
+                                    <MainEditor
+                                        draft={selectedDraft}
+                                        onSave={async (id, content) => {
+                                            const success = await updateDraft(id, { content });
+                                            return success;
+                                        }}
+                                    />
+                                }
+                                rightPane={
+                                    <AgentSidebar
+                                        currentContent={selectedDraft?.content || null}
+                                        beliefContext={selectedDraft?.belief_text || null}
+                                        onApplyParams={(refinedContent) => {
+                                            if (selectedDraftId) {
+                                                updateDraft(selectedDraftId, { content: refinedContent });
+                                            }
+                                        }}
+                                    />
+                                }
+                            />
                         </div>
                     )}
 
