@@ -377,9 +377,10 @@ h4 {
 }
 
 /* Focus visible for accessibility */
+/* Focus visible for accessibility - Disabled per user preference for cleaner UI */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: none;
 }
 
 /* Divider */
