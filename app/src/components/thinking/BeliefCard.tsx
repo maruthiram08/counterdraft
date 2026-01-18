@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, MessageSquare, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { Check, X, MessageSquare, ChevronDown, ChevronUp, CheckCircle, Pen } from "lucide-react";
 
 interface BeliefCardProps {
     belief: string;
@@ -9,9 +9,10 @@ interface BeliefCardProps {
     type: 'core' | 'emerging' | 'overused';
     beliefId?: string;
     onFeedback?: (beliefId: string, feedback: 'accurate' | 'misses' | 'clarify') => void;
+    onWrite?: (belief: string) => void;
 }
 
-export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback }: BeliefCardProps) {
+export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback, onWrite }: BeliefCardProps) {
     const [expanded, setExpanded] = useState(false);
     const [status, setStatus] = useState<'pending' | 'accurate' | 'misses' | 'clarify'>('pending');
     const [dismissed, setDismissed] = useState(false);
@@ -123,6 +124,19 @@ export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback }: 
                 >
                     <MessageSquare size={16} /> Clarify
                 </button>
+
+                {/* Write Button */}
+                {status === 'pending' && onWrite && (
+                    <>
+                        <div className="w-px h-4 bg-[var(--border)]" />
+                        <button
+                            onClick={() => onWrite(belief)}
+                            className="flex items-center justify-center gap-2 py-2 px-4 rounded text-sm font-medium transition-all duration-200 bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
+                        >
+                            <Pen size={14} /> Write
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );

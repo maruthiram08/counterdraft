@@ -7,6 +7,8 @@ import { BeliefCard } from "@/components/thinking/BeliefCard";
 import { useBeliefs } from "@/hooks/useBeliefs";
 import { TensionCard } from "@/components/thinking/TensionCard";
 import { DirectionCard } from "@/components/thinking/DirectionCard";
+import { DraftModal } from "@/components/thinking/DraftModal";
+import { AddContentModal } from "@/components/thinking/AddContentModal";
 import { Layers, Zap, Compass, Plus, CheckCircle, Sparkles, Loader2 } from "lucide-react";
 import { useDirections } from "@/hooks/useDirections";
 import { useTensions } from "@/hooks/useTensions";
@@ -18,6 +20,11 @@ export default function WorkspacePage() {
     const { directions, loading: directionsLoading, generateDirections, generated } = useDirections();
     const { tensions, loading: tensionsLoading, classifyTension } = useTensions();
     const [classifiedTensionIds, setClassifiedTensionIds] = useState<Set<string>>(new Set());
+
+    // Modal state
+    const [draftModalOpen, setDraftModalOpen] = useState(false);
+    const [selectedBelief, setSelectedBelief] = useState("");
+    const [addContentModalOpen, setAddContentModalOpen] = useState(false);
 
     if (loading) {
         return (
@@ -69,8 +76,11 @@ export default function WorkspacePage() {
                         <h1 className="text-2xl font-serif font-medium">Your Thinking Workspace</h1>
                         <p className="text-[var(--text-muted)]">{totalSources} documents analyzed</p>
                     </div>
-                    <button className="btn btn-secondary text-sm">
-                        <Plus size={16} /> Add Source
+                    <button
+                        onClick={() => setAddContentModalOpen(true)}
+                        className="btn btn-secondary text-sm"
+                    >
+                        <Plus size={16} /> Add Content
                     </button>
                 </div>
 
@@ -127,6 +137,10 @@ export default function WorkspacePage() {
                                                 belief={b.statement}
                                                 sourceCount={1}
                                                 onFeedback={handleBeliefReviewed}
+                                                onWrite={(belief) => {
+                                                    setSelectedBelief(belief);
+                                                    setDraftModalOpen(true);
+                                                }}
                                             />
                                         ))}
                                     </div>
@@ -146,6 +160,10 @@ export default function WorkspacePage() {
                                                 belief={b.statement}
                                                 sourceCount={1}
                                                 onFeedback={handleBeliefReviewed}
+                                                onWrite={(belief) => {
+                                                    setSelectedBelief(belief);
+                                                    setDraftModalOpen(true);
+                                                }}
                                             />
                                         ))}
                                     </div>
@@ -165,6 +183,10 @@ export default function WorkspacePage() {
                                                 belief={b.statement}
                                                 sourceCount={1}
                                                 onFeedback={handleBeliefReviewed}
+                                                onWrite={(belief) => {
+                                                    setSelectedBelief(belief);
+                                                    setDraftModalOpen(true);
+                                                }}
                                             />
                                         ))}
                                     </div>
@@ -263,6 +285,18 @@ export default function WorkspacePage() {
             </main>
 
             <Footer />
+
+            {/* Modals */}
+            <DraftModal
+                belief={selectedBelief}
+                isOpen={draftModalOpen}
+                onClose={() => setDraftModalOpen(false)}
+            />
+            <AddContentModal
+                isOpen={addContentModalOpen}
+                onClose={() => setAddContentModalOpen(false)}
+                onSuccess={() => window.location.reload()}
+            />
         </div>
     );
 }
