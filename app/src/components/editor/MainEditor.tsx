@@ -69,16 +69,26 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
         }
 
         // Calculate Pixel Coordinates
-        // Calculate Pixel Coordinates
         const { top, left, height } = getCaretCoordinates(textareaRef.current, start);
 
-        // FIX: Add offset of the textarea within the container
-        // The toolbar is absolute in the container, but coordinates are relative to the textarea.
-        const absTop = top + textareaRef.current.offsetTop;
-        const absLeft = left + textareaRef.current.offsetLeft;
+        // FIX: Use viewport-relative coordinates for fixed positioning
+        // This ensures the toolbar stays attached to the text even when scrolling
+        const rect = textareaRef.current.getBoundingClientRect();
+
+        // top/left from getCaretCoordinates are relative to the element (textarea content box)
+        // rect.top/left are viewport coordinates of the element
+        // We add them together to get the viewport coordinate of the caret
+
+        // Note: getCaretCoordinates doesn't account for scrollLeft/scrollTop of the textarea itself usually,
+        // but for a growing textarea that doesn't scroll internally (resize-none, auto-height), it's fine.
+        // If it did scroll, we'd subtract textarea.scrollTop.
+        // Since we use auto-height textarea, scroll is handled by parent.
+
+        const fixedTop = rect.top + top;
+        const fixedLeft = rect.left + left;
 
         setSelectionRange({ start, end });
-        setToolbarPosition({ top: absTop, left: absLeft });
+        setToolbarPosition({ top: fixedTop, left: fixedLeft });
     };
 
     const handleExecuteRefinement = async (instruction: string) => {
@@ -114,10 +124,6 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
                 setContent(newContent);
 
-                // Update draft on server too? (User likely wants explicit save, but sync is good)
-                // Let's just update local first, user can save.
-                // Actually, MainEditor auto-saves or manual saves? Manual.
-
                 // Hide toolbar
                 setToolbarPosition(null);
                 setSelectionRange(null);
@@ -142,37 +148,34 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
             {/* Contextual Toolbar */}
             {toolbarPosition && (
-                <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-                    {/* 
-                        We wrap in a relative container that matches textarea flow if possible, 
-                        but since textarea is in specific div, we need to map coordinates correctly.
-                        Actually, 'getCaretCoordinates' gives coordinates relative to the Textarea element.
-                        So we should place the toolbar inside the same container as the textarea or adjust offsets.
-                        Best approach: Render it inside the .relative container wrapping textarea.
-                     */}
+                <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-[60]">
+                    {/* Placeholder for hierarchy, component is rendered below */}
                 </div>
             )}
 
-            {/* Minimal Header / Status - Floats on top */}
+            {/* Minimal Header / Status - Floating Pill */}
             <div className="absolute top-6 right-8 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span className="text-xs text-[var(--text-muted)] mr-2 font-medium">
-                    {saving ? "Saving..." : saved ? "Saved" : ""}
-                </span>
-                <button
-                    onClick={handleCopy}
-                    className="p-2 text-gray-400 hover:text-[var(--foreground)] hover:bg-gray-50 rounded-lg transition-all"
-                    title="Copy to clipboard"
-                >
-                    {copied ? <Check size={18} /> : <Copy size={18} />}
-                </button>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="p-2 text-gray-400 hover:text-[var(--accent)] hover:bg-gray-50 rounded-lg transition-all"
-                    title="Save changes"
-                >
-                    <Save size={18} />
-                </button>
+                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm shadow-sm border border-gray-100 rounded-full px-2 py-1">
+                    <span className="text-xs text-[var(--text-muted)] px-2 font-medium">
+                        {saving ? "Saving..." : saved ? "Saved" : ""}
+                    </span>
+                    <div className="w-px h-4 bg-gray-200"></div>
+                    <button
+                        onClick={handleCopy}
+                        className="p-1.5 text-gray-400 hover:text-[var(--foreground)] hover:bg-gray-50 rounded-full transition-all"
+                        title="Copy to clipboard"
+                    >
+                        {copied ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="p-1.5 text-gray-400 hover:text-[var(--accent)] hover:bg-gray-50 rounded-full transition-all"
+                        title="Save changes"
+                    >
+                        <Save size={16} />
+                    </button>
+                </div>
             </div>
 
             {/* Document Surface */}
@@ -230,7 +233,7 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                                 // For now, rely on explicit close or re-selection.
                             }, 200);
                         }}
-                        className="w-full min-h-[60vh] resize-none focus:outline-none text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
+                        className="w-full min-h-[60vh] resize-none border-none outline-none focus:outline-none focus:ring-0 ring-0 text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
                         placeholder="Start writing..."
                         spellCheck={false}
                     />

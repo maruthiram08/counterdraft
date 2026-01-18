@@ -42,7 +42,7 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
 
     return (
         <div
-            className="absolute z-50 bg-white rounded-xl shadow-lg border border-gray-100 animate-in fade-in zoom-in-95 duration-200"
+            className="fixed z-50 bg-white rounded-xl shadow-lg border border-gray-100 animate-in fade-in zoom-in-95 duration-200"
             style={style}
             onMouseDown={(e) => e.preventDefault()} // Prevent stealing focus
         >
