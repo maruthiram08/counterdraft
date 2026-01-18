@@ -53,14 +53,14 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
             ) : (
                 <>
                     {/* Top: Large Input Area */}
-                    <form onSubmit={handleCustomSubmit} className="p-3 border-b border-gray-50 bg-gray-50/50">
+                    <form onSubmit={handleCustomSubmit} className="p-4 border-b border-gray-100 bg-gray-50/30">
                         <input
                             ref={inputRef}
                             type="text"
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             placeholder="Describe your change..."
-                            className="w-full text-base outline-none bg-transparent placeholder:text-gray-400 text-gray-800"
+                            className="w-full text-lg font-medium outline-none bg-transparent placeholder:text-gray-400 text-gray-800"
                             autoFocus
                             onKeyDown={(e) => {
                                 if (e.key === 'Escape') onClose();
@@ -70,30 +70,23 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
 
                     {/* Bottom: Quick Actions */}
                     <div className="p-2 bg-white">
-                        <div className="px-2 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider select-none">
-                            Rephrase with
+                        <div className="px-2 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider select-none flex items-center justify-between">
+                            <span>Actions</span>
                         </div>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-1">
                             <button
-                                onClick={() => onOptionSelect("Improve writing")}
-                                className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-600 transition-colors text-left group"
+                                onClick={() => onOptionSelect("Rephrase this clearly and effectively")}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-[15px] text-gray-700 transition-colors text-left group"
                             >
-                                <Sparkles size={14} className="text-gray-400 group-hover:text-[var(--accent)] transition-colors" />
-                                <span className="font-medium">Improve writing</span>
+                                <Sparkles size={16} className="text-gray-400 group-hover:text-[var(--accent)] transition-colors" />
+                                <span className="font-medium">Rephrase</span>
                             </button>
                             <button
-                                onClick={() => onOptionSelect("Make shorter")}
-                                className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-600 transition-colors text-left group"
+                                onClick={() => onOptionSelect("Delete this selection")}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-red-50 rounded-lg text-[15px] text-gray-700 hover:text-red-600 transition-colors text-left group"
                             >
-                                <Eraser size={14} className="text-gray-400 group-hover:text-[var(--accent)] transition-colors" />
-                                <span className="font-medium">Make shorter</span>
-                            </button>
-                            <button
-                                onClick={() => onOptionSelect("Fix grammar")}
-                                className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-600 transition-colors text-left group"
-                            >
-                                <Type size={14} className="text-gray-400 group-hover:text-[var(--accent)] transition-colors" />
-                                <span className="font-medium">Fix grammar</span>
+                                <Eraser size={16} className="text-gray-400 group-hover:text-red-500 transition-colors" />
+                                <span className="font-medium">Delete</span>
                             </button>
                         </div>
                     </div>
