@@ -17,6 +17,9 @@ export function Header({ className }: HeaderProps) {
                         <Link href="/workspace" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
                             Workspace
                         </Link>
+                        <Link href="/settings" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
+                            Settings
+                        </Link>
                         <UserButton afterSignOutUrl="/" />
                     </SignedIn>
                     <SignedOut>
