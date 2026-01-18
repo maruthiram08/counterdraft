@@ -9,9 +9,19 @@ interface BeliefCardProps {
     type: 'core' | 'emerging' | 'overused';
     beliefId?: string;
     onFeedback?: (beliefId: string, feedback: 'accurate' | 'misses' | 'clarify') => void;
+    // Confidence model
+    confidenceLevel?: 'low' | 'medium' | 'high';
+    isStable?: boolean;
+    evidenceCount?: number;
 }
 
-export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback }: BeliefCardProps) {
+const CONFIDENCE_COLORS = {
+    low: 'text-amber-500',
+    medium: 'text-gray-400',
+    high: 'text-green-500',
+};
+
+export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback, confidenceLevel = 'medium', isStable = false, evidenceCount = 1 }: BeliefCardProps) {
     const [expanded, setExpanded] = useState(false);
     const [status, setStatus] = useState<'pending' | 'accurate' | 'misses' | 'clarify'>('pending');
     const [dismissed, setDismissed] = useState(false);
@@ -35,11 +45,24 @@ export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback }: 
                     {type} Belief
                 </span>
                 <span className="w-1 h-1 rounded-full bg-gray-200" />
+                {/* Confidence Indicator */}
+                <span className={`text-[10px] uppercase tracking-widest font-medium ${CONFIDENCE_COLORS[confidenceLevel]}`}>
+                    {confidenceLevel} confidence
+                </span>
+                {isStable && (
+                    <>
+                        <span className="w-1 h-1 rounded-full bg-gray-200" />
+                        <span className="text-[10px] uppercase tracking-widest font-medium text-blue-500">
+                            Stable
+                        </span>
+                    </>
+                )}
+                <span className="w-1 h-1 rounded-full bg-gray-200" />
                 <button
                     onClick={() => setExpanded(!expanded)}
                     className="text-[10px] uppercase tracking-widest font-medium text-gray-400 hover:text-[var(--accent)] transition-colors flex items-center gap-1"
                 >
-                    {sourceCount} {sourceCount === 1 ? 'Source' : 'Sources'}
+                    {evidenceCount} {evidenceCount === 1 ? 'Evidence' : 'Evidence'}
                 </button>
             </div>
 

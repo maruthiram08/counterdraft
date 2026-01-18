@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Belief } from '@/types';
+import { Belief, ConfidenceLevel } from '@/types';
 
 export type FeedbackType = 'accurate' | 'misses' | 'clarify';
 
@@ -49,18 +49,23 @@ export function useBeliefs() {
                 if (beliefsError) throw beliefsError;
 
                 // 3. Categorize & Map
-                const mapBelief = (b: any): Belief => ({
+                const mapBelief = (b: any): Belief & { confidenceLevel: ConfidenceLevel; recencyWeight: number; isStable: boolean; evidenceCount: number } => ({
                     id: b.id,
                     userId: b.user_id,
                     statement: b.statement,
                     beliefType: b.belief_type,
-                    confidence: 1.0,
-                    firstSeen: new Date(b.created_at),
-                    lastSeen: new Date(b.created_at),
+                    confidence: b.confidence || 1.0,
+                    firstSeen: new Date(b.first_seen || b.created_at),
+                    lastSeen: new Date(b.last_seen || b.created_at),
                     userConfirmed: b.user_confirmed || false,
                     userEdited: b.user_edited || false,
                     createdAt: new Date(b.created_at),
-                    updatedAt: new Date(b.updated_at || b.created_at)
+                    updatedAt: new Date(b.updated_at || b.created_at),
+                    // Confidence model fields
+                    confidenceLevel: b.confidence_level || 'medium',
+                    recencyWeight: b.recency_weight ?? 1.0,
+                    isStable: b.is_stable ?? false,
+                    evidenceCount: b.evidence_count ?? 1,
                 });
 
                 const core = data?.filter((b: any) => b.belief_type === 'core').map(mapBelief) || [];
