@@ -10,7 +10,7 @@ interface ThreePaneLayoutProps {
 
 export function ThreePaneLayout({ leftPane, middlePane, rightPane }: ThreePaneLayoutProps) {
     return (
-        <div className="flex bg-white h-[calc(100vh-64px)] overflow-hidden border-t border-[var(--border)]">
+        <div className="flex bg-white h-[calc(100vh-64px)] overflow-hidden">
             {/* Left Pane: Sidebar List */}
             <div className="w-[280px] border-r border-[var(--border)] bg-gray-50 flex flex-col shrink-0">
                 {leftPane}

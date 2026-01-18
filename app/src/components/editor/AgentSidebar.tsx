@@ -45,14 +45,12 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams }: A
     return (
         <div className="flex flex-col h-full bg-gray-50/50">
             {/* Header */}
-            <div className="p-4 border-b border-[var(--border)] shrink-0 bg-white">
+            {/* Minimal Header */}
+            <div className="p-3 border-b border-[var(--border)] shrink-0 bg-white flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[var(--accent)]">
-                    <Sparkles size={18} />
-                    <h2 className="font-semibold text-sm">AI Companion</h2>
+                    <Sparkles size={16} />
+                    <h2 className="font-semibold text-xs uppercase tracking-wider">AI Companion</h2>
                 </div>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Ask me to refine, shorten, or punch up your draft.
-                </p>
             </div>
 
             {/* Chat / Suggestion Area */}
