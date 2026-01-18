@@ -7,12 +7,16 @@ export function Header() {
                 <Link href="/" className="text-xl font-medium tracking-tight hover:opacity-80 transition-opacity">
                     counterdraft
                 </Link>
-                <nav className="flex items-center gap-4">
-                    <Link href="/login" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
-                        Log in
+                <nav className="flex items-center gap-6">
+                    <Link href="/workspace" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
+                        Workspace
+                    </Link>
+                    <Link href="/onboarding" className="btn btn-primary text-sm px-4 py-2">
+                        Get Started
                     </Link>
                 </nav>
             </div>
         </header>
     );
 }
+
