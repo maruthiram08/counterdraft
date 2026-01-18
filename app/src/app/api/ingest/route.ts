@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { extractBeliefs } from "@/lib/openai";
+import { getOrCreateUser } from "@/lib/user-sync";
 
 export async function POST(req: Request) {
     try {
@@ -12,30 +13,35 @@ export async function POST(req: Request) {
         }
 
         const isMockMode = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
-        let userId = 'mock-user-id';
+        let userId: string | null = null;
 
         if (!isMockMode) {
-            // 1. Get or Create Test User (Real DB Mode)
-            const { data: existingUser } = await supabaseAdmin
-                .from("users")
-                .select("id")
-                .eq("email", "test@counterdraft.com")
-                .single();
+            // 1. Get authenticated user from Clerk
+            userId = await getOrCreateUser();
 
-            if (existingUser) {
-                userId = existingUser.id;
-            } else {
-                const { data: newUser, error: createError } = await supabaseAdmin
+            if (!userId) {
+                // Fallback to test user for development
+                const { data: existingUser } = await supabaseAdmin
                     .from("users")
-                    .insert({
-                        email: "test@counterdraft.com",
-                        name: "Test User",
-                    })
                     .select("id")
+                    .eq("email", "test@counterdraft.com")
                     .single();
 
-                if (createError) throw createError;
-                userId = newUser.id;
+                if (existingUser) {
+                    userId = existingUser.id;
+                } else {
+                    const { data: newUser, error: createError } = await supabaseAdmin
+                        .from("users")
+                        .insert({
+                            email: "test@counterdraft.com",
+                            name: "Test User",
+                        })
+                        .select("id")
+                        .single();
+
+                    if (createError) throw createError;
+                    userId = newUser.id;
+                }
             }
 
             // 2. Insert Content into raw_posts

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export function Header() {
     return (
@@ -8,15 +9,24 @@ export function Header() {
                     counterdraft
                 </Link>
                 <nav className="flex items-center gap-6">
-                    <Link href="/workspace" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
-                        Workspace
-                    </Link>
-                    <Link href="/onboarding" className="btn btn-primary text-sm px-4 py-2">
-                        Get Started
-                    </Link>
+                    <SignedIn>
+                        <Link href="/workspace" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
+                            Workspace
+                        </Link>
+                        <UserButton afterSignOutUrl="/" />
+                    </SignedIn>
+                    <SignedOut>
+                        <Link href="/sign-in" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
+                            Sign In
+                        </Link>
+                        <Link href="/sign-up" className="btn btn-primary text-sm px-4 py-2">
+                            Get Started
+                        </Link>
+                    </SignedOut>
                 </nav>
             </div>
         </header>
     );
 }
+
 
