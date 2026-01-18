@@ -280,6 +280,11 @@ export default function WorkspacePage() {
                                             key={idx}
                                             title={d.theme}
                                             reason={d.rationale}
+                                            relatedBelief={d.strengthensBelief}
+                                            onDraft={(topic) => {
+                                                setSelectedBelief(topic); // For drafts from directions, topic = belief/theme
+                                                setDraftModalOpen(true);
+                                            }}
                                         />
                                     ))}
                                 </div>

@@ -1,17 +1,19 @@
 "use client";
 
-import { Compass } from "lucide-react";
+import { Compass, Pen } from "lucide-react";
 
 interface DirectionCardProps {
     title: string;
     reason: string;
+    relatedBelief?: string;
+    onDraft?: (topic: string) => void;
 }
 
-export function DirectionCard({ title, reason }: DirectionCardProps) {
+export function DirectionCard({ title, reason, relatedBelief, onDraft }: DirectionCardProps) {
     return (
-        <div className="card hover:border-[var(--accent)] transition-colors group cursor-pointer">
-            <div className="flex items-start gap-3 mb-4">
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+        <div className="card hover:border-[var(--accent)] transition-colors group flex flex-col h-full">
+            <div className="flex items-start gap-3 mb-4 flex-1">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors shrink-0">
                     <Compass size={20} />
                 </div>
                 <div>
@@ -24,9 +26,26 @@ export function DirectionCard({ title, reason }: DirectionCardProps) {
                 </div>
             </div>
 
-            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[var(--border)] text-xs text-[var(--text-subtle)] font-medium">
-                <span>Strengthens: "Quality over Quantity"</span>
+            <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
+                {relatedBelief && (
+                    <span className="text-xs text-[var(--text-subtle)] font-medium truncate max-w-[200px]">
+                        Strengthens: "{relatedBelief}"
+                    </span>
+                )}
+
+                {onDraft && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDraft(title);
+                        }}
+                        className="flex items-center gap-2 text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors ml-auto"
+                    >
+                        <Pen size={14} /> Draft Post
+                    </button>
+                )}
             </div>
         </div>
     );
 }
+
