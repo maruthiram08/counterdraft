@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, RefreshCw, Copy, Check, Sparkles, Save } from "lucide-react";
 
 interface DraftModalProps {
@@ -19,7 +19,7 @@ export function DraftModal({ belief, isOpen, onClose, onSave }: DraftModalProps)
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const generateDraft = async (instruction?: string) => {
+    const generateDraft = useCallback(async (instruction?: string) => {
         setLoading(true);
         setError(null);
         // Only clear draft if completely regenerating from scratch, 
@@ -48,7 +48,7 @@ export function DraftModal({ belief, isOpen, onClose, onSave }: DraftModalProps)
         } finally {
             setLoading(false);
         }
-    };
+    }, [belief]);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(draft);
@@ -83,7 +83,7 @@ export function DraftModal({ belief, isOpen, onClose, onSave }: DraftModalProps)
         if (isOpen && belief && !loading && !draft) {
             generateDraft();
         }
-    }, [isOpen, belief]);
+    }, [isOpen, belief, loading, draft, generateDraft]);
 
     if (!isOpen) return null;
 
