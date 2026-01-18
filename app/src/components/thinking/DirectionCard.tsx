@@ -1,6 +1,6 @@
 "use client";
 
-import { Compass, Pen } from "lucide-react";
+import { ArrowRight, Pen } from "lucide-react";
 
 interface DirectionCardProps {
     title: string;
@@ -11,47 +11,42 @@ interface DirectionCardProps {
 
 export function DirectionCard({ title, reason, relatedBelief, onDraft }: DirectionCardProps) {
     return (
-        <div className="card hover:border-[var(--accent)] transition-colors group flex flex-col h-full">
-            <div className="flex items-start gap-3 mb-4 flex-1">
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors shrink-0">
-                    <Compass size={20} />
-                </div>
-                <div>
-                    <h3 className="text-lg font-semibold leading-tight mb-2 group-hover:text-[var(--accent)] transition-colors">
+        <div className="group py-6 px-4 border-b border-gray-100 bg-white hover:bg-gray-50/30 transition-all">
+            <div className="flex justify-between items-start gap-8">
+
+                {/* Content */}
+                <div className="max-w-2xl">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2 group-hover:text-[var(--accent)] transition-colors cursor-pointer" onClick={() => onDraft && onDraft(title)}>
                         {title}
                     </h3>
-                    <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                    <p className="text-sm text-gray-500 leading-relaxed mb-3">
                         {reason}
                     </p>
+
+                    {relatedBelief && (
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <span className="w-1 h-1 rounded-full bg-gray-300" />
+                            <span className="font-serif italic truncate max-w-md opacity-70">
+                                from "{relatedBelief}"
+                            </span>
+                        </div>
+                    )}
                 </div>
-            </div>
 
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
-                {relatedBelief && (
-                    <div
-                        className="flex flex-col mr-4 min-w-0 flex-1"
-                        title={relatedBelief}
-                    >
-                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-0.5">Based on belief</span>
-                        <span className="text-xs text-[var(--text-subtle)] font-medium line-clamp-2 break-words leading-tight">
-                            "{relatedBelief}"
-                        </span>
-                    </div>
-                )}
-
+                {/* Action */}
                 {onDraft && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onDraft(title);
                         }}
-                        className="flex items-center gap-2 text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors ml-auto"
+                        className="shrink-0 p-2 rounded-full text-gray-300 hover:text-[var(--accent)] hover:bg-white hover:shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                        title="Start Draft"
                     >
-                        <Pen size={14} /> Draft Post
+                        <Pen size={16} />
                     </button>
                 )}
             </div>
         </div>
     );
 }
-

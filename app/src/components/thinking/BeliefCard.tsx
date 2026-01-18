@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, MessageSquare, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { Check, X, MessageSquare, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
 
 interface BeliefCardProps {
     belief: string;
@@ -18,113 +18,76 @@ export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback }: 
 
     const handleFeedback = (newStatus: 'accurate' | 'misses' | 'clarify') => {
         setStatus(newStatus);
-        console.log(`[Feedback] Belief: "${belief.substring(0, 30)}..." → ${newStatus}`);
         if (onFeedback && beliefId) {
             onFeedback(beliefId, newStatus);
         }
-
-        // Auto-dismiss after 1.5 seconds
-        setTimeout(() => {
-            setDismissed(true);
-        }, 1500);
+        setTimeout(() => setDismissed(true), 1200);
     };
 
-    // Hide the card completely once dismissed
-    if (dismissed) {
-        return null;
-    }
-
-    const typeColors = {
-        core: "bg-green-100 text-green-700",
-        emerging: "bg-blue-100 text-blue-700",
-        overused: "bg-amber-100 text-amber-700",
-    };
-
-    // Card border/bg based on feedback status
-    const cardStyles = {
-        pending: "",
-        accurate: "border-green-300 bg-green-50/50 ring-1 ring-green-200",
-        misses: "border-red-300 bg-red-50/50 ring-1 ring-red-200",
-        clarify: "border-gray-300 bg-gray-50/50 ring-1 ring-gray-200",
-    };
-
-    const statusMessages = {
-        pending: null,
-        accurate: { icon: <CheckCircle size={14} className="text-green-600" />, text: "Marked as accurate", color: "text-green-600" },
-        misses: { icon: <X size={14} className="text-red-600" />, text: "Marked as inaccurate", color: "text-red-600" },
-        clarify: { icon: <MessageSquare size={14} className="text-gray-600" />, text: "Needs clarification", color: "text-gray-600" },
-    };
+    if (dismissed) return null;
 
     return (
-        <div className={`card transition-all duration-300 ${cardStyles[status]}`}>
-            <div className="flex justify-between items-start mb-4">
-                <span className={`badge ${typeColors[type]} px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wide`}>
+        <div className="group relative bg-white border-b border-gray-100 py-8 px-4 hover:bg-gray-50/50 transition-colors">
+
+            {/* Meta Top Line */}
+            <div className="flex items-center gap-3 mb-4">
+                <span className="text-[10px] uppercase tracking-widest font-medium text-gray-400">
                     {type} Belief
                 </span>
+                <span className="w-1 h-1 rounded-full bg-gray-200" />
                 <button
                     onClick={() => setExpanded(!expanded)}
-                    className="text-[var(--text-subtle)] hover:text-[var(--foreground)] text-xs flex items-center gap-1"
+                    className="text-[10px] uppercase tracking-widest font-medium text-gray-400 hover:text-[var(--accent)] transition-colors flex items-center gap-1"
                 >
-                    {sourceCount} sources
-                    {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    {sourceCount} {sourceCount === 1 ? 'Source' : 'Sources'}
                 </button>
             </div>
 
-            <p className="text-lg font-medium leading-relaxed mb-4">
-                {belief}
-            </p>
+            {/* Content */}
+            <div className="max-w-3xl">
+                <p className="text-2xl font-serif text-gray-900 leading-relaxed">
+                    {belief}
+                </p>
+            </div>
 
-            {/* Feedback Status Message */}
-            {status !== 'pending' && statusMessages[status] && (
-                <div className={`flex items-center gap-2 mb-4 text-sm ${statusMessages[status]?.color}`}>
-                    {statusMessages[status]?.icon}
-                    <span>{statusMessages[status]?.text}</span>
-                </div>
-            )}
+            {/* Minimal Actions - Reveal on Hover */}
+            <div className="mt-6 flex items-center gap-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {status === 'pending' ? (
+                    <>
+                        <button
+                            onClick={() => handleFeedback('accurate')}
+                            className="text-xs font-medium text-gray-400 hover:text-gray-900 flex items-center gap-1.5 transition-colors"
+                        >
+                            <Check size={14} /> Accurate
+                        </button>
+                        <button
+                            onClick={() => handleFeedback('misses')}
+                            className="text-xs font-medium text-gray-400 hover:text-gray-900 flex items-center gap-1.5 transition-colors"
+                        >
+                            <X size={14} /> Misses
+                        </button>
+                        <button
+                            onClick={() => handleFeedback('clarify')}
+                            className="text-xs font-medium text-gray-400 hover:text-gray-900 flex items-center gap-1.5 transition-colors"
+                        >
+                            <MessageSquare size={14} /> Clarify
+                        </button>
+                    </>
+                ) : (
+                    <span className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
+                        <Check size={14} className="text-[var(--accent)]" /> Feedback saved
+                    </span>
+                )}
+            </div>
 
+            {/* Source Expansion */}
             {expanded && (
-                <div className="mb-4 p-4 bg-[var(--surface)] rounded text-sm text-[var(--text-muted)] italic border border-[var(--border)]">
-                    "Source snippet reference goes here..."
+                <div className="mt-6 pl-4 border-l-2 border-gray-100">
+                    <p className="text-sm text-gray-500 italic font-serif">
+                        Context snippets would appear here...
+                    </p>
                 </div>
             )}
-
-            {/* ASSERTION INTERFACE */}
-            <div className="flex items-center gap-2 border-t border-[var(--border)] pt-4 mt-auto">
-                <button
-                    onClick={() => handleFeedback('accurate')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${status === 'accurate'
-                        ? 'bg-green-600 text-white shadow-sm scale-[1.02]'
-                        : 'hover:bg-green-50 text-[var(--text-muted)] hover:text-green-700'
-                        }`}
-                >
-                    <Check size={16} /> Accurate
-                </button>
-
-                <div className="w-px h-4 bg-[var(--border)]" />
-
-                <button
-                    onClick={() => handleFeedback('misses')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${status === 'misses'
-                        ? 'bg-red-600 text-white shadow-sm scale-[1.02]'
-                        : 'hover:bg-red-50 text-[var(--text-muted)] hover:text-red-700'
-                        }`}
-                >
-                    <X size={16} /> Misses
-                </button>
-
-                <div className="w-px h-4 bg-[var(--border)]" />
-
-                <button
-                    onClick={() => handleFeedback('clarify')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${status === 'clarify'
-                        ? 'bg-gray-700 text-white shadow-sm scale-[1.02]'
-                        : 'hover:bg-gray-100 text-[var(--text-muted)] hover:text-gray-800'
-                        }`}
-                >
-                    <MessageSquare size={16} /> Clarify
-                </button>
-            </div>
         </div>
     );
 }
-

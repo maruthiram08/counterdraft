@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, X, Check, Lightbulb, HelpCircle } from "lucide-react";
+import { X, Check, Lightbulb } from "lucide-react";
 
 interface TensionCardProps {
     tension: string;
@@ -18,95 +18,75 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
 
     const handleClassify = (newClassification: 'inconsistency' | 'intentional_nuance' | 'explore') => {
         setClassification(newClassification);
-
         if (onClassify && tensionId) {
             onClassify(tensionId, newClassification);
         }
-
-        // Auto-dismiss after 1.5s
-        setTimeout(() => setDismissed(true), 1500);
+        setTimeout(() => setDismissed(true), 1200);
     };
 
     if (dismissed) return null;
 
-    const classificationStyles = {
-        pending: "",
-        inconsistency: "border-red-300 bg-red-50/50 ring-1 ring-red-200",
-        intentional_nuance: "border-green-300 bg-green-50/50 ring-1 ring-green-200",
-        explore: "border-blue-300 bg-blue-50/50 ring-1 ring-blue-200"
-    };
-
-    const classificationMessages = {
-        pending: null,
-        inconsistency: { icon: <X size={14} className="text-red-600" />, text: "Marked as inconsistency", color: "text-red-600" },
-        intentional_nuance: { icon: <Check size={14} className="text-green-600" />, text: "Marked as intentional nuance", color: "text-green-600" },
-        explore: { icon: <Lightbulb size={14} className="text-blue-600" />, text: "Will explore this", color: "text-blue-600" }
-    };
-
     return (
-        <div className={`card border-l-4 border-l-amber-400 transition-all duration-300 ${classificationStyles[classification]}`}>
-            <div className="flex items-center gap-2 mb-4 text-amber-600">
-                <AlertTriangle size={18} />
-                <span className="text-xs font-bold uppercase tracking-wide">
-                    {classification === 'pending' ? 'Unresolved Tension' : 'Resolved'}
-                </span>
-            </div>
+        <div className="group relative bg-white border-b border-gray-100 py-10 px-4 hover:bg-gray-50/30 transition-colors">
 
-            <h3 className="text-xl font-semibold mb-4">
-                {tension}
-            </h3>
-
-            {/* Status Message */}
-            {classification !== 'pending' && classificationMessages[classification] && (
-                <div className={`flex items-center gap-2 mb-4 text-sm ${classificationMessages[classification]?.color}`}>
-                    {classificationMessages[classification]?.icon}
-                    <span>{classificationMessages[classification]?.text}</span>
+            {/* Classification Badge - Only if Classified */}
+            {classification !== 'pending' && (
+                <div className="mb-4 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+                    <span className="text-[10px] uppercase tracking-widest font-medium text-gray-500">
+                        {classification.replace('_', ' ')}
+                    </span>
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="p-4 bg-[var(--surface)] rounded border border-[var(--border)]">
-                    <span className="block text-xs font-medium text-[var(--text-subtle)] mb-2">You explicitly said:</span>
-                    <p className="text-sm italic">"{sideA}"</p>
+            {/* Main Tension Statement */}
+            <h3 className="text-xl font-medium text-gray-900 mb-8 max-w-2xl leading-snug">
+                {tension}
+            </h3>
+
+            {/* The Conflict - Minimal Text Stack */}
+            <div className="space-y-6 pl-6 border-l border-gray-200">
+                <div>
+                    <span className="block text-[10px] uppercase tracking-widest text-gray-400 mb-2">Statement A</span>
+                    <p className="text-base font-serif italic text-gray-600 leading-relaxed">
+                        "{sideA}"
+                    </p>
                 </div>
-                <div className="p-4 bg-[var(--surface)] rounded border border-[var(--border)]">
-                    <span className="block text-xs font-medium text-[var(--text-subtle)] mb-2">But you also implied:</span>
-                    <p className="text-sm italic">"{sideB}"</p>
+                <div>
+                    <span className="block text-[10px] uppercase tracking-widest text-gray-400 mb-2">Statement B</span>
+                    <p className="text-base font-serif italic text-gray-600 leading-relaxed">
+                        "{sideB}"
+                    </p>
                 </div>
             </div>
 
-            {/* Classification Buttons */}
+            {/* Actions - Subtle Row */}
             {classification === 'pending' && (
-                <div className="flex items-center gap-2 border-t border-[var(--border)] pt-4">
-                    <span className="text-xs text-[var(--text-muted)] mr-2">How do you hold these?</span>
+                <div className="mt-8 flex items-center gap-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-[10px] uppercase tracking-widest text-gray-300 font-medium">Classify:</span>
 
                     <button
                         onClick={() => handleClassify('inconsistency')}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium transition-all duration-200 hover:bg-red-50 text-[var(--text-muted)] hover:text-red-700"
+                        className="text-xs font-medium text-gray-400 hover:text-red-600 transition-colors flex items-center gap-2"
                     >
-                        <X size={16} /> Inconsistency
+                        <X size={14} /> Inconsistency
                     </button>
-
-                    <div className="w-px h-4 bg-[var(--border)]" />
 
                     <button
                         onClick={() => handleClassify('intentional_nuance')}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium transition-all duration-200 hover:bg-green-50 text-[var(--text-muted)] hover:text-green-700"
+                        className="text-xs font-medium text-gray-400 hover:text-green-600 transition-colors flex items-center gap-2"
                     >
-                        <Check size={16} /> Nuance
+                        <Check size={14} /> Nuance
                     </button>
-
-                    <div className="w-px h-4 bg-[var(--border)]" />
 
                     <button
                         onClick={() => handleClassify('explore')}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm font-medium transition-all duration-200 hover:bg-blue-50 text-[var(--text-muted)] hover:text-blue-700"
+                        className="text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors flex items-center gap-2"
                     >
-                        <Lightbulb size={16} /> Explore
+                        <Lightbulb size={14} /> Explore
                     </button>
                 </div>
             )}
         </div>
     );
 }
-
