@@ -12,7 +12,7 @@ interface ThreePaneLayoutProps {
 export function ThreePaneLayout({ leftPane, middlePane, rightPane }: ThreePaneLayoutProps) {
     return (
         <div className="h-full bg-white overflow-hidden">
-            <ResizablePanelGroup direction="horizontal">
+            <ResizablePanelGroup orientation="horizontal">
 
                 {/* Left Pane: Sidebar List (15%) */}
                 <ResizablePanel defaultSize={15} minSize={10} maxSize={25} className="bg-gray-50/30">
