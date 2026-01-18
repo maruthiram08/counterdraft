@@ -41,10 +41,10 @@ export interface RawPost {
   createdAt: Date;
 }
 
-export type TensionClassification = 
-  | 'inconsistency' 
-  | 'intentional_nuance' 
-  | 'explore' 
+export type TensionClassification =
+  | 'inconsistency'
+  | 'intentional_nuance'
+  | 'explore'
   | 'pending';
 
 export interface Tension {
@@ -124,8 +124,54 @@ export interface User {
   name?: string;
 }
 
-export type OnboardingStep = 
-  | 'paste-posts' 
-  | 'analyzing' 
-  | 'confirm-beliefs' 
+export type OnboardingStep =
+  | 'paste-posts'
+  | 'analyzing'
+  | 'confirm-beliefs'
   | 'complete';
+
+// ===========================================
+// MULTI-PLATFORM INTEGRATION
+// ===========================================
+
+export type Platform = 'linkedin' | 'notion' | 'google_docs';
+
+export type ConfidenceLevel = 'low' | 'medium' | 'high';
+
+export interface ConnectedAccount {
+  id: string;
+  userId: string;
+  platform: Platform;
+  platformUserId?: string;
+  tokenExpiresAt?: Date;
+  scopes?: string[];
+  profileName?: string;
+  profilePicture?: string;
+  connectedAt: Date;
+  revoked: boolean;
+}
+
+export interface PublishedPost {
+  id: string;
+  userId: string;
+  draftId: string;
+  platform: Platform;
+  platformPostId?: string;
+  adaptedContent?: string;
+  publishedAt: Date;
+}
+
+// Extended Belief with confidence model
+export interface BeliefWithConfidence extends Belief {
+  confidenceLevel: ConfidenceLevel;
+  recencyWeight: number;
+  isStable: boolean;
+  evidenceCount: number;
+}
+
+// Extended RawPost with eligibility
+export interface RawPostWithEligibility extends RawPost {
+  isBeliefEligible: boolean;
+  platformPostId?: string;
+}
+
