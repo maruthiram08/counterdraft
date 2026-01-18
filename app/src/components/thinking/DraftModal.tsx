@@ -1,19 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, RefreshCw, Copy, Check, Sparkles } from "lucide-react";
+import { X, RefreshCw, Copy, Check, Sparkles, Save } from "lucide-react";
 
 interface DraftModalProps {
     belief: string;
     isOpen: boolean;
     onClose: () => void;
+    onSave?: (beliefText: string, content: string) => Promise<any>;
 }
 
-export function DraftModal({ belief, isOpen, onClose }: DraftModalProps) {
+export function DraftModal({ belief, isOpen, onClose, onSave }: DraftModalProps) {
     const [draft, setDraft] = useState("");
     const [angles, setAngles] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const generateDraft = async () => {
@@ -46,11 +49,26 @@ export function DraftModal({ belief, isOpen, onClose }: DraftModalProps) {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleSave = async () => {
+        if (!onSave || !draft) return;
+        setSaving(true);
+        try {
+            await onSave(belief, draft);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch (err) {
+            console.error('Error saving draft:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     // Reset state when belief changes
     useEffect(() => {
         setDraft("");
         setAngles([]);
         setError(null);
+        setSaved(false);
     }, [belief]);
 
     // Auto-generate on open
@@ -126,21 +144,33 @@ export function DraftModal({ belief, isOpen, onClose }: DraftModalProps) {
                 <div className="flex items-center justify-between p-4 border-t border-[var(--border)] bg-[var(--surface)]">
                     <button
                         onClick={generateDraft}
-                        disabled={loading}
+                        disabled={loading || saving}
                         className="btn btn-secondary flex items-center gap-2"
                     >
                         <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                         Regenerate
                     </button>
 
-                    <button
-                        onClick={handleCopy}
-                        disabled={!draft || loading}
-                        className="btn btn-primary flex items-center gap-2"
-                    >
-                        {copied ? <Check size={16} /> : <Copy size={16} />}
-                        {copied ? "Copied!" : "Copy to Clipboard"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {onSave && (
+                            <button
+                                onClick={handleSave}
+                                disabled={!draft || loading || saving}
+                                className="btn btn-secondary flex items-center gap-2"
+                            >
+                                {saved ? <Check size={16} className="text-green-500" /> : <Save size={16} />}
+                                {saving ? "Saving..." : saved ? "Saved!" : "Save Draft"}
+                            </button>
+                        )}
+                        <button
+                            onClick={handleCopy}
+                            disabled={!draft || loading}
+                            className="btn btn-primary flex items-center gap-2"
+                        >
+                            {copied ? <Check size={16} /> : <Copy size={16} />}
+                            {copied ? "Copied!" : "Copy"}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

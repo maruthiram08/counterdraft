@@ -9,17 +9,21 @@ import { TensionCard } from "@/components/thinking/TensionCard";
 import { DirectionCard } from "@/components/thinking/DirectionCard";
 import { DraftModal } from "@/components/thinking/DraftModal";
 import { AddContentModal } from "@/components/thinking/AddContentModal";
-import { Layers, Zap, Compass, Plus, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import { DraftCard } from "@/components/thinking/DraftCard";
+import { Layers, Zap, Compass, Plus, CheckCircle, Sparkles, Loader2, FileText } from "lucide-react";
 import { useDirections } from "@/hooks/useDirections";
 import { useTensions } from "@/hooks/useTensions";
+import { useDrafts, Draft } from "@/hooks/useDrafts";
 
 export default function WorkspacePage() {
-    const [activeSection, setActiveSection] = useState<'beliefs' | 'tensions' | 'directions'>('beliefs');
+    const [activeSection, setActiveSection] = useState<'beliefs' | 'tensions' | 'directions' | 'drafts'>('beliefs');
     const { beliefs, loading, submitFeedback } = useBeliefs();
     const [reviewedBeliefIds, setReviewedBeliefIds] = useState<Set<string>>(new Set());
     const { directions, loading: directionsLoading, generateDirections, generated } = useDirections();
     const { tensions, loading: tensionsLoading, classifyTension } = useTensions();
     const [classifiedTensionIds, setClassifiedTensionIds] = useState<Set<string>>(new Set());
+    const { drafts, loading: draftsLoading, saveDraft, deleteDraft } = useDrafts();
+    const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
 
     // Modal state
     const [draftModalOpen, setDraftModalOpen] = useState(false);
@@ -112,6 +116,15 @@ export default function WorkspacePage() {
                             }`}
                     >
                         <Compass size={18} /> Directions
+                    </button>
+                    <button
+                        onClick={() => setActiveSection('drafts')}
+                        className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors ${activeSection === 'drafts'
+                            ? 'border-[var(--accent)] text-[var(--foreground)]'
+                            : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
+                            }`}
+                    >
+                        <FileText size={18} /> Drafts {drafts.length > 0 && <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">{drafts.length}</span>}
                     </button>
                 </div>
 
@@ -300,6 +313,51 @@ export default function WorkspacePage() {
                         </div>
                     )}
 
+                    {/* DRAFTS SECTION */}
+                    {activeSection === 'drafts' && (
+                        <div className="space-y-6">
+                            {/* Guidance Banner */}
+                            {!draftsLoading && drafts.length > 0 && (
+                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                    <p className="text-sm text-emerald-800">
+                                        <strong>Your saved drafts:</strong> Click on a draft to edit, copy to clipboard, or delete. These are your starting points for content.
+                                    </p>
+                                </div>
+                            )}
+
+                            {draftsLoading && (
+                                <div className="text-center py-16">
+                                    <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
+                                    <p className="text-[var(--text-muted)]">Loading your drafts...</p>
+                                </div>
+                            )}
+
+                            {!draftsLoading && drafts.length === 0 && (
+                                <div className="text-center py-16 border border-dashed border-[var(--border)] rounded-lg">
+                                    <FileText size={48} className="mx-auto text-[var(--text-muted)] mb-4" />
+                                    <h3 className="text-xl font-medium mb-2">No drafts yet</h3>
+                                    <p className="text-[var(--text-muted)] mb-6">Go to the Directions tab and click "Draft Post" to generate your first draft.</p>
+                                </div>
+                            )}
+
+                            {!draftsLoading && drafts.length > 0 && (
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {drafts.map((draft) => (
+                                        <DraftCard
+                                            key={draft.id}
+                                            draft={draft}
+                                            onDelete={deleteDraft}
+                                            onEdit={(d) => {
+                                                setSelectedBelief(d.belief_text);
+                                                setDraftModalOpen(true);
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                 </div>
             </main>
 
@@ -310,6 +368,7 @@ export default function WorkspacePage() {
                 belief={selectedBelief}
                 isOpen={draftModalOpen}
                 onClose={() => setDraftModalOpen(false)}
+                onSave={saveDraft}
             />
             <AddContentModal
                 isOpen={addContentModalOpen}
