@@ -46,9 +46,16 @@ export function DraftModal({ belief, isOpen, onClose }: DraftModalProps) {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    // Reset state when belief changes
+    useEffect(() => {
+        setDraft("");
+        setAngles([]);
+        setError(null);
+    }, [belief]);
+
     // Auto-generate on open
     useEffect(() => {
-        if (isOpen && !draft && !loading && belief) {
+        if (isOpen && belief && !loading) {
             generateDraft();
         }
     }, [isOpen, belief]);
