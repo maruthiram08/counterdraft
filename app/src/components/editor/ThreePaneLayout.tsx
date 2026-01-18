@@ -10,9 +10,9 @@ interface ThreePaneLayoutProps {
 
 export function ThreePaneLayout({ leftPane, middlePane, rightPane }: ThreePaneLayoutProps) {
     return (
-        <div className="flex bg-white h-[calc(100vh-64px)] overflow-hidden">
+        <div className="flex bg-white h-full overflow-hidden">
             {/* Left Pane: Sidebar List */}
-            <div className="w-[280px] border-r border-[var(--border)] bg-gray-50 flex flex-col shrink-0">
+            <div className="w-[240px] border-r border-gray-100 bg-gray-50/50 flex flex-col shrink-0">
                 {leftPane}
             </div>
 
@@ -22,7 +22,7 @@ export function ThreePaneLayout({ leftPane, middlePane, rightPane }: ThreePaneLa
             </div>
 
             {/* Right Pane: Agent Companion */}
-            <div className="w-[320px] border-l border-[var(--border)] bg-white flex flex-col shrink-0">
+            <div className="w-[280px] border-l border-gray-100 bg-white flex flex-col shrink-0">
                 {rightPane}
             </div>
         </div>

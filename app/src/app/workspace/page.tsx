@@ -86,28 +86,32 @@ export default function WorkspacePage() {
         </div>
     );
 
+    const isDraftsMode = activeSection === 'drafts';
+
     return (
-        <div className="min-h-screen flex flex-col bg-[var(--background)]">
-            <Header />
+        <div className="min-h-screen flex flex-col bg-[var(--background)] h-screen overflow-hidden">
+            <Header className={isDraftsMode ? "border-b" : ""} />
 
-            <main className="flex-1 container py-8">
+            <main className={isDraftsMode ? "flex-1 flex flex-col min-h-0 bg-white" : "flex-1 container py-8 overflow-y-auto"}>
 
-                {/* Workspace Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-serif font-medium">Your Thinking Workspace</h1>
-                        <p className="text-[var(--text-muted)]">{totalSources} documents analyzed</p>
+                {/* Workspace Header - Hidden in Drafts Mode */}
+                {!isDraftsMode && (
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h1 className="text-2xl font-serif font-medium">Your Thinking Workspace</h1>
+                            <p className="text-[var(--text-muted)]">{totalSources} documents analyzed</p>
+                        </div>
+                        <button
+                            onClick={() => setAddContentModalOpen(true)}
+                            className="btn btn-secondary text-sm"
+                        >
+                            <Plus size={16} /> Add Content
+                        </button>
                     </div>
-                    <button
-                        onClick={() => setAddContentModalOpen(true)}
-                        className="btn btn-secondary text-sm"
-                    >
-                        <Plus size={16} /> Add Content
-                    </button>
-                </div>
+                )}
 
-                {/* Navigation Tabs (Sections) */}
-                <div className="flex items-center gap-1 border-b border-[var(--border)] mb-8">
+                {/* Navigation Tabs */}
+                <div className={`flex items-center gap-1 border-b border-[var(--border)] ${isDraftsMode ? "px-4 pt-2 bg-gray-50/50" : "mb-8"}`}>
                     <button
                         onClick={() => setActiveSection('beliefs')}
                         className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition-colors ${activeSection === 'beliefs'
@@ -334,7 +338,7 @@ export default function WorkspacePage() {
                     {/* DRAFTS SECTION */}
                     {/* DRAFTS SECTION - 3-Pane Editor */}
                     {activeSection === 'drafts' && (
-                        <div className="h-[calc(100vh-140px)] -mx-8 -my-8 border-t border-[var(--border)] mt-4">
+                        <div className="flex-1 h-full min-h-0">
                             <ThreePaneLayout
                                 leftPane={
                                     <DraftsSidebar

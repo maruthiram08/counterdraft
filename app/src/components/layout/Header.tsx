@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
-export function Header() {
+interface HeaderProps {
+    className?: string;
+}
+
+export function Header({ className }: HeaderProps) {
     return (
-        <header className="border-b border-[var(--border)] bg-[var(--surface)] sticky top-0 z-50">
+        <header className={`border-b border-[var(--border)] bg-[var(--surface)] sticky top-0 z-50 ${className || ''}`}>
             <div className="container h-16 flex items-center justify-between">
                 <Link href="/" className="text-xl font-medium tracking-tight hover:opacity-80 transition-opacity">
                     counterdraft
