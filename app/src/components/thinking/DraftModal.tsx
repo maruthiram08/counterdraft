@@ -178,7 +178,7 @@ export function DraftModal({ belief, isOpen, onClose, onSave }: DraftModalProps)
                 {/* Footer */}
                 <div className="flex items-center justify-between p-4 border-t border-[var(--border)] bg-[var(--surface)]">
                     <button
-                        onClick={generateDraft}
+                        onClick={() => generateDraft()}
                         disabled={loading || saving}
                         className="btn btn-secondary flex items-center gap-2"
                     >
