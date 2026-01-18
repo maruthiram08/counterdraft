@@ -6,10 +6,11 @@ import { getOrCreateUser } from '@/lib/user-sync';
 // DELETE /api/drafts/[id] - Delete a draft
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId: clerkId } = await auth();
+        const { id } = await params;
 
         if (!clerkId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,7 +22,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
         }
 
-        const draftId = params.id;
+        const draftId = id;
 
         // Verify ownership before deleting
         const { data: existing } = await supabase
@@ -53,10 +54,11 @@ export async function DELETE(
 // PATCH /api/drafts/[id] - Update a draft
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId: clerkId } = await auth();
+        const { id } = await params;
 
         if (!clerkId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -68,7 +70,7 @@ export async function PATCH(
             return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
         }
 
-        const draftId = params.id;
+        const draftId = id;
         const { content, status } = await req.json();
 
         const updateData: Record<string, any> = { updated_at: new Date().toISOString() };

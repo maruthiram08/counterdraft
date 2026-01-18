@@ -82,7 +82,7 @@ export function DraftModal({ belief, isOpen, onClose, onSave }: DraftModalProps)
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
                     <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export function DraftModal({ belief, isOpen, onClose, onSave }: DraftModalProps)
                 </div>
 
                 {/* Content */}
-                <div className="p-4 overflow-y-auto max-h-[400px]">
+                <div className="p-4 overflow-y-auto flex-1 min-h-0">
                     {loading ? (
                         <div className="text-center py-12">
                             <RefreshCw size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
