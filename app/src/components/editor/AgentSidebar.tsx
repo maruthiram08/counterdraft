@@ -143,10 +143,38 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams }: A
 
                         <div className={`max-w-[85%] ${msg.role === 'user' ? 'text-right' : ''}`}>
                             <div className={`inline-block p-3 rounded-lg text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-gray-100 text-[var(--text-primary)] rounded-tr-none'
-                                    : 'bg-white border border-gray-100 text-[var(--text-primary)] rounded-tl-none shadow-sm'
+                                ? 'bg-gray-100 text-[var(--text-primary)] rounded-tr-none'
+                                : 'bg-white border border-gray-100 text-[var(--text-primary)] rounded-tl-none shadow-sm'
                                 }`}>
-                                {msg.content}
+                                {msg.role === 'user' ? (
+                                    msg.content
+                                ) : (
+                                    <div className="space-y-2">
+                                        {msg.content.split('\n').map((line, i) => {
+                                            // Simple list item detection
+                                            if (line.trim().startsWith('- ')) {
+                                                return (
+                                                    <div key={i} className="flex gap-2 ml-1">
+                                                        <span className="text-[var(--accent)]">•</span>
+                                                        <span>
+                                                            {line.replace('- ', '').split(/\*\*(.*?)\*\*/g).map((part, j) =>
+                                                                j % 2 === 1 ? <strong key={j} className="font-semibold text-gray-900">{part}</strong> : part
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+                                            // Normal line with bold detection
+                                            return (
+                                                <p key={i} className={line.trim() === '' ? 'h-2' : ''}>
+                                                    {line.split(/\*\*(.*?)\*\*/g).map((part, j) =>
+                                                        j % 2 === 1 ? <strong key={j} className="font-semibold text-gray-900">{part}</strong> : part
+                                                    )}
+                                                </p>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Refinement Card */}
