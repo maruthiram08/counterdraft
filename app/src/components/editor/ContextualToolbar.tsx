@@ -56,33 +56,30 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
                     <>
                         <button
                             onClick={() => onOptionSelect("Improve writing")}
-                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
                         >
-                            <Sparkles size={14} className="text-[var(--accent)]" />
                             Improve
                         </button>
                         <div className="w-px h-4 bg-gray-200 mx-1"></div>
                         <button
                             onClick={() => onOptionSelect("Make shorter")}
-                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-                            title="Make shorter"
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
                         >
-                            <Eraser size={14} />
+                            Shorten
                         </button>
+                        <div className="w-px h-4 bg-gray-200 mx-1"></div>
                         <button
                             onClick={() => onOptionSelect("Fix grammar")}
-                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-                            title="Fix grammar"
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
                         >
-                            <Type size={14} />
+                            Fix Grammar
                         </button>
                         <div className="w-px h-4 bg-gray-200 mx-1"></div>
                         <button
                             onClick={() => setMode('input')}
-                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 transition-colors"
                         >
-                            <Wand2 size={14} />
-                            Ask AI...
+                            <span className="text-[var(--accent)]">Ask AI...</span>
                         </button>
                     </>
                 ) : (

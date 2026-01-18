@@ -155,25 +155,23 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
             {/* Minimal Header / Status - Floating Pill */}
             <div className="absolute top-6 right-8 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm shadow-sm border border-gray-100 rounded-full px-2 py-1">
-                    <span className="text-xs text-[var(--text-muted)] px-2 font-medium">
-                        {saving ? "Saving..." : saved ? "Saved" : ""}
+                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm shadow-sm border border-gray-100 rounded-full px-4 py-1.5">
+                    <span className="text-xs text-[var(--text-muted)] font-medium mr-2">
+                        {saving ? "Saving..." : saved ? "Saved" : "Draft"}
                     </span>
-                    <div className="w-px h-4 bg-gray-200"></div>
+                    <div className="w-px h-4 bg-gray-200 mx-1"></div>
                     <button
                         onClick={handleCopy}
-                        className="p-1.5 text-gray-400 hover:text-[var(--foreground)] hover:bg-gray-50 rounded-full transition-all"
-                        title="Copy to clipboard"
+                        className="text-xs font-medium text-gray-500 hover:text-[var(--foreground)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
                     >
-                        {copied ? <Check size={16} /> : <Copy size={16} />}
+                        {copied ? "Copied" : "Copy"}
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="p-1.5 text-gray-400 hover:text-[var(--accent)] hover:bg-gray-50 rounded-full transition-all"
-                        title="Save changes"
+                        className="text-xs font-medium text-gray-500 hover:text-[var(--accent)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
                     >
-                        <Save size={16} />
+                        Save
                     </button>
                 </div>
             </div>
