@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 // Icons removed - using text labels instead
 import { Draft } from "@/hooks/useDrafts";
 import { ContextualToolbar } from "./ContextualToolbar";
+import { PublishModal } from "./PublishModal";
 import { getCaretCoordinates } from "@/lib/textarea-utils";
 
 interface MainEditorProps {
@@ -21,6 +22,7 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
     const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
     const [refining, setRefining] = useState(false);
+    const [showPublishModal, setShowPublishModal] = useState(false);
 
     // Refs
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -166,6 +168,13 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                     >
                         Save
                     </button>
+                    {/* Publish - Downstream placement, not prominent */}
+                    <button
+                        onClick={() => setShowPublishModal(true)}
+                        className="text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
+                    >
+                        Publish
+                    </button>
                 </div>
             </div>
 
@@ -218,6 +227,15 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                     />
                 </div>
             </div>
+
+            {/* Publish Modal */}
+            <PublishModal
+                isOpen={showPublishModal}
+                onClose={() => setShowPublishModal(false)}
+                draftId={draft.id}
+                content={content}
+                beliefText={draft.belief_text}
+            />
         </div>
     );
 }
