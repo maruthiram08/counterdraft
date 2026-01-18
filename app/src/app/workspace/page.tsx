@@ -121,6 +121,14 @@ export default function WorkspacePage() {
                     {/* BELIEFS SECTION */}
                     {activeSection === 'beliefs' && (
                         <div className="space-y-6">
+                            {/* Guidance Banner */}
+                            {!allBeliefsReviewed && (
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-sm text-blue-800">
+                                        <strong>Review your beliefs:</strong> Mark as <strong>Accurate</strong> if it reflects your thinking, <strong>Misses</strong> if it's wrong, or <strong>Clarify</strong> if it needs nuance.
+                                    </p>
+                                </div>
+                            )}
                             {/* Show completion if all reviewed */}
                             {allBeliefsReviewed && renderCompletionState()}
 
@@ -189,6 +197,14 @@ export default function WorkspacePage() {
                     {/* TENSIONS SECTION */}
                     {activeSection === 'tensions' && (
                         <div className="space-y-6">
+                            {/* Guidance Banner */}
+                            {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length > 0 && (
+                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-sm text-amber-800">
+                                        <strong>Classify your tensions:</strong> Is this a real <strong>Inconsistency</strong> to resolve, an <strong>Intentional Nuance</strong> you hold, or something to <strong>Explore</strong> further?
+                                    </p>
+                                </div>
+                            )}
                             {tensionsLoading && (
                                 <div className="text-center py-16">
                                     <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
@@ -228,6 +244,14 @@ export default function WorkspacePage() {
                     {/* DIRECTIONS SECTION */}
                     {activeSection === 'directions' && (
                         <div className="space-y-6">
+                            {/* Guidance Banner */}
+                            {generated && directions.length > 0 && (
+                                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-sm text-green-800">
+                                        <strong>Your writing directions:</strong> Based on your beliefs, here are ideas for what to write next. Click on a card to start drafting.
+                                    </p>
+                                </div>
+                            )}
                             {!generated && !directionsLoading && (
                                 <div className="text-center py-16 border border-dashed border-[var(--border)] rounded-lg">
                                     <Sparkles size={48} className="mx-auto text-[var(--accent)] mb-4" />
