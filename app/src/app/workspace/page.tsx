@@ -137,10 +137,6 @@ export default function WorkspacePage() {
                                                 belief={b.statement}
                                                 sourceCount={1}
                                                 onFeedback={handleBeliefReviewed}
-                                                onWrite={(belief) => {
-                                                    setSelectedBelief(belief);
-                                                    setDraftModalOpen(true);
-                                                }}
                                             />
                                         ))}
                                     </div>
@@ -160,10 +156,6 @@ export default function WorkspacePage() {
                                                 belief={b.statement}
                                                 sourceCount={1}
                                                 onFeedback={handleBeliefReviewed}
-                                                onWrite={(belief) => {
-                                                    setSelectedBelief(belief);
-                                                    setDraftModalOpen(true);
-                                                }}
                                             />
                                         ))}
                                     </div>
@@ -183,10 +175,6 @@ export default function WorkspacePage() {
                                                 belief={b.statement}
                                                 sourceCount={1}
                                                 onFeedback={handleBeliefReviewed}
-                                                onWrite={(belief) => {
-                                                    setSelectedBelief(belief);
-                                                    setDraftModalOpen(true);
-                                                }}
                                             />
                                         ))}
                                     </div>
