@@ -231,7 +231,8 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                                 // For now, rely on explicit close or re-selection.
                             }, 200);
                         }}
-                        className="w-full min-h-[60vh] resize-none border-none outline-none focus:outline-none focus:ring-0 ring-0 text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
+                        className="w-full min-h-[60vh] resize-none text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
+                        style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                         placeholder="Start writing..."
                         spellCheck={false}
                     />
