@@ -1,8 +1,9 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { Save, Check, Copy, Share } from "lucide-react";
+// Imports updated
+import { useState, useEffect, useRef } from "react";
+import { Save, Check, Copy, Sparkles } from "lucide-react";
 import { Draft } from "@/hooks/useDrafts";
+import { ContextualToolbar } from "./ContextualToolbar";
+import { getCaretCoordinates } from "@/lib/textarea-utils";
 
 interface MainEditorProps {
     draft: Draft | null;
@@ -14,6 +15,16 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    // Contextual selection state
+    const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
+    const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
+    const [refining, setRefining] = useState(false);
+
+    // Refs
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    // Timeout for delayed hiding
+    const blurTimeoutRef = useRef<NodeJS.Timeout>(null);
 
     // Sync content when draft selection changes
     useEffect(() => {
@@ -42,6 +53,83 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    // --- Contextual Editing Handlers ---
+
+    const handleSelect = () => {
+        if (!textareaRef.current) return;
+
+        const start = textareaRef.current.selectionStart;
+        const end = textareaRef.current.selectionEnd;
+
+        // Ensure real selection (at least 2 chars)
+        if (start === end || (end - start) < 2) {
+            setToolbarPosition(null);
+            setSelectionRange(null);
+            return;
+        }
+
+        // Calculate Pixel Coordinates
+        const { top, left, height } = getCaretCoordinates(textareaRef.current, start);
+
+        // Offset logic:
+        // We want the toolbar slightly above the start of the selection
+        // The getCaretCoordinates returns "top" relative to the textarea's top-left
+        // We need to account for textarea's position in the viewport if we used fixed positioning,
+        // but here we render ContextualToolbar absolute relative to the container.
+        // We just need to ensure the container has relative positioning.
+
+        setSelectionRange({ start, end });
+        setToolbarPosition({ top: top, left: left });
+    };
+
+    const handleExecuteRefinement = async (instruction: string) => {
+        if (!draft || !selectionRange) return;
+
+        setRefining(true);
+        try {
+            const selectedText = content.substring(selectionRange.start, selectionRange.end);
+
+            // Get context (approx 100 chars before/after)
+            const contextBefore = content.substring(Math.max(0, selectionRange.start - 100), selectionRange.start);
+            const contextAfter = content.substring(selectionRange.end, Math.min(content.length, selectionRange.end + 100));
+
+            const response = await fetch('/api/refine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentContent: content, // passed for fallback
+                    selection: selectedText,
+                    instruction,
+                    context: { before: contextBefore, after: contextAfter },
+                    beliefContext: draft.belief_text
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.refinedContent) {
+                // Replace only the selected part
+                const newContent = content.substring(0, selectionRange.start)
+                    + data.refinedContent
+                    + content.substring(selectionRange.end);
+
+                setContent(newContent);
+
+                // Update draft on server too? (User likely wants explicit save, but sync is good)
+                // Let's just update local first, user can save.
+                // Actually, MainEditor auto-saves or manual saves? Manual.
+
+                // Hide toolbar
+                setToolbarPosition(null);
+                setSelectionRange(null);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setRefining(false);
+        }
+    };
+
     if (!draft) {
         return (
             <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] p-8 bg-white">
@@ -52,6 +140,19 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
     return (
         <div className="flex flex-col h-full relative group bg-white">
+
+            {/* Contextual Toolbar */}
+            {toolbarPosition && (
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                    {/* 
+                        We wrap in a relative container that matches textarea flow if possible, 
+                        but since textarea is in specific div, we need to map coordinates correctly.
+                        Actually, 'getCaretCoordinates' gives coordinates relative to the Textarea element.
+                        So we should place the toolbar inside the same container as the textarea or adjust offsets.
+                        Best approach: Render it inside the .relative container wrapping textarea.
+                     */}
+                </div>
+            )}
 
             {/* Minimal Header / Status - Floats on top */}
             <div className="absolute top-6 right-8 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -76,8 +177,24 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
             </div>
 
             {/* Document Surface */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="max-w-4xl mx-auto py-20 px-16 min-h-full">
+            <div className="flex-1 overflow-y-auto relative">
+                {/* Note: Added relative here to anchor toolbar */}
+                <div className="max-w-4xl mx-auto py-20 px-16 min-h-full relative">
+
+                    {/* Toolbar anchored relative to this container */}
+                    {/* adjusting left/top by adding padding offsets? 
+                        getCaretCoordinates includes padding/border in its calculation relative to the element (textarea).
+                        So if textarea is here, we can place toolbar here. 
+                    */}
+                    {toolbarPosition && (
+                        <ContextualToolbar
+                            position={toolbarPosition}
+                            onOptionSelect={handleExecuteRefinement}
+                            onCustomInput={handleExecuteRefinement}
+                            onClose={() => setToolbarPosition(null)}
+                            loading={refining}
+                        />
+                    )}
 
                     {/* Title / Context - Refined Typography */}
                     <div className="mb-12 select-none">
@@ -92,19 +209,27 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
                     {/* Editor */}
                     <textarea
-                        ref={(el) => {
-                            if (el) {
-                                // Auto-resize on mount/render
-                                el.style.height = 'auto';
-                                el.style.height = el.scrollHeight + 'px';
-                            }
-                        }}
+                        ref={textareaRef}
                         value={content}
                         onChange={(e) => {
                             setContent(e.target.value);
                             // Auto-resize on input
                             e.target.style.height = 'auto';
                             e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onSelect={handleSelect}
+                        onClick={() => {
+                            // Clicking might clear selection or start new one
+                            // handleSelect fires on click too if care position changes
+                        }}
+                        onBlur={() => {
+                            // Small delay to allow clicking toolbar buttons
+                            blurTimeoutRef.current = setTimeout(() => {
+                                // Careful! Don't clear if we clicked the toolbar
+                                // This is tricky. Better to let clicking outside clear it via onOptionSelect or similar
+                                // or use a click-away listener on the container.
+                                // For now, rely on explicit close or re-selection.
+                            }, 200);
                         }}
                         className="w-full min-h-[60vh] resize-none focus:outline-none text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
                         placeholder="Start writing..."
