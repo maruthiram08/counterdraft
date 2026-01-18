@@ -92,9 +92,21 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
                     {/* Editor */}
                     <textarea
+                        ref={(el) => {
+                            if (el) {
+                                // Auto-resize on mount/render
+                                el.style.height = 'auto';
+                                el.style.height = el.scrollHeight + 'px';
+                            }
+                        }}
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        className="w-full min-h-[60vh] resize-none focus:outline-none text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10"
+                        onChange={(e) => {
+                            setContent(e.target.value);
+                            // Auto-resize on input
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        className="w-full min-h-[60vh] resize-none focus:outline-none text-lg leading-loose text-gray-700 font-serif placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
                         placeholder="Start writing..."
                         spellCheck={false}
                     />
