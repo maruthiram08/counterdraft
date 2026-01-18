@@ -1,0 +1,374 @@
+Below is a **clean, copy-paste ready PRD + TRD** written the way a **senior PM / founding team** would actually use it.
+No fluff. No aspirational garbage. Built for execution.
+
+
+---
+
+# 📄 Product Requirements Document (PRD)
+
+## Product Name (Working)
+
+> **Foreword**
+> *(Replace later if needed — structure remains valid)*
+
+---
+
+## 1. Product Overview
+
+### 1.1 One-Line Definition
+
+**Foreword is a thinking partner that helps creators clarify, sharpen, and evolve their beliefs before those beliefs turn into content.**
+
+---
+
+### 1.2 Problem Statement
+
+Knowledge creators do **not** suffer from a lack of ideas.
+They suffer from:
+
+* Repetition of the same ideas
+* Dilution of beliefs over time
+* Shallow or derivative thinking
+* Inability to articulate tensions in their own POV
+
+Existing tools optimize for **content output**, not **thinking quality**.
+
+---
+
+### 1.3 Target Users (MVP)
+
+**Primary ICP**
+
+* Founders, operators, consultants, PMs
+* Post consistently on LinkedIn
+* Care about authority, not virality
+* Have opinions (not news curators)
+
+**Explicitly Out of Scope**
+
+* Meme creators
+* Growth hackers
+* Social media managers
+* “Post daily” content farms
+
+---
+
+### 1.4 Core User Job (JTBD)
+
+> *“Help me understand what I actually believe, where my thinking is repetitive or shallow, and what idea is worth expressing next.”*
+
+---
+
+## 2. Product Principles (Non-Negotiable)
+
+1. **Beliefs > Posts**
+2. **Judgment > Generation**
+3. **Restraint > Volume**
+4. **Longitudinal thinking > Session-based AI**
+5. **Trust > Virality**
+
+If a feature violates any of the above, it is rejected.
+
+---
+
+## 3. Canonical Object
+
+### 3.1 Creator Belief Graph
+
+The belief graph is the **single source of truth**.
+
+It consists of:
+
+* Core beliefs
+* Rejected beliefs
+* Overused beliefs
+* Emerging beliefs
+* Unresolved tensions
+
+All outputs are projections of this object.
+
+---
+
+## 4. MVP Scope (V1)
+
+### 4.1 Input: Creator Memory Ingestion
+
+**User Inputs**
+
+* LinkedIn profile URL OR manual paste
+* Last 50–100 posts
+* Optional:
+
+  * Notes
+  * Drafts
+  * Saved inspirations
+
+**Out of Scope (V1)**
+
+* Auto multi-platform ingestion
+* Real-time syncing
+
+---
+
+### 4.2 Core Engine: Belief Extraction
+
+System extracts:
+
+* **5–7 Core Beliefs**
+
+  * Plain language
+  * Opinionated
+* **3 Overused Angles**
+
+  * Signals repetition risk
+* **2–3 Tensions**
+
+  * Conflicting beliefs
+  * Unresolved tradeoffs
+* **1 Emerging Thesis**
+
+  * Directional belief evolution
+
+---
+
+### 4.3 Output: Idea Direction (NOT Content)
+
+System provides:
+
+* Top 3 ideas worth expressing next
+* Explanation of:
+
+  * Which belief it strengthens
+  * What tension it explores
+  * What belief it risks weakening
+* Optional:
+
+  * One suggested opening line
+
+**Explicitly Not Provided**
+
+* Full post drafts
+* Formatting
+* Emojis
+* Hooks library
+
+---
+
+### 4.4 UX & Tone
+
+* Editorial, calm, private
+* Feels like a thinking notebook
+* Avoid dashboards, feeds, gamification
+
+---
+
+## 5. MVP Non-Goals (Won’t Build List)
+
+* ❌ Scheduling
+* ❌ Analytics
+* ❌ Multi-platform publishing
+* ❌ Virality scoring
+* ❌ Engagement hacks
+* ❌ Daily prompts
+
+---
+
+## 6. Success Metrics (Qualitative First)
+
+**Primary**
+
+* Users describe product as:
+
+  > “An editor for my thinking”
+
+**Secondary**
+
+* Repeat usage after week 2
+* Users manually referencing belief insights in their writing
+
+---
+
+## 7. Risks & Mitigations
+
+| Risk                 | Mitigation                      |
+| -------------------- | ------------------------------- |
+| Output feels generic | Aggressive belief deduplication |
+| User distrust        | Editorial tone + restraint      |
+| Over-automation      | Human-in-loop early             |
+| Feature creep        | Hard MVP scope lock             |
+
+---
+
+## 8. Future Scope (Explicitly Deferred)
+
+* Belief-anchored drafting
+* Multi-platform derivatives
+* Longitudinal belief evolution
+* Analytics & attribution
+
+---
+
+# 📄 Technical Requirements Document (TRD)
+
+---
+
+## 1. System Architecture (High Level)
+
+```
+User Input
+→ Ingestion Layer
+→ Belief Extraction Engine
+→ Belief Graph Store
+→ Insight Generator
+→ UI Layer
+```
+
+---
+
+## 2. Data Ingestion Layer
+
+### 2.1 Inputs
+
+* Text posts (LinkedIn)
+* Optional long-form notes
+
+### 2.2 Processing
+
+* Cleaning (remove emojis, links)
+* Sentence segmentation
+* Time-ordering
+
+---
+
+## 3. Belief Extraction Engine
+
+### 3.1 Core Tasks
+
+* Topic clustering
+* Opinion polarity detection
+* Repetition detection
+* Contradiction detection
+* Belief summarization
+
+### 3.2 Output Schema (Belief Object)
+
+```json
+{
+  "belief_id": "string",
+  "statement": "string",
+  "confidence": 0.0,
+  "first_seen": "date",
+  "last_seen": "date",
+  "supporting_posts": []
+}
+```
+
+---
+
+## 4. Tension Detection Module
+
+Detect:
+
+* Contradictory beliefs
+* Tradeoffs not explicitly addressed
+
+Output:
+
+```json
+{
+  "belief_a": "id",
+  "belief_b": "id",
+  "tension_summary": "string"
+}
+```
+
+---
+
+## 5. Overuse Detection
+
+Logic:
+
+* Frequency decay over time
+* Semantic similarity threshold
+* Topic saturation scoring
+
+Output:
+
+* Flag beliefs with diminishing marginal insight
+
+---
+
+## 6. Insight Generator
+
+Generates:
+
+* Emerging belief hypothesis
+* Idea directions (belief-anchored)
+* Suppression suggestions (“don’t write this”)
+
+---
+
+## 7. Storage
+
+* User profile store
+* Belief graph store
+* Temporal belief history
+
+No need for real-time sync in MVP.
+
+---
+
+## 8. UI Layer
+
+### 8.1 Core Screens
+
+1. Belief Overview
+2. Tensions & Contradictions
+3. Idea Directions
+4. Belief History (read-only)
+
+### 8.2 UX Constraints
+
+* Minimal controls
+* No infinite feeds
+* No social signals
+
+---
+
+## 9. Security & Privacy
+
+* Private by default
+* No public profiles
+* No cross-user belief learning in MVP
+
+---
+
+## 10. Tech Stack (Suggested, Not Prescriptive)
+
+* Frontend: React / Next.js
+* Backend: Node / Python/ Bun
+* Storage: Postgres/Supabase
+* AI: LLM + embeddings
+* Hosting: Vercel 
+
+---
+
+## 11. Out of Scope (TRD)
+
+* Mobile app
+* Browser extension
+* Public sharing
+* Team collaboration
+
+---
+
+# ✅ Final Sanity Check
+
+If this product works:
+
+* Creators post **less**
+* Their ideas feel **sharper**
+* Their thinking **evolves**
+* Output compounds across platforms later
+
+---

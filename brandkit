@@ -1,0 +1,61 @@
+{
+    "colorScheme": "light",
+    "fonts": [
+        {
+            "family": "Inter",
+            "count": 7
+        },
+        {
+            "family": "sans-serif",
+            "count": 7
+        }
+    ],
+    "colors": {
+        "primary": "#D8E6FD",
+        "accent": "#C4DAFC",
+        "background": "#FFFFFF",
+        "textPrimary": "#171717",
+        "link": "#C4DAFC"
+    },
+    "typography": {
+        "fontFamilies": {
+            "primary": "Inter",
+            "heading": "Inter"
+        },
+        "fontStacks": {
+            "body": [
+                "Inter",
+                "sans-serif"
+            ],
+            "heading": [
+                "Inter",
+                "sans-serif"
+            ],
+            "paragraph": [
+                "Inter",
+                "sans-serif"
+            ]
+        },
+        "fontSizes": {
+            "h1": "16px",
+            "h2": "16px",
+            "body": "16px"
+        }
+    },
+    "spacing": {
+        "baseUnit": 4,
+        "borderRadius": "10px"
+    },
+    "components": {},
+    "images": {
+        "logo": null,
+        "favicon": "https://flowai.aura.build/favicon.ico",
+        "ogImage": "https://aura.build/share-preview.jpg"
+    },
+    "__framework_hints": [],
+    "confidence": {
+        "buttons": 0,
+        "colors": 0,
+        "overall": 0
+    }
+}
