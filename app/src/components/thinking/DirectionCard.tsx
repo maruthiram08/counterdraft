@@ -28,9 +28,15 @@ export function DirectionCard({ title, reason, relatedBelief, onDraft }: Directi
 
             <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
                 {relatedBelief && (
-                    <span className="text-xs text-[var(--text-subtle)] font-medium truncate max-w-[200px]">
-                        Strengthens: "{relatedBelief}"
-                    </span>
+                    <div
+                        className="flex flex-col max-w-[60%]"
+                        title={relatedBelief}
+                    >
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">Based on belief</span>
+                        <span className="text-xs text-[var(--text-subtle)] font-medium truncate">
+                            "{relatedBelief}"
+                        </span>
+                    </div>
                 )}
 
                 {onDraft && (

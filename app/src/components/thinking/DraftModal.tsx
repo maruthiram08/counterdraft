@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, RefreshCw, Copy, Check, Sparkles } from "lucide-react";
 
 interface DraftModalProps {
@@ -47,11 +47,11 @@ export function DraftModal({ belief, isOpen, onClose }: DraftModalProps) {
     };
 
     // Auto-generate on open
-    useState(() => {
-        if (isOpen && !draft && !loading) {
+    useEffect(() => {
+        if (isOpen && !draft && !loading && belief) {
             generateDraft();
         }
-    });
+    }, [isOpen, belief]);
 
     if (!isOpen) return null;
 
