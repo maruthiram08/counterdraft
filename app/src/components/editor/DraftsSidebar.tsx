@@ -61,20 +61,20 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
                             key={draft.id}
                             onClick={() => onSelect(draft)}
                             className={`w-full text-left py-3 px-3 rounded-lg transition-all group ${selectedDraftId === draft.id
-                                    ? "bg-gray-50"
-                                    : "hover:bg-gray-50/50"
+                                ? "bg-gray-50"
+                                : "hover:bg-gray-50/50"
                                 }`}
                         >
                             <div className="mb-1">
-                                <span className={`text-[11px] font-medium block truncate mb-1 transition-colors ${selectedDraftId === draft.id
-                                        ? "text-[var(--foreground)]"
-                                        : "text-gray-500 group-hover:text-gray-700"
+                                <span className={`text-sm font-medium block truncate mb-0.5 transition-colors ${selectedDraftId === draft.id
+                                    ? "text-[var(--foreground)]"
+                                    : "text-gray-700 group-hover:text-gray-900"
                                     }`}>
                                     {draft.belief_text}
                                 </span>
-                                <p className={`text-xs line-clamp-2 leading-relaxed font-serif ${selectedDraftId === draft.id
-                                        ? "text-gray-600"
-                                        : "text-gray-400"
+                                <p className={`text-xs line-clamp-2 leading-relaxed font-sans ${selectedDraftId === draft.id
+                                    ? "text-gray-500"
+                                    : "text-gray-400"
                                     }`}>
                                     {draft.content}
                                 </p>
