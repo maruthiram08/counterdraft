@@ -7,7 +7,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         USER INTERFACE                          │
-│  (Next.js — Belief Overview, Tensions, Idea Directions, History)│
+│  (Next.js — Responsive: Mobile Bottom Sheet + Desktop Sidebar)  │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -253,7 +253,13 @@ users
 - Minimal controls
 - No infinite feeds or social signals
 - Editorial, calm, private aesthetic
-- Mobile-responsive but desktop-first
+- **Mobile Support**: Full responsiveness via Bottom Sheet + swipe tabs
+
+### Mobile Strategy
+- **Navigation**: `MobileBottomNav` (4 tabs) replaces Sidebar on <768px.
+- **AI Interaction**: "Bottom Sheet" pattern (`MobileAgentSheet`) for non-blocking assistance.
+- **Command Center**: Stacks vertically with horizontal scroll tabs for stages.
+
 
 ---
 
@@ -297,7 +303,24 @@ users
 
 ---
 
-## 7. Security & Privacy
+## 7. The Brain (Decision Engine) [NEW]
+
+**Role**: Deterministic decision system. Runs *before* AI generation.
+
+**Core Logic**:
+1. **Outcome Spine**: Every post optimizes for one of: Authority, Engagement, Conversion, Connection.
+2. **Deferred Input**: Detect missing context first, ask later. Never block user.
+3. **Confidence Model**: Scores readiness based on known inputs (Audience, Outcome, Stance).
+
+**UI Components**:
+- Outcome Picker (Inline)
+- Audience Mini-Card
+- Stance Toggle
+- Confidence Indicator (Visual ring)
+
+---
+
+## 8. Security & Privacy
 
 - **Auth**: Clerk or Supabase Auth
 - **Data**: Per-user isolated, no cross-user access
@@ -340,7 +363,7 @@ users
 
 ## 10. Out of Scope (V1)
 
-- Mobile app
+- Native iOS/Android app (PWA for now)
 - Browser extension
 - Public sharing
 - Team collaboration
