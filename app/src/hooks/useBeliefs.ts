@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Belief, ConfidenceLevel } from '@/types';
@@ -11,11 +10,13 @@ export function useBeliefs() {
         overused: Belief[];
         emerging: Belief[];
         tensions: any[];
+        confirmed: Belief[];
     }>({
         core: [],
         overused: [],
         emerging: [],
-        tensions: []
+        tensions: [],
+        confirmed: []
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -38,18 +39,17 @@ export function useBeliefs() {
 
                 setUserId(userData.userId);
 
-                // 2. Fetch Beliefs (excluding already confirmed ones)
+                // 2. Fetch ALL Beliefs (confirmed and unconfirmed)
                 const { data, error: beliefsError } = await supabase
                     .from('beliefs')
                     .select('*')
                     .eq('user_id', userData.userId)
-                    .eq('user_confirmed', false)
                     .order('created_at', { ascending: false });
 
                 if (beliefsError) throw beliefsError;
 
                 // 3. Categorize & Map
-                const mapBelief = (b: any): Belief & { confidenceLevel: ConfidenceLevel; recencyWeight: number; isStable: boolean; evidenceCount: number } => ({
+                const mapBelief = (b: any): Belief & { confidenceLevel: ConfidenceLevel; recencyWeight: number; isStable: boolean; evidenceCount: number; context?: string | null } => ({
                     id: b.id,
                     userId: b.user_id,
                     statement: b.statement,
@@ -66,22 +66,36 @@ export function useBeliefs() {
                     recencyWeight: b.recency_weight ?? 1.0,
                     isStable: b.is_stable ?? false,
                     evidenceCount: b.evidence_count ?? 1,
+                    context: b.original_statement, // Mapped from DB
                 });
 
-                const core = data?.filter((b: any) => b.belief_type === 'core').map(mapBelief) || [];
-                const overused = data?.filter((b: any) => b.belief_type === 'overused').map(mapBelief) || [];
-                const emerging = data?.filter((b: any) => b.belief_type === 'emerging').map(mapBelief) || [];
+                // Separate confirmed (accepted) from unreviewed
+                const unconfirmed = data?.filter((b: any) => !b.user_confirmed) || [];
+                const confirmedData = data?.filter((b: any) => b.user_confirmed) || [];
+
+                const core = unconfirmed.filter((b: any) => b.belief_type === 'core').map(mapBelief) || [];
+                const overused = unconfirmed.filter((b: any) => b.belief_type === 'overused').map(mapBelief) || [];
+                const emerging = unconfirmed.filter((b: any) => b.belief_type === 'emerging').map(mapBelief) || [];
+
+                const confirmed = confirmedData.map(mapBelief) || [];
 
                 setBeliefs({
                     core: core as Belief[],
                     overused: overused as Belief[],
                     emerging: emerging as Belief[],
-                    tensions: []
+                    tensions: [],
+                    confirmed: confirmed as Belief[]
                 });
 
             } catch (err: any) {
                 console.error("Error fetching beliefs:", err);
-                setError(err.message);
+                if (err && typeof err === 'object') {
+                    console.error("Error details:", JSON.stringify(err, null, 2));
+                    // Check for common issues
+                    if (err.message) console.error("Error message:", err.message);
+                    if (err.hint) console.error("Error hint:", err.hint);
+                }
+                setError(err.message || "Unknown error");
             } finally {
                 setLoading(false);
             }
@@ -111,13 +125,27 @@ export function useBeliefs() {
                 });
             }
 
-            // Remove from local state immediately
-            setBeliefs(prev => ({
-                ...prev,
-                core: prev.core.filter(b => b.id !== beliefId),
-                overused: prev.overused.filter(b => b.id !== beliefId),
-                emerging: prev.emerging.filter(b => b.id !== beliefId)
-            }));
+            // Remove from local unreviewed lists immediately AND add to confirmed
+            setBeliefs(prev => {
+                let confirmedBelief: Belief | undefined;
+                // Find it in unconfirmed lists to move it
+                for (const list of [prev.core, prev.overused, prev.emerging]) {
+                    const found = list.find(b => b.id === beliefId);
+                    if (found) { confirmedBelief = found; break; }
+                }
+
+                if (confirmedBelief) {
+                    confirmedBelief = { ...confirmedBelief, userConfirmed: true };
+                }
+
+                return {
+                    ...prev,
+                    core: prev.core.filter(b => b.id !== beliefId),
+                    overused: prev.overused.filter(b => b.id !== beliefId),
+                    emerging: prev.emerging.filter(b => b.id !== beliefId),
+                    confirmed: confirmedBelief ? [confirmedBelief, ...prev.confirmed] : (prev.confirmed || [])
+                };
+            });
 
             console.log(`[Feedback] Persisted: ${beliefId} → ${feedback}`);
             return true;
@@ -130,5 +158,3 @@ export function useBeliefs() {
 
     return { beliefs, loading, error, submitFeedback };
 }
-
-

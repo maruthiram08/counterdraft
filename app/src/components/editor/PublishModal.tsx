@@ -32,16 +32,9 @@ export function PublishModal({
     const [error, setError] = useState<string | null>(null);
     const [postUrl, setPostUrl] = useState<string | null>(null);
 
-    // Format content for preview (strip markdown)
-    const previewContent = content
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/\*(.*?)\*/g, '$1')
-        .replace(/#{1,6}\s/g, '')
-        .trim();
+    const characterCount = content.length;
 
-    const characterCount = previewContent.length;
-    const isOverLimit = characterCount > 3000;
-
+    const isOverLimit = characterCount > 5000;
     const handlePublish = async () => {
         try {
             setPublishing(true);
@@ -72,15 +65,15 @@ export function PublishModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50"
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col border border-gray-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
                     <h2 className="text-lg font-medium">
@@ -127,25 +120,23 @@ export function PublishModal({
                                 <div className="text-sm font-medium">{beliefText}</div>
                             </div>
 
-                            {/* Preview */}
-                            <div className="mb-4">
-                                <div className="text-sm text-[var(--text-muted)] mb-2">Preview:</div>
-                                <div className="p-4 border border-[var(--border)] rounded-lg bg-white">
-                                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                                        {previewContent}
-                                    </p>
+                            {/* Preview (Read-Only) */}
+                            <div className="mb-4 flex-1 flex flex-col min-h-0">
+                                <div className="flex justify-between items-center mb-2">
+                                    <div className="text-sm text-[var(--text-muted)]">Post Preview:</div>
+                                    <div className={`text-xs ${content.length > 5000 ? 'text-red-600 font-bold' : 'text-[var(--text-muted)]'}`}>
+                                        {content.length.toLocaleString()} / 5,000
+                                    </div>
                                 </div>
+                                <textarea
+                                    className="w-full p-4 border border-[var(--border)] rounded-lg bg-gray-50 text-gray-900 font-sans text-sm leading-relaxed resize-none focus:outline-none cursor-default"
+                                    value={content}
+                                    readOnly
+                                    rows={12}
+                                />
                             </div>
 
-                            {/* Character Count */}
-                            <div className={`text-sm ${isOverLimit ? 'text-red-600' : 'text-[var(--text-muted)]'}`}>
-                                {characterCount.toLocaleString()} / 3,000 characters
-                                {isOverLimit && (
-                                    <span className="ml-2 font-medium">
-                                        (exceeds limit)
-                                    </span>
-                                )}
-                            </div>
+
 
                             {/* Error */}
                             {error && (
@@ -174,6 +165,12 @@ export function PublishModal({
                                 className="px-4 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]"
                             >
                                 Cancel
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-md transition-colors"
+                            >
+                                Edit Draft
                             </button>
                             <button
                                 onClick={handlePublish}

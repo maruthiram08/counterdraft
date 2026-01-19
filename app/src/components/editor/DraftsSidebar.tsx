@@ -27,7 +27,7 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
     };
 
     return (
-        <div className="flex flex-col h-full bg-white border-r border-gray-100">
+        <div className="flex flex-col h-full bg-paper border-r border-gray-100">
             {/* Header + Search Combined */}
             <div className="p-4 shrink-0 flex items-center gap-2">
                 <div className="relative flex-1 group">
@@ -50,7 +50,7 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
             </div>
 
             {/* List - Clean, no borders */}
-            <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">
+            <div className="flex-1 overflow-y-auto px-3 md:px-2 pb-4 space-y-1">
                 {filteredDrafts.length === 0 ? (
                     <div className="p-8 text-center text-[var(--text-muted)] text-xs">
                         {search ? "No matches" : "No drafts"}
@@ -60,19 +60,19 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
                         <button
                             key={draft.id}
                             onClick={() => onSelect(draft)}
-                            className={`w-full text-left py-3 px-3 rounded-lg transition-all group ${selectedDraftId === draft.id
+                            className={`w-full text-left py-3 px-3 rounded-lg transition-all group overflow-hidden ${selectedDraftId === draft.id
                                 ? "bg-gray-50"
                                 : "hover:bg-gray-50/50"
                                 }`}
                         >
-                            <div className="mb-1">
+                            <div className="mb-1 overflow-hidden">
                                 <span className={`text-sm font-medium block truncate mb-0.5 transition-colors ${selectedDraftId === draft.id
                                     ? "text-[var(--foreground)]"
                                     : "text-gray-700 group-hover:text-gray-900"
                                     }`}>
                                     {draft.belief_text}
                                 </span>
-                                <p className={`text-xs line-clamp-2 leading-relaxed font-sans ${selectedDraftId === draft.id
+                                <p className={`text-xs line-clamp-2 leading-relaxed font-sans break-words ${selectedDraftId === draft.id
                                     ? "text-gray-500"
                                     : "text-gray-400"
                                     }`}>

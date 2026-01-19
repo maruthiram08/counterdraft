@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { linkedinFetch } from '@/lib/linkedin-network';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +26,6 @@ interface LinkedInUserInfo {
 /**
  * GET /api/linkedin/callback
  * Handles LinkedIn OAuth callback
- * Exchanges code for tokens and stores in database
  */
 export async function GET(request: NextRequest) {
     try {
@@ -39,78 +39,97 @@ export async function GET(request: NextRequest) {
         if (error) {
             console.error('LinkedIn OAuth error:', error, errorDescription);
             return NextResponse.redirect(
-                new URL(`/settings?error=${error}`, process.env.NEXT_PUBLIC_APP_URL)
+                new URL(`/settings?error=${error}`, process.env.NEXT_PUBLIC_APP_URL!)
             );
         }
 
+        const storedState = request.cookies.get('linkedin_oauth_state')?.value;
+
         if (!code || !state) {
-            return NextResponse.redirect(
-                new URL('/settings?error=missing_params', process.env.NEXT_PUBLIC_APP_URL)
-            );
+            console.error('[LinkedIn Callback] Missing parameters:', { code: !!code, state: !!state });
+            return NextResponse.redirect(new URL('/settings?error=invalid_state', process.env.NEXT_PUBLIC_APP_URL!));
         }
+
+        console.log('[LinkedIn Callback] Processing callback for code:', code.substring(0, 10) + '...');
 
         // Decode and validate state
         let stateData: { clerkUserId: string; timestamp: number };
         try {
             stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-        } catch {
-            return NextResponse.redirect(
-                new URL('/settings?error=invalid_state', process.env.NEXT_PUBLIC_APP_URL)
-            );
-        }
 
-        // Check state freshness (10 minute window)
-        if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
-            return NextResponse.redirect(
-                new URL('/settings?error=state_expired', process.env.NEXT_PUBLIC_APP_URL)
-            );
+            // Check state freshness (10 minute window)
+            if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
+                console.error('[LinkedIn Callback] State expired');
+                return NextResponse.redirect(new URL('/settings?error=state_expired', process.env.NEXT_PUBLIC_APP_URL!));
+            }
+        } catch (e) {
+            console.error('[LinkedIn Callback] Invalid state format or parsing error:', e);
+            return NextResponse.redirect(new URL('/settings?error=invalid_state_format', process.env.NEXT_PUBLIC_APP_URL!));
         }
-
-        const clientId = process.env.LINKEDIN_CLIENT_ID!;
-        const clientSecret = process.env.LINKEDIN_CLIENT_SECRET!;
-        const redirectUri = process.env.LINKEDIN_REDIRECT_URI ||
-            `${process.env.NEXT_PUBLIC_APP_URL}/api/linkedin/callback`;
 
         // Exchange code for access token
-        const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+        const tokenUrl = 'https://www.linkedin.com/oauth/v2/accessToken';
+        const params = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: process.env.LINKEDIN_REDIRECT_URI!,
+            client_id: process.env.LINKEDIN_CLIENT_ID!,
+            client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
+        });
+
+        console.log('[LinkedIn Callback] Exchanging token...');
+        // Use shared linkedinFetch (robust)
+        const tokenResponse = await linkedinFetch(tokenUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: new URLSearchParams({
-                grant_type: 'authorization_code',
-                code,
-                redirect_uri: redirectUri,
-                client_id: clientId,
-                client_secret: clientSecret,
-            }),
-        });
+            body: params.toString(),
+        }, 5, 60000);
 
         if (!tokenResponse.ok) {
-            const errorData = await tokenResponse.text();
-            console.error('Token exchange failed:', errorData);
-            return NextResponse.redirect(
-                new URL('/settings?error=token_exchange_failed', process.env.NEXT_PUBLIC_APP_URL)
-            );
+            const errorText = await tokenResponse.text();
+            console.error('[LinkedIn Callback] Token exchange failed:', tokenResponse.status, errorText);
+
+            if (errorText.includes('timeout')) {
+                return NextResponse.redirect(new URL('/settings?error=timeout', process.env.NEXT_PUBLIC_APP_URL!));
+            }
+            return NextResponse.redirect(new URL('/settings?error=token_exchange_failed', process.env.NEXT_PUBLIC_APP_URL!));
         }
 
-        const tokenData: LinkedInTokenResponse = await tokenResponse.json();
+        const tokenData = await tokenResponse.json() as LinkedInTokenResponse;
+        console.log('[LinkedIn Callback] Token exchanged successfully. Access Token length:', tokenData.access_token.length);
 
-        // Fetch user profile using OpenID Connect userinfo endpoint
-        const userInfoResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
-            headers: {
-                'Authorization': `Bearer ${tokenData.access_token}`,
-            },
-        });
+        // Fetch user profile
+        console.log('[LinkedIn Callback] Fetching user info...');
+        let userInfo: LinkedInUserInfo = {
+            sub: 'unknown',
+            name: 'LinkedIn User',
+            given_name: '',
+            family_name: '',
+            picture: undefined,
+            email: undefined
+        };
 
-        if (!userInfoResponse.ok) {
-            console.error('Failed to fetch user info');
-            return NextResponse.redirect(
-                new URL('/settings?error=profile_fetch_failed', process.env.NEXT_PUBLIC_APP_URL)
-            );
+        try {
+            // AGGRESSIVE SOFT FAIL: Only 2 retries, 10s timeout using shared fetch
+            const userInfoResponse = await linkedinFetch('https://api.linkedin.com/v2/userinfo', {
+                headers: {
+                    'Authorization': `Bearer ${tokenData.access_token}`,
+                },
+            }, 2, 120000);
+
+            if (userInfoResponse.ok) {
+                userInfo = await userInfoResponse.json() as unknown as LinkedInUserInfo;
+                console.log('[LinkedIn Callback] User info fetched:', userInfo.sub);
+            } else {
+                console.error('[LinkedIn Callback] User info fetch failed (Soft Fail):', userInfoResponse.status, await userInfoResponse.text());
+                // Proceed with default userInfo
+            }
+        } catch (err) {
+            console.error('[LinkedIn Callback] User info fetch timed out/failed (Soft Fail):', err);
+            // Proceed with default userInfo
         }
-
-        const userInfo: LinkedInUserInfo = await userInfoResponse.json();
 
         // Get Supabase user by Clerk ID
         const { data: user, error: userError } = await supabase
@@ -120,9 +139,9 @@ export async function GET(request: NextRequest) {
             .single();
 
         if (userError || !user) {
-            console.error('User not found:', userError);
+            console.error('[LinkedIn Callback] User not found in DB for clerkId:', stateData.clerkUserId, userError);
             return NextResponse.redirect(
-                new URL('/settings?error=user_not_found', process.env.NEXT_PUBLIC_APP_URL)
+                new URL('/settings?error=user_not_found', process.env.NEXT_PUBLIC_APP_URL!)
             );
         }
 
@@ -137,32 +156,27 @@ export async function GET(request: NextRequest) {
                 platform: 'linkedin',
                 platform_user_id: userInfo.sub,
                 access_token: tokenData.access_token,
-                refresh_token: tokenData.refresh_token || null,
+                refresh_token: tokenData.refresh_token,
                 token_expires_at: tokenExpiresAt.toISOString(),
-                scopes: tokenData.scope.split(' '),
+                scopes: tokenData.scope ? tokenData.scope.split(',') : ['r_liteprofile', 'r_emailaddress', 'w_member_social'],
                 profile_name: userInfo.name,
-                profile_picture: userInfo.picture || null,
+                profile_picture: userInfo.picture,
                 connected_at: new Date().toISOString(),
                 revoked: false,
-            }, {
-                onConflict: 'user_id,platform',
-            });
+            }, { onConflict: 'user_id, platform' });
 
         if (upsertError) {
-            console.error('Failed to save connection:', upsertError);
-            return NextResponse.redirect(
-                new URL('/settings?error=save_failed', process.env.NEXT_PUBLIC_APP_URL)
-            );
+            console.error('[LinkedIn Callback] Database update failed:', upsertError);
+            return NextResponse.redirect(new URL('/settings?error=db_error', process.env.NEXT_PUBLIC_APP_URL!));
         }
 
-        // Success - redirect to settings
-        return NextResponse.redirect(
-            new URL('/settings?success=linkedin_connected', process.env.NEXT_PUBLIC_APP_URL)
-        );
+        console.log('[LinkedIn Callback] Connection successful!');
+        return NextResponse.redirect(new URL('/settings?success=linkedin_connected', process.env.NEXT_PUBLIC_APP_URL!));
+
     } catch (error) {
-        console.error('Error in LinkedIn callback:', error);
+        console.error('[LinkedIn Callback] Unexpected error:', error);
         return NextResponse.redirect(
-            new URL('/settings?error=callback_failed', process.env.NEXT_PUBLIC_APP_URL)
+            new URL('/settings?error=callback_failed', process.env.NEXT_PUBLIC_APP_URL!)
         );
     }
 }

@@ -1,0 +1,828 @@
+Got it. Thank you for the correction — this is important.
+
+Below is a **pure conceptual rewrite** of the plan in **clear, copyable Markdown**, with **no code**, **no file paths**, and **no implementation details**.
+This is a **product + architecture + brain spec**, written so that:
+
+* You can reason about it
+* You can share it with design / product / founders
+* Engineering can later derive code from it
+* There is **zero room for assumptions**
+* Every place where **user input is needed explicitly maps to a UI surface or new module**
+
+This is the **clean, final version** of the plan.
+
+---
+
+# 🧠 Counterdraft Brain — V1 Product & Architecture Specification (No Code)
+
+---
+
+## 1. What the Brain Is
+
+The Brain is a **deterministic decision system** that sits behind the product.
+
+Its job is **not to generate content**.
+Its job is to **decide**:
+
+* what information is required
+* whether an idea is worth developing
+* what the post should optimize for
+* what belief or tension it should anchor to
+* how confident the system is in the outcome
+
+The Brain always runs **before** any AI generation.
+
+AI systems are **workers**.
+The Brain is **editorial judgment**.
+
+---
+
+## 2. What the Brain Is Not
+
+The Brain is **not**:
+
+* an AI agent
+* a prompt
+* a framework selector UI
+* a content teacher
+* a virality predictor
+* a blocker of user actions
+
+The Brain **never**:
+
+* forces inputs immediately
+* downgrades user work
+* blocks publishing
+* assumes missing information
+
+---
+
+## 3. The Single Decision Spine (Locked)
+
+Every Brain decision flows from **one question only**:
+
+> **What outcome should this content item optimize for?**
+
+Valid outcomes (exactly one):
+
+* Authority (be trusted, respected)
+* Engagement (start conversation)
+* Conversion (drive action)
+* Connection (build relationship)
+
+If the outcome is unclear:
+
+* the Brain infers provisionally
+* confidence is reduced
+* the UI is notified softly
+
+No other decision is allowed to lead.
+
+---
+
+## 4. The 10% That Drives 90% of Value (V1 Scope)
+
+In V1, the Brain optimizes for **only four things**:
+
+1. Is this idea worth writing at all?
+2. What outcome should it optimize for?
+3. What belief or tension should anchor it?
+4. What structure best serves that outcome on this platform?
+
+Everything else is intentionally ignored.
+
+This scope is frozen for V1.
+
+---
+
+## 5. When the Brain Runs
+
+The Brain runs **automatically**, but **not constantly**.
+
+It runs only on these moments:
+
+* When a new Idea is created
+* When an Idea moves to “In Development”
+* When “In Development” becomes a Draft
+* When a Draft is Published
+
+The Brain does **not** run:
+
+* on every keystroke
+* on every edit
+* when a Draft is merely opened
+
+This avoids noise, cost, and decision churn.
+
+---
+
+## 6. Required Inputs (Content-Item Level)
+
+All inputs are **per content item**.
+The Brain does not rely on profile defaults, though it may recommend reuse.
+
+### 6.1 Hard Dependencies (Quality-Critical)
+
+These inputs must exist for **high-confidence** output.
+
+| Input                  | Purpose            | How It Appears in UI  |
+| ---------------------- | ------------------ | --------------------- |
+| Outcome                | Decision spine     | Inline Outcome Picker |
+| Audience (role + pain) | Relevance & tone   | Audience Mini-Card    |
+| Topic                  | Subject clarity    | Idea Card (existing)  |
+| Stance                 | Editorial position | Stance Toggle         |
+
+If any are missing:
+
+* the Brain marks the item as **Needs Context**
+* the UI shows a subtle badge
+* the user may ignore or skip
+
+The Brain **never interrupts** the user.
+
+---
+
+### 6.2 Soft Dependencies (Optional, Never Blocking)
+
+These improve quality but are not required.
+
+| Input                  | When Relevant         | UI Pattern        |
+| ---------------------- | --------------------- | ----------------- |
+| Proof / examples       | Authority, Conversion | Inline suggestion |
+| Platform preference    | Multi-publish         | Settings hint     |
+| Prior belief reference | Repetition detected   | Context badge     |
+
+---
+
+## 7. Deferred Input Collection Rule (Critical)
+
+The Brain follows a strict rule:
+
+> **Detect first. Ask later. Never interrupt.**
+
+Process:
+
+1. Brain detects missing or weak input
+2. Brain records it internally
+3. UI surfaces it non-blockingly
+4. User may:
+
+   * provide input
+   * skip intentionally
+   * proceed anyway
+
+Skipping is allowed and tracked.
+
+---
+
+## 8. Internal Brain Decision Flow (Invisible by Default)
+
+### Step 1: Outcome Resolution
+
+* Use user-provided outcome if present
+* Otherwise infer provisionally
+* Lower confidence if inferred
+* Mark outcome as missing context if weak
+
+UI:
+
+* Inline picker
+* Explanation only if user asks “Why?”
+
+---
+
+### Step 2: Belief or Tension Anchor
+
+* If idea originated from a belief or tension → auto-anchor
+* Otherwise infer best-fit belief
+* If confidence is low → mark anchor as weak
+
+If contradiction with past beliefs is found:
+
+* Brain marks **Belief Conflict**
+* UI highlights gently (no blocking)
+
+---
+
+### Step 3: Structural Decision (System-Only)
+
+The Brain decides internally:
+
+* content type (observation, actionable, story, comparison)
+* dominant psychological mode
+
+These decisions:
+
+* are not shown to the user
+* guide later execution
+* cannot be manually selected in V1
+
+---
+
+### Step 4: Readiness & Confidence
+
+The Brain assigns:
+
+* Low confidence (missing core inputs)
+* Medium confidence
+* High confidence
+
+UI shows this **visually**, not verbally.
+
+---
+
+## 9. New UI States Introduced by the Brain
+
+The Brain may introduce the following **non-blocking states**:
+
+| State           | Meaning                        | User Experience             |
+| --------------- | ------------------------------ | --------------------------- |
+| Needs Context   | Missing core input             | Badge on card               |
+| Low Confidence  | Weak assumptions               | Dotted progress             |
+| Belief Conflict | Contradiction found            | Highlight + optional action |
+| Repetitive Idea | Similar belief already covered | Warning chip                |
+
+These states **inform**, not control.
+
+---
+
+## 10. Mapping to Command Center
+
+### Ideas Column
+
+* Brain evaluates novelty and worth
+* States shown:
+
+  * Idea
+  * Idea (Needs Context)
+  * Idea (Repetitive)
+
+---
+
+### In Development Column
+
+* Brain performs full evaluation
+* Missing inputs surfaced softly
+* Confidence indicator visible
+
+---
+
+### Drafts Column
+
+* Brain does not re-evaluate structure
+* Shows belief context and conflicts
+* Explanations available on demand
+
+---
+
+### Live Column
+
+* On publish:
+
+  * beliefs are extracted
+  * belief graph updated
+  * new tensions may be created
+
+---
+
+## 11. Explain-on-Demand Model
+
+By default:
+
+* Brain decisions are invisible
+
+If the user asks “Why?”:
+
+* The system explains:
+
+  * what decision was made
+  * which inputs influenced it
+  * what would improve confidence
+
+The system never exposes:
+
+* frameworks
+* psychological terms
+* internal scoring
+
+---
+
+## 12. Trace Logging System (Mandatory)
+
+Every Brain run produces a **trace record**.
+
+Trace logs capture:
+
+* trigger event
+* inputs known vs inferred
+* decisions made
+* confidence level
+* missing context
+* user overrides (if any)
+
+Purpose:
+
+* debug failures
+* understand drop-offs
+* evaluate decision quality
+* train future improvements
+
+No trace = no trust.
+
+---
+
+## 13. Relationship to AI Systems
+
+The Brain outputs a **Decision & Constraint Summary**.
+
+AI systems:
+
+* receive the summary
+* generate content accordingly
+* cannot override Brain decisions
+
+If Brain confidence is low:
+
+* AI should proceed cautiously
+* never invent missing intent
+
+---
+
+## 14. Explicit V1 Non-Goals
+
+In V1, the Brain will **not**:
+
+* predict engagement or virality
+* optimize posting time
+* suggest frequency
+* teach frameworks
+* expose templates
+* block publishing
+
+These are intentionally excluded.
+
+---
+
+## 15. Success Criteria (Brain-Level)
+
+The Brain is successful if:
+
+* users write fewer but stronger posts
+* repetition decreases over time
+* belief conflicts surface naturally
+* users feel guided, not managed
+* trace logs clearly explain failures
+
+---
+
+## 16. V1 Freeze Rule
+
+No expansion of Brain scope until:
+
+* at least 30% of ideas reach Live
+* confidence correlates with user satisfaction
+* trace logs show stable patterns
+
+---
+
+### Final Note
+
+This rewrite:
+
+* aligns fully with your current architecture
+* removes all implementation assumptions
+* clearly separates **decision**, **input**, and **execution**
+* explicitly maps **every input to a UI surface**
+* makes future engineering work unambiguous
+
+---
+
+# 1️⃣ Exact UI Components (V1)
+
+This is a **design inventory**, not wireframes.
+Each component exists because the **Brain requires or surfaces something**.
+
+---
+
+## A. Atomic Components (Reusable)
+
+These are the smallest UI primitives the Brain depends on.
+
+---
+
+### 1. Outcome Picker
+
+**Purpose**
+Collect the *single decision spine input*.
+
+**Type**
+Inline selector (not modal).
+
+**UI**
+
+* Label: “What should this post optimize for?”
+* Options (single-select):
+
+  * Authority
+  * Engagement
+  * Conversion
+  * Connection
+
+**Behavior**
+
+* Appears only when Brain marks `outcome` missing
+* Defaults to inferred value (if any), visually marked “Suggested”
+* User can:
+
+  * accept suggestion
+  * change it
+  * ignore entirely
+
+**Brain Contract**
+
+* If user ignores → Brain keeps inferred value, confidence stays lower
+* User choice overrides inference
+
+---
+
+### 2. Audience Mini-Card
+
+**Purpose**
+Capture audience without forcing a full persona flow.
+
+**UI**
+Compact card with 2 editable fields:
+
+* “Who is this for?” (role / persona)
+* “What are they struggling with right now?” (pain)
+
+**Behavior**
+
+* Inline expand/collapse
+* Shows “You used a similar audience last time” as suggestion (non-clicky hint)
+
+**Brain Contract**
+
+* Missing audience → `Needs Context`
+* Generic pain (“growth”, “learn”) → flagged silently, confidence reduced
+
+---
+
+### 3. Stance Toggle
+
+**Purpose**
+Force editorial posture.
+
+**UI**
+Three-option segmented control:
+
+* Supportive
+* Contrarian
+* Exploratory
+
+**Behavior**
+
+* Inline, one tap
+* Defaults to inferred stance if available
+
+**Brain Contract**
+
+* Contrarian stance without belief anchor → triggers `Belief Conflict` risk flag
+
+---
+
+### 4. Confidence Indicator
+
+**Purpose**
+Communicate quality without judgment.
+
+**UI**
+
+* Visual only (no text by default)
+* Three states:
+
+  * Dotted ring → Low confidence
+  * Solid ring → Medium
+  * Solid + subtle glow → High
+
+**Behavior**
+
+* Hover / tap → “Why?” affordance
+
+**Brain Contract**
+
+* Confidence is Brain-owned
+* User cannot manually set it
+
+---
+
+### 5. Context Badge
+
+**Purpose**
+Surface Brain annotations non-intrusively.
+
+**Variants**
+
+* Needs Context
+* Belief Conflict
+* Repetitive Idea
+* Weak Anchor
+
+**UI**
+Small pill/badge on content card.
+
+**Behavior**
+
+* Click opens explanation drawer
+* Never blocks actions
+
+---
+
+## B. Composed Components (Brain-Aware)
+
+These combine atomic components into Brain-aware surfaces.
+
+---
+
+### 6. Idea Card (Enhanced)
+
+**Lives in:** Ideas column
+
+**Contains**
+
+* Idea title / hook
+* Context badges (if any)
+* Confidence indicator
+* Primary action: “Develop”
+
+**Optional Inline Additions**
+
+* Outcome Picker (if missing)
+* Stance Toggle (if missing)
+
+**Brain Role**
+
+* First evaluation happens here
+* Marks idea as:
+
+  * viable
+  * repetitive
+  * needing context
+
+---
+
+### 7. Development Header Panel
+
+**Lives in:** In Dev column, top of editor
+
+**Contains**
+
+* Outcome (editable)
+* Audience Mini-Card
+* Stance Toggle
+* Confidence Indicator
+* “Why am I seeing this?” link
+
+**Behavior**
+
+* Collapsible
+* Sticky while in Dev
+
+**Brain Role**
+
+* This is where deferred inputs are most likely resolved
+* Brain re-evaluates when user edits any of these
+
+---
+
+### 8. Explain-on-Demand Drawer
+
+**Purpose**
+Transparency without noise.
+
+**Triggered by**
+
+* Clicking a badge
+* Clicking “Why?” near confidence indicator
+
+**Shows**
+
+* What decision was made
+* What input influenced it
+* What’s missing (if anything)
+* What would improve confidence
+
+**Explicitly Does NOT Show**
+
+* Framework names
+* Psychological jargon
+* Scores
+
+---
+
+### 9. Belief Context Sidebar (Editor)
+
+**Lives in:** Draft editor sidebar
+
+**Shows**
+
+* Relevant belief(s)
+* Any detected tension
+* One-line note:
+
+  * “You’ve expressed a conflicting view before”
+
+**Actions**
+
+* “Address this”
+* “Ignore”
+
+**Brain Contract**
+
+* Ignoring is allowed
+* Choice is logged for trace analysis
+
+---
+
+## C. New UI States (Visual Language)
+
+| Brain State     | UI Expression                          |
+| --------------- | -------------------------------------- |
+| Needs Context   | Grey badge + low confidence            |
+| Low Confidence  | Dotted progress + subtle warning color |
+| Belief Conflict | Highlighted belief in sidebar          |
+| Repetitive Idea | Yellow chip + hover explanation        |
+
+No modals. No blocking.
+
+---
+
+# 2️⃣ One Real User Flow (End-to-End)
+
+Let’s walk through **one realistic flow**, no happy-path cheating.
+
+---
+
+## User Profile (Implicit)
+
+* Founder
+* Posts on LinkedIn occasionally
+* Has beliefs already extracted
+* No interest in “learning copywriting”
+
+---
+
+## Step 1: User Creates an Idea
+
+**Action**
+User clicks “+ New Idea” and types:
+
+> “AI tools are making junior roles obsolete”
+
+**What the Brain Does (Automatically)**
+
+* Evaluates idea
+* Infers:
+
+  * Outcome → Authority (low confidence)
+  * Stance → Contrarian
+* Anchors to existing belief: “AI accelerates skill gaps”
+
+**UI Result**
+
+* Idea card appears with:
+
+  * “Needs Context” badge
+  * Low confidence indicator
+* Inline Outcome Picker appears (collapsed)
+
+User ignores everything and clicks **Develop**.
+
+---
+
+## Step 2: Idea Moves to “In Dev”
+
+**Brain Runs Again**
+
+Finds:
+
+* Outcome still inferred
+* Audience missing
+* Stance inferred but unconfirmed
+
+**UI (Development Header Panel Appears)**
+
+User now sees:
+
+* Outcome Picker (suggested: Authority)
+* Audience Mini-Card (empty)
+* Stance Toggle (Contrarian preselected)
+* Confidence indicator (low)
+
+User actions:
+
+* Accepts Outcome = Authority
+* Fills Audience:
+
+  * Role: “Early-career software engineers”
+  * Pain: “Unsure if their skills will matter in 3 years”
+* Leaves stance as is
+
+---
+
+## Step 3: Brain Re-Evaluates
+
+**Now Brain Has**
+
+* Explicit outcome
+* Explicit audience
+* Clear stance
+* Strong belief anchor
+
+**Brain Updates**
+
+* Confidence → Medium
+* Removes “Needs Context” badge
+
+**UI**
+
+* Confidence indicator updates
+* No interruption
+* User continues writing
+
+---
+
+## Step 4: Drafting Begins
+
+**Editor Opens**
+
+**Sidebar Shows**
+
+* Relevant belief:
+
+  * “AI widens the gap between fast and slow learners”
+* Tension alert:
+
+  * “You’ve also said AI creates more entry points”
+
+User clicks **Address this**.
+
+Brain logs this choice.
+
+---
+
+## Step 5: Draft is Completed
+
+User clicks **Publish**.
+
+**Brain Final Run**
+
+* Confirms outcome, audience, stance
+* Freezes structure
+* Emits execution summary
+* Confidence → High
+
+---
+
+## Step 6: Post Goes Live
+
+**After Publish**
+
+* Belief extraction runs
+* Brain compares:
+
+  * Old beliefs
+  * New expression
+* Detects nuanced evolution (not contradiction)
+
+**Result**
+
+* New belief confidence updated
+* No new tension created
+
+---
+
+## Step 7: Future Benefit (Invisible)
+
+Next time user creates an idea about AI + careers:
+
+* Brain recognizes repetition risk earlier
+* Suggests a different angle
+* User feels “this thing actually remembers how I think”
+
+---
+
+# Final Reality Check
+
+What you now have is:
+
+* A **Brain that decides, not generates**
+* UI components that exist **only because the Brain needs them**
+* A flow that:
+
+  * never blocks
+  * never lectures
+  * never overwhelms
+* A system that gets **smarter over time**, not noisier
+
+

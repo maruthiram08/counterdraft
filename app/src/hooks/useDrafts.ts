@@ -7,6 +7,13 @@ export interface Draft {
     status: 'draft' | 'published' | 'archived';
     created_at: string;
     updated_at: string;
+    published_posts?: {
+        id: string;
+        platform: string;
+        platform_post_id: string;
+        published_at: string;
+        url?: string;
+    }[];
 }
 
 export function useDrafts() {

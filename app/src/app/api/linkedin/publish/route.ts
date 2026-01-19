@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
+import { linkedinFetch } from '@/lib/linkedin-network';
+import { extractBeliefs } from "@/lib/openai";
+import { storeAnalysisResults } from "@/lib/belief-storage";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -85,9 +88,9 @@ export async function POST(request: NextRequest) {
             .trim();
 
         // Character limit check
-        if (formattedContent.length > 3000) {
+        if (formattedContent.length > 5000) {
             return NextResponse.json({
-                error: 'Content exceeds LinkedIn character limit (3000)',
+                error: 'Content exceeds LinkedIn character limit (5000)',
                 code: 'CONTENT_TOO_LONG'
             }, { status: 400 });
         }
@@ -109,7 +112,9 @@ export async function POST(request: NextRequest) {
             },
         };
 
-        const publishResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+        // Publish to LinkedIn
+        // Using custom fetch to avoid connection timeouts
+        const publishResponse = await linkedinFetch('https://api.linkedin.com/v2/ugcPosts', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${account.access_token}`,
@@ -117,11 +122,11 @@ export async function POST(request: NextRequest) {
                 'X-Restli-Protocol-Version': '2.0.0',
             },
             body: JSON.stringify(postBody),
-        });
+        }, 3, 120000);
 
         if (!publishResponse.ok) {
             const errorText = await publishResponse.text();
-            console.error('LinkedIn publish error:', publishResponse.status, errorText);
+            console.error('LinkedIn API error:', publishResponse.status, errorText);
 
             if (publishResponse.status === 403) {
                 return NextResponse.json({
@@ -140,7 +145,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to publish to LinkedIn' }, { status: 500 });
         }
 
-        const publishData = await publishResponse.json();
+        const publishData = await publishResponse.json() as any;
         const linkedInPostId = publishData.id;
 
         // Update draft with LinkedIn post URN
@@ -169,6 +174,19 @@ export async function POST(request: NextRequest) {
         const urnParts = linkedInPostId.split(':');
         const activityId = urnParts[urnParts.length - 1];
         const linkedInUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}`;
+
+        // Auto-Extract Beliefs (Flywheel)
+        try {
+            console.log("Triggering Flywheel Extraction for Published Post...");
+            // Run in background (no await) to return fast? 
+            // Better to await to ensure consistency during beta testing.
+            const analysis = await extractBeliefs([formattedContent]);
+            await storeAnalysisResults(user.id, analysis);
+            console.log("Flywheel Extraction Complete.");
+        } catch (e) {
+            console.error("Flywheel Extraction Failed:", e);
+            // Don't fail the response, just log it
+        }
 
         return NextResponse.json({
             success: true,

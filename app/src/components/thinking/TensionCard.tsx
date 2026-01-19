@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Check, Lightbulb } from "lucide-react";
+import { X, Check, Lightbulb, Rocket, Loader2 } from "lucide-react";
 
 interface TensionCardProps {
     tension: string;
@@ -10,18 +10,38 @@ interface TensionCardProps {
     tensionId?: string;
     initialClassification?: 'pending' | 'inconsistency' | 'intentional_nuance' | 'explore';
     onClassify?: (tensionId: string, classification: 'inconsistency' | 'intentional_nuance' | 'explore') => void;
+    onTurnIntoIdea?: (tension: { id: string; tension: string; sideA: string; sideB: string }) => Promise<void>;
 }
 
-export function TensionCard({ tension, sideA, sideB, tensionId, initialClassification = 'pending', onClassify }: TensionCardProps) {
+export function TensionCard({ tension, sideA, sideB, tensionId, initialClassification = 'pending', onClassify, onTurnIntoIdea }: TensionCardProps) {
     const [classification, setClassification] = useState(initialClassification);
     const [dismissed, setDismissed] = useState(false);
+    const [converting, setConverting] = useState(false);
+    const [converted, setConverted] = useState(false);
 
     const handleClassify = (newClassification: 'inconsistency' | 'intentional_nuance' | 'explore') => {
         setClassification(newClassification);
         if (onClassify && tensionId) {
             onClassify(tensionId, newClassification);
         }
-        setTimeout(() => setDismissed(true), 1200);
+        // Don't dismiss explore classification - they might want to turn into idea
+        if (newClassification !== 'explore') {
+            setTimeout(() => setDismissed(true), 1200);
+        }
+    };
+
+    const handleTurnIntoIdea = async () => {
+        if (!onTurnIntoIdea || !tensionId) return;
+        setConverting(true);
+        try {
+            await onTurnIntoIdea({ id: tensionId, tension, sideA, sideB });
+            setConverted(true);
+            setTimeout(() => setDismissed(true), 1500);
+        } catch (err) {
+            console.error('Failed to convert tension to idea:', err);
+        } finally {
+            setConverting(false);
+        }
     };
 
     if (dismissed) return null;
@@ -36,6 +56,11 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
                     <span className="text-[10px] uppercase tracking-widest font-medium text-gray-500">
                         {classification.replace('_', ' ')}
                     </span>
+                    {converted && (
+                        <span className="text-[10px] uppercase tracking-widest font-medium text-green-600 ml-2">
+                            → Added to Pipeline
+                        </span>
+                    )}
                 </div>
             )}
 
@@ -84,6 +109,26 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
                         className="text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors flex items-center gap-2"
                     >
                         <Lightbulb size={14} /> Explore
+                    </button>
+                </div>
+            )}
+
+            {/* Turn into Post Idea - Show after "Explore" classification */}
+            {classification === 'explore' && !converted && onTurnIntoIdea && (
+                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800 mb-3">
+                        This tension could make a great post! Explore the nuance between these perspectives.
+                    </p>
+                    <button
+                        onClick={handleTurnIntoIdea}
+                        disabled={converting}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                        {converting ? (
+                            <><Loader2 size={16} className="animate-spin" /> Converting...</>
+                        ) : (
+                            <><Rocket size={16} /> Turn into Post Idea</>
+                        )}
                     </button>
                 </div>
             )}

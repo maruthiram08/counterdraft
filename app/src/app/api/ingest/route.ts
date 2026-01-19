@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { extractBeliefs } from "@/lib/openai";
 import { getOrCreateUser } from "@/lib/user-sync";
+import { storeAnalysisResults } from "@/lib/belief-storage";
 
 export async function POST(req: Request) {
     try {
@@ -69,69 +70,9 @@ export async function POST(req: Request) {
             const analysis = await extractBeliefs([content]);
             console.log("Analysis Complete:", JSON.stringify(analysis, null, 2));
 
-            if (!isMockMode) {
-                // 4. Store Beliefs
-                const beliefsToInsert = [
-                    ...(analysis.coreBeliefs || []).map((b: string) => ({ user_id: userId, statement: b, belief_type: 'core' })),
-                    ...(analysis.overusedAngles || []).map((b: string) => ({ user_id: userId, statement: b, belief_type: 'overused' })),
-                    ...(analysis.emergingThesis ? [{ user_id: userId, statement: analysis.emergingThesis, belief_type: 'emerging' }] : [])
-                ];
-
-                let insertedBeliefIds: Map<string, string> = new Map();
-
-                if (beliefsToInsert.length > 0) {
-                    const { data: insertedBeliefs, error: beliefError } = await supabaseAdmin
-                        .from("beliefs")
-                        .insert(beliefsToInsert)
-                        .select("id, statement");
-
-                    if (beliefError) {
-                        console.error("Error storing beliefs:", beliefError);
-                    } else if (insertedBeliefs) {
-                        // Build statement -> id map
-                        insertedBeliefs.forEach((b: { id: string; statement: string }) => {
-                            insertedBeliefIds.set(b.statement, b.id);
-                        });
-                    }
-                }
-
-                // 5. Store Tensions
-                if (analysis.detectedTensions && analysis.detectedTensions.length > 0) {
-                    const tensionsToInsert = analysis.detectedTensions.map((t: { beliefA: string; beliefB: string; summary: string }) => {
-                        // Try to find matching belief IDs (partial match)
-                        let beliefAId = null;
-                        let beliefBId = null;
-
-                        for (const [statement, id] of insertedBeliefIds) {
-                            if (statement.toLowerCase().includes(t.beliefA.toLowerCase()) || t.beliefA.toLowerCase().includes(statement.toLowerCase())) {
-                                beliefAId = id;
-                            }
-                            if (statement.toLowerCase().includes(t.beliefB.toLowerCase()) || t.beliefB.toLowerCase().includes(statement.toLowerCase())) {
-                                beliefBId = id;
-                            }
-                        }
-
-                        return {
-                            user_id: userId,
-                            belief_a_id: beliefAId,
-                            belief_b_id: beliefBId,
-                            tension_summary: t.summary,
-                            belief_a_text: t.beliefA, // Store original text for display
-                            belief_b_text: t.beliefB,
-                            user_classification: 'pending'
-                        };
-                    });
-
-                    const { error: tensionError } = await supabaseAdmin
-                        .from("tensions")
-                        .insert(tensionsToInsert);
-
-                    if (tensionError) {
-                        console.error("Error storing tensions:", tensionError);
-                    } else {
-                        console.log(`Stored ${tensionsToInsert.length} tensions`);
-                    }
-                }
+            if (!isMockMode && userId) {
+                // 4. Store Beliefs & Tensions via shared service
+                await storeAnalysisResults(userId, analysis);
             }
 
             return NextResponse.json({

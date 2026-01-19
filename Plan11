@@ -1,0 +1,304 @@
+```md
+# LinkedIn Publish + Fetch Past Posts — Step-by-Step Workflow
+
+**Context:**  
+User creates a draft in your app → clicks **Publish** → workflow publishes the post to LinkedIn **and** (optionally) fetches the user’s own past LinkedIn posts for history, analysis, or inspiration.
+
+---
+
+## 1. Summary (TL;DR)
+
+Your app supports **two LinkedIn capabilities**:
+1. **Publish posts** on behalf of the user
+2. **Fetch the user’s own past posts** (read-only)
+
+Both are done via official LinkedIn APIs with explicit user consent.
+
+---
+
+## 2. Required LinkedIn Scopes (Updated)
+
+### Mandatory Scopes
+- `r_liteprofile` → Get LinkedIn user identity
+- `w_member_social` → Publish posts on behalf of the user
+- `r_member_social` → **Fetch user’s own posts and shares**
+
+> ⚠️ Both `w_member_social` and `r_member_social` require LinkedIn approval.  
+> Clearly state that **users view and publish their own content only**.
+
+---
+
+## 3. Updated High-Level Flow
+
+```
+
+Draft Ready
+↓
+User clicks "Publish to LinkedIn"
+↓
+Is LinkedIn Connected?
+├─ No → OAuth (with read + write scopes)
+└─ Yes
+↓
+(Optional) Fetch past LinkedIn posts
+↓
+Show Preview + Confirm Publish
+↓
+Publish via LinkedIn API
+↓
+Update app state
+
+```
+
+---
+
+## 4. Updated OAuth Authorization (Frontend)
+
+```
+
+GET [https://www.linkedin.com/oauth/v2/authorization](https://www.linkedin.com/oauth/v2/authorization)
+?response_type=code
+&client_id=CLIENT_ID
+&redirect_uri=REDIRECT_URI
+&scope=r_liteprofile r_member_social w_member_social
+&state=CSRF_TOKEN
+
+````
+
+---
+
+## 5. Data Model (Updated)
+
+```sql
+linkedin_accounts (
+  id UUID,
+  user_id UUID,
+  linkedin_urn TEXT,
+  access_token TEXT,
+  token_expires_at TIMESTAMP,
+  scopes TEXT[],
+  revoked BOOLEAN DEFAULT false
+);
+
+linkedin_posts (
+  id UUID,
+  user_id UUID,
+  linkedin_post_urn TEXT,
+  content TEXT,
+  created_at TIMESTAMP,
+  source TEXT -- "linkedin"
+);
+````
+
+---
+
+## 6. Step-by-Step Workflow (Updated)
+
+---
+
+### Step 1: User Clicks “Publish to LinkedIn”
+
+Frontend actions:
+
+* Validate draft
+* Show **LinkedIn Preview**
+* CTA: **Publish Now**
+
+Backend pre-check:
+
+```
+GET /api/linkedin/status
+```
+
+---
+
+### Step 2: OAuth Flow (If Not Connected)
+
+Scopes requested:
+
+* Read profile
+* Read own posts
+* Write (publish) posts
+
+Backend exchanges code → token → stores securely.
+
+---
+
+### Step 3: Fetch LinkedIn User URN
+
+```
+GET https://api.linkedin.com/v2/me
+Authorization: Bearer ACCESS_TOKEN
+```
+
+Store:
+
+```
+urn:li:person:{id}
+```
+
+---
+
+## 7. NEW: Fetch User’s Own Past Posts
+
+### Purpose
+
+* Show post history inside your app
+* Use past posts for analytics, inspiration, or AI-based suggestions
+* Never fetch other users’ posts
+
+### API Call
+
+```
+GET https://api.linkedin.com/v2/ugcPosts
+```
+
+Query:
+
+```
+?q=authors
+&authors=List(urn:li:person:ABC123)
+&sortBy=LAST_MODIFIED
+&count=20
+```
+
+Headers:
+
+```
+Authorization: Bearer ACCESS_TOKEN
+X-Restli-Protocol-Version: 2.0.0
+```
+
+### Backend Actions
+
+* Parse text-only posts
+* Ignore reshared content if not needed
+* Store minimal required data
+* Respect LinkedIn data retention rules
+
+---
+
+### Step 4: Store / Display Past Posts (Optional)
+
+* Cache posts short-term (recommended)
+* Display:
+
+  * Post text
+  * Created date
+  * Engagement counts (if available)
+* Allow user to refresh manually
+
+> ❌ Do not auto-refresh frequently (rate-limit sensitive)
+
+---
+
+## 8. Publish New Post (Unchanged)
+
+```
+POST https://api.linkedin.com/v2/ugcPosts
+```
+
+```json
+{
+  "author": "urn:li:person:ABC123",
+  "lifecycleState": "PUBLISHED",
+  "specificContent": {
+    "com.linkedin.ugc.ShareContent": {
+      "shareCommentary": {
+        "text": "Post created in my app 🚀"
+      },
+      "shareMediaCategory": "NONE"
+    }
+  },
+  "visibility": {
+    "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+  }
+}
+```
+
+---
+
+## 9. Updated Error Handling
+
+| Scenario              | Handling                     |
+| --------------------- | ---------------------------- |
+| 401                   | Token expired → reconnect    |
+| 403 (read)            | Missing `r_member_social`    |
+| 403 (write)           | Missing `w_member_social`    |
+| 429                   | Backoff + retry              |
+| Partial scope granted | Disable unavailable features |
+
+---
+
+## 10. Security & Compliance (Critical)
+
+* Fetch **only the user’s own posts**
+* Do NOT fetch:
+
+  * Connections’ posts
+  * Feed or timeline
+* Limit data retention (30–90 days recommended)
+* Allow user to disconnect & delete LinkedIn data
+* Clearly disclose usage in Privacy Policy
+
+---
+
+## 11. LinkedIn App Approval — Updated Justification
+
+When requesting access, explicitly say:
+
+> “Our application allows users to:
+>
+> 1. View their own previously published LinkedIn posts
+> 2. Create and publish new posts after reviewing a preview
+>    All actions are explicitly initiated by the user. We do not automate posting, scrape data, or access other members’ content.”
+
+Include:
+
+* Screenshots of post history screen
+* Publish preview modal
+* Scope-to-feature mapping
+
+---
+
+## 12. Scope-to-Feature Mapping (Very Important)
+
+| Scope             | Used For               |
+| ----------------- | ---------------------- |
+| `r_liteprofile`   | Identify LinkedIn user |
+| `r_member_social` | Fetch user’s own posts |
+| `w_member_social` | Publish new posts      |
+
+LinkedIn reviewers love this table.
+
+---
+
+## 13. Common Pitfalls (Updated)
+
+* ❌ Fetching feed or connections’ posts
+* ❌ Long-term storage of post history
+* ❌ Background syncing without user action
+* ❌ Bulk analytics across many users
+
+---
+
+## 14. Final User Journey (Updated)
+
+1. User connects LinkedIn
+2. App fetches their past LinkedIn posts
+3. User creates a new draft
+4. Reviews preview
+5. Clicks **Publish**
+6. Post appears on LinkedIn
+7. App updates history view
+
+---
+
+## 15. Next Enhancements (Safe & Compliant)
+
+* Compare new draft vs past posts
+* Highlight tone/style consistency
+* Manual refresh of LinkedIn history
+* Engagement insights per post (if permitted)
+
+---

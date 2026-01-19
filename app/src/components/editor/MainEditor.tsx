@@ -33,6 +33,17 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     useEffect(() => {
         if (draft) {
             setContent(draft.content);
+            // Auto-resize textarea on load
+            if (textareaRef.current) {
+                // Reset height to auto first to get correct scrollHeight
+                textareaRef.current.style.height = 'auto';
+                // Small timeout to allow render
+                setTimeout(() => {
+                    if (textareaRef.current) {
+                        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+                    }
+                }, 0);
+            }
         } else {
             setContent("");
         }
@@ -132,14 +143,14 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
     if (!draft) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] p-8 bg-white">
+            <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] p-8 bg-paper">
                 <p className="font-serif italic text-lg opacity-50">Select a draft to start writing...</p>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full relative group bg-white">
+        <div className="flex flex-col h-full relative group bg-paper">
 
             {/* Contextual Toolbar */}
             {toolbarPosition && (
@@ -180,7 +191,7 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
             {/* Document Surface */}
             <div className="flex-1 overflow-y-auto relative">
-                <div className="max-w-4xl mx-auto py-20 px-16 min-h-full relative">
+                <div className="max-w-4xl mx-auto py-8 md:py-20 px-4 md:px-16 min-h-full relative">
 
                     {toolbarPosition && (
                         <ContextualToolbar
@@ -193,13 +204,13 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                     )}
 
                     {/* Title / Context - Refined Typography */}
-                    <div className="mb-12 select-none">
-                        <h2 className="text-3xl font-serif font-medium text-gray-800 leading-tight mb-6">
+                    <div className="mb-6 md:mb-12 select-none">
+                        <h2 className="text-xl md:text-3xl font-serif font-medium text-gray-800 leading-tight mb-4 md:mb-6 break-words">
                             {draft.belief_text}
                         </h2>
                         {/* Subtle separator */}
                         <div className="flex justify-center">
-                            <div className="w-8 h-1 bg-[var(--accent)]/10 rounded-full mb-8"></div>
+                            <div className="w-8 h-1 bg-[var(--accent)]/10 rounded-full mb-4 md:mb-8"></div>
                         </div>
                     </div>
 
@@ -220,7 +231,7 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                                 // For now, rely on explicit close or re-selection.
                             }, 200);
                         }}
-                        className="w-full min-h-[60vh] resize-none text-lg leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden"
+                        className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden break-words"
                         style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
                         placeholder="Start writing..."
                         spellCheck={false}

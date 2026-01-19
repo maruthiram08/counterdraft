@@ -20,7 +20,7 @@ export async function GET() {
 
         const { data: drafts, error } = await supabase
             .from('drafts')
-            .select('*')
+            .select('*, published_posts(*)')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
         }
 
-        const { beliefText, content } = await req.json();
+        const { beliefText, content, id } = await req.json();
 
         if (!beliefText || !content) {
             return NextResponse.json(
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
         const { data: draft, error } = await supabase
             .from('drafts')
             .insert({
+                ...(id ? { id } : {}),
                 user_id: userId,
                 belief_text: beliefText,
                 content: content,

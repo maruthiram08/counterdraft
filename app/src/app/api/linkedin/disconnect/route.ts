@@ -34,8 +34,8 @@ export async function POST() {
             .from('connected_accounts')
             .update({
                 revoked: true,
-                access_token: null,
-                refresh_token: null,
+                access_token: '',
+                refresh_token: '',
             })
             .eq('user_id', user.id)
             .eq('platform', 'linkedin');

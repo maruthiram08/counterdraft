@@ -1,0 +1,38 @@
+I've investigated the font usage, and your intuition is correct. Here are my observations:
+
+Serif Font (Newsreader)
+
+Status: It is correctly loaded in 
+
+layout.tsx
+, but it is not defined in your Tailwind configuration (
+
+globals.css
+).
+Impact: Components using font-serif (like 
+
+BeliefCard
+ and 
+
+DraftModal
+) are displaying the generic System Serif (e.g., Times New Roman) instead of the intended Newsreader font.
+Mono Font (JetBrains Mono)
+
+Status: Also loaded in 
+
+layout.tsx
+, but not defined in your Tailwind configuration.
+Impact: Areas using font-mono (like parts of 
+
+onboarding/page.tsx
+) are displaying the generic System Monospace (e.g., Courier) instead of JetBrains Mono.
+Sans Font (Inter)
+
+Status: This is the only font currently wired up correctly in 
+
+globals.css
+ (--font-sans: 'Inter'...), which is why the main UI text looks correct.
+Recommendation: We should update 
+
+globals.css
+ to map font-serif to var(--font-newsreader) and font-mono to var(--font-jetbrains) to fix these inconsistencies.

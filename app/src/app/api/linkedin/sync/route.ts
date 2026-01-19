@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
+import { linkedinFetch } from '@/lib/linkedin-network';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -99,12 +100,12 @@ export async function POST() {
         postsUrl.searchParams.set('sortBy', 'LAST_MODIFIED');
         postsUrl.searchParams.set('count', '50');
 
-        const postsResponse = await fetch(postsUrl.toString(), {
+        const postsResponse = await linkedinFetch(postsUrl.toString(), {
             headers: {
                 'Authorization': `Bearer ${account.access_token}`,
                 'X-Restli-Protocol-Version': '2.0.0',
             },
-        });
+        }, 3, 120000);
 
         if (!postsResponse.ok) {
             const errorText = await postsResponse.text();
@@ -128,7 +129,7 @@ export async function POST() {
         }
 
         const postsData = await postsResponse.json();
-        const linkedInPosts: LinkedInPost[] = (postsData.elements || []).map((post: UGCPost) => {
+        const linkedInPosts: LinkedInPost[] = ((postsData as { elements: UGCPost[] }).elements || []).map((post: UGCPost) => {
             const shareContent = post.specificContent?.['com.linkedin.ugc.ShareContent'];
             const text = shareContent?.shareCommentary?.text || '';
 

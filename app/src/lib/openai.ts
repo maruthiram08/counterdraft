@@ -20,9 +20,28 @@ Be opinionated but concise. Look for:
 
 Output as JSON matching this schema:
 {
-  "coreBeliefs": ["string array of 5-7 core beliefs"],
-  "overusedAngles": ["string array of 2-3 overused angles"],
-  "emergingThesis": "one emerging direction",
+  "coreBeliefs": [
+    {
+      "statement": "concise belief statement",
+      "reasoning": "why this is a core belief",
+      "confidence": "high/medium/low",
+      "context": "direct quote or snippet from text that evidences this"
+    }
+  ],
+  "overusedAngles": [
+    {
+      "statement": "angle statement",
+      "reasoning": "why this is overused",
+      "confidence": "high/medium/low",
+      "context": "direct quote or snippet"
+    }
+  ],
+  "emergingThesis": {
+      "statement": "thesis statement",
+      "reasoning": "why this is emerging",
+      "confidence": "low/medium/high",
+      "context": "direct quote or snippet"
+  },
   "detectedTensions": [
     {"beliefA": "string", "beliefB": "string", "summary": "why these conflict"}
   ]
@@ -40,7 +59,20 @@ Output as JSON matching this schema:
     const result = completion.choices[0].message.content;
     if (!result) throw new Error("No response from OpenAI");
 
-    return JSON.parse(result);
+    const parsed = JSON.parse(result);
+
+    // Normalize 'emergingThesis' to array for consistency if AI returns single object
+    let emerging = [];
+    if (parsed.emergingThesis) {
+        emerging = Array.isArray(parsed.emergingThesis) ? parsed.emergingThesis : [parsed.emergingThesis];
+    }
+
+    return {
+        coreBeliefs: parsed.coreBeliefs || [],
+        overusedAngles: parsed.overusedAngles || [],
+        emergingThesis: emerging,
+        detectedTensions: parsed.detectedTensions || []
+    };
 }
 
 // Helper for idea generation
