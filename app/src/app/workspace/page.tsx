@@ -24,9 +24,13 @@ import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { MobileAgentSheet } from "@/components/mobile/MobileAgentSheet";
 import { CommandCenter } from "@/components/pipeline/CommandCenter";
+import NewDraftModal from "@/components/modal/NewDraftModal";
+import type { Outcome, Stance, Audience } from "@/types";
+import { YourMind } from "@/components/thinking/YourMind";
+import { useRouter } from "next/navigation";
 
 export default function WorkspacePage() {
-    const [activeSection, setActiveSection] = useState<'beliefs' | 'tensions' | 'directions' | 'drafts' | 'explore' | 'pipeline' | 'mindmap'>('pipeline');
+    const [activeSection, setActiveSection] = useState<'mind' | 'beliefs' | 'tensions' | 'directions' | 'drafts' | 'explore' | 'pipeline' | 'mindmap'>('pipeline');
     const { beliefs, loading, submitFeedback } = useBeliefs();
     const [reviewedBeliefIds, setReviewedBeliefIds] = useState<Set<string>>(new Set());
     const { directions, loading: directionsLoading, generateDirections, generated } = useDirections();
@@ -111,9 +115,16 @@ export default function WorkspacePage() {
             />
 
             <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-paper">
+                {/* Your Mind Section - New 3-tab layout */}
+                {activeSection === 'mind' && (
+                    <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                        <YourMind />
+                    </div>
+                )}
+
                 {/* CONTENT AREA: Scrollable Container for Non-Drafts */}
                 {
-                    activeSection !== 'drafts' && activeSection !== 'explore' && activeSection !== 'pipeline' && activeSection !== 'mindmap' && (
+                    activeSection !== 'drafts' && activeSection !== 'explore' && activeSection !== 'pipeline' && activeSection !== 'mindmap' && activeSection !== 'mind' && (
                         <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-12 pb-24 md:pb-12">
                             <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
 

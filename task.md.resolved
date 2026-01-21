@@ -1,0 +1,187 @@
+# Task List
+
+## LinkedIn Integration — Complete 🎉
+
+Branch: `feature/linkedin-integration`
+
+### Sprint 1: Database Foundation ✅
+### Sprint 2: Settings & Integrations UI ✅
+### Sprint 3: LinkedIn OAuth Flow ✅
+### Sprint 4: Fetch LinkedIn Posts ✅
+### Sprint 5: Publish to LinkedIn ✅
+### Sprint 6: Belief Confidence Model ✅
+- [x] Backend: Extract Confidence & Evidence from AI
+- [x] Database: Store `original_statement` as Evidence
+- [x] Frontend: Display Evidence in Belief Card
+- [x] Frontend: Show Confidence Badges
+### Sprint 6.5: Troubleshooting & Polish ✅
+### Sprint 7: Drafts to Posts Refactor [x]
+- [x] Backend: Aggregate published history in `/api/drafts`
+- [x] Frontend: Rename "Drafts" to "Posts"
+- [x] Frontend: Implement Drafts/Published Tabs
+- [x] Frontend: Show Publishing Details (Platform, Date, Link)
+- [x] Fix Connection Timeout (120s + IPv4)
+- [x] Fix "Unknown User" bug (Callback timeout)
+- [x] Increase Post Char Limit (5000)
+
+---
+
+## Summary of Commits
+| Sprint | Commit | Feature |
+|--------|--------|---------|
+| 1 | 1bcb53d | Database migrations |
+| 2 | 5fed96d | Settings page |
+| 3 | a30ac14 | OAuth routes |
+| 4 | 6b66ad1 | Fetch with soft gate |
+| 5 | 90cef50 | Publish to LinkedIn |
+| 6 | 0b916b1 | Confidence model UI |
+| 6.5 | TBD | Network Resiliency Fixes |
+
+---
+
+### Sprint 7: Explorer Module [x]
+- [x] Backend: `api/explore/interests` - Save/update user interests
+- [x] Backend: `api/explore/feed` - Google News RSS fetching
+- [x] Backend: `api/explore/ideas` - AI post idea generation
+- [x] Frontend: "Explore" Tab in Workspace
+- [x] Frontend: ChatGPT-style chat UI with sticky input
+- [x] Frontend: Quick prompt pills (Technology, Business, etc.)
+- [x] Frontend: Topic cards with Read + Post Ideas CTAs
+- [x] Frontend: Multi-select with floating action bar
+- [x] Frontend: Combined idea generation for multiple topics
+- [x] Database: `user_interests` table (manual apply done)
+
+### Sprint 8: Pipeline UI Foundation [x]
+- [x] Database: `content_items` table
+- [x] Backend: `api/content` CRUD endpoints
+- [x] Frontend: Command Center layout (4 columns)
+- [x] Frontend: Migrate drafts to content_items
+- [x] Frontend: Ideas, In Dev, Drafts, Live columns
+
+### Sprint 9: Ideas Integration [x]
+- [x] Save ideas from Explorer to Pipeline
+- [x] Idea cards: Start Draft / Archive / Delete
+- [x] Quick Draft flow
+
+### Sprint 10: Development Wizard [x]
+- [x] Create wizard UI (step indicator)
+- [x] Step 1: Deep Dive (AI research + analysis)
+- [x] Step 2: Outline generation
+- [x] Step 3: Outline approval checkpoint
+- [x] Step 4: Draft generation from outline
+
+### Sprint 11: Knowledge Graph Backend [x]
+- [x] Create `content_embeddings` table (pgvector)
+- [x] Create `content_connections` table
+- [x] Embedding generation on content save
+- [x] Similarity search API endpoint
+- [x] Mind Map placeholder tab
+
+### Sprint 12: Beliefs/Tensions Surfacing [x]
+- [x] Tension → Post Idea conversion ("Turn into Post Idea" button)
+- [x] Belief → Post Idea conversion ("Write about this" button)
+- [x] Editor sidebar: show related beliefs ("Your Mind" tab)
+- [x] Plan for Directions Deprecation (Moved to Pipeline actions)
+
+### Sprint 13: The Unified Engine (Combined 13+14)
+- **Phase 1: The Bridge (Fixing Flows)**
+- **Phase 1: The Bridge (Fixing Flows)**
+  - [x] Wire Pipeline cards to Focus Editor (Fix "Broken Flow")
+  - [x] Ensure "LinkedIn Publish" persists in Focus Editor
+- **Phase 2: The Shell (Navigation)**
+  - [x] Implement Global Sidebar (Home, Mind, Explore, Library)
+  - [x] Add Global Actions (New Draft, Import Source)
+  - [x] Remove legacy Horizontal Tabs
+- **Phase 3: The Flywheel (Automation)**
+  - [x] Implement "Import Source" modal (Ingestion)
+  - [x] Auto-extract Beliefs on "Publish" & "Import"
+  - [x] Migrate "Directions" -> "Suggest Ideas" button in Pipeline
+  - [x] Migrate "Directions" -> "Suggest Ideas" button in Pipeline
+
+---
+
+## Flow Fixes (Pre-Brain) 🔧
+
+### Sprint 13.5: Your Mind Restructuring [x]
+- [x] UI: Create 3-tab layout for Your Mind page (Beliefs | Tensions | Mind Map)
+- [x] Beliefs Tab: Section for Core Beliefs (with cards)
+- [x] Beliefs Tab: Section for Emerging Theses (with cards)
+- [x] Beliefs Tab: Section for Overused Patterns (with cards)
+- [x] Beliefs Tab: Add "Import Source" button to header
+- [x] Tensions Tab: Move existing TensionCard components here
+- [x] Mind Map Tab: Placeholder for future graph visualization
+- [x] Navigation: Update sidebar to show "Your Mind" (not separate items)
+- [x] Test: All belief types display correctly in respective sections
+
+### Sprint 14: New Draft Modal Foundation [x]
+- [x] UI: Modal shell with overlay and close behavior
+- [x] Section 1: Topic input (textarea with validation)
+- [x] Section 2: Outcome Picker (4-option button group)
+- [x] Section 3: Audience Input (Role + Pain fields)
+- [x] Section 4: Stance Toggle (3-option selector)
+- [x] Footer: Cancel + Start Research buttons
+- [x] API: `POST /api/content/create` endpoint
+- [x] Database: Add `brain_metadata` JSONB column to `content_items`
+- [x] **Persistence: Save Brain inputs immediately on modal submit**
+- [x] **Create content_item with `stage = "developing"` before wizard starts**
+
+### Sprint 15: Reference Attachment System
+- [ ] UI: Reference attachment section
+- [ ] Feature: Paste Text (sub-modal + storage)
+- [ ] Feature: Upload File (.md, .txt support)
+- [ ] Feature: Add Link (URL fetch + preview)
+- [ ] Database: Create `content_references` table
+- [ ] API: File upload to Supabase Storage
+- [ ] UI: Reference list display with remove action
+
+### Sprint 16: Integration & Wizard Simplification
+- [ ] Wire "New Draft" button to modal
+- [ ] Wire "Write About This" (belief) to modal with auto-fill
+- [ ] Wire "Turn Into Post" (tension) to modal with auto-fill
+- [ ] Remove Development Wizard Step 0
+- [ ] Update Step 1 (Deep Dive) to use references from modal
+- [ ] **Database: Add `dev_step` field to `content_items` for progress tracking**
+- [ ] **Wizard: Save progress after each step (Deep Dive, Outline, Draft)**
+- [ ] **Resumption: Load wizard from last completed step on page load**
+- [ ] **UI: "Save & Exit" button in wizard (or auto-save every 30s)**
+- [ ] **UI: "Items in Development" notification on Command Center**
+- [ ] Test: End-to-end content creation flow
+- [ ] Test: Resumption after browser close/crash
+
+---
+
+## The Brain V1 (Decision Engine) 🧠
+
+### Sprint 17: Brain Foundation (Data Layer)
+- [ ] Database: Create `brain_trace_logs` table
+- [ ] Backend: Define Brain Types (Outcome, Audience, Stance, ConfidenceLevel)
+- [ ] Backend: Update [ContentItem](file:///Users/maruthi/Desktop/MainDirectory/counterdraft/app/src/components/pipeline/CommandCenter.tsx#10-25) interface with Brain fields
+- [ ] Backend: Brain metadata validation logic
+
+### Sprint 18: Brain Core Logic (Decision Engine)
+- [ ] Backend: Implement `BrainDecisionService` (Input → Decision)
+- [ ] Backend: Implement `OutcomeInference` logic (Heuristic/LLM)
+- [ ] Backend: Implement `ConfidenceCalculator`
+- [ ] Backend: Implement `TraceLogger`
+- [ ] Integration: Run Brain on content creation
+
+### Sprint 19: Brain UI Components & Feedback
+- [ ] Frontend: `ConfidenceIndicator` (visual ring)
+- [ ] Frontend: `ContextBadge` (Needs Context, Belief Conflict, etc.)
+- [ ] Frontend: "Why?" explanation drawer
+- [ ] UI: Display confidence on Idea cards
+- [ ] UI: Show Brain feedback in editor sidebar
+- [ ] Test: Brain decisions logged correctly
+
+---
+
+## Backlog / Wishlist 📋
+
+### Future Enhancements
+- [ ] Reference Attachments: PDF support (.pdf text extraction)
+- [ ] Auto-save wizard progress every 30s
+- [ ] Offline support (localStorage backup)
+- [ ] Real-time sync (WebSocket for concurrent edits)
+- [ ] Brain: LLM-based outcome inference (vs. heuristic)
+- [ ] Brain: "Edit Inputs" from wizard header
+- [ ] Mobile: Bottom sheet for wizard on mobile devices

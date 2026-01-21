@@ -1,0 +1,70 @@
+# Responsive UI - Sprint Plan
+
+## Approach
+Fix one screen at a time, starting with the most critical. Each sprint is small and testable.
+
+---
+
+## Sprint R1: Three-Pane Layout (Library/Drafts)
+**Goal:** Make the editor layout usable on tablet/mobile
+
+- [x] Auto-hide right pane (Agent) on screens <1024px
+- [x] Auto-hide left pane (Drafts) on screens <768px
+- [x] Ensure expand buttons always visible when panes are hidden
+- [ ] Test: Resize browser, verify panes collapse/expand correctly
+
+---
+
+## Sprint R2: Global Sidebar
+**Goal:** Make sidebar work on smaller screens
+
+- [x] Collapse to icons-only mode on tablet (<1024px)
+- [x] Add hamburger menu toggle
+- [x] Hide completely on mobile (<768px)
+- [ ] Test: Sidebar adapts at each breakpoint
+
+---
+
+## Sprint R3: Mobile Bottom Navigation
+**Goal:** Provide navigation on mobile when sidebar is hidden
+
+- [x] Create [MobileBottomNav](file:///Users/maruthi/Desktop/MainDirectory/counterdraft/app/src/components/navigation/MobileBottomNav.tsx#11-126) component
+- [x] Show only on mobile (<768px)
+- [x] Include: Home, Explore, Library, Mind, More
+- [ ] Test: Navigation works on mobile viewport
+
+---
+
+## Sprint R4: Content Screens (Explore, Command Center, Beliefs)
+**Goal:** Make content cards and grids stack properly
+
+- [x] Command Center columns → stack vertical on mobile (with tab navigation)
+- [x] Explore chat → full-width on mobile
+- [x] Belief/Tension cards → responsive layout + visible actions
+- [x] Published list → responsive card layout
+- [x] Bottom padding → added pb-24 to all screens for mobile nav clearance
+- [ ] Test: All content screens readable on mobile
+
+---
+
+## The Brain V1 (Next Feature) 🧠
+**Goal:** Implement the deterministic decision system for content optimization.
+
+### Sprint 14: Brain Foundation
+- [ ] Schema: `brain_metadata` on content items
+- [ ] Schema: `brain_trace_logs`
+- [ ] Backend: Types & Interfaces
+
+### Sprint 15: Brain Logic
+- [ ] `BrainDecisionService`
+- [ ] Outcome & Confidence Logic
+
+### Sprint 16: Brain UI
+- [ ] Picker, Toggle, Indicator Components
+- [ ] Integration with Idea/Dev flows
+
+---
+
+## Starting Point
+**Start with Sprint 14** - Database schema updates are required first.
+
