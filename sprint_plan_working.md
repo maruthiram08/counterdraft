@@ -80,67 +80,58 @@ _Add notes as work progresses..._
 
 ## Sprint 11: Knowledge Graph Backend
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 
 ### Tasks
-- [ ] Create `content_embeddings` table (pgvector)
-- [ ] Create `content_connections` table
-- [ ] Embedding generation on content save
-- [ ] Similarity search API endpoint
-- [ ] Agent context injection (top 5 related nodes)
-- [ ] "Mind Map" placeholder tab in UI
-
-### Notes
-_Add notes as work progresses..._
+- [x] Create `content_embeddings` table (pgvector)
+- [x] Create `content_connections` table
+- [x] Embedding generation on content save
+- [x] Similarity search API endpoint
+- [x] Agent context injection (top 5 related nodes)
+- [x] "Mind Map" placeholder tab in UI
 
 ---
 
 ## Sprint 12: Beliefs/Tensions Surfacing
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 
 ### Tasks
-- [ ] Editor sidebar: show related beliefs
-- [ ] "Use in post" action for beliefs
-- [ ] Tension → Post Idea conversion
-- [ ] "Turn into Post" CTA on productive tensions
-- [ ] Belief context in idea generation prompts
-- [ ] Merge Directions into Ideas (deprecate tab)
-
-### Notes
-_Add notes as work progresses..._
+- [x] Editor sidebar: show related beliefs
+- [x] "Use in post" action for beliefs
+- [x] Tension → Post Idea conversion
+- [x] "Turn into Post" CTA on productive tensions
+- [x] Belief context in idea generation prompts
+- [x] Merge Directions into Ideas (deprecate tab)
 
 ---
 
 ## Sprint 13: Flywheel & Polish
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 
 ### Tasks
-- [ ] Publish triggers belief extraction
-- [ ] New beliefs → tension detection
-- [ ] New tensions → idea suggestions
-- [ ] Pipeline progress animations
-- [ ] Mobile-responsive layout
-- [ ] Performance optimization
-- [ ] User onboarding for new flow
-
-### Notes
-_Add notes as work progresses..._
+- [x] Publish triggers belief extraction
+- [x] New beliefs → tension detection
+- [x] New tensions → idea suggestions
+- [x] Pipeline progress animations
+- [x] Mobile-responsive layout
+- [x] Performance optimization
+- [x] User onboarding for new flow
 
 ---
 
 ## Sprint 14: Sidebar Navigation Layout
 
-**Status:** ⬜ Not Started
+**Status:** ✅ Complete
 
 ### Tasks
-- [ ] Convert horizontal tabs to sidebar navigation
-- [ ] "YOUR MIND" section: Beliefs, Tensions, Sources
-- [ ] "EXPLORE" section: Trending Topics
-- [ ] Main content area for Command Center
-- [ ] Collapsible sidebar for mobile
-- [ ] Update all tab references to sidebar
+- [x] Convert horizontal tabs to sidebar navigation
+- [x] "YOUR MIND" section: Beliefs, Tensions, Sources
+- [x] "EXPLORE" section: Trending Topics
+- [x] Main content area for Command Center
+- [x] Collapsible sidebar for mobile
+- [x] Update all tab references to sidebar
 
 ### Notes
 - Reference: Architecture diagram in command_center_approach.md

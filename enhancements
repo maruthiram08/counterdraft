@@ -1,0 +1,17 @@
+settings - page (integration pages -missing to be linked)
+
+Merge the latest changes to github, 1 branch behind
+
+In development workflow - there is missing userflow to intitate the content development process. Current steps in the CD process involve 1) Research 2) Outline 3) Draft preparation
+
+Current reserach process is not tailored to the type of the content. User should be able to attach references to the research process - supported references for MVP - markdowns, urls (tool-call capability to be confirmed), text, word documents.
+
+Once the agent generates the research - user should be able to preview, add inline comments (similar to the flow implemented in the maineditor page). There should be an option available fo export research to a md file. alternatively when taps on redo-research we can trigger this flow.. (Pros & Cons to be analysed). We should consider the brain/rules engine to be in-line with this. 
+
+Outline Process - Currently the outline preview generated is completely broken. 
+
+Porposed flow - ideas, development, drafts, platfrom customisation - 1) linkedin/medium/substack 2) IG content 3) YT transcripts
+
+Identify dependnecies - 1) Platfomrm specific content formatting 2) Supported content types for MVP 3)List of 3rd Party integrations needed
+
+Content development workflow proposed changes - 1) Befor

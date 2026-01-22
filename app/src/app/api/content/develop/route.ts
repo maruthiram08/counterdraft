@@ -104,12 +104,14 @@ Example: { "text": "Updated research point..." }`
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a content strategist creating a LinkedIn post outline.
-Given a topic and research, create a 5-section outline for a compelling post.
-Each section should be a ONE-LINE description of what to write.
+                        content: `You are a content strategist creating a COMPREHENSIVE content outline.
+Given a topic and research, create a detailed, granular outline that fully covers the subject.
+- Do NOT limit the number of sections. Use as many as needed (e.g., 7-12 points) to cover all research findings.
+- Ensure the structure supports a deep-dive "Source of Truth" document.
+- Each section should be a clear instruction or sub-header.
 
-IMPORTANT: Return a JSON object with a "sections" key containing an array of strings:
-{ "sections": ["Opening hook sentence", "Main point 1", "Main point 2", "Main point 3", "Closing CTA"] }${brainContext}`
+IMPORTANT: Return a JSON object with a "sections" key containing an array of strings.
+{ "sections": ["Section 1", "Section 2", ..., "Section N"] }${brainContext}`
                     },
                     {
                         role: 'user',
@@ -153,8 +155,21 @@ IMPORTANT: Return a JSON object with a "sections" key containing an array of str
 
         } else if (action === 'draft') {
             // Step 3: Generate full draft from outline
+
+            // Unrestricted Depth Logic (Source of Truth)
+            const format = brainMetadata?.format || 'thought_leadership';
+
+            let styleInstruction = "- detailed paragraphs, deep analysis, authority-driven tone";
+            if (format === 'tactical_guide') {
+                styleInstruction = "- focus on clear, actionable steps\n- include examples for every step";
+            } else if (format === 'personal_story') {
+                styleInstruction = "- focus on emotion and vulnerable storytelling\n- use dramatic pacing";
+            } else if (format === 'listicle') {
+                styleInstruction = "- punchy, short sentences\n- maximize readability";
+            }
+
             const brainContext = brainMetadata
-                ? `\n\nStrategic Context:\n- Goal: ${brainMetadata.outcome}\n- Audience: ${brainMetadata.audience?.role} (Pain: ${brainMetadata.audience?.pain})\n- Stance: ${brainMetadata.stance}\n- Format: ${brainMetadata.format || 'Thought Leadership'}`
+                ? `\n\nStrategic Context:\n- Goal: ${brainMetadata.outcome}\n- Audience: ${brainMetadata.audience?.role} (Pain: ${brainMetadata.audience?.pain})\n- Stance: ${brainMetadata.stance}\n- Format: ${format}`
                 : '';
 
             const completion = await getOpenAI().chat.completions.create({
@@ -163,12 +178,14 @@ IMPORTANT: Return a JSON object with a "sections" key containing an array of str
                     {
                         role: 'system',
                         content: `You are an expert LinkedIn content writer.
-Write a compelling LinkedIn post based on the given outline.
-- Use short paragraphs (2-3 sentences max)
-- Include line breaks for readability
-- Make it personal and authentic
-- End with a question or CTA
-- Target length: 800-1200 characters${brainContext}`
+Write a COMPREHENSIVE LinkedIn post based on the given outline.
+- This is the "Source of Truth" document. Do NOT summarize or cut content.
+- Fully explore each point in the outline.
+- Use as many words as necessary to be thorough.
+- Use short paragraphs for readability, but keep the TOTAL CONTENT substantial.
+- Make it personal and authentic.
+- End with a question or CTA.
+${styleInstruction}${brainContext}`
                     },
                     {
                         role: 'user',

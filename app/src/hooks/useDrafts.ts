@@ -7,6 +7,8 @@ export interface Draft {
     status: 'draft' | 'published' | 'archived';
     created_at: string;
     updated_at: string;
+    platform?: string;
+    platform_metadata?: any;
     published_posts?: {
         id: string;
         platform: string;

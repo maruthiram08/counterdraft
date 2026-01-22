@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Save, Check, RefreshCw, Eye, Edit2 } from "lucide-react";
+import { Copy, Save, Check, RefreshCw, Eye, Edit2, Image as ImageIcon } from "lucide-react";
 import { Draft } from "@/hooks/useDrafts";
 import { ContextualToolbar } from "./ContextualToolbar";
 import { PublishModal } from "./PublishModal";
@@ -93,8 +93,8 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleRepurpose = async (platform: 'medium' | 'instagram', options: any) => {
-        if (!draft) return;
+    const handleRepurpose = async (platform: string, options: any) => {
+        if (!draft) return null;
         setIsRepurposing(true);
         try {
             // First save current work
@@ -113,17 +113,58 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
             const data = await res.json();
 
             if (data.id) {
-                // Redirect to new draft in workspace
-                // Force a hard navigation to ensure the workspace reloads and picks up the search param
-                window.location.href = `/workspace?draftId=${data.id}`;
+                return data; // Success
+            } else {
+                console.warn("Repurpose API returned success but no ID:", data);
+                return null;
             }
         } catch (e) {
-            console.error(e);
-            alert("Failed to repurpose content");
+            console.error("Repurpose Error:", e);
+            alert("Failed to repurpose content. Please try again.");
+            return null;
         } finally {
             setIsRepurposing(false);
-            setShowRepurposeModal(false);
+            // We keep the modal open to show the Success/Design screens
         }
+    };
+
+    const handleDownloadDesign = () => {
+        if (!draft || draft.platform !== 'instagram') return;
+
+        import('@/lib/pptx-generator').then(({ PptxGenerator }) => {
+            const gen = new PptxGenerator();
+            let slides: any[] = [];
+            const metadata = draft.platform_metadata;
+
+            if (metadata && Array.isArray(metadata.slides)) {
+                slides = metadata.slides.map((s: any) => ({
+                    title: s.header || "Slide",
+                    body: s.body || "",
+                    type: 'content',
+                    visualNotes: s.visualDescription
+                }));
+            } else {
+                // Fallback: Naive Text Splitting
+                const parts = content.split('\n\n').filter(p => p.trim().length > 0);
+                const title = parts[0]?.replace(/^#+\s*/, '') || "Untitled";
+                const bodyParts = parts.slice(1);
+
+                bodyParts.forEach(part => {
+                    slides.push({ title: title, body: part, type: 'content' });
+                });
+            }
+
+            // Inject Cover Image
+            if (coverImage && slides.length > 0) {
+                slides[0].imageUrl = coverImage;
+            }
+
+            if (slides.length === 0) {
+                slides.push({ title: "Draft", body: "No content found.", type: 'cover' });
+            }
+
+            gen.generateInstagramPost(slides as any);
+        });
     };
 
     // --- Contextual Editing Handlers ---
@@ -286,6 +327,16 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                     >
                         <RefreshCw size={12} />
                     </button>
+                    {/* Design Download (Instagram Only) */}
+                    {draft.platform === 'instagram' && (
+                        <button
+                            onClick={handleDownloadDesign}
+                            className="text-xs font-medium text-pink-500 hover:text-pink-600 px-2 py-1 hover:bg-pink-50 rounded-md transition-all"
+                            title="Download Design File"
+                        >
+                            <ImageIcon size={12} />
+                        </button>
+                    )}
                     {/* Publish */}
                     <button
                         onClick={() => setShowPublishModal(true)}
@@ -386,6 +437,7 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 onClose={() => setShowRepurposeModal(false)}
                 onRepurpose={handleRepurpose}
                 isProcessing={isRepurposing}
+                sourceContent={getFullContent()}
             />
         </div>
     );

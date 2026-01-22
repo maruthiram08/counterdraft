@@ -5,6 +5,8 @@ export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+export const getOpenAI = () => openai;
+
 export async function generateImage(prompt: string): Promise<string | undefined> {
   try {
     const response = await openai.images.generate({
@@ -20,7 +22,7 @@ export async function generateImage(prompt: string): Promise<string | undefined>
   }
 }
 
-export async function repurposeContent(content: string, platform: string, options: any): Promise<{ title: string; content: string }> {
+export async function repurposeContent(content: string, platform: string, options: any): Promise<{ title: string; content: string; extraData?: any }> {
   const basePrompt = `You are an expert content strategist and editor. Your goal is to repurpose the input content into a high-performing piece for ${platform}.`;
 
   const mediumPrompt = `
@@ -43,32 +45,41 @@ export async function repurposeContent(content: string, platform: string, option
     TASK:
     1. Transform the Original Content into this format.
     2. Generate a catchy, click-worthy Title (H1 style, but returned in JSON field).
-  `;
-
-  const instagramPrompt = `
-    PLATFORM: INSTAGRAM (Carousel/Post)
-
-    GOAL: Create a high-engagement visual post package.
-
-    FORMAT:
-    - SLIDE 1 (Hook): Maximum impact, few words.
-    - SLIDE 2-N (Body): Break the core message into 5-8 digestible slides.
-    - CAPTION: Engaging caption with hook, value, and CTA.
-    - HASHTAGS: 10-15 relevant tags.
-    - VISUAL DIRECTION: Brief description of the visual vibe.
-
-    TONE: High energy, concise, visual-first thinking.
-  `;
-
-  const systemPrompt = `
-    ${basePrompt}
-    ${platform === 'medium' ? mediumPrompt : instagramPrompt}
 
     Output valid JSON:
     {
       "title": "The exact title",
       "content": "The full markdown content"
     }
+  `;
+
+  const instagramPrompt = `
+    PLATFORM: INSTAGRAM (${options.format === 'single' ? 'Single Post' : 'Carousel'})
+
+    GOAL: Create a high-engagement visual post.
+
+    STRUCTURE:
+    - **Header**: Short, punchy title for the slide (Max 5 words).
+    - **Body**: Concise text (Max 25 words per slide). Readable at a glance.
+    - **Visual**: Brief description of the image/graphic vibe.
+
+    TASK:
+    Generate ${options.format === 'single' ? 'exactly 1 slide' : '5-8 slides'}.
+
+    Output valid JSON matching this schema:
+    {
+      "title": "Post Title",
+      "caption": "Full caption including hook, value, and CTA.",
+      "hashtags": ["#tag1", "#tag2"],
+      "slides": [
+        { "header": "Slide Header", "body": "Slide Text", "visualDescription": "..." }
+      ]
+    }
+  `;
+
+  const systemPrompt = `
+    ${basePrompt}
+    ${platform === 'medium' ? mediumPrompt : instagramPrompt}
   `;
 
   const completion = await openai.chat.completions.create({
@@ -84,7 +95,27 @@ export async function repurposeContent(content: string, platform: string, option
   if (!result) return { title: "Untitled Repurposed Draft", content: "" };
 
   try {
-    return JSON.parse(result);
+    const parsed = JSON.parse(result);
+
+    if (platform === 'instagram') {
+      const slides = parsed.slides || [];
+      const hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags.join(' ') : (parsed.hashtags || '');
+
+      // Construct markdown for the Editor
+      let md = `**Caption:**\n${parsed.caption}\n\n${hashtags}\n\n---\n\n`;
+
+      slides.forEach((s: any, i: number) => {
+        md += `## Slide ${i + 1}: ${s.header}\n${s.body}\n\n> *Visual: ${s.visualDescription}*\n\n`;
+      });
+
+      return {
+        title: parsed.title,
+        content: md,
+        extraData: { slides, hashtags: parsed.hashtags, caption: parsed.caption }
+      };
+    }
+
+    return parsed;
   } catch (e) {
     // Fallback if model refuses JSON
     return {
@@ -285,4 +316,33 @@ Output as JSON:
   if (!result) throw new Error("No response from OpenAI");
 
   return JSON.parse(result);
+}
+
+// Helper for tag suggestion
+export async function suggestTags(content: string): Promise<string[]> {
+  const systemPrompt = `You are a social media expert.
+Analyze the content and suggest 5-8 high-impact, relevant hashtags or context labels.
+Mix broad niche tags (e.g. #Leadership) with specific tags (e.g. #RemoteWorkTips).
+
+Output as JSON: { "tags": ["#tag1", "#tag2", ...] }`;
+
+  const completion = await openai.chat.completions.create({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Content:\n${content.substring(0, 1000)}...` } // Limit context window
+    ],
+    model: "gpt-4o",
+    response_format: { type: "json_object" },
+    temperature: 0.7
+  });
+
+  const result = completion.choices[0].message.content;
+  if (!result) return [];
+
+  try {
+    const parsed = JSON.parse(result);
+    return parsed.tags || [];
+  } catch (e) {
+    return [];
+  }
 }

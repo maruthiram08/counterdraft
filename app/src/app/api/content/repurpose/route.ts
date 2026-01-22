@@ -41,7 +41,12 @@ export async function POST(req: Request) {
         }
 
         // 2. Generate Text Content
-        const { title: newTitle, content: generatedContent } = await repurposeContent(sourceContent, platform, options);
+        const { title: newTitle, content: generatedContent, extraData } = await repurposeContent(sourceContent, platform, options);
+
+        // Merge extraData (slides, hashtags) into options for storage
+        if (extraData) {
+            Object.assign(options, { ...extraData });
+        }
 
         // 3. Generate Assets (if requested)
         const assets: any[] = [];
@@ -109,7 +114,12 @@ export async function POST(req: Request) {
             }
         });
 
-        return NextResponse.json({ id: newDraft.id });
+        return NextResponse.json({
+            id: newDraft.id,
+            content: finalContent,
+            platform_metadata: newDraft.platform_metadata,
+            assets: assets || []
+        });
 
     } catch (e: any) {
         console.error("Repurpose failed:", e);

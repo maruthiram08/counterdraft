@@ -1,0 +1,59 @@
+## Feature Context: Canva Handoff (Co-Creation, Not Rendering)
+
+This product integrates with Canva as a **co-creation tool**, not as a rendering engine.
+
+### Core Principle
+Counterdraft is responsible for **editorial judgment and content intent**.  
+Canva is responsible for **visual design and final presentation**.
+
+The system must NEVER attempt to fully design visuals or auto-publish without user involvement.
+
+---
+
+### What the Canva Handoff Does
+- Takes **finalized, Brain-approved content** (headline, body, CTA)
+- Passes it to Canva in a structured way
+- Opens Canva with:
+  - Correct post format (e.g. LinkedIn post, Instagram square, carousel)
+  - Text pre-filled into template placeholders
+  - Clear hierarchy (primary vs secondary text)
+
+This eliminates copy-paste and format confusion for the user.
+
+---
+
+### What the Canva Handoff Does NOT Do
+- Does NOT choose fonts, colors, or layouts programmatically
+- Does NOT auto-publish content
+- Does NOT attempt “one-click final design”
+- Does NOT replace Canva’s creative control
+
+The user must always:
+- See the design
+- Adjust visuals if desired
+- Explicitly export or publish
+
+---
+
+### UX Expectations
+- The CTA should read: **“Design in Canva”**
+- The interaction should feel like a smooth handoff, not automation
+- Canva opens as a foreground experience
+- Returning to Counterdraft is optional, not forced
+
+---
+
+### Brain Interaction Rules
+- Canva handoff is only enabled when:
+  - Content intent is locked
+  - Brain confidence is medium or high
+- The Brain passes **intent and structure**, not visual instructions
+- Any Canva usage is treated as execution, not decision-making
+
+---
+
+### Success Criteria
+The feature is successful if users say:
+> “I didn’t have to think about formatting or copy-pasting — I just designed.”
+
+If users expect Counterdraft to design visuals, the feature has failed.
