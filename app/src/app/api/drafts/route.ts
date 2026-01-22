@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server';
 import { supabase } from '@/lib/supabase';
 import { getOrCreateUser } from '@/lib/user-sync';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/drafts - List all drafts for authenticated user
 export async function GET() {
     try {
@@ -18,13 +20,39 @@ export async function GET() {
             return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
         }
 
-        const { data: drafts, error } = await supabase
+        const { data: draftsData, error } = await supabase
             .from('drafts')
             .select('*, published_posts(*)')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
+
+        // Fetch content items to get metadata (Platform, Length, Parent)
+        const { data: contentItems } = await supabase
+            .from('content_items')
+            .select('id, brain_metadata, hook')
+            .eq('user_id', userId);
+
+        const drafts = draftsData.map(draft => {
+            // Find corresponding content item
+            const item = contentItems?.find(ci =>
+                ci.id === draft.id ||
+                ci.brain_metadata?.repurpose?.linkedDraftId === draft.id
+            );
+
+            const metadata = item?.brain_metadata || {};
+            const repurposeData = metadata.repurpose || {};
+
+            return {
+                ...draft,
+                labels: {
+                    platform: repurposeData.platform || metadata.platform,
+                    length: repurposeData.length || metadata.length,
+                    parentId: repurposeData.parentId // Critical for grouping
+                }
+            };
+        });
 
         return NextResponse.json({ drafts });
     } catch (error: any) {

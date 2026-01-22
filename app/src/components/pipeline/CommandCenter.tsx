@@ -1,12 +1,14 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Lightbulb, Settings, FileText, CheckCircle, Loader2, Archive, Trash2, Plus, ArrowRight, Wand2 } from "lucide-react";
 import { DevelopmentWizard } from "./DevelopmentWizard";
+import { NewDraftModal } from "./NewDraftModal";
+import { BrainMetadata, ContentItem as GlobalContentItem } from "@/types";
 
 type Stage = 'idea' | 'developing' | 'draft' | 'published';
 
-
+// Use local interface extending global to match component needs if necessary, 
+// or just used global. Global has 'userId' which we might not need here? 
+// Let's stick to the existing shape but add brainMetadata
 interface ContentItem {
     id: string;
     hook: string;
@@ -21,6 +23,7 @@ interface ContentItem {
     updated_at: string;
     published_at?: string;
     platform?: string;
+    brain_metadata?: BrainMetadata;
 }
 
 interface ColumnProps {
@@ -71,11 +74,11 @@ function SkeletonCard() {
 
 function Column({ title, icon, items, stage, color, onAction, loading }: ColumnProps) {
     return (
-        <div className="flex-1 min-w-[280px] sm:min-w-[250px] max-w-full sm:max-w-[300px] bg-gray-50/50 rounded-xl p-3">
+        <div className="flex-1 min-w-[280px] sm:min-w-[250px] max-w-full sm:max-w-[300px] bg-transparent rounded-xl p-3">
             {/* Header */}
             <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{title}</h3>
+                    <h3 className="text-lg font-serif font-medium text-gray-900">{title}</h3>
                     <span className="text-xs font-medium text-gray-500 bg-gray-200/60 px-2 py-0.5 rounded-full">
                         {loading ? '-' : items.length}
                     </span>
@@ -95,7 +98,7 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                     </div>
                 ) : (
                     items.map(item => (
-                        <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200/60 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3 h-auto min-h-[140px]">
+                        <div key={item.id} className="bg-white p-4 rounded-xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3 h-auto min-h-[140px]">
                             {/* Top Tags */}
                             <div className="flex items-center justify-between">
                                 <div className="flex gap-2">
@@ -109,6 +112,19 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                                             {item.platform}
                                         </span>
                                     )}
+                                    {/* Brain Confidence Badge (if metadata exists) */}
+                                    {item.brain_metadata?.confidence && (
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${item.brain_metadata.confidence === 'high' ? 'bg-green-50 text-green-700' :
+                                            item.brain_metadata.confidence === 'medium' ? 'bg-amber-50 text-amber-700' :
+                                                'bg-gray-100 text-gray-500'
+                                            }`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${item.brain_metadata.confidence === 'high' ? 'bg-green-500' :
+                                                item.brain_metadata.confidence === 'medium' ? 'bg-amber-500' :
+                                                    'bg-gray-400'
+                                                }`} />
+                                            {item.brain_metadata.confidence}
+                                        </span>
+                                    )}
                                 </div>
                                 <span className="text-[10px] font-medium text-gray-400">
                                     {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -117,7 +133,7 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
 
                             {/* Content */}
                             <div className="space-y-1.5">
-                                <h3 className="text-[15px] font-bold text-gray-900 leading-snug text-balance font-sans">
+                                <h3 className="text-[17px] font-serif font-medium text-gray-900 leading-snug text-balance">
                                     {item.hook || 'Untitled Idea'}
                                 </h3>
                                 <p className="text-[13px] text-gray-500 line-clamp-3 leading-relaxed font-sans">
@@ -147,6 +163,16 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                                                 <span className="text-[10px] font-medium leading-none">Draft</span>
                                             </button>
                                         </>
+                                    )}
+                                    {stage === 'developing' && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onAction(item.id, 'develop'); }}
+                                            className="flex flex-col items-center gap-1 p-2 hover:bg-amber-50 text-gray-400 hover:text-amber-700 rounded-lg transition-colors group/btn min-w-[50px]"
+                                            title="Continue Development"
+                                        >
+                                            <Wand2 size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
+                                            <span className="text-[10px] font-medium leading-none">Continue</span>
+                                        </button>
                                     )}
                                     {stage === 'draft' && (
                                         <button
@@ -186,16 +212,17 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
 
 export interface CommandCenterProps {
     onEdit?: (id: string) => void;
-    onDraftCreated?: () => void;
-    onNewDraft?: () => void; // New prop to trigger modal
+    onDraftCreated?: () => Promise<void> | void;
+    onNewDraft?: () => void; // Used to trigger modal from parent, but we can also handle it locally or override
 }
 
-export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCenterProps) {
+export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDraft }: CommandCenterProps) {
     const [items, setItems] = useState<ContentItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [developingItem, setDevelopingItem] = useState<ContentItem | null>(null);
     const [activeStage, setActiveStage] = useState<Stage>('idea');
     const [isMobile, setIsMobile] = useState(false);
+    const [isNewDraftModalOpen, setIsNewDraftModalOpen] = useState(false);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -230,8 +257,6 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
                 // Refresh items to show new suggestions
                 await fetchItems();
             } else if (data.ideas && !data.persisted) {
-                // If not persisted, we might need to manually add them to state?
-                // But for now assume persistence works.
                 console.warn("Ideas generated but not persisted?", data);
             }
         } catch (err) {
@@ -254,6 +279,8 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
                 });
                 setItems(prev => prev.filter(i => i.id !== id));
             } else if (action === 'start_draft') {
+                console.log("Start Draft clicked");
+                // In future this might also open the modal if we want full brain info
                 await fetch('/api/content', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -286,7 +313,6 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
         });
 
         // 2. Create Real Draft (Bridge to Editor)
-        // We create a synchronized record in the 'drafts' table for the Editor to use.
         try {
             const draftRes = await fetch('/api/drafts', {
                 method: 'POST',
@@ -300,16 +326,12 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
             const draftData = await draftRes.json();
 
             if (draftData.draft) {
-                // Notify parent to refresh drafts list
-                if (onDraftCreated) onDraftCreated();
-
-                // Open the NEW draft ID in the editor
+                if (onDraftCreated) await onDraftCreated();
                 if (onEdit) onEdit(draftData.draft.id);
             }
 
         } catch (e) {
             console.error("Failed to sync to drafts table:", e);
-            // Fallback to old behavior (might result in blank screen if not synced)
             if (onEdit) onEdit(developingItem.id);
         }
 
@@ -322,6 +344,28 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
         setDevelopingItem(null);
     };
 
+    const handleNewDraftStart = async (topic: string, metadata: BrainMetadata) => {
+        try {
+            const res = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    hook: topic,
+                    stage: 'developing', // Skip idea, go straight to developing
+                    brain_metadata: metadata,
+                    dev_step: null // Not started wizard yet
+                }),
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                await fetchItems(); // Refresh to show new item
+            }
+        } catch (error) {
+            console.error("Failed to create new draft:", error);
+        }
+    };
+
     const ideas = items.filter(i => i.stage === 'idea');
     const developing = items.filter(i => i.stage === 'developing');
     const drafts = items.filter(i => i.stage === 'draft');
@@ -332,8 +376,8 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
             {/* Header */}
             <div className="flex items-center justify-between p-6 pb-4">
                 <div>
-                    <h1 className="text-2xl font-serif text-gray-900">Command Center</h1>
-                    <p className="text-sm text-gray-500">Your content pipeline at a glance</p>
+                    <h1 className="text-4xl font-serif text-gray-900 mb-1">Command Center</h1>
+                    <p className="text-base text-gray-500 font-serif">Your content pipeline.</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -345,7 +389,7 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
                         Suggest Ideas
                     </button>
                     <button
-                        onClick={onNewDraft}
+                        onClick={() => setIsNewDraftModalOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         <Plus size={16} />
@@ -354,7 +398,6 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
                 </div>
             </div>
 
-            {/* Pipeline - Responsive Grid */}
             {/* Pipeline - Responsive Grid */}
             <div className="flex-1 overflow-x-auto p-4 md:p-6 pt-2 pb-24 md:pb-6">
                 {/* Mobile Tabs */}
@@ -426,15 +469,20 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft }: CommandCen
             </div>
 
             {/* Development Wizard Modal */}
-            {
-                developingItem && (
-                    <DevelopmentWizard
-                        item={developingItem}
-                        onClose={() => setDevelopingItem(null)}
-                        onComplete={handleWizardComplete}
-                    />
-                )
-            }
-        </div >
+            {developingItem && (
+                <DevelopmentWizard
+                    item={developingItem}
+                    onClose={() => setDevelopingItem(null)}
+                    onComplete={handleWizardComplete}
+                />
+            )}
+
+            {/* New Draft Modal */}
+            <NewDraftModal
+                isOpen={isNewDraftModalOpen}
+                onClose={() => setIsNewDraftModalOpen(false)}
+                onStart={handleNewDraftStart}
+            />
+        </div>
     );
 }

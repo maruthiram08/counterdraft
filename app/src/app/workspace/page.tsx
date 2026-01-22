@@ -27,9 +27,11 @@ import { CommandCenter } from "@/components/pipeline/CommandCenter";
 import NewDraftModal from "@/components/modal/NewDraftModal";
 import type { Outcome, Stance, Audience } from "@/types";
 import { YourMind } from "@/components/thinking/YourMind";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function WorkspacePage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [activeSection, setActiveSection] = useState<'mind' | 'beliefs' | 'tensions' | 'directions' | 'drafts' | 'explore' | 'pipeline' | 'mindmap'>('pipeline');
     const { beliefs, loading, submitFeedback } = useBeliefs();
     const [reviewedBeliefIds, setReviewedBeliefIds] = useState<Set<string>>(new Set());
@@ -41,6 +43,16 @@ export default function WorkspacePage() {
     const selectedDraft = drafts.find(d => d.id === selectedDraftId) || null;
     const [postsTab, setPostsTab] = useState<'drafts' | 'published'>('drafts');
 
+    // Handle Deep Linking
+    useEffect(() => {
+        const draftId = searchParams.get('draftId');
+        if (draftId) {
+            setSelectedDraftId(draftId);
+            setActiveSection('drafts');
+            setPostsTab('drafts');
+        }
+    }, [searchParams]);
+
     // Agent update handler
     const handleAgentApply = (refinedContent: string) => {
         if (selectedDraftId) {
@@ -50,7 +62,12 @@ export default function WorkspacePage() {
 
     // Modal state
     const [draftModalOpen, setDraftModalOpen] = useState(false);
-    const [selectedBelief, setSelectedBelief] = useState("");
+    // const [selectedBelief, setSelectedBelief] = useState(""); // Deprecated
+    const [newDraftPrefill, setNewDraftPrefill] = useState<{
+        hook?: string;
+        sourceType?: 'belief' | 'tension' | 'idea' | 'manual';
+        sourceId?: string;
+    } | undefined>(undefined);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
 
     // Mobile detection for responsive layouts
@@ -106,9 +123,15 @@ export default function WorkspacePage() {
         <div className="flex h-screen bg-[var(--background)] overflow-hidden">
             <GlobalSidebar
                 activeSection={activeSection}
-                onNavigate={(section) => setActiveSection(section as any)}
+                onNavigate={(section) => {
+                    if (section === 'settings') {
+                        router.push('/settings');
+                    } else {
+                        setActiveSection(section as any);
+                    }
+                }}
                 onNewDraft={() => {
-                    setSelectedBelief("");
+                    setNewDraftPrefill(undefined);
                     setDraftModalOpen(true);
                 }}
                 onImport={() => setAddContentModalOpen(true)}
@@ -156,18 +179,12 @@ export default function WorkspacePage() {
                                                             sourceCount={1}
                                                             onFeedback={handleBeliefReviewed}
                                                             onWriteAbout={async (beliefData) => {
-                                                                await fetch('/api/content', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({
-                                                                        hook: beliefData.text,
-                                                                        angle: `Expanding on this ${beliefData.type} belief`,
-                                                                        format: 'Thought Leadership',
-                                                                        source_type: 'belief',
-                                                                        source_id: beliefData.id,
-                                                                        stage: 'idea',
-                                                                    }),
+                                                                setNewDraftPrefill({
+                                                                    hook: beliefData.text,
+                                                                    sourceType: 'belief',
+                                                                    sourceId: beliefData.id
                                                                 });
+                                                                setDraftModalOpen(true);
                                                             }}
                                                         />
                                                     ))}
@@ -189,18 +206,12 @@ export default function WorkspacePage() {
                                                             sourceCount={1}
                                                             onFeedback={handleBeliefReviewed}
                                                             onWriteAbout={async (beliefData) => {
-                                                                await fetch('/api/content', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({
-                                                                        hook: beliefData.text,
-                                                                        angle: `Expanding on this ${beliefData.type} belief`,
-                                                                        format: 'Thought Leadership',
-                                                                        source_type: 'belief',
-                                                                        source_id: beliefData.id,
-                                                                        stage: 'idea',
-                                                                    }),
+                                                                setNewDraftPrefill({
+                                                                    hook: beliefData.text,
+                                                                    sourceType: 'belief',
+                                                                    sourceId: beliefData.id
                                                                 });
+                                                                setDraftModalOpen(true);
                                                             }}
                                                         />
                                                     ))}
@@ -222,18 +233,12 @@ export default function WorkspacePage() {
                                                             sourceCount={1}
                                                             onFeedback={handleBeliefReviewed}
                                                             onWriteAbout={async (beliefData) => {
-                                                                await fetch('/api/content', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({
-                                                                        hook: beliefData.text,
-                                                                        angle: `Expanding on this ${beliefData.type} belief`,
-                                                                        format: 'Thought Leadership',
-                                                                        source_type: 'belief',
-                                                                        source_id: beliefData.id,
-                                                                        stage: 'idea',
-                                                                    }),
+                                                                setNewDraftPrefill({
+                                                                    hook: beliefData.text,
+                                                                    sourceType: 'belief',
+                                                                    sourceId: beliefData.id
                                                                 });
+                                                                setDraftModalOpen(true);
                                                             }}
                                                         />
                                                     ))}
@@ -292,20 +297,12 @@ export default function WorkspacePage() {
                                                     }
                                                 }}
                                                 onTurnIntoIdea={async (tensionData) => {
-                                                    await fetch('/api/content', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({
-                                                            hook: `I believe two things that contradict each other...`,
-                                                            angle: `Exploring the nuance between: "${tensionData.sideA}" and "${tensionData.sideB}"`,
-                                                            format: 'Contrarian Take',
-                                                            source_type: 'tension',
-                                                            source_id: tensionData.id,
-                                                            stage: 'idea',
-                                                        }),
+                                                    setNewDraftPrefill({
+                                                        hook: `Exploring the tension between "${tensionData.sideA}" and "${tensionData.sideB}"`,
+                                                        sourceType: 'tension',
+                                                        sourceId: tensionData.id
                                                     });
-                                                    // Now hide it after conversion
-                                                    setClassifiedTensionIds(prev => new Set([...prev, tensionData.id]));
+                                                    setDraftModalOpen(true);
                                                 }}
                                             />
                                         ))}
@@ -353,8 +350,10 @@ export default function WorkspacePage() {
                                                         reason={d.rationale}
                                                         relatedBelief={d.strengthensBelief}
                                                         onDraft={(topic) => {
-                                                            const beliefToUse = d.strengthensBelief || topic;
-                                                            setSelectedBelief(beliefToUse);
+                                                            setNewDraftPrefill({
+                                                                hook: topic,
+                                                                sourceType: 'idea' // Direction is essentially an idea
+                                                            });
                                                             setDraftModalOpen(true);
                                                         }}
                                                     />
@@ -502,7 +501,7 @@ export default function WorkspacePage() {
                                                         selectedDraftId={selectedDraftId}
                                                         onSelect={(draft) => setSelectedDraftId(draft.id)}
                                                         onNew={() => {
-                                                            setSelectedBelief("");
+                                                            setNewDraftPrefill(undefined);
                                                             setDraftModalOpen(true);
                                                         }}
                                                     />
@@ -518,7 +517,7 @@ export default function WorkspacePage() {
                                                     selectedDraftId={selectedDraftId}
                                                     onSelect={(draft) => setSelectedDraftId(draft.id)}
                                                     onNew={() => {
-                                                        setSelectedBelief("");
+                                                        setNewDraftPrefill(undefined);
                                                         setDraftModalOpen(true);
                                                     }}
                                                 />
@@ -560,11 +559,39 @@ export default function WorkspacePage() {
 
 
 
-            <DraftModal
-                belief={selectedBelief}
+            <NewDraftModal
                 isOpen={draftModalOpen}
-                onClose={() => setDraftModalOpen(false)}
-                onSave={saveDraft}
+                onClose={() => {
+                    setDraftModalOpen(false);
+                    // Reset prefill after close
+                    setNewDraftPrefill(undefined);
+                }}
+                prefill={newDraftPrefill}
+                onSubmit={async (data) => {
+                    await fetch('/api/content', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            hook: data.hook,
+                            angle: "Draft created from Command Center", // Default angle potentially? or derived?
+                            // We need to pass the new metadata fields to the API
+                            // The API expects 'brain_metadata' for these
+                            brain_metadata: {
+                                outcome: data.outcome,
+                                audience: data.audience,
+                                stance: data.stance
+                            },
+                            // Map source info from prefill if available
+                            source_type: newDraftPrefill?.sourceType,
+                            source_id: newDraftPrefill?.sourceId,
+                            stage: 'developing', // As per plan, start in developing
+                            references: data.references
+                        }),
+                    });
+                    setDraftModalOpen(false);
+                    setNewDraftPrefill(undefined);
+                    refetch(); // Refresh the pipeline
+                }}
             />
             <AddContentModal
                 isOpen={addContentModalOpen}

@@ -54,17 +54,18 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
 
             {/* Actual Sidebar: Positioned absolutely to expand FREELY over adjacent content */}
             <div
-                className={`absolute top-0 left-0 h-full bg-slate-900 text-white flex flex-col border-r border-slate-800 shadow-2xl transition-[width] duration-300 ease-in-out font-sans overflow-hidden ${isCollapsed ? 'w-16' : 'w-64'}`}
+                className={`absolute top-0 left-0 h-full bg-slate-900 text-white flex flex-col border-r border-[#1a5f3a] shadow-2xl transition-[width] duration-300 ease-in-out font-sans overflow-hidden ${isCollapsed ? 'w-16' : 'w-64'}`}
+                style={{ backgroundColor: '#154d2e' }}
                 onMouseEnter={() => !isMobile && setIsCollapsed(false)}
                 onMouseLeave={() => !isMobile && setIsCollapsed(true)}
             >
                 {/* Brand */}
                 <div className={`transition-all duration-300 ${isCollapsed ? 'p-4 pb-4' : 'p-6 pb-8'}`}>
                     <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center font-serif font-bold text-white shadow-lg shadow-indigo-500/20 shrink-0 transition-transform duration-300">
+                        <div className="w-8 h-8 bg-emerald-800/50 rounded-lg flex items-center justify-center font-serif font-bold text-white shadow-lg shrink-0 transition-transform duration-300">
                             C
                         </div>
-                        <span className={`font-serif text-lg tracking-tight font-medium text-slate-100 transition-opacity duration-300 delay-100 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+                        <span className={`font-serif text-lg tracking-tight font-medium text-white transition-opacity duration-300 delay-100 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
                             CounterDraft
                         </span>
                     </div>
@@ -80,12 +81,12 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
                                 ? 'w-10 h-10 p-0 justify-center mx-auto'
                                 : 'w-full px-4'
                                 } ${activeSection === item.id
-                                    ? 'bg-slate-800 text-white shadow-sm ring-1 ring-slate-700'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                                    ? 'bg-white/10 text-white shadow-sm ring-1 ring-white/20'
+                                    : 'text-white/70 hover:text-white hover:bg-white/5'
                                 }`}
                             title={isCollapsed ? item.label : undefined}
                         >
-                            <item.icon size={18} className={`shrink-0 transition-colors duration-200 ${activeSection === item.id ? 'text-indigo-400' : 'opacity-70 group-hover:opacity-100'}`} />
+                            <item.icon size={18} className={`shrink-0 transition-colors duration-200 ${activeSection === item.id ? 'text-white' : 'opacity-70 group-hover:opacity-100'}`} />
                             <span className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 hidden' : 'opacity-100 delay-75'}`}>
                                 {item.label}
                             </span>
@@ -94,10 +95,10 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
                 </nav>
 
                 {/* Footer / Settings */}
-                <div className={`border-t border-slate-800 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+                <div className={`border-t border-emerald-900 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'}`}>
                     <button
                         onClick={() => onNavigate('settings')}
-                        className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all overflow-hidden whitespace-nowrap ${isCollapsed
+                        className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-all overflow-hidden whitespace-nowrap ${isCollapsed
                             ? 'w-10 h-10 p-0 justify-center mx-auto'
                             : 'w-full px-4'
                             }`}
@@ -108,11 +109,11 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
                             Settings
                         </span>
                     </button>
-                    <div className={`mt-4 pt-4 border-t border-slate-800/50 flex items-center gap-3 px-2 overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100 h-auto delay-100'}`}>
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 ring-2 ring-slate-800 shrink-0" />
+                    <div className={`mt-4 pt-4 border-t border-emerald-900 flex items-center gap-3 px-2 overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100 h-auto delay-100'}`}>
+                        <div className="w-8 h-8 rounded-full bg-white/20 ring-2 ring-white/10 shrink-0" />
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-200 truncate">MVSN Prasad</p>
-                            <p className="text-xs text-slate-500 truncate">Pro Plan</p>
+                            <p className="text-sm font-medium text-white truncate">MVSN Prasad</p>
+                            <p className="text-xs text-white/60 truncate">Pro Plan</p>
                         </div>
                     </div>
                 </div>
