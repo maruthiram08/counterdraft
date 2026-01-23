@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BeliefCard } from "@/components/thinking/BeliefCard";
@@ -30,6 +30,14 @@ import { YourMind } from "@/components/thinking/YourMind";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function WorkspacePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--background)]"><div className="text-[var(--text-muted)] animate-pulse">Loading workspace...</div></div>}>
+            <WorkspaceContent />
+        </Suspense>
+    );
+}
+
+function WorkspaceContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [activeSection, setActiveSection] = useState<'mind' | 'beliefs' | 'tensions' | 'directions' | 'drafts' | 'explore' | 'pipeline' | 'mindmap'>('pipeline');
