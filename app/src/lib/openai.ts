@@ -15,7 +15,7 @@ export async function generateImage(prompt: string): Promise<string | undefined>
       n: 1,
       size: "1024x1024",
     });
-    return response.data[0].url;
+    return response.data?.[0]?.url;
   } catch (e) {
     console.error("Image generation failed:", e);
     return undefined;
