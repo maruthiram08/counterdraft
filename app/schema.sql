@@ -19,6 +19,37 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 
 -- ===========================================
+-- MARKETING LEADS (Live Trial Captures)
+-- ===========================================
+CREATE TABLE marketing_leads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email VARCHAR(255) NOT NULL,
+  source VARCHAR(50) DEFAULT 'homepage_audit',
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_marketing_leads_email ON marketing_leads(email);
+
+-- ===========================================
+-- BILLING (Dodo Payments)
+-- ===========================================
+CREATE TABLE user_subscriptions (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  dodo_customer_id VARCHAR(255),
+  dodo_subscription_id VARCHAR(255) UNIQUE,
+  status VARCHAR(50) NOT NULL DEFAULT 'free', -- 'active', 'past_due', 'cancelled', 'expired', 'free'
+  plan_id VARCHAR(100), -- 'pro_m_in', 'pro_m_gl'
+  variant_name VARCHAR(100),
+  renews_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_subscriptions_user ON user_subscriptions(user_id);
+CREATE INDEX idx_subscriptions_status ON user_subscriptions(status);
+
+-- ===========================================
 -- RAW POSTS (Ingested content)
 -- ===========================================
 CREATE TABLE raw_posts (

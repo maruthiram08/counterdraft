@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { Outcome, Stance, Audience, BrainMetadata, ConfidenceLevel } from '@/types';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { UsageService } from '@/lib/billing/usage';
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,6 +11,20 @@ export async function POST(req: NextRequest) {
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Check Usage Limits
+        const limitCheck = await UsageService.checkDraftLimit(userId);
+        if (!limitCheck.allowed) {
+            return NextResponse.json(
+                {
+                    error: 'Limit Reached',
+                    message: limitCheck.reason,
+                    tier: limitCheck.tier,
+                    upgradeUrl: '/pricing'
+                },
+                { status: 403 }
+            );
         }
 
         // Parse request body

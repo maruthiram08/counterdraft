@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Home, Brain, Compass, Book, Plus, Import, Settings, Zap, Network, Menu, X } from "lucide-react";
+import { SignOutButton } from "@clerk/nextjs";
 
 interface GlobalSidebarProps {
     activeSection: string;
@@ -62,12 +63,12 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
                 {/* Brand */}
                 <div className={`transition-all duration-300 ${isCollapsed ? 'p-4 pb-4' : 'p-6 pb-8'}`}>
                     <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-                        <div className="w-8 h-8 bg-emerald-800/50 rounded-lg flex items-center justify-center font-serif font-bold text-white shadow-lg shrink-0 transition-transform duration-300">
-                            C
+                        <div className="w-8 h-8 flex items-center justify-center shrink-0 transition-transform duration-300">
+                            <img src="/brand/logo-icon.png" alt="Icon" className="w-full h-full object-contain" />
                         </div>
-                        <span className={`font-serif text-lg tracking-tight font-medium text-white transition-opacity duration-300 delay-100 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
-                            CounterDraft
-                        </span>
+                        <div className={`transition-opacity duration-300 delay-100 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+                            <img src="/brand/logo-text.png" alt="CounterDraft" className="h-5 w-auto brightness-0 invert opacity-90" />
+                        </div>
                     </div>
                 </div>
 
@@ -109,13 +110,18 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
                             Settings
                         </span>
                     </button>
-                    <div className={`mt-4 pt-4 border-t border-emerald-900 flex items-center gap-3 px-2 overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100 h-auto delay-100'}`}>
-                        <div className="w-8 h-8 rounded-full bg-white/20 ring-2 ring-white/10 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">MVSN Prasad</p>
-                            <p className="text-xs text-white/60 truncate">Pro Plan</p>
-                        </div>
-                    </div>
+
+                    <SignOutButton>
+                        <button className={`w-full mt-4 pt-4 border-t border-emerald-900 flex items-center gap-3 px-2 overflow-hidden whitespace-nowrap transition-all duration-300 hover:bg-white/5 rounded-lg cursor-pointer text-left group ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100 h-auto delay-100'}`}>
+                            <div className="w-8 h-8 rounded-full bg-white/20 ring-2 ring-white/10 shrink-0 flex items-center justify-center">
+                                <span className="font-bold text-xs text-white">MV</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate group-hover:text-emerald-300 transition-colors">Sign Out</p>
+                                <p className="text-xs text-white/60 truncate">Pro Plan</p>
+                            </div>
+                        </button>
+                    </SignOutButton>
                 </div>
             </div>
         </div>
