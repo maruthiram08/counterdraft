@@ -1,7 +1,8 @@
 "use client";
 
+
 import { useState } from "react";
-import { X, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap } from "lucide-react";
+import { X, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette } from "lucide-react";
 import { SmartStudioPanel } from "./SmartStudioPanel";
 
 interface OptionChoice {
@@ -27,6 +28,7 @@ interface PlatformConfig {
     colorClass: string;
     bgClass: string;
     textClass: string;
+    description: string;
     options: PlatformOption[];
 }
 
@@ -34,6 +36,7 @@ const PLATFORMS: PlatformConfig[] = [
     {
         id: 'medium',
         label: 'Medium Article',
+        description: 'SEO-optimized drafts & structure',
         icon: FileText,
         colorClass: 'border-gray-900',
         bgClass: 'bg-gray-50',
@@ -60,7 +63,8 @@ const PLATFORMS: PlatformConfig[] = [
     },
     {
         id: 'instagram',
-        label: 'Instagram',
+        label: 'Instagram Strategy',
+        description: 'Captions, hashtags & carousel scripts',
         icon: Instagram,
         colorClass: 'border-pink-500',
         bgClass: 'bg-pink-50',
@@ -72,8 +76,8 @@ const PLATFORMS: PlatformConfig[] = [
                 type: 'radio',
                 defaultValue: 'carousel',
                 choices: [
-                    { value: 'carousel', label: 'Carousel', description: 'Multi-slide breakdown' },
-                    { value: 'single', label: 'Single Image', description: 'Powerful statement' }
+                    { value: 'carousel', label: 'Carousel Script', description: 'Multi-slide text breakdown' },
+                    { value: 'single', label: 'Caption Only', description: 'Powerful caption & hooks' }
                 ]
             },
             {
@@ -86,7 +90,7 @@ const PLATFORMS: PlatformConfig[] = [
             },
             {
                 id: 'generateInfographic',
-                label: 'Generate Visuals',
+                label: 'Suggest Visuals',
                 type: 'checkbox',
                 defaultValue: true
             }
@@ -95,11 +99,23 @@ const PLATFORMS: PlatformConfig[] = [
     {
         id: 'smart_studio',
         label: 'Smart Studio',
+        description: 'Instant ready-to-post visuals',
         icon: Zap,
         colorClass: 'border-purple-500',
         bgClass: 'bg-purple-50',
         textClass: 'text-purple-700',
         options: []
+    }
+];
+
+const PLATFORM_GROUPS = [
+    {
+        title: "Strategy & Text",
+        items: ['medium', 'instagram']
+    },
+    {
+        title: "Visual Production",
+        items: ['smart_studio']
     }
 ];
 
@@ -119,10 +135,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
         instagram: { format: 'carousel', labels: '', generateInfographic: true }
     });
 
-    // Auto-Generate State
     const [generatingField, setGeneratingField] = useState<string | null>(null);
-
-    // Success State
     const [isSuccess, setIsSuccess] = useState(false);
     const [resultData, setResultData] = useState<{ id: string; content: string; platform_metadata?: any; assets?: any[] } | null>(null);
 
@@ -152,7 +165,6 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
             });
             const data = await res.json();
             if (data.tags && Array.isArray(data.tags)) {
-                // Join tags with spaces
                 updateOption(fieldId, data.tags.join(' '));
             }
         } catch (e) {
@@ -165,14 +177,9 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
     const handleConfirm = async () => {
         try {
             const data = await onRepurpose(selectedPlatformId, currentValues);
-            // Strict check: we need data to proceed to design
             if (data && data.id) {
                 setResultData(data);
                 setIsSuccess(true);
-            } else {
-                console.error("Repurpose returned invalid data", data);
-                // If it failed silently, the user is stuck. 
-                // We assume MainEditor handles visible errors.
             }
         } catch (e) {
             console.error("Repurpose failed in modal", e);
@@ -180,13 +187,11 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
     };
 
     const handleDesignClick = () => {
+        // ... (Existing PPTX Logic preserved)
         if (selectedPlatformId === 'instagram' && resultData) {
-            // Generate PPTX
             import('@/lib/pptx-generator').then(({ PptxGenerator }) => {
                 const gen = new PptxGenerator();
                 let slides: any[] = [];
-
-                // 1. Try to use structured slides from metadata (High Fidelity)
                 const metadata = (resultData as any).platform_metadata;
 
                 if (metadata && Array.isArray(metadata.slides)) {
@@ -197,7 +202,6 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                         visualNotes: s.visualDescription
                     }));
                 } else {
-                    // 2. Legacy Fallback
                     const content = resultData.content;
                     if (content) {
                         const parts = content.split('\n\n').filter((p: string) => p.trim().length > 0);
@@ -214,64 +218,38 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                     }
                 }
 
-                // 3. Inject Assets (Images)
                 const assets = (resultData as any).assets || [];
                 const coverImage = assets.find((a: any) => a.role === 'infographic' || a.role === 'cover');
-
-                // If found, attach to the first slide
-                if (coverImage && slides.length > 0) {
-                    slides[0].imageUrl = coverImage.url;
-                }
-
-                if (slides.length === 0) {
-                    slides.push({ title: "Draft", body: "No content generated.", type: 'cover' });
-                }
+                if (coverImage && slides.length > 0) slides[0].imageUrl = coverImage.url;
+                if (slides.length === 0) slides.push({ title: "Draft", body: "No content generated.", type: 'cover' });
 
                 gen.generateInstagramPost(slides);
-
                 if (onDesign) onDesign(selectedPlatformId, resultData.content);
             });
         }
     };
 
-    // --- RENDER SUCCESS VIEW ---
+    // --- SUCCESS VIEW (Modal Overlay on top of Redesigned Layout) ---
     if (isSuccess) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
                     <div className="p-8 text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Check size={32} className="text-green-600" />
                         </div>
                         <h2 className="font-serif text-2xl font-bold mb-2">Draft Created!</h2>
                         <p className="text-gray-500 mb-8">
-                            Your content is ready.
-                            {selectedPlatformId === 'instagram' && " Use the new Co-Creation Bridge to design it."}
+                            Your content is ready.{selectedPlatformId === 'instagram' && " Export to Canva to design."}
                         </p>
-
                         <div className="space-y-3">
                             {selectedPlatformId === 'instagram' && (
-                                <button
-                                    onClick={handleDesignClick}
-                                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all"
-                                >
-                                    <ImageIcon size={20} />
-                                    Download Design File
+                                <button onClick={handleDesignClick} className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all">
+                                    <ImageIcon size={20} /> Download Design File
                                 </button>
                             )}
-
-                            <button
-                                onClick={() => {
-                                    if (resultData?.id) {
-                                        window.location.href = `/workspace?draftId=${resultData.id}`;
-                                    } else {
-                                        onClose();
-                                    }
-                                }}
-                                className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <ExternalLink size={16} />
-                                Open Draft
+                            <button onClick={() => resultData?.id ? window.location.href = `/workspace?draftId=${resultData.id}` : onClose()} className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                                <ExternalLink size={16} /> Open Draft
                             </button>
                         </div>
                     </div>
@@ -280,154 +258,212 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
         );
     }
 
-    // --- RENDER FORM VIEW ---
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="font-serif text-lg font-medium">Repurpose Content</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-900">
-                        <X size={20} />
-                    </button>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-8">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-gray-200">
 
-                <div className="p-6">
-                    {/* Platform Selector */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        {PLATFORMS.map(p => (
-                            <button
-                                key={p.id}
-                                onClick={() => setSelectedPlatformId(p.id)}
-                                className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${selectedPlatformId === p.id
-                                    ? `${p.colorClass} ${p.bgClass} ${p.textClass}`
-                                    : 'border-gray-100 text-gray-500 hover:border-gray-200'
-                                    }`}
-                            >
-                                <p.icon size={24} />
-                                <span className="font-medium">{p.label}</span>
-                            </button>
-                        ))}
+                {/* LEFT SIDEBAR navigation */}
+                <div className="w-[300px] bg-gray-50 border-r border-gray-200 flex flex-col shrink-0">
+                    <div className="p-6 border-b border-gray-200">
+                        <h2 className="font-serif text-xl font-bold text-gray-900">Repurpose</h2>
+                        <p className="text-xs text-gray-500 mt-1">Transform content for social.</p>
                     </div>
 
-                    {/* Dynamic Options Form */}
-                    <div className="space-y-5 min-h-[200px]">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-8">
+                        {PLATFORM_GROUPS.map(group => (
+                            <div key={group.title}>
+                                <div className="px-2 mb-3">
+                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{group.title}</h3>
+                                </div>
+                                <div className="space-y-2">
+                                    {group.items.map(pid => {
+                                        const p = PLATFORMS.find(x => x.id === pid)!;
+                                        const isSelected = selectedPlatformId === p.id;
+                                        return (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => setSelectedPlatformId(p.id)}
+                                                className={`w-full text-left p-3 rounded-xl flex items-start gap-3 transition-all duration-200 relative overflow-hidden group ${isSelected ? 'bg-white shadow-md ring-1 ring-gray-200/50' : 'hover:bg-gray-200/50'
+                                                    }`}
+                                            >
+                                                {/* Active Indicator Line */}
+                                                {isSelected && <div className={`absolute left-0 top-0 bottom-0 w-1 ${p.bgClass.replace('bg-', 'bg-').replace('50', '500')}`}></div>}
+
+                                                <div className={`p-2 rounded-lg shrink-0 ${isSelected ? `${p.bgClass} ${p.textClass}` : 'bg-gray-100 text-gray-400 group-hover:text-gray-600'}`}>
+                                                    <p.icon size={18} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="font-bold text-sm text-gray-900 flex items-center gap-2">
+                                                        {p.label}
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                                                        {p.description}
+                                                    </div>
+                                                    <div className="mt-2 flex gap-1">
+                                                        {['smart_studio'].includes(p.id) ?
+                                                            <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold tracking-wide border border-purple-200">VISUALS</span> :
+                                                            <span className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-bold tracking-wide border border-gray-200">TEXT</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* RIGHT CONTENT AREA */}
+                <div className="flex-1 flex flex-col bg-white min-w-0">
+                    {/* Header */}
+                    <div className="h-16 border-b border-gray-100 flex items-center justify-between px-8 shrink-0 bg-white/80 backdrop-blur sticky top-0 z-10">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-1.5 rounded-md ${currentPlatform.bgClass} ${currentPlatform.textClass}`}>
+                                <currentPlatform.icon size={18} />
+                            </div>
+                            <h2 className="font-bold text-gray-900 text-lg">{currentPlatform.label}</h2>
+                        </div>
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    {/* Scrollable Body */}
+                    <div className="flex-1 overflow-y-auto p-8 bg-gray-50/10">
                         {selectedPlatformId === 'smart_studio' ? (
-                            <SmartStudioPanel content={sourceContent || ''} onDownload={() => setIsSuccess(true)} />
+                            <div className="h-full flex flex-col">
+                                <SmartStudioPanel content={sourceContent || ''} onDownload={() => setIsSuccess(true)} />
+                            </div>
                         ) : (
-                            currentPlatform.options.map(opt => (
-                                <div key={opt.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    {opt.type === 'select' && (
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-700 mb-2 block">{opt.label}</label>
-                                            <div className="flex bg-gray-100 p-1 rounded-lg">
-                                                {(opt.choices as OptionChoice[]).map((choice) => (
-                                                    <button
-                                                        key={choice.value}
-                                                        onClick={() => updateOption(opt.id, choice.value)}
-                                                        className={`flex-1 capitalize text-sm py-1.5 rounded-md transition-all ${currentValues[opt.id] === choice.value ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
-                                                            }`}
-                                                    >
-                                                        {choice.label.split('(')[0]}
-                                                    </button>
-                                                ))}
+                            <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {/* Dynamic Form Generation */}
+                                {currentPlatform.options.map(opt => (
+                                    <div key={opt.id} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                                        {/* ... (Keep existing form logic for select/radio/text/checkbox) ... */}
+                                        {opt.type === 'select' && (
+                                            <div>
+                                                <label className="text-sm font-bold text-gray-900 mb-3 block flex items-center gap-2">
+                                                    <LayoutTemplate size={14} className="text-gray-400" />
+                                                    {opt.label}
+                                                </label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {(opt.choices as OptionChoice[]).map((choice) => (
+                                                        <button
+                                                            key={choice.value}
+                                                            onClick={() => updateOption(opt.id, choice.value)}
+                                                            className={`flex flex-col items-center justify-center py-3 px-2 rounded-lg border transition-all ${currentValues[opt.id] === choice.value ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
+                                                        >
+                                                            <div className="font-medium text-sm">{choice.label.split('(')[0]}</div>
+                                                            {choice.label.includes('(') && <div className="text-[10px] opacity-70 mt-0.5">{choice.label.split('(')[1].replace(')', '')}</div>}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {opt.type === 'radio' && (
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-700 mb-2 block">{opt.label}</label>
-                                            <div className="flex gap-4">
-                                                {(opt.choices as OptionChoice[]).map((choice) => (
-                                                    <label key={choice.value} className={`flex-1 cursor-pointer border-2 rounded-lg p-3 ${currentValues[opt.id] === choice.value ? `${currentPlatform.colorClass} ${currentPlatform.bgClass}` : 'border-gray-100'}`}>
-                                                        <input
-                                                            type="radio"
-                                                            name={opt.id}
-                                                            checked={currentValues[opt.id] === choice.value}
-                                                            onChange={() => updateOption(opt.id, choice.value)}
-                                                            className="hidden"
-                                                        />
-                                                        <div className="font-medium text-sm mb-1">{choice.label}</div>
-                                                        <div className="text-xs text-gray-500">{choice.description}</div>
+                                        {opt.type === 'radio' && (
+                                            <div>
+                                                <label className="text-sm font-bold text-gray-900 mb-3 block flex items-center gap-2">
+                                                    <LayoutTemplate size={14} className="text-gray-400" />
+                                                    {opt.label}
+                                                </label>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    {(opt.choices as OptionChoice[]).map((choice) => (
+                                                        <label key={choice.value} className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${currentValues[opt.id] === choice.value ? `${currentPlatform.colorClass} ${currentPlatform.bgClass}` : 'border-gray-100 hover:border-gray-200'}`}>
+                                                            <input
+                                                                type="radio"
+                                                                name={opt.id}
+                                                                checked={currentValues[opt.id] === choice.value}
+                                                                onChange={() => updateOption(opt.id, choice.value)}
+                                                                className="hidden"
+                                                            />
+                                                            <div className="font-bold text-sm mb-1">{choice.label}</div>
+                                                            <div className="text-xs text-gray-500 leading-snug">{choice.description}</div>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {opt.type === 'text' && (
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                                        <Hash size={14} className="text-gray-400" />
+                                                        {opt.label}
                                                     </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {opt.type === 'text' && (
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <label className="text-sm font-medium text-gray-700">{opt.label}</label>
-                                                {opt.allowAutoGenerate && sourceContent && (
-                                                    <button
-                                                        onClick={() => handleAutoGenerate(opt.id)}
-                                                        disabled={generatingField === opt.id}
-                                                        className="text-xs flex items-center gap-1 text-purple-600 hover:text-purple-700 font-medium transition-colors disabled:opacity-50"
-                                                    >
-                                                        {generatingField === opt.id ? (
-                                                            <Loader2 size={12} className="animate-spin" />
-                                                        ) : (
-                                                            <Sparkles size={12} />
-                                                        )}
-                                                        Auto-generate
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="relative">
+                                                    {opt.allowAutoGenerate && sourceContent && (
+                                                        <button
+                                                            onClick={() => handleAutoGenerate(opt.id)}
+                                                            disabled={generatingField === opt.id}
+                                                            className="text-xs flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2 py-1 rounded-md hover:bg-purple-100 transition-colors disabled:opacity-50"
+                                                        >
+                                                            {generatingField === opt.id ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                                                            Auto-Generate
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 <input
                                                     type="text"
                                                     value={currentValues[opt.id] || ''}
                                                     onChange={(e) => updateOption(opt.id, e.target.value)}
                                                     placeholder={opt.placeholder}
-                                                    className="w-full px-4 py-2 pl-9 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-sm"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-sm font-medium transition-all"
                                                 />
-                                                <Hash size={14} className="absolute left-3 top-2.5 text-gray-400" />
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {opt.type === 'checkbox' && (
-                                        <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${currentValues[opt.id] ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-300'}`}>
-                                                {currentValues[opt.id] && <Check size={14} />}
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                checked={currentValues[opt.id]}
-                                                onChange={(e) => updateOption(opt.id, e.target.checked)}
-                                                className="hidden"
-                                            />
-                                            <div className="flex-1">
-                                                <span className="text-sm font-medium text-gray-900">{opt.label}</span>
-                                            </div>
-                                            <ImageIcon size={18} className="text-gray-400" />
-                                        </label>
-                                    )}
-                                </div>
-                            )))}
+                                        {opt.type === 'checkbox' && (
+                                            <label className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <div className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all ${currentValues[opt.id] ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-300 bg-white'}`}>
+                                                    {currentValues[opt.id] && <Check size={14} strokeWidth={3} />}
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={currentValues[opt.id]}
+                                                    onChange={(e) => updateOption(opt.id, e.target.checked)}
+                                                    className="hidden"
+                                                />
+                                                <div className="flex-1">
+                                                    <span className="text-sm font-bold text-gray-900 block">{opt.label}</span>
+                                                    <span className="text-xs text-gray-500">Includes AI suggestions</span>
+                                                </div>
+                                                <Palette size={20} className="text-gray-300" />
+                                            </label>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                </div>
 
-                <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
+                    {/* Footer - Only for non-Smart Studio */}
                     {selectedPlatformId !== 'smart_studio' && (
-                        <button
-                            onClick={handleConfirm}
-                            disabled={isProcessing}
-                            className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {isProcessing ? (
-                                <>
-                                    <Loader2 size={16} className="animate-spin" />
-                                    Generating...
-                                </>
-                            ) : (
-                                `Create ${currentPlatform.label.split(' ')[0]}`
-                            )}
-                        </button>
+                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 shrink-0">
+                            <button onClick={onClose} className="px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
+                            <button
+                                onClick={handleConfirm}
+                                disabled={isProcessing}
+                                className="px-8 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        Create {currentPlatform.label.split(' ')[0]} Draft
+                                        <Sparkles size={16} className="text-yellow-300" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     )}
                 </div>
+
             </div>
         </div>
     );

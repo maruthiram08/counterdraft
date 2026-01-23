@@ -51,6 +51,15 @@ User Content → AI Extraction → Beliefs/Tensions → Content Ideas → Drafts
 
 ## Recent Updates (Jan 2026)
 
+### 🎨 Smart Studio (Sprint 21-22)
+- ✅ **Auto-Carousel**: Turn any draft into a 10-slide carousel automatically.
+- ✅ **Semantic Shuffle**: AI intelligently remixes quotes and points.
+- ✅ **Visual Production**: Integrated Satori for server-side image generation.
+
+### 🧠 Deep Drafts (Sprint 23)
+- ✅ **Expanded Depth**: No character limits for "Thought Leadership" pieces.
+- ✅ **Repurpose Modal V2**: Wide-screen layout with clear "Strategy" vs "Visuals" flow.
+
 ### UI Polish Sprint
 - ✅ Skeleton loading for Command Center and Your Mind pages
 - ✅ Overlay sidebar (no layout shift on hover)

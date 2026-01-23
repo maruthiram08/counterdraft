@@ -61,7 +61,17 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const [showContextPanel, setShowContextPanel] = useState(false);
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
 
-    const [localBrainMetadata, setLocalBrainMetadata] = useState<BrainMetadata | undefined>(item.brain_metadata);
+    const [localBrainMetadata, setLocalBrainMetadata] = useState<BrainMetadata | undefined>(() => {
+        let meta = item.brain_metadata || (item as any).brainMetadata;
+        if (typeof meta === 'string') {
+            try {
+                meta = JSON.parse(meta);
+            } catch (e) {
+                console.error("Failed to parse brain_metadata", e);
+            }
+        }
+        return meta;
+    });
     const [showStrategyWarning, setShowStrategyWarning] = useState(false);
 
     const handleUpdateBrainMetadata = (metadata: BrainMetadata) => {
