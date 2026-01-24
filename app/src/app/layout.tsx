@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Newsreader, JetBrains_Mono, Outfit } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { CSPostHogProvider } from "./providers";
+import PostHogPageView from "./PostHogPageView";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -51,11 +53,14 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${inter.variable} ${newsreader.variable} ${jetbrainsMono.variable} ${outfit.variable}`}
-        >
-          {children}
-        </body>
+        <CSPostHogProvider>
+          <body
+            className={`${inter.variable} ${newsreader.variable} ${jetbrainsMono.variable} ${outfit.variable}`}
+          >
+            <PostHogPageView />
+            {children}
+          </body>
+        </CSPostHogProvider>
       </html>
     </ClerkProvider>
   );
