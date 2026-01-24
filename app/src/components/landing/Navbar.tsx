@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
