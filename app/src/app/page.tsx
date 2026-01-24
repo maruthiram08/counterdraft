@@ -95,7 +95,7 @@ export default function Home() {
           </div>
         </section>
 
-        <Testimonials />
+        {/* <Testimonials /> */}
 
         <section className="py-40 text-center relative overflow-hidden bg-white">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-green-600/5 blur-[120px] rounded-full pointer-events-none"></div>
