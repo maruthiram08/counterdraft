@@ -7,7 +7,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
     return (
         <div className={`w-full h-full bg-[#FAFAFA] flex overflow-hidden ${className}`}>
             {/* SIDEBAR - Minimized for focus */}
-            <div className="w-16 md:w-64 bg-white border-r border-zinc-200 flex flex-col flex-shrink-0 transition-all duration-300">
+            <div className="hidden md:flex w-16 md:w-64 bg-white border-r border-zinc-200 flex-col flex-shrink-0 transition-all duration-300">
                 <div className="p-4 md:p-6 border-b border-zinc-100 flex items-center justify-center md:justify-start gap-3">
                     <img src="/brand/logo-icon.png" alt="Icon" className="w-6 h-6 flex-shrink-0" />
                     <img src="/brand/logo-text.png" alt="Counterdraft" className="h-4 w-auto hidden md:block" />
