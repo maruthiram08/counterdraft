@@ -65,7 +65,7 @@ export const Hero: React.FC = () => {
               <div className="w-12"></div>
             </div>
             {/* Live Component Interface */}
-            <div className="aspect-video bg-zinc-50 rounded-2xl overflow-hidden border border-zinc-100 relative">
+            <div className="min-h-[600px] md:aspect-video bg-zinc-50 rounded-2xl overflow-hidden border border-zinc-100 relative">
               <HeroInterface className="w-full h-full" />
             </div>
           </div>

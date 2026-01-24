@@ -7,9 +7,9 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
     return (
         <div className={`w-full h-full bg-[#FAFAFA] flex overflow-hidden ${className}`}>
             {/* SIDEBAR - Minimized for focus */}
-            <div className="w-16 md:w-64 bg-white border-r border-zinc-200 flex flex-col flex-shrink-0">
-                <div className="p-6 border-b border-zinc-100 flex items-center gap-3">
-                    <img src="/brand/logo-icon.png" alt="Icon" className="w-6 h-6" />
+            <div className="w-16 md:w-64 bg-white border-r border-zinc-200 flex flex-col flex-shrink-0 transition-all duration-300">
+                <div className="p-4 md:p-6 border-b border-zinc-100 flex items-center justify-center md:justify-start gap-3">
+                    <img src="/brand/logo-icon.png" alt="Icon" className="w-6 h-6 flex-shrink-0" />
                     <img src="/brand/logo-text.png" alt="Counterdraft" className="h-4 w-auto hidden md:block" />
                 </div>
                 <div className="p-4 space-y-2">
@@ -23,13 +23,13 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
             </div>
 
             {/* CANVAS - The "Real" Work */}
-            <div className="flex-1 p-8 flex flex-col">
-                <div className="mb-8">
-                    <h2 className="text-3xl font-serif text-zinc-900 mb-2">Morning, Alex.</h2>
-                    <p className="text-zinc-400 font-medium">Your strategy on <span className="text-zinc-900 border-b border-zinc-200 pb-0.5">"AI Sovereignty"</span> is trending.</p>
+            <div className="flex-1 p-4 md:p-8 flex flex-col overflow-y-auto min-h-0">
+                <div className="mb-6 md:mb-8 shrink-0">
+                    <h2 className="text-2xl md:text-3xl font-serif text-zinc-900 mb-2">Morning, Alex.</h2>
+                    <p className="text-sm md:text-base text-zinc-400 font-medium">Your strategy on <span className="text-zinc-900 border-b border-zinc-200 pb-0.5">"AI Sovereignty"</span> is trending.</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-4">
                     {/* Active Draft Card */}
                     <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-zinc-200 shadow-sm flex flex-col relative group overflow-hidden">
                         <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>

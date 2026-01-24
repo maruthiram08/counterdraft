@@ -15,7 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-zinc-100 py-3 shadow-sm' : 'bg-transparent py-8'}`}>
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+        <Link href="/" className="flex items-center gap-1.5 md:gap-3 group cursor-pointer">
           <img src="/brand/logo-icon.png" alt="Counterdraft Icon" className="h-9 w-9 group-hover:scale-105 transition-transform" />
           <img src="/brand/logo-text.png" alt="Counterdraft" className="h-[44px] w-auto mt-0.5" />
         </Link>
@@ -34,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
         <div className="flex items-center gap-6">
           <SignedOut>
             <Link href="/waitlist" onClick={() => posthog?.capture('click_join_waitlist', { location: 'navbar' })}>
-              <button className="bg-zinc-900 text-white px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-green-600 transition-all transform hover:scale-105 active:scale-95">
+              <button className="bg-zinc-900 text-white px-3 py-2 text-[10px] md:text-xs md:px-5 md:py-2.5 rounded-lg font-bold uppercase tracking-widest hover:bg-green-600 transition-all transform hover:scale-105 active:scale-95">
                 Join Waitlist
               </button>
             </Link>
