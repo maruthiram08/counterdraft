@@ -20,11 +20,11 @@ export const Hero: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-28 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <SignedOut>
-            <SignInButton mode="modal">
+            <Link href="/waitlist">
               <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-green-600/20">
-                Start Free Project
+                Join Waitlist
               </button>
-            </SignInButton>
+            </Link>
           </SignedOut>
           <SignedIn>
             <Link href="/workspace">

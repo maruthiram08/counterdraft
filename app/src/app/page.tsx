@@ -107,11 +107,11 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <SignedOut>
-                <SignInButton mode="modal">
+                <Link href="/waitlist">
                   <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-green-600/20">
-                    Join the Private Beta
+                    Join the Waitlist
                   </button>
-                </SignInButton>
+                </Link>
               </SignedOut>
               <SignedIn>
                 <Link href="/workspace">
