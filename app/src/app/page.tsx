@@ -10,9 +10,11 @@ import { SmartStudio } from '@/components/landing/SmartStudio';
 import { TheBrain } from '@/components/landing/TheBrain';
 import { Testimonials } from '@/components/landing/Testimonials';
 import { Footer } from '@/components/landing/Footer';
+import { usePostHog } from 'posthog-js/react';
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
+  const posthog = usePostHog();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +32,7 @@ export default function Home() {
         <Hero />
 
         <section id="the-brain" className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          {/* ... */}
           <div className="text-center mb-20">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-50 border border-green-100 text-[10px] font-bold text-green-700 mb-6 tracking-widest uppercase">
               STRATEGIC FOUNDATION
@@ -43,6 +46,7 @@ export default function Home() {
         </section>
 
         <section id="command-center" className="py-32 bg-zinc-50 border-y border-zinc-100 overflow-hidden">
+          {/* ... */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row items-end justify-between gap-12 mb-20">
               <div className="md:w-3/5">
@@ -64,6 +68,7 @@ export default function Home() {
         </section>
 
         <section id="smart-studio" className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          {/* ... */}
           <div className="flex flex-col lg:flex-row gap-20 items-start">
             <div className="lg:w-1/3 lg:sticky lg:top-32">
               <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-50 border border-green-100 text-[10px] font-bold text-green-700 mb-6 tracking-widest uppercase">
@@ -107,7 +112,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <SignedOut>
-                <Link href="/waitlist">
+                <Link href="/waitlist" onClick={() => posthog?.capture('click_join_waitlist', { location: 'footer' })}>
                   <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-green-600/20">
                     Join the Waitlist
                   </button>

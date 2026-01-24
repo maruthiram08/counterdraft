@@ -2,11 +2,13 @@
 
 import React, { useState, useRef } from 'react';
 import { Check, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 
 export default function WaitlistPage() {
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [message, setMessage] = useState('');
+    const posthog = usePostHog();
 
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,6 +32,12 @@ export default function WaitlistPage() {
             if (res.ok) {
                 setStatus('success');
                 setMessage("You're on the list.");
+
+                // Track successful submission
+                posthog.capture('waitlist_submitted', {
+                    source: 'instagram_campaign_light'
+                });
+
                 setEmail('');
             } else {
                 setStatus('error');
