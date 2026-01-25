@@ -90,35 +90,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                     <p className="text-lg text-zinc-400 font-medium">Stop posting. Start persuading.</p>
                 </div>
 
-                {/* CLARITY BLOCK */}
-                <div className="text-center max-w-4xl mx-auto mb-24 hidden md:block opacity-60 hover:opacity-100 transition-opacity duration-500">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                            </div>
-                            <span className="font-bold text-zinc-700">See Blind Spots</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                            </div>
-                            <span className="font-bold text-zinc-700">Identify Belief Gaps</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            </div>
-                            <span className="font-bold text-zinc-700">Engineer Tension</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                            </div>
-                            <span className="font-bold text-zinc-700">Compound Authority</span>
-                        </div>
-                    </div>
-                </div>
+
 
                 {/* PRICING TOGGLE */}
                 <div className="flex items-center justify-center gap-4 mb-16">

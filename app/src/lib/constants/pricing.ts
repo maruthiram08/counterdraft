@@ -9,12 +9,14 @@ export const PRICING_CONFIG = {
     LIMITS: {
         ['free']: {
             DRAFTS_PER_MONTH: 2, // Hard limit for creation
+            SEARCHES_PER_MONTH: 20, // New Explore Limit
             BRAIN_DEPTH: 'shallow', // Result filter level
             ALLOW_BELIEFS: false, // Feature flag
             ALLOW_TENSIONS: false, // Feature flag
         },
         ['pro']: {
             DRAFTS_PER_MONTH: Infinity,
+            SEARCHES_PER_MONTH: Infinity,
             BRAIN_DEPTH: 'deep',
             ALLOW_BELIEFS: true,
             ALLOW_TENSIONS: true,

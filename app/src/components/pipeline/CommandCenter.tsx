@@ -1,14 +1,14 @@
+
 import { useState, useEffect } from "react";
-import { Lightbulb, Settings, FileText, CheckCircle, Loader2, Archive, Trash2, Plus, ArrowRight, Wand2 } from "lucide-react";
+import { Lightbulb, Settings, FileText, CheckCircle, Loader2, Archive, Trash2, Plus, ArrowRight, Wand2, User } from "lucide-react";
 import { DevelopmentWizard } from "./DevelopmentWizard";
 import { NewDraftModal } from "./NewDraftModal";
+import { LimitModal } from "../modal/LimitModal";
+import { ProfileSetupModal } from "../modal/ProfileSetupModal";
 import { BrainMetadata, ContentItem as GlobalContentItem } from "@/types";
 
 type Stage = 'idea' | 'developing' | 'draft' | 'published';
 
-// Use local interface extending global to match component needs if necessary, 
-// or just used global. Global has 'userId' which we might not need here? 
-// Let's stick to the existing shape but add brainMetadata
 interface ContentItem {
     id: string;
     hook: string;
@@ -39,7 +39,6 @@ interface ColumnProps {
 function SkeletonCard() {
     return (
         <div className="bg-white p-4 rounded-xl border border-gray-100/80 shadow-sm flex flex-col gap-3 h-auto min-h-[140px] animate-pulse">
-            {/* Top Tags */}
             <div className="flex items-center justify-between">
                 <div className="flex gap-2">
                     <div className="h-5 w-16 bg-gray-100 rounded"></div>
@@ -48,7 +47,6 @@ function SkeletonCard() {
                 <div className="h-4 w-12 bg-gray-100 rounded"></div>
             </div>
 
-            {/* Content */}
             <div className="space-y-2 mt-1">
                 <div className="h-5 w-3/4 bg-gray-100 rounded"></div>
                 <div className="space-y-1">
@@ -57,7 +55,6 @@ function SkeletonCard() {
                 </div>
             </div>
 
-            {/* Footer */}
             <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50">
                 <div className="flex gap-2">
                     <div className="h-8 w-12 bg-gray-50 rounded-lg"></div>
@@ -75,7 +72,6 @@ function SkeletonCard() {
 function Column({ title, icon, items, stage, color, onAction, loading }: ColumnProps) {
     return (
         <div className="flex-1 min-w-[280px] sm:min-w-[250px] max-w-full sm:max-w-[300px] bg-transparent rounded-xl p-3">
-            {/* Header */}
             <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                     <h3 className="text-lg font-serif font-medium text-gray-900">{title}</h3>
@@ -85,7 +81,6 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                 </div>
             </div>
 
-            {/* Items */}
             <div className="space-y-3">
                 {loading ? (
                     <>
@@ -99,7 +94,6 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                 ) : (
                     items.map(item => (
                         <div key={item.id} className="bg-white p-4 rounded-xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3 h-auto min-h-[140px]">
-                            {/* Top Tags */}
                             <div className="flex items-center justify-between">
                                 <div className="flex gap-2">
                                     {item.format && (
@@ -112,7 +106,6 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                                             {item.platform}
                                         </span>
                                     )}
-                                    {/* Brain Confidence Badge (if metadata exists) */}
                                     {item.brain_metadata?.confidence && (
                                         <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${item.brain_metadata.confidence === 'high' ? 'bg-green-50 text-green-700' :
                                             item.brain_metadata.confidence === 'medium' ? 'bg-amber-50 text-amber-700' :
@@ -131,7 +124,6 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                                 </span>
                             </div>
 
-                            {/* Content */}
                             <div className="space-y-1.5">
                                 <h3 className="text-[17px] font-serif font-medium text-gray-900 leading-snug text-balance">
                                     {item.hook || 'Untitled Idea'}
@@ -141,7 +133,6 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                                 </p>
                             </div>
 
-                            {/* Footer Actions / Meta */}
                             <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 <div className="flex gap-2">
                                     {stage === 'idea' && (
@@ -213,7 +204,7 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
 export interface CommandCenterProps {
     onEdit?: (id: string) => void;
     onDraftCreated?: () => Promise<void> | void;
-    onNewDraft?: () => void; // Used to trigger modal from parent, but we can also handle it locally or override
+    onNewDraft?: () => void;
 }
 
 export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDraft }: CommandCenterProps) {
@@ -224,6 +215,14 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
     const [isMobile, setIsMobile] = useState(false);
     const [isNewDraftModalOpen, setIsNewDraftModalOpen] = useState(false);
 
+    // Profile State
+    const [showProfileBanner, setShowProfileBanner] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+    // Limit State
+    const [limitModalOpen, setLimitModalOpen] = useState(false);
+    const [limitState, setLimitState] = useState({ tier: 'free', usage: 0, limit: 0 });
+
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 1024);
         checkMobile();
@@ -233,7 +232,21 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
 
     useEffect(() => {
         fetchItems();
+        checkProfile();
     }, []);
+
+    const checkProfile = async () => {
+        try {
+            const res = await fetch('/api/user/status');
+            const data = await res.json();
+            // If any field is missing, show banner
+            if (data.profile && (!data.profile.role || !data.profile.context || !data.profile.voice_tone)) {
+                setShowProfileBanner(true);
+            }
+        } catch (e) {
+            console.error("Failed to check profile", e);
+        }
+    };
 
     const fetchItems = async () => {
         setLoading(true);
@@ -254,7 +267,6 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
             const res = await fetch('/api/directions', { method: 'POST' });
             const data = await res.json();
             if (data.success && data.persisted) {
-                // Refresh items to show new suggestions
                 await fetchItems();
             } else if (data.ideas && !data.persisted) {
                 console.warn("Ideas generated but not persisted?", data);
@@ -279,8 +291,24 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                 });
                 setItems(prev => prev.filter(i => i.id !== id));
             } else if (action === 'start_draft') {
+                // Check Limit before promoting to draft
+                try {
+                    const res = await fetch('/api/user/status');
+                    const data = await res.json();
+                    if (data.usage && !data.usage.is_allowed) {
+                        setLimitState({
+                            tier: data.usage.tier,
+                            usage: data.usage.count,
+                            limit: data.usage.limit
+                        });
+                        setLimitModalOpen(true);
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to check limit", e);
+                }
+
                 console.log("Start Draft clicked");
-                // In future this might also open the modal if we want full brain info
                 await fetch('/api/content', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -299,26 +327,59 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
     };
 
     const handleWizardComplete = async (draftContent: string) => {
+        // NOTE: Wizard completion usually implies promotion to draft.
+        // The API backend handles the limit check on PATCH.
+        // If it fails, the Wizard will likely error out.
+        // We should add a try/catch here to show the modal if API returns 403.
+
         if (!developingItem) return;
 
-        // 1. Update Content Item (Pipeline Status)
-        await fetch('/api/content', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: developingItem.id,
-                stage: 'draft',
-                draft_content: draftContent,
-            }),
-        });
-
-        // 2. Create Real Draft (Bridge to Editor)
         try {
+            // 1. Update Content Item (Pipeline Status)
+            const res = await fetch('/api/content', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: developingItem.id,
+                    stage: 'draft',
+                    draft_content: draftContent,
+                }),
+            });
+
+            if (res.status === 403) {
+                // Catch the limit error from backend
+                const data = await res.json();
+                if (data.error === 'Limit Reached') {
+                    setLimitState({
+                        tier: data.tier,
+                        usage: data.message.includes('used') ? parseInt(data.message.match(/used (\d+)/)?.[1] || '0') : 0,
+                        // Fallback parsing, ideally API returns structured
+                        limit: 2 // We know Free limit
+                    });
+                    // Better: fetch fresh status or trust API response structure if we improved it.
+                    // Let's just create a generic state for now or fetch status.
+                    const statusRes = await fetch('/api/user/status');
+                    const statusData = await statusRes.json();
+                    if (statusData.usage) {
+                        setLimitState({
+                            tier: statusData.usage.tier,
+                            usage: statusData.usage.count,
+                            limit: statusData.usage.limit
+                        });
+                        setLimitModalOpen(true);
+                    } else {
+                        alert(data.message);
+                    }
+                    return;
+                }
+            }
+
+            // 2. Create Real Draft (Bridge to Editor)
             const draftRes = await fetch('/api/drafts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id: developingItem.id, // FORCE SYNC: Use same ID as Pipeline Item
+                    id: developingItem.id,
                     beliefText: developingItem.angle || developingItem.hook,
                     content: draftContent,
                 }),
@@ -330,18 +391,17 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                 if (onEdit) onEdit(draftData.draft.id);
             }
 
+            setItems(prev => prev.map(i =>
+                i.id === developingItem.id
+                    ? { ...i, stage: 'draft', draft_content: draftContent }
+                    : i
+            ));
+
+            setDevelopingItem(null);
+
         } catch (e) {
-            console.error("Failed to sync to drafts table:", e);
-            if (onEdit) onEdit(developingItem.id);
+            console.error("Failed to sync/update:", e);
         }
-
-        setItems(prev => prev.map(i =>
-            i.id === developingItem.id
-                ? { ...i, stage: 'draft', draft_content: draftContent }
-                : i
-        ));
-
-        setDevelopingItem(null);
     };
 
     const handleNewDraftStart = async (topic: string, metadata: BrainMetadata) => {
@@ -351,15 +411,23 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     hook: topic,
-                    stage: 'developing', // Skip idea, go straight to developing
+                    stage: 'developing',
                     brain_metadata: metadata,
-                    dev_step: null // Not started wizard yet
+                    dev_step: null
                 }),
             });
 
             if (res.ok) {
                 const data = await res.json();
-                await fetchItems(); // Refresh to show new item
+                await fetchItems();
+            } else {
+                const data = await res.json();
+                if (data.error === 'Limit Reached') {
+                    // Should be caught by proactive check, but good fallback
+                    setLimitModalOpen(true); // Using stale state might be risky, but usually okay
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
             }
         } catch (error) {
             console.error("Failed to create new draft:", error);
@@ -373,7 +441,6 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
 
     return (
         <div className="h-full flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between p-6 pb-4">
                 <div>
                     <h1 className="text-4xl font-serif text-gray-900 mb-1">Command Center</h1>
@@ -389,7 +456,24 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                         Suggest Ideas
                     </button>
                     <button
-                        onClick={() => setIsNewDraftModalOpen(true)}
+                        onClick={async () => {
+                            try {
+                                const res = await fetch('/api/user/status');
+                                const data = await res.json();
+                                if (data.usage && !data.usage.is_allowed) {
+                                    setLimitState({
+                                        tier: data.usage.tier,
+                                        usage: data.usage.count,
+                                        limit: data.usage.limit
+                                    });
+                                    setLimitModalOpen(true);
+                                    return;
+                                }
+                            } catch (e) {
+                                console.error("Failed to check limit", e);
+                            }
+                            setIsNewDraftModalOpen(true);
+                        }}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         <Plus size={16} />
@@ -398,9 +482,35 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                 </div>
             </div>
 
-            {/* Pipeline - Responsive Grid */}
+            {showProfileBanner && (
+                <div className="mx-6 mb-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between animate-fade-in">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                            <User size={16} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-indigo-900">Your profile is incomplete.</h3>
+                            <p className="text-xs text-indigo-700">Set your Role & Voice to help the Brain write better drafts.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowProfileBanner(false)}
+                            className="text-xs font-bold text-indigo-400 hover:text-indigo-600 px-3 py-2"
+                        >
+                            Dismiss
+                        </button>
+                        <button
+                            onClick={() => setIsProfileModalOpen(true)}
+                            className="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                            Complete Setup
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex-1 overflow-x-auto p-4 md:p-6 pt-2 pb-24 md:pb-6">
-                {/* Mobile Tabs */}
                 {isMobile && (
                     <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
                         {(['idea', 'developing', 'draft', 'published'] as Stage[]).map(stage => (
@@ -468,7 +578,6 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                 </div>
             </div>
 
-            {/* Development Wizard Modal */}
             {developingItem && (
                 <DevelopmentWizard
                     item={developingItem}
@@ -477,11 +586,27 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                 />
             )}
 
-            {/* New Draft Modal */}
             <NewDraftModal
                 isOpen={isNewDraftModalOpen}
                 onClose={() => setIsNewDraftModalOpen(false)}
                 onStart={handleNewDraftStart}
+            />
+
+            <LimitModal
+                isOpen={limitModalOpen}
+                onClose={() => setLimitModalOpen(false)}
+                tier={limitState.tier}
+                usage={limitState.usage}
+                limit={limitState.limit}
+            />
+
+            <ProfileSetupModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                onComplete={() => {
+                    setShowProfileBanner(false);
+                    // Could refresh other things if needed
+                }}
             />
         </div>
     );

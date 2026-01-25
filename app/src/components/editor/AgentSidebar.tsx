@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, Bot, User, Wand2, Brain, Search, Copy, Check } from "lucide-react";
 import { Belief } from "@/types";
+import { LimitModal } from "../modal/LimitModal";
 
 interface AgentSidebarProps {
     currentContent: string | null;
@@ -32,6 +33,10 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
     const [searchQuery, setSearchQuery] = useState("");
     const [copiedBeliefId, setCopiedBeliefId] = useState<string | null>(null);
 
+    // Limit State
+    const [limitModalOpen, setLimitModalOpen] = useState(false);
+    const [limitState, setLimitState] = useState({ tier: 'free', usage: 0, limit: 0 });
+
     useEffect(() => {
         if (activeTab === 'chat') {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,6 +44,26 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
     }, [messages, activeTab]);
 
     const handleRefine = async (customInstruction?: string) => {
+        // LIMIT CHECK
+        try {
+            const res = await fetch('/api/user/status');
+            const data = await res.json();
+            console.log("Agent Sidebar Limit Check:", data); // DEBUG
+
+            if (data.usage && !data.usage.is_allowed) {
+                console.log("BLOCKED - Triggering Modal"); // DEBUG
+                setLimitState({
+                    tier: data.usage.tier,
+                    usage: data.usage.count,
+                    limit: data.usage.limit
+                });
+                setLimitModalOpen(true);
+                return;
+            }
+        } catch (e) {
+            console.error("Limit check failed", e);
+        }
+
         const activeInstruction = customInstruction || instruction;
         if (!activeInstruction || !currentContent) return;
 
@@ -109,7 +134,7 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
     }
 
     return (
-        <div className="flex flex-col h-full bg-paper border-l border-gray-100">
+        <div className="flex flex-col h-full bg-paper border-l border-gray-100 relative">
             {/* Header / Tabs */}
             <div className="flex items-center border-b border-gray-100 bg-paper">
                 <button
@@ -322,6 +347,15 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
                     )}
                 </div>
             </div>
+
+            {/* Limit Modal */}
+            <LimitModal
+                isOpen={limitModalOpen}
+                onClose={() => setLimitModalOpen(false)}
+                tier={limitState.tier}
+                usage={limitState.usage}
+                limit={limitState.limit}
+            />
         </div>
     );
 }

@@ -1,7 +1,10 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
+
+import { UsageService } from '@/lib/billing/usage';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +88,43 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // CHECK USAGE LIMITS
+        // 1. If no ID, it's a new draft -> Check Limit.
+        // 2. If ID exists, we must check if it's already in the drafts table.
+        //    If it IS in table, it's an update (Free).
+        //    If NOT in table, it's a new draft (Wizard Flow / Sync) -> Check Limit.
+
+        let isCreation = !id;
+
+        if (id) {
+            console.log(`[POST /api/drafts] Checking existence for ID: ${id} with User: ${userId}`);
+            const { data: existing } = await supabase
+                .from('drafts')
+                .select('id')
+                .eq('id', id)
+                .single();
+
+            if (!existing) {
+                isCreation = true;
+            }
+            console.log(`[POST /api/drafts] Exists? ${!!existing} | isCreation: ${isCreation}`);
+        }
+
+        if (isCreation) {
+            const limitCheck = await UsageService.checkDraftLimit(userId);
+            if (!limitCheck.allowed) {
+                return NextResponse.json(
+                    {
+                        error: 'Limit Reached',
+                        message: limitCheck.reason,
+                        tier: limitCheck.tier,
+                        upgradeUrl: '/pricing'
+                    },
+                    { status: 403 }
+                );
+            }
+        }
+
         const { data: draft, error } = await supabase
             .from('drafts')
             .insert({
@@ -98,6 +138,12 @@ export async function POST(req: NextRequest) {
             .single();
 
         if (error) throw error;
+
+        // Increment if we just created a new one
+        if (isCreation) {
+            console.log(`[POST /api/drafts] Incrementing usage for User ${userId}`);
+            await UsageService.incrementDraftCount(userId);
+        }
 
         return NextResponse.json({ draft, success: true });
     } catch (error: any) {

@@ -75,6 +75,13 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
                         </div>
                         <div className="flex flex-col gap-1">
                             <button
+                                onClick={() => onOptionSelect("Remove AI-isms and corporate jargon, make it human and direct")}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg text-[15px] text-gray-700 hover:text-orange-600 transition-colors text-left group"
+                            >
+                                <Sparkles size={16} className="text-gray-400 group-hover:text-orange-500 transition-colors" />
+                                <span className="font-medium">Remove AI-isms</span>
+                            </button>
+                            <button
                                 onClick={() => onOptionSelect("Rephrase this clearly and effectively")}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg text-[15px] text-gray-700 transition-colors text-left group"
                             >

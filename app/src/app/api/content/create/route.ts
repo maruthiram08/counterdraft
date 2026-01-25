@@ -104,6 +104,9 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Increment usage count
+        await UsageService.incrementDraftCount(userId);
+
         return NextResponse.json({
             contentItemId: contentItem.id,
             stage: contentItem.stage,

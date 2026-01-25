@@ -1,4 +1,4 @@
-import { inferOutcomeWithLLM, analyzeConfidenceWithLLM } from '@/lib/openai';
+import { inferOutcomeWithLLM, analyzeConfidenceWithLLM, analyzeGenealogyWithLLM, bootstrapGenealogyWithLLM } from '@/lib/openai';
 import { logBrainAction } from './logger';
 import { BrainAction, Outcome, Audience, ConfidenceResult, Belief } from '@/types';
 
@@ -110,6 +110,58 @@ export class BrainDecisionService {
         await logBrainAction({
             action: 'confidence_calculation',
             inputContext: { topic, beliefCount: beliefs.length },
+            outputResult: result,
+            modelConfig: { model: 'gpt-4o' },
+            latencyMs: latency
+        });
+
+        return result;
+    }
+
+    /**
+     * Checks if a topic belongs to a specific Root Belief tree.
+     */
+    async analyzeGenealogy(
+        topic: string,
+        rootBeliefs: { id: string; statement: string; type: string }[]
+    ): Promise<{ rootId: string | null; reasoning: string }> {
+        const startTime = Date.now();
+        let result = { rootId: null as string | null, reasoning: 'No roots provided' };
+
+        if (rootBeliefs.length > 0) {
+            try {
+                result = await analyzeGenealogyWithLLM(topic, rootBeliefs);
+            } catch (error) {
+                console.error('Genealogy Analysis Failed:', error);
+                result = { rootId: null, reasoning: 'Analysis failed' };
+            }
+        }
+
+        // We skip logging for now to avoid Type errors until BrainAction is updated
+        return result;
+    }
+
+    /**
+     * Batch processes existing beliefs to build a genealogy tree.
+     */
+    async bootstrapGenealogy(
+        beliefs: { id: string; statement: string; type: string }[]
+    ): Promise<{ roots: string[]; links: { childId: string; parentId: string }[] }> {
+        const startTime = Date.now();
+        let result = { roots: [] as string[], links: [] as { childId: string; parentId: string }[] };
+
+        try {
+            result = await bootstrapGenealogyWithLLM(beliefs);
+        } catch (error) {
+            console.error('Genealogy Bootstrapping Failed:', error);
+        }
+
+        const latency = Date.now() - startTime;
+
+        // Log Trace
+        await logBrainAction({
+            action: 'bootstrap_genealogy',
+            inputContext: { beliefCount: beliefs.length },
             outputResult: result,
             modelConfig: { model: 'gpt-4o' },
             latencyMs: latency

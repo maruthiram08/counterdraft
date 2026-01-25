@@ -119,6 +119,9 @@ export default function SettingsPage() {
                     {/* Profile Section */}
                     <ProfileSection />
 
+                    {/* Usage Section */}
+                    <UsageSection />
+
                     {/* Integrations Section */}
                     <section className="mb-12">
                         <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
@@ -344,5 +347,74 @@ function IntegrationCard({
                 )}
             </div>
         </div>
+    );
+}
+
+function UsageSection() {
+    const [usage, setUsage] = useState<{ usage: number; limit: number; tier: string } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/user/usage')
+            .then(res => res.json())
+            .then(data => {
+                setUsage(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to load usage", err);
+                setLoading(false);
+            });
+    }, []);
+
+    if (loading) return null;
+    if (!usage) return null;
+
+    const percent = Math.min(100, (usage.usage / (usage.limit === Infinity ? 1 : usage.limit)) * 100);
+    const isUnlimited = usage.limit === Infinity;
+
+    return (
+        <section className="mb-12">
+            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
+                <Settings size={18} /> {/* Reusing icon for visual consistency */}
+                Plan & Usage
+            </h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">
+                Your monthly content generation limits.
+            </p>
+
+            <div className="p-6 border border-[var(--border)] rounded-lg bg-[var(--surface)]">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg capitalize">{usage.tier} Plan</h3>
+                            {usage.tier === 'free' && (
+                                <a href="/pricing" className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium hover:bg-blue-200">
+                                    Upgrade to Pro
+                                </a>
+                            )}
+                        </div>
+                        <p className="text-sm text-[var(--text-muted)]">
+                            {isUnlimited ? 'Unlimited drafts' : `${usage.limit} drafts per month`}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-2xl font-bold">
+                            {usage.usage} <span className="text-sm text-[var(--text-muted)] font-normal">/ {isUnlimited ? '∞' : usage.limit}</span>
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">Drafts used</div>
+                    </div>
+                </div>
+
+                {!isUnlimited && (
+                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                        <div
+                            className={`h-2.5 rounded-full ${percent >= 90 ? 'bg-red-500' : 'bg-green-500'}`}
+                            style={{ width: `${percent}%` }}
+                        ></div>
+                    </div>
+                )}
+            </div>
+        </section>
     );
 }

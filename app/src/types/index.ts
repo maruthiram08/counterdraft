@@ -4,7 +4,7 @@
 // CORE ENTITIES
 // ===========================================
 
-export type BeliefType = 'core' | 'overused' | 'emerging' | 'rejected';
+export type BeliefType = 'core' | 'overused' | 'emerging' | 'rejected' | 'root' | 'pillar' | 'leaf';
 
 export interface Belief {
   id: string;
@@ -20,6 +20,11 @@ export interface Belief {
   createdAt: Date;
   updatedAt: Date;
   evidence?: BeliefEvidence[];
+
+  // Genealogy Fields (V1 Upgrade)
+  parentId?: string | null;
+  rootId?: string | null;
+  tags?: string[];
 }
 
 export interface BeliefEvidence {
@@ -92,9 +97,9 @@ export interface IngestRequest {
 }
 
 export interface BeliefExtractionResult {
-  coreBeliefs: string[];
-  overusedAngles: string[];
-  emergingThesis: string;
+  coreBeliefs: { statement: string; reasoning: string; confidence: string; context?: string; tags?: string[] }[];
+  overusedAngles: { statement: string; reasoning: string; confidence: string; context?: string; tags?: string[] }[];
+  emergingThesis: { statement: string; reasoning: string; confidence: string; context?: string; tags?: string[] }[];
   detectedTensions: {
     beliefA: string;
     beliefB: string;
@@ -246,6 +251,8 @@ export interface ContentItem {
     }[];
   };
   draftContent?: string;
+  rootBeliefId?: string | null;
+  parentBeliefId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -274,7 +281,8 @@ export type BrainAction =
   | 'draft_generation'
   | 'content_refinement'
   | 'outcome_inference'
-  | 'confidence_calculation';
+  | 'confidence_calculation'
+  | 'bootstrap_genealogy';
 
 export interface BrainTraceLog {
   id: string;

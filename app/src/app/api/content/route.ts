@@ -1,6 +1,10 @@
+
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { UsageService } from '@/lib/billing/usage';
+import { brainService } from '@/lib/brain/service';
+import { Belief } from '@/types';
 
 // GET /api/content - List content items with optional stage filter
 export async function GET(req: Request) {
@@ -59,6 +63,28 @@ export async function POST(req: Request) {
             references = [] // Array of { type, title, content, url, filePath }
         } = body;
 
+        // Check Usage Limits (Only if creating a real draft/dev item, not just an idea)
+        // Ideas are free.
+        const isDraftOrDev = stage === 'draft' || stage === 'developing';
+        console.log(`[POST /api/content] Req Stage: ${stage} | isDraftOrDev: ${isDraftOrDev} | User: ${userId}`);
+
+        if (isDraftOrDev) {
+            const limitCheck = await UsageService.checkDraftLimit(userId);
+            console.log(`[POST /api/content] Limit Check:`, limitCheck);
+
+            if (!limitCheck.allowed) {
+                return NextResponse.json(
+                    {
+                        error: 'Limit Reached',
+                        message: limitCheck.reason,
+                        tier: limitCheck.tier,
+                        upgradeUrl: '/pricing'
+                    },
+                    { status: 403 }
+                );
+            }
+        }
+
         // 1. Create Content Item
         const { data: item, error: itemError } = await supabaseAdmin
             .from('content_items')
@@ -79,6 +105,51 @@ export async function POST(req: Request) {
             .single();
 
         if (itemError) throw itemError;
+
+        // 1.5 Deep Logic: Genealogy & Confidence Check
+        if (stage === 'developing' || stage === 'idea') {
+            try {
+                // Determine Genealogy (Find Parent/Root)
+                const { data: beliefs } = await supabaseAdmin
+                    .from('beliefs')
+                    .select('id, statement, belief_type')
+                    .eq('user_id', userId);
+
+                const roots = (beliefs || []).map(b => ({
+                    id: b.id,
+                    statement: b.statement,
+                    type: b.belief_type
+                }));
+
+                const [genealogy, confidence] = await Promise.all([
+                    brainService.analyzeGenealogy(hook, roots),
+                    brainService.calculateConfidence(hook, (beliefs || []) as any as Belief[])
+                ]);
+
+                // Update item with genealogy and update metadata with confidence
+                const updatedMetadata = {
+                    ...brain_metadata,
+                    confidence: confidence.level,
+                    confidence_score: confidence.score,
+                    confidence_reasoning: confidence.reasoning
+                };
+
+                await supabaseAdmin
+                    .from('content_items')
+                    .update({
+                        root_belief_id: genealogy.rootId,
+                        brain_metadata: updatedMetadata
+                    })
+                    .eq('id', item.id);
+
+                // Refresh item in response
+                item.root_belief_id = genealogy.rootId;
+                item.brain_metadata = updatedMetadata;
+
+            } catch (logicError) {
+                console.error('Brain V1 Logic Failed (non-blocking):', logicError);
+            }
+        }
 
         // 2. Create References (if any)
         if (references && references.length > 0) {
@@ -101,6 +172,12 @@ export async function POST(req: Request) {
             }
         }
 
+        // Increment usage count if it was a draft
+        if (isDraftOrDev) {
+            await UsageService.incrementDraftCount(userId);
+        }
+
+        console.log(`[POST /api/content] Created item ${item.id} with stage ${item.stage}`);
         return NextResponse.json({ item }, { status: 201 });
     } catch (err: any) {
         console.error('Content API POST Error:', err);
@@ -121,6 +198,59 @@ export async function PATCH(req: Request) {
 
         if (!id) {
             return NextResponse.json({ error: 'ID required' }, { status: 400 });
+        }
+
+        // CHECK LIMIT IF PROMOTING TO DRAFT
+        let shouldIncrement = false;
+
+        if (updates.stage === 'draft' || updates.stage === 'developing') {
+            // Check if it was previously NOT a draft? 
+            const { data: current } = await supabaseAdmin
+                .from('content_items')
+                .select('stage')
+                .eq('id', id)
+                .single();
+
+            // FIX: Count limit if we are moving TO 'draft' from ANY other stage (idea, developing)
+            // AND ensure we aren't just updating an existing draft.
+            // If current stage is null (shouldn't happen), assume idea.
+            const currentStage = current?.stage || 'idea';
+            const wasNotDraft = currentStage !== 'draft' && currentStage !== 'developing';
+            // Wait, if I am in 'developing' (Wizard), and I save... it patches with stage='developing'.
+            // If I then 'Finish' -> stage='draft'.
+            // Do we count 'developing' items as drafts? Yes, usually.
+            // The Wizard creates an item as 'developing' immediately.
+
+            // LOGIC:
+            // 1. Idea -> Developing: COUNT
+            // 2. Developing -> Draft: FREE (Already counted)
+            // 3. Idea -> Draft: COUNT
+
+            // So we count if DESTINATION is (draft OR dev) AND ORIGIN is (idea).
+            const isDestinationCountable = updates.stage === 'draft' || updates.stage === 'developing';
+            const isOriginFree = currentStage === 'idea';
+
+            const isPromoting = isDestinationCountable && isOriginFree;
+
+            console.log(`[PATCH /api/content] ID: ${id} | Update: ${updates.stage} | Current: ${currentStage} | Promoting: ${isPromoting}`);
+
+            if (isPromoting) {
+                const limitCheck = await UsageService.checkDraftLimit(userId);
+                console.log(`[PATCH /api/content] Limit Check:`, limitCheck);
+
+                if (!limitCheck.allowed) {
+                    return NextResponse.json(
+                        {
+                            error: 'Limit Reached',
+                            message: limitCheck.reason,
+                            tier: limitCheck.tier,
+                            upgradeUrl: '/pricing'
+                        },
+                        { status: 403 }
+                    );
+                }
+                shouldIncrement = true;
+            }
         }
 
         // Add updated_at
@@ -146,6 +276,12 @@ export async function PATCH(req: Request) {
                 status: 'draft',
                 updated_at: new Date().toISOString()
             });
+        }
+
+        // Increment usage if we successfully promoted
+        if (shouldIncrement) {
+            console.log(`[PATCH /api/content] Incrementing usage for User ${userId}`);
+            await UsageService.incrementDraftCount(userId);
         }
 
         return NextResponse.json({ item: data });
@@ -177,6 +313,8 @@ export async function DELETE(req: Request) {
             .eq('user_id', userId);
 
         if (error) throw error;
+
+        // Note: We do not decrement usage on delete, to prevent abuse (create -> delete -> create)
 
         return NextResponse.json({ success: true });
     } catch (err: any) {

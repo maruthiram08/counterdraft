@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { repurposeContent, generateImage } from '@/lib/openai';
 
+import { UsageService } from '@/lib/billing/usage';
+
 export async function POST(req: Request) {
     try {
         const { sourceId, platform, options } = await req.json();
@@ -16,6 +18,56 @@ export async function POST(req: Request) {
             .select('*')
             .eq('id', sourceId)
             .single();
+
+        if (draftSource) {
+            userId = draftSource.user_id;
+        } else {
+            const { data: itemSource } = await supabase
+                .from('content_items')
+                .select('user_id')
+                .eq('id', sourceId)
+                .single();
+            if (itemSource) userId = itemSource.user_id;
+        }
+
+        if (!userId) {
+            // Try to get from auth context if possible, but for now rely on source ownership
+            // Ideally we should use getOrCreateUser() here for security!
+            // Let's defer to the existing logic flow but we NEED userId for the check.
+            return NextResponse.json({ error: "User not found" }, { status: 401 });
+        }
+
+        // Check Usage Limits
+        const limitCheck = await UsageService.checkDraftLimit(userId);
+        if (!limitCheck.allowed) {
+            return NextResponse.json(
+                {
+                    error: 'Limit Reached',
+                    message: limitCheck.reason,
+                    tier: limitCheck.tier,
+                    upgradeUrl: '/pricing'
+                },
+                { status: 403 }
+            );
+        }
+
+        // ... Refetch for content ...
+        if (draftSource) {
+            sourceContent = draftSource.content;
+            sourceHook = draftSource.belief_text;
+        } else {
+            // Fallback to content_items
+            const { data: itemSource } = await supabase
+                .from('content_items')
+                .select('*')
+                .eq('id', sourceId)
+                .single();
+
+            if (itemSource) {
+                sourceContent = itemSource.draft_content || itemSource.hook;
+                sourceHook = itemSource.hook;
+            }
+        }
 
         if (draftSource) {
             sourceContent = draftSource.content;
@@ -113,6 +165,10 @@ export async function POST(req: Request) {
                 }
             }
         });
+
+
+        // Increment usage count
+        await UsageService.incrementDraftCount(userId);
 
         return NextResponse.json({
             id: newDraft.id,

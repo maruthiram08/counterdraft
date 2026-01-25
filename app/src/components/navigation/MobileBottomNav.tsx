@@ -33,7 +33,6 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
 
     const moreNavItems = [
         { id: 'tensions', label: 'Tensions', icon: Zap },
-        { id: 'mindmap', label: 'Mind Map', icon: Network },
         { id: 'settings', label: 'Settings', icon: Settings },
     ];
 
@@ -61,8 +60,8 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                                     key={item.id}
                                     onClick={() => handleNavigate(item.id)}
                                     className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all ${activeSection === item.id
-                                            ? 'bg-indigo-50 text-indigo-600'
-                                            : 'text-gray-700 hover:bg-gray-50'
+                                        ? 'bg-indigo-50 text-indigo-600'
+                                        : 'text-gray-700 hover:bg-gray-50'
                                         }`}
                                 >
                                     <item.icon size={22} className={activeSection === item.id ? 'text-indigo-500' : 'text-gray-400'} />
@@ -82,8 +81,8 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                             key={item.id}
                             onClick={() => handleNavigate(item.id)}
                             className={`flex flex-col items-center justify-center gap-0.5 min-w-[64px] py-2 transition-all active:scale-95 ${activeSection === item.id
-                                    ? 'text-indigo-600'
-                                    : 'text-gray-400'
+                                ? 'text-indigo-600'
+                                : 'text-gray-400'
                                 }`}
                         >
                             <item.icon
@@ -101,8 +100,8 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                     <button
                         onClick={() => setShowMoreMenu(!showMoreMenu)}
                         className={`flex flex-col items-center justify-center gap-0.5 min-w-[64px] py-2 transition-all active:scale-95 ${showMoreMenu || moreNavItems.some(i => i.id === activeSection)
-                                ? 'text-indigo-600'
-                                : 'text-gray-400'
+                            ? 'text-indigo-600'
+                            : 'text-gray-400'
                             }`}
                     >
                         {showMoreMenu ? (

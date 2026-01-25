@@ -33,11 +33,18 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
 
         <div className="flex items-center gap-6">
           <SignedOut>
-            <Link href="/waitlist" onClick={() => posthog?.capture('click_join_waitlist', { location: 'navbar' })}>
-              <button className="bg-zinc-900 text-white px-3 py-2 text-[10px] md:text-xs md:px-5 md:py-2.5 rounded-lg font-bold uppercase tracking-widest hover:bg-green-600 transition-all transform hover:scale-105 active:scale-95">
-                Join Waitlist
-              </button>
-            </Link>
+            <div className="flex items-center gap-4">
+              <SignInButton mode="modal">
+                <button className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">
+                  Sign In
+                </button>
+              </SignInButton>
+              <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'navbar' })}>
+                <button className="bg-zinc-900 text-white px-3 py-2 text-[10px] md:text-xs md:px-5 md:py-2.5 rounded-lg font-bold uppercase tracking-widest hover:bg-green-600 transition-all transform hover:scale-105 active:scale-95">
+                  Get Started
+                </button>
+              </Link>
+            </div>
           </SignedOut>
 
           <SignedIn>

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Loader2, Check, RefreshCw, X, Download, Plus, Al
 import { BrainHeaderPanel } from "./BrainHeaderPanel";
 import { BrainMetadata } from "@/types";
 import { ResearchItem } from "./ResearchItem";
+import { LimitModal } from "../modal/LimitModal";
 
 interface ResearchPoint {
     text: string;
@@ -55,6 +56,30 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     // Draft state
     const [draftContent, setDraftContent] = useState('');
+
+    // Limit State
+    const [limitModalOpen, setLimitModalOpen] = useState(false);
+    const [limitState, setLimitState] = useState({ tier: 'free', usage: 0, limit: 0 });
+
+    const checkLimit = async (): Promise<boolean> => {
+        try {
+            const res = await fetch('/api/user/status');
+            const data = await res.json();
+            if (data.usage && !data.usage.is_allowed) {
+                setLimitState({
+                    tier: data.usage.tier,
+                    usage: data.usage.count,
+                    limit: data.usage.limit
+                });
+                setLimitModalOpen(true);
+                return false; // Blocked
+            }
+            return true; // Allowed
+        } catch (e) {
+            console.error("Limit check failed", e);
+            return true; // Fail open or closed? Open for now to avoid blocking on network error.
+        }
+    };
 
     // Global Context
     const [globalContext, setGlobalContext] = useState("");
@@ -286,9 +311,15 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 return;
             }
 
-            setShowStrategyWarning(false);
-            setStep('generate');
-            generateDraft();
+            // CHECK LIMIT BEFORE DRAFT GENERATION
+            // User Requirement: "Post outline only throw this popup. The draft generation should not happen"
+            checkLimit().then(allowed => {
+                if (!allowed) return;
+
+                setShowStrategyWarning(false);
+                setStep('generate');
+                generateDraft();
+            });
         }
     };
 
@@ -304,7 +335,10 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
     };
 
-    const confirmProceedVague = () => {
+    const confirmProceedVague = async () => {
+        const allowed = await checkLimit();
+        if (!allowed) return;
+
         setShowStrategyWarning(false);
         setStep('generate');
         generateDraft();
@@ -782,6 +816,14 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     </div>
                 )}
             </div>
+
+            <LimitModal
+                isOpen={limitModalOpen}
+                onClose={() => setLimitModalOpen(false)}
+                tier={limitState.tier}
+                usage={limitState.usage}
+                limit={limitState.limit}
+            />
         </div>
     );
 }

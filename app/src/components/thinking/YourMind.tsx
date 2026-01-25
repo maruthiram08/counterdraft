@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Layers, Zap, Network } from 'lucide-react';
 import { BeliefCard } from '@/components/thinking/BeliefCard';
 import { TensionCard } from '@/components/thinking/TensionCard';
 import { AddContentModal } from '@/components/thinking/AddContentModal';
 import { useBeliefs } from '@/hooks/useBeliefs';
 import { useTensions } from '@/hooks/useTensions';
+import { useDrafts } from '@/hooks/useDrafts';
+import { GenealogyTree } from '@/components/thinking/GenealogyTree';
 
 function SkeletonBeliefCard() {
     return (
@@ -49,12 +52,38 @@ function SkeletonTensionCard() {
 }
 
 export function YourMind() {
-    const [activeTab, setActiveTab] = useState<'beliefs' | 'tensions' | 'mindmap'>('beliefs');
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Persist sub-tabs and views in URL
+    const initialTab = searchParams.get('subtab') as 'beliefs' | 'tensions' || 'beliefs';
+    const initialView = searchParams.get('view') as 'list' | 'tree' || 'list';
+
+    const [activeTab, setActiveTab] = useState<'beliefs' | 'tensions'>(initialTab);
+    const [beliefView, setBeliefView] = useState<'list' | 'tree'>(initialView);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
+
+    // Sync helpers
+    const updateUrl = (key: string, value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set(key, value);
+        router.push(`/workspace?${params.toString()}`, { scroll: false });
+    };
+
+    const handleTabChange = (tab: 'beliefs' | 'tensions') => {
+        setActiveTab(tab);
+        updateUrl('subtab', tab);
+    };
+
+    const handleViewChange = (view: 'list' | 'tree') => {
+        setBeliefView(view);
+        updateUrl('view', view);
+    };
 
     // Hooks for data
     const { beliefs, loading: beliefsLoading, submitFeedback } = useBeliefs();
     const { tensions, loading: tensionsLoading, classifyTension } = useTensions();
+    const { drafts } = useDrafts();
 
     // Local state to hide items immediately after action
     const [reviewedBeliefIds, setReviewedBeliefIds] = useState<Set<string>>(new Set());
@@ -135,7 +164,7 @@ export function YourMind() {
                 {/* Tab Navigation */}
                 <div className="flex gap-6 mt-6 border-b border-gray-200">
                     <button
-                        onClick={() => setActiveTab('beliefs')}
+                        onClick={() => handleTabChange('beliefs')}
                         className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 font-medium text-sm ${activeTab === 'beliefs'
                             ? 'border-blue-600 text-blue-600'
                             : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -145,7 +174,7 @@ export function YourMind() {
                         Beliefs
                     </button>
                     <button
-                        onClick={() => setActiveTab('tensions')}
+                        onClick={() => handleTabChange('tensions')}
                         className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 font-medium text-sm ${activeTab === 'tensions'
                             ? 'border-blue-600 text-blue-600'
                             : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -154,24 +183,45 @@ export function YourMind() {
                         <Zap size={16} />
                         Tensions
                     </button>
-                    <button
-                        onClick={() => setActiveTab('mindmap')}
-                        className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 font-medium text-sm ${activeTab === 'mindmap'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-900'
-                            }`}
-                    >
-                        <Network size={16} />
-                        Mind Map
-                    </button>
                 </div>
             </div>
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-6 pb-32 min-h-0">
                 {activeTab === 'beliefs' && (
-                    <div className="w-full space-y-8">
-                        {beliefsLoading ? (
+                    <div className="w-full space-y-6">
+                        {/* View Toggle */}
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                {beliefView === 'list' ? 'Belief List' : 'Strategic Mind Map'}
+                            </h2>
+                            <div className="bg-gray-200/50 p-1 rounded-lg flex items-center text-xs font-medium shrink-0">
+                                <button
+                                    onClick={() => handleViewChange('list')}
+                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                >
+                                    List
+                                </button>
+                                <button
+                                    onClick={() => handleViewChange('tree')}
+                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                >
+                                    Mind Map
+                                </button>
+                            </div>
+                        </div>
+
+                        {beliefView === 'tree' ? (
+                            <div className="animate-fade-in">
+                                <GenealogyTree
+                                    beliefs={[...beliefs.core, ...beliefs.emerging, ...beliefs.overused, ...beliefs.confirmed]}
+                                    drafts={drafts}
+                                    onSelectDraft={(id) => {
+                                        window.location.href = `/workspace?draftId=${id}`;
+                                    }}
+                                />
+                            </div>
+                        ) : beliefsLoading ? (
                             <section>
                                 <div className="space-y-4">
                                     <SkeletonBeliefCard />
@@ -276,18 +326,6 @@ export function YourMind() {
                                 <p className="text-gray-500">No tensions detected yet.</p>
                             </div>
                         )}
-                    </div>
-                )}
-
-                {activeTab === 'mindmap' && (
-                    <div className="h-full flex items-center justify-center">
-                        <div className="text-center p-16 border border-dashed border-gray-300 rounded-lg">
-                            <Network size={48} className="mx-auto text-gray-400 mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">Mind Map Coming Soon</h3>
-                            <p className="text-gray-500">
-                                Visual graph of your beliefs, tensions, and their relationships.
-                            </p>
-                        </div>
                     </div>
                 )}
             </div>

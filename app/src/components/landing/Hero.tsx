@@ -25,9 +25,9 @@ export const Hero: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-28 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <SignedOut>
-            <Link href="/waitlist" onClick={() => posthog?.capture('click_join_waitlist', { location: 'hero' })}>
+            <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'hero' })}>
               <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-green-600/20">
-                Join Waitlist
+                Start Building
               </button>
             </Link>
           </SignedOut>

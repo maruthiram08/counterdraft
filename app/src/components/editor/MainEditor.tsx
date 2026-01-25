@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Save, Check, RefreshCw, Eye, Edit2, Image as ImageIcon } from "lucide-react";
+import { Copy, Save, Check, RefreshCw, Eye, Edit2, Image as ImageIcon, ShieldCheck } from "lucide-react";
 import { Draft } from "@/hooks/useDrafts";
 import { ContextualToolbar } from "./ContextualToolbar";
 import { PublishModal } from "./PublishModal";
 import { RepurposeModal } from "./RepurposeModal";
+import { VerificationSidebar, VerificationResult, PlagiarismResult, SlopMatch, CompetitorCheckResult } from "./FactCheckSidebar";
+import { QualityScoreFooter } from "./QualityScoreFooter";
+import { AntiSlopService } from "@/lib/tools/anti-slop";
 import { getCaretCoordinates } from "@/lib/textarea-utils";
 
 interface MainEditorProps {
@@ -16,16 +19,16 @@ interface MainEditorProps {
 
 export function MainEditor({ draft, onSave }: MainEditorProps) {
     const router = useRouter();
+
+    // 1. Basic Content State
     const [content, setContent] = useState("");
     const [coverImage, setCoverImage] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    // Preview Mode State
+    // 2. Mode & UI State
     const [isPreview, setIsPreview] = useState(false);
-
-    // Contextual selection state
     const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
     const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
     const [refining, setRefining] = useState(false);
@@ -33,30 +36,130 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     const [showRepurposeModal, setShowRepurposeModal] = useState(false);
     const [isRepurposing, setIsRepurposing] = useState(false);
 
-    // Refs
+    // 3. Quality / Verification State
+    const [showFactCheck, setShowFactCheck] = useState(false);
+    const [verifications, setVerifications] = useState<VerificationResult[]>([]);
+    const [verifying, setVerifying] = useState(false);
+    const [plagiarismResult, setPlagiarismResult] = useState<PlagiarismResult | null>(null);
+    const [checkingPlagiarism, setCheckingPlagiarism] = useState(false);
+    const [slopMatches, setSlopMatches] = useState<SlopMatch[]>([]);
+    const [slopLoading, setSlopLoading] = useState(false);
+    const [competitorResult, setCompetitorResult] = useState<CompetitorCheckResult | null>(null);
+    const [competitorLoading, setCompetitorLoading] = useState(false);
+
+    // 4. Refs (Keep these consistent)
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const blurTimeoutRef = useRef<NodeJS.Timeout>(null);
+    const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 5. Memoized Calculations
+    const scores = useMemo(() => {
+        const factHasRun = verifications.length > 0;
+        const plagiarismHasRun = plagiarismResult !== null;
+        const slopHasRun = true;
+
+        // 1. Factuality Score (40%)
+        // If not run, it's 0% verified.
+        let factScore = 0;
+        if (factHasRun) {
+            const verifiedCount = verifications.filter(v => v.status === 'verified').length;
+            const disputedCount = verifications.filter(v => v.status === 'disputed').length;
+            factScore = Math.max(0, (verifiedCount / verifications.length) * 100 - (disputedCount * 20));
+        }
+
+        // 2. Plagiarism Score (40%)
+        // If not run, it's 0% verified.
+        const plagiarismScore = plagiarismResult ? plagiarismResult.uniqueness_score : 0;
+
+        // 3. Style/Slop Score (20%)
+        const slopScore = Math.max(0, 100 - (slopMatches.length * 5));
+
+        // Aggregate Weighted Score
+        const totalScore = Math.round((factScore * 0.4) + (plagiarismScore * 0.4) + (slopScore * 0.2));
+
+        return {
+            totalScore,
+            fact: { score: factScore, hasRun: factHasRun, loading: verifying },
+            uniqueness: { score: plagiarismScore, hasRun: plagiarismHasRun, loading: checkingPlagiarism },
+            style: { score: slopScore, hasRun: true, loading: slopLoading }
+        };
+    }, [verifications, plagiarismResult, slopMatches, verifying, checkingPlagiarism, slopLoading]);
+
+    const handleRunMetric = async (type: 'fact' | 'uniqueness' | 'style' | 'run-all') => {
+        if (type === 'run-all') {
+            // Run all missing or all audits in parallel
+            setShowFactCheck(true);
+            await Promise.allSettled([
+                handleVerify(),
+                handlePlagiarismCheck(),
+                handleSlopScan()
+            ]);
+            return;
+        }
+
+        if (type === 'fact') handleVerify();
+        else if (type === 'uniqueness') handlePlagiarismCheck();
+        else if (type === 'style') handleSlopScan();
+    };
+
+    // --- Persistence: Fetch existing verification results ---
+    const fetchExistingVerification = async (id: string) => {
+        try {
+            // Fetch Facts
+            const factRes = await fetch(`/api/tools/fact-check?draftId=${id}`);
+            if (factRes.ok) {
+                const factData = await factRes.json();
+                if (factData.results) setVerifications(factData.results);
+            }
+
+            // Fetch Plagiarism
+            const plagRes = await fetch(`/api/tools/plagiarism-check?draftId=${id}`);
+            if (plagRes.ok) {
+                const plagData = await plagRes.json();
+                if (plagData.result) setPlagiarismResult(plagData.result);
+            }
+
+            // Trigger real-time slop scan
+            if (content) {
+                const matches = AntiSlopService.scan(content);
+                setSlopMatches(matches);
+            }
+        } catch (e) {
+            console.error("Error fetching existing verification:", e);
+        }
+    };
 
     // Sync content when draft selection changes
     useEffect(() => {
-        if (draft) {
-            // Check for Cover Image in Markdown
-            const coverMatch = draft.content.match(/^!\[(.*?)\]\((.*?)\)(\n\n)?/);
-
-            if (coverMatch) {
-                setCoverImage(coverMatch[2]);
-                // Remove the image markdown from the editor view
-                const cleanContent = draft.content.replace(coverMatch[0], '');
-                setContent(cleanContent);
-            } else {
-                setCoverImage(null);
-                setContent(draft.content);
-            }
-        } else {
+        if (!draft) {
             setContent("");
             setCoverImage(null);
+            setVerifications([]);
+            setPlagiarismResult(null);
+            setSlopMatches([]);
+            setCompetitorResult(null);
+            return;
         }
-    }, [draft]);
+
+        // 1. Content Sync
+        const coverMatch = draft.content.match(/^!\[(.*?)\]\((.*?)\)(\n\n)?/);
+        if (coverMatch) {
+            setCoverImage(coverMatch[2]);
+            setContent(draft.content.replace(coverMatch[0], ''));
+        } else {
+            setCoverImage(null);
+            setContent(draft.content);
+        }
+
+        // 2. Data Persistence (Incremental Load)
+        // Reset local state first to prevent flickering stale data
+        setVerifications([]);
+        setPlagiarismResult(null);
+        setSlopMatches([]);
+        setCompetitorResult(null);
+        setShowFactCheck(false);
+
+        fetchExistingVerification(draft.id);
+    }, [draft?.id]); // CRITICAL: Only trigger when ID changes
 
     // Constant auto-resize to prevent scrolling issues
     useEffect(() => {
@@ -110,12 +213,16 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 })
             });
 
-            const data = await res.json();
-
-            if (data.id) {
-                return data; // Success
+            if (res.ok) {
+                const data = await res.json();
+                if (data.id) {
+                    return data; // Success
+                } else {
+                    console.warn("Repurpose API returned success but no ID:", data);
+                    return null;
+                }
             } else {
-                console.warn("Repurpose API returned success but no ID:", data);
+                console.error("Repurpose failed with status:", res.status);
                 return null;
             }
         } catch (e) {
@@ -165,6 +272,114 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
             gen.generateInstagramPost(slides as any);
         });
+    };
+
+    const handleVerify = async () => {
+        if (!draft) return;
+        setVerifying(true);
+        setShowFactCheck(true);
+
+        try {
+            // Auto-save first
+            await onSave(draft.id, getFullContent());
+
+            const res = await fetch('/api/tools/fact-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: content,
+                    draftId: draft.id
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.results) {
+                    setVerifications(data.results);
+                }
+            } else {
+                console.error("Fact check failed with status:", res.status);
+            }
+        } catch (e) {
+            console.error("Verification failed", e);
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    const handlePlagiarismCheck = async () => {
+        if (!draft) return;
+        setCheckingPlagiarism(true);
+        setShowFactCheck(true); // Open the same sidebar
+
+        try {
+            await onSave(draft.id, getFullContent());
+
+            const res = await fetch('/api/tools/plagiarism-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: content,
+                    draftId: draft.id
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.result) {
+                    setPlagiarismResult(data.result);
+                }
+            } else {
+                console.error("Plagiarism check failed with status:", res.status);
+            }
+        } catch (e) {
+            console.error("Plagiarism check failed", e);
+        } finally {
+            setCheckingPlagiarism(false);
+        }
+    };
+
+    const handleSlopScan = () => {
+        if (!content) return;
+        setSlopLoading(true);
+        setShowFactCheck(true);
+
+        // Scan is fast, so we do it client-side
+        setTimeout(() => {
+            const matches = AntiSlopService.scan(content);
+            setSlopMatches(matches);
+            setSlopLoading(false);
+        }, 500);
+    };
+
+    const handleCompetitorCheck = async (competitorUrl?: string) => {
+        if (!draft) return;
+        setCompetitorLoading(true);
+        setShowFactCheck(true);
+
+        try {
+            const res = await fetch('/api/tools/competitor-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: content,
+                    competitorUrl
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.result) {
+                    setCompetitorResult(data.result);
+                }
+            } else {
+                console.error("Competitor check failed with status:", res.status);
+            }
+        } catch (e) {
+            console.error("Competitor check failed", e);
+        } finally {
+            setCompetitorLoading(false);
+        }
     };
 
     // --- Contextual Editing Handlers ---
@@ -218,21 +433,25 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 })
             });
 
-            const data = await response.json();
+            if (response.ok) {
+                const data = await response.json();
 
-            // Check if refinedContent exists, including empty string (for deletions)
-            // We strictly check undefined/null, but allow ""
-            if (data.refinedContent !== undefined && data.refinedContent !== null) {
-                // Replace only the selected part
-                const newContent = content.substring(0, selectionRange.start)
-                    + data.refinedContent
-                    + content.substring(selectionRange.end);
+                // Check if refinedContent exists, including empty string (for deletions)
+                // We strictly check undefined/null, but allow ""
+                if (data.refinedContent !== undefined && data.refinedContent !== null) {
+                    // Replace only the selected part
+                    const newContent = content.substring(0, selectionRange.start)
+                        + data.refinedContent
+                        + content.substring(selectionRange.end);
 
-                setContent(newContent);
+                    setContent(newContent);
 
-                // Hide toolbar
-                setToolbarPosition(null);
-                setSelectionRange(null);
+                    // Hide toolbar
+                    setToolbarPosition(null);
+                    setSelectionRange(null);
+                }
+            } else {
+                console.error("Refinement failed with status:", response.status);
             }
         } catch (err) {
             console.error(err);
@@ -269,6 +488,35 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
             }).join('');
 
         return html;
+    };
+
+    const renderHighlights = () => {
+        if (verifications.length === 0) return null;
+
+        // Escape HTML
+        let highlighted = content
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        // Highlight problematic claims (disputed/unverified)
+        // Sort by length to handle overlapping replacements
+        const sorted = [...verifications]
+            .filter(v => v.status !== 'verified' && v.original_sentence)
+            .sort((a, b) => (b.original_sentence?.length || 0) - (a.original_sentence?.length || 0));
+
+        sorted.forEach(v => {
+            const sentence = v.original_sentence!;
+            const escaped = sentence.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const colorClass = v.status === 'disputed' ? 'bg-red-200/50 border-b-2 border-red-400' : 'bg-yellow-100/50 border-b-2 border-yellow-300';
+
+            // Escape regex chars
+            const safeRegex = escaped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            highlighted = highlighted.replace(new RegExp(safeRegex, 'g'), `<span class="${colorClass} rounded-sm">${escaped}</span>`);
+        });
+
+        // Add a trailing space/newline indicator if at the end of content to keep heights matched
+        return highlighted + (content.endsWith('\n') ? '<br/>&nbsp;' : '');
     };
 
     if (!draft) {
@@ -327,6 +575,16 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                     >
                         <RefreshCw size={12} />
                     </button>
+
+                    {/* Fact Check Button */}
+                    <button
+                        onClick={() => setShowFactCheck(true)}
+                        className="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-1 hover:bg-teal-50 rounded-md transition-all"
+                        title="Verify Claims"
+                    >
+                        <ShieldCheck size={12} />
+                    </button>
+
                     {/* Design Download (Instagram Only) */}
                     {draft.platform === 'instagram' && (
                         <button
@@ -399,27 +657,33 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                             dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }}
                         />
                     ) : (
-                        <textarea
-                            ref={textareaRef}
-                            value={content}
-                            onChange={(e) => {
-                                setContent(e.target.value);
-                                // Auto-resize on input
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                            }}
-                            onSelect={handleSelect}
-                            onBlur={() => {
-                                // Small delay to allow clicking toolbar buttons
-                                blurTimeoutRef.current = setTimeout(() => {
-                                    // For now, rely on explicit close or re-selection.
-                                }, 200);
-                            }}
-                            className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden break-words"
-                            style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
-                            placeholder="Start writing..."
-                            spellCheck={false}
-                        />
+                        <div className="relative w-full">
+                            {/* Highlighting Backdrop */}
+                            <div
+                                className="absolute inset-0 pointer-events-none text-base md:text-lg leading-relaxed md:leading-loose text-transparent font-sans break-words whitespace-pre-wrap select-none"
+                                aria-hidden="true"
+                                dangerouslySetInnerHTML={{ __html: renderHighlights() || '' }}
+                            />
+
+                            <textarea
+                                ref={textareaRef}
+                                value={content}
+                                onChange={(e) => {
+                                    setContent(e.target.value);
+                                    // Auto-resize on input
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                }}
+                                onSelect={handleSelect}
+                                onBlur={() => {
+                                    blurTimeoutRef.current = setTimeout(() => { }, 200);
+                                }}
+                                className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden break-words relative z-10"
+                                style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
+                                placeholder="Start writing..."
+                                spellCheck={false}
+                            />
+                        </div>
                     )}
                 </div>
             </div>
@@ -438,6 +702,33 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 onRepurpose={handleRepurpose}
                 isProcessing={isRepurposing}
                 sourceContent={getFullContent()}
+            />
+            <QualityScoreFooter
+                score={scores.totalScore}
+                metrics={{
+                    fact: scores.fact,
+                    uniqueness: scores.uniqueness,
+                    style: scores.style
+                }}
+                onRunMetric={handleRunMetric}
+                onOpenSidebar={() => setShowFactCheck(true)}
+                isVisible={true}
+            />
+            <VerificationSidebar
+                isOpen={showFactCheck}
+                onClose={() => setShowFactCheck(false)}
+                factResults={verifications}
+                factLoading={verifying}
+                onFactVerify={handleVerify}
+                plagiarismResult={plagiarismResult}
+                plagiarismLoading={checkingPlagiarism}
+                onPlagiarismCheck={handlePlagiarismCheck}
+                slopMatches={slopMatches}
+                slopLoading={slopLoading}
+                onSlopScan={handleSlopScan}
+                competitorResult={competitorResult}
+                competitorLoading={competitorLoading}
+                onCompetitorCheck={handleCompetitorCheck}
             />
         </div>
     );

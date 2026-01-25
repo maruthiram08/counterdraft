@@ -68,6 +68,20 @@ export async function POST(req: NextRequest) {
                     console.error('[Dodo Webhook] DB Upsert Error:', upsertError);
                     return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
                 }
+
+                // SYNC USAGE TIER (Critical for Gating)
+                const newTier = data.status === 'active' ? 'pro' : 'free';
+                const { error: usageError } = await supabaseAdmin
+                    .from('user_usage')
+                    .update({ plan_tier: newTier })
+                    .eq('user_id', userId);
+
+                if (usageError) {
+                    console.error('[Dodo Webhook] Usage Tier Sync Failed:', usageError);
+                    // Don't fail the webhook, but log critical error
+                } else {
+                    console.log(`[Dodo Webhook] User ${userId} tier updated to ${newTier}`);
+                }
                 break;
 
             case 'subscription.cancelled':

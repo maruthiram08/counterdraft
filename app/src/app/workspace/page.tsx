@@ -27,6 +27,7 @@ import { CommandCenter } from "@/components/pipeline/CommandCenter";
 import NewDraftModal from "@/components/modal/NewDraftModal";
 import type { Outcome, Stance, Audience } from "@/types";
 import { YourMind } from "@/components/thinking/YourMind";
+import { GenealogyTree } from "@/components/thinking/GenealogyTree";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function WorkspacePage() {
@@ -40,7 +41,15 @@ export default function WorkspacePage() {
 function WorkspaceContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [activeSection, setActiveSection] = useState<'mind' | 'beliefs' | 'tensions' | 'directions' | 'drafts' | 'explore' | 'pipeline' | 'mindmap'>('pipeline');
+
+    // Support URL-based persistence for sections
+    const currentTab = searchParams.get('tab') as any;
+    const initialSection = ['mind', 'beliefs', 'tensions', 'directions', 'drafts', 'explore', 'pipeline'].includes(currentTab)
+        ? currentTab
+        : 'pipeline';
+
+    const [activeSection, setActiveSection] = useState<'mind' | 'beliefs' | 'tensions' | 'directions' | 'drafts' | 'explore' | 'pipeline'>(initialSection);
+    const [beliefView, setBeliefView] = useState<'list' | 'tree'>('list');
     const { beliefs, loading, submitFeedback } = useBeliefs();
     const [reviewedBeliefIds, setReviewedBeliefIds] = useState<Set<string>>(new Set());
     const { directions, loading: directionsLoading, generateDirections, generated } = useDirections();
@@ -136,6 +145,10 @@ function WorkspaceContent() {
                         router.push('/settings');
                     } else {
                         setActiveSection(section as any);
+                        // Update URL without full reload
+                        const params = new URLSearchParams(searchParams.toString());
+                        params.set('tab', section);
+                        router.push(`/workspace?${params.toString()}`, { scroll: false });
                     }
                 }}
                 onNewDraft={() => {
@@ -155,23 +168,55 @@ function WorkspaceContent() {
 
                 {/* CONTENT AREA: Scrollable Container for Non-Drafts */}
                 {
-                    activeSection !== 'drafts' && activeSection !== 'explore' && activeSection !== 'pipeline' && activeSection !== 'mindmap' && activeSection !== 'mind' && (
+                    activeSection !== 'drafts' && activeSection !== 'explore' && activeSection !== 'pipeline' && activeSection !== 'mind' && (
                         <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-12 pb-24 md:pb-12">
                             <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
 
                                 {/* BELIEFS SECTION */}
                                 {activeSection === 'beliefs' && (
                                     <div className="space-y-6">
-                                        {/* Guidance Banner */}
-                                        {!allBeliefsReviewed && (
-                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                                <p className="text-sm text-blue-800">
-                                                    <strong>Review your beliefs:</strong> Mark as <strong>Accurate</strong> if it reflects your thinking, <strong>Misses</strong> if it's wrong, or <strong>Clarify</strong> if it needs nuance.
-                                                </p>
+                                        {/* View Toggle */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-serif">Belief Graph</h2>
+                                            <div className="bg-gray-100 p-1 rounded-lg flex items-center text-xs font-medium shrink-0">
+                                                <button
+                                                    onClick={() => setBeliefView('list')}
+                                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                                >
+                                                    List
+                                                </button>
+                                                <button
+                                                    onClick={() => setBeliefView('tree')}
+                                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                                >
+                                                    Mind Map
+                                                </button>
                                             </div>
+                                        </div>
+
+                                        {beliefView === 'tree' ? (
+                                            <GenealogyTree
+                                                beliefs={[...beliefs.core, ...beliefs.emerging, ...beliefs.overused, ...beliefs.confirmed]}
+                                                drafts={drafts}
+                                                onSelectDraft={(id) => {
+                                                    setSelectedDraftId(id);
+                                                    setActiveSection('drafts');
+                                                }}
+                                            />
+                                        ) : (
+                                            <>
+                                                {/* Guidance Banner */}
+                                                {!allBeliefsReviewed && (
+                                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                                        <p className="text-sm text-blue-800">
+                                                            <strong>Review your beliefs:</strong> Mark as <strong>Accurate</strong> if it reflects your thinking, <strong>Misses</strong> if it's wrong, or <strong>Clarify</strong> if it needs nuance.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {/* Show completion if all reviewed */}
+                                                {allBeliefsReviewed && renderCompletionState()}
+                                            </>
                                         )}
-                                        {/* Show completion if all reviewed */}
-                                        {allBeliefsReviewed && renderCompletionState()}
 
                                         {/* Core Beliefs */}
                                         {unreviewedCore.length > 0 && (
@@ -255,7 +300,7 @@ function WorkspaceContent() {
                                         )}
 
                                         {/* Empty state when no beliefs ever existed */}
-                                        {beliefs.core.length === 0 && beliefs.emerging.length === 0 && beliefs.overused.length === 0 && renderEmptyState("beliefs")}
+                                        {beliefView === 'list' && beliefs.core.length === 0 && beliefs.emerging.length === 0 && beliefs.overused.length === 0 && renderEmptyState("beliefs")}
                                     </div>
                                 )}
 
@@ -402,29 +447,6 @@ function WorkspaceContent() {
                                     setPostsTab('drafts');
                                 }}
                             />
-                        </div>
-                    )
-                }
-
-                {/* MIND MAP SECTION (Coming Soon) */}
-                {
-                    activeSection === 'mindmap' && (
-                        <div className="flex-1 flex items-center justify-center bg-gray-50/30">
-                            <div className="text-center max-w-md p-8">
-                                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <Sparkles size={32} className="text-purple-600" />
-                                </div>
-                                <h2 className="text-2xl font-serif text-gray-900 mb-3">Mind Map Coming Soon</h2>
-                                <p className="text-gray-500 mb-6">
-                                    We&apos;re building a visual map of your thinking. In the meantime, the AI is already using connections behind the scenes to improve your suggestions.
-                                </p>
-                                <button
-                                    onClick={() => setActiveSection('explore')}
-                                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[var(--accent-dark)] transition-colors"
-                                >
-                                    Explore Ideas Instead →
-                                </button>
-                            </div>
                         </div>
                     )
                 }
