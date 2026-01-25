@@ -1,4 +1,40 @@
+"use client";
+
+import { useState } from 'react';
+import { LimitModal } from '@/components/modal/LimitModal';
+
 export default function IdeasPage() {
+    const [limitModalOpen, setLimitModalOpen] = useState(false);
+    const [limitState, setLimitState] = useState({ tier: 'free', usage: 0, limit: 0 });
+
+    const handleExplore = async () => {
+        try {
+            // CALL REAL API (Check + Increment)
+            const res = await fetch('/api/user/usage/search', { method: 'POST' });
+            const data = await res.json();
+
+            if (res.status === 403 || (data.usage && !data.allowed)) {
+                // Trigger Modal
+                setLimitState({
+                    tier: data.tier || 'free',
+                    usage: data.usage,
+                    limit: data.limit
+                });
+                setLimitModalOpen(true);
+                return;
+            }
+
+            // Success
+            console.log("Search Recorded. Usage:", data.usage);
+            alert(`Exploring... (Usage: ${data.usage}/${data.limit})`);
+
+        } catch (e) {
+            console.error("Search check failed", e);
+            // Fail open? or Alert?
+            alert("Error checking usage. proceeding...");
+        }
+    };
+
     const ideas = [
         {
             id: "1",
@@ -100,7 +136,12 @@ export default function IdeasPage() {
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-3">
-                                    <button className="btn btn-primary">Explore This</button>
+                                    <button
+                                        onClick={handleExplore}
+                                        className="btn btn-primary"
+                                    >
+                                        Explore This
+                                    </button>
                                     <button className="btn btn-secondary">Dismiss</button>
                                 </div>
                             </div>
@@ -108,6 +149,14 @@ export default function IdeasPage() {
                     </div>
                 </div>
             </div>
+
+            <LimitModal
+                isOpen={limitModalOpen}
+                onClose={() => setLimitModalOpen(false)}
+                tier={limitState.tier}
+                usage={limitState.usage}
+                limit={limitState.limit}
+            />
         </main>
     );
 }

@@ -1,23 +1,61 @@
+"use client";
+
+import { useBeliefs } from "@/hooks/useBeliefs";
+import { useDrafts } from "@/hooks/useDrafts";
+import { useState } from "react";
+import { Loader2, Check, Edit2, X, Archive, Filter } from "lucide-react";
+import { GenealogyTree } from "@/components/thinking/GenealogyTree";
+import { useRouter } from "next/navigation";
+
+type FilterType = 'all' | 'core' | 'emerging' | 'overused' | 'confirmed' | 'tree';
+
 export default function BeliefsPage() {
-    // TODO: Fetch beliefs from API
-    const beliefs = {
-        core: [
-            { id: "1", statement: "Building in public creates accountability", type: "core" },
-            { id: "2", statement: "Culture eats strategy for breakfast", type: "core" },
-            { id: "3", statement: "Speed is a competitive advantage", type: "core" },
-        ],
-        overused: [
-            { id: "4", statement: "Consistency beats intensity", type: "overused" },
-        ],
-        emerging: [
-            { id: "5", statement: "Networks trump hierarchies", type: "emerging" },
-        ],
+    const router = useRouter();
+    const { beliefs, loading, updateBelief, submitFeedback } = useBeliefs();
+    const { drafts } = useDrafts();
+    const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editValue, setEditValue] = useState("");
+
+    const handleEditStart = (id: string, currentText: string) => {
+        setEditingId(id);
+        setEditValue(currentText);
     };
+
+    const handleEditSave = async () => {
+        if (editingId && editValue.trim()) {
+            await updateBelief(editingId, editValue);
+            setEditingId(null);
+        }
+    };
+
+    const getFilteredBeliefs = () => {
+        const allList = [
+            ...beliefs.core,
+            ...beliefs.emerging,
+            ...beliefs.overused
+        ];
+
+        switch (activeFilter) {
+            case 'core': return beliefs.core;
+            case 'emerging': return beliefs.emerging;
+            case 'overused': return beliefs.overused;
+            case 'confirmed': return beliefs.confirmed;
+            case 'all': default: return allList;
+        }
+    };
+
+    const filteredList = getFilteredBeliefs();
+
+    // V1 Hierarchy Grouping
+    const roots = beliefs.core.filter(b => b.beliefType === 'root' || b.beliefType === 'core'); // Treat 'core' as root candidates for now
+    const pillars = beliefs.core.filter(b => b.beliefType === 'pillar' || b.beliefType === 'overused'); // Treat 'overused' as pillars
+    const leafs = [...beliefs.emerging, ...beliefs.confirmed.filter(b => b.beliefType === 'leaf')];
 
     return (
         <main className="min-h-screen bg-[var(--background)]">
             {/* Header */}
-            <header className="border-b border-[var(--border)] bg-[var(--surface)]">
+            <header className="border-b border-[var(--border)] bg-[var(--surface)] sticky top-0 z-10">
                 <div className="container py-4 flex items-center justify-between">
                     <h1 className="text-xl font-medium tracking-tight">counterdraft</h1>
                     <nav className="flex items-center gap-6">
@@ -29,69 +67,171 @@ export default function BeliefsPage() {
             </header>
 
             <div className="container py-12">
-                <div className="max-w-2xl">
-                    <h2 className="text-3xl font-serif mb-2">Your Belief Graph</h2>
-                    <p className="text-[var(--text-muted)] mb-8">
-                        These are the beliefs we extracted from your content.
-                        Edit or confirm each one.
-                    </p>
-
-                    {/* Core Beliefs */}
-                    <section className="mb-10">
-                        <div className="flex items-center gap-2 mb-4">
-                            <h3 className="text-lg font-medium">Core Beliefs</h3>
-                            <span className="badge badge-core">{beliefs.core.length}</span>
+                <div className="max-w-4xl mx-auto">
+                    <header className="mb-8 flex items-end justify-between">
+                        <div>
+                            <h2 className="text-3xl font-serif mb-2">Your Belief Graph</h2>
+                            <p className="text-[var(--text-muted)]">
+                                Review, edit, and link your beliefs into a Strategy Tree.
+                            </p>
                         </div>
-                        <div className="space-y-3">
-                            {beliefs.core.map((belief) => (
-                                <div key={belief.id} className="card group">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <p className="text-editorial">{belief.statement}</p>
-                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="btn btn-secondary text-xs">Edit</button>
-                                            <button className="btn btn-primary text-xs">Confirm</button>
+
+                        {/* View Toggle */}
+                        <div className="bg-gray-100 p-1 rounded-lg flex items-center text-sm font-medium">
+                            <button
+                                onClick={() => setActiveFilter('all')} // Use filter as view toggle for now or add new state? Let's assume activeFilter=tree is managed elsewhere or just use a boolean
+                                className={`px-4 py-1.5 rounded-md transition-all ${activeFilter !== 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                            >
+                                List
+                            </button>
+                            <button
+                                onClick={() => setActiveFilter('tree' as any)} // Cast for quick hack or update Type
+                                className={`px-4 py-1.5 rounded-md transition-all ${activeFilter === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                            >
+                                Mind Map
+                            </button>
+                        </div>
+                    </header>
+
+                    {activeFilter === 'tree' ? (
+                        <GenealogyTree
+                            beliefs={[...beliefs.core, ...beliefs.emerging, ...beliefs.overused, ...beliefs.confirmed]}
+                            drafts={drafts as any}
+                            onSelectDraft={(id) => router.push(`/workspace?draftId=${id}`)}
+                        />
+                    ) : (
+                        <>
+                            {/* Controls */}
+                            <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b">
+                                <Filter size={16} className="text-[var(--text-muted)] mr-2" />
+                                {(['all', 'core', 'emerging', 'overused', 'confirmed'] as const).map((type) => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setActiveFilter(type)}
+                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors capitalize ${activeFilter === type
+                                            ? 'bg-[var(--foreground)] text-white'
+                                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {type}
+                                        <span className="ml-2 opacity-60 text-xs">
+                                            {type === 'all'
+                                                ? beliefs.core.length + beliefs.emerging.length + beliefs.overused.length
+                                                : type === 'confirmed' ? beliefs.confirmed.length
+                                                    : beliefs[type].length}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {loading ? (
+                                <div className="text-center py-20">
+                                    <Loader2 className="mx-auto animate-spin mb-4 text-[var(--text-muted)]" />
+                                    <p className="text-[var(--text-muted)]">Loading your beliefs...</p>
+                                </div>
+                            ) : filteredList.length === 0 ? (
+                                <div className="text-center py-20 border border-dashed rounded-lg bg-gray-50/50">
+                                    <Archive className="mx-auto mb-4 text-[var(--text-muted)]" />
+                                    <p className="text-[var(--text-muted)]">No beliefs found in this category.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {filteredList.map((belief) => (
+                                        <div
+                                            key={belief.id}
+                                            className={`card group transition-all ${activeFilter === 'all' // visual hints for type when in 'all' view
+                                                ? belief.beliefType === 'core' ? 'border-l-4 border-l-blue-500'
+                                                    : belief.beliefType === 'overused' ? 'border-l-4 border-l-orange-500'
+                                                        : belief.beliefType === 'emerging' ? 'border-l-4 border-l-purple-500'
+                                                            : ''
+                                                : ''
+                                                }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    {editingId === belief.id ? (
+                                                        <div className="flex gap-2">
+                                                            <textarea
+                                                                value={editValue}
+                                                                onChange={(e) => setEditValue(e.target.value)}
+                                                                className="w-full p-2 border rounded text-lg font-serif resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                                rows={2}
+                                                                autoFocus
+                                                            />
+                                                            <div className="flex flex-col gap-2">
+                                                                <button
+                                                                    onClick={handleEditSave}
+                                                                    className="p-2 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                                                    title="Save"
+                                                                >
+                                                                    <Check size={16} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingId(null)}
+                                                                    className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                                                                    title="Cancel"
+                                                                >
+                                                                    <X size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <p className={`text-xl font-serif text-[var(--foreground)] mb-2 ${belief.userConfirmed ? 'text-green-900' : ''}`}>
+                                                                {belief.statement}
+                                                            </p>
+                                                            <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
+                                                                <span className="capitalize px-2 py-0.5 bg-gray-100 rounded-full">
+                                                                    {belief.beliefType}
+                                                                </span>
+                                                                {belief.userConfirmed && (
+                                                                    <span className="flex items-center gap-1 text-green-700">
+                                                                        <Check size={12} /> Confirmed
+                                                                    </span>
+                                                                )}
+                                                                <span>
+                                                                    Found {new Date(belief.createdAt).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {!editingId && !belief.userConfirmed && (
+                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => handleEditStart(belief.id, belief.statement)}
+                                                            className="p-2 text-[var(--text-muted)] hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => submitFeedback(belief.id, 'accurate')}
+                                                            className="px-3 py-1.5 bg-[var(--foreground)] text-white text-xs font-medium rounded hover:opacity-90 transition-opacity"
+                                                        >
+                                                            Confirm
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {!editingId && belief.userConfirmed && (
+                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => handleEditStart(belief.id, belief.statement)}
+                                                            className="p-2 text-[var(--text-muted)] hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Overused */}
-                    <section className="mb-10">
-                        <div className="flex items-center gap-2 mb-4">
-                            <h3 className="text-lg font-medium">Overused Angles</h3>
-                            <span className="badge badge-overused">{beliefs.overused.length}</span>
-                        </div>
-                        <p className="text-sm text-[var(--text-muted)] mb-4">
-                            You&apos;ve said these too often. Consider fresh approaches.
-                        </p>
-                        <div className="space-y-3">
-                            {beliefs.overused.map((belief) => (
-                                <div key={belief.id} className="card border-[var(--belief-overused)] border-l-4">
-                                    <p className="text-editorial">{belief.statement}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Emerging */}
-                    <section className="mb-10">
-                        <div className="flex items-center gap-2 mb-4">
-                            <h3 className="text-lg font-medium">Emerging Thesis</h3>
-                            <span className="badge badge-emerging">{beliefs.emerging.length}</span>
-                        </div>
-                        <p className="text-sm text-[var(--text-muted)] mb-4">
-                            A new direction forming in your thinking.
-                        </p>
-                        <div className="space-y-3">
-                            {beliefs.emerging.map((belief) => (
-                                <div key={belief.id} className="card border-[var(--belief-emerging)] border-l-4">
-                                    <p className="text-editorial">{belief.statement}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
         </main>

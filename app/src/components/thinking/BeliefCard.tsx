@@ -24,7 +24,7 @@ const CONFIDENCE_COLORS = {
 };
 
 export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback, onWriteAbout, confidenceLevel = 'medium', isStable = false, evidenceCount = 1, context }: BeliefCardProps) {
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(true);
     const [status, setStatus] = useState<'pending' | 'accurate' | 'misses' | 'clarify'>('pending');
     const [dismissed, setDismissed] = useState(false);
     const [writingAbout, setWritingAbout] = useState(false);
@@ -92,8 +92,11 @@ export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback, on
             </div>
 
             {/* Content */}
-            <div className="max-w-3xl">
-                <p className="text-lg md:text-2xl font-serif text-gray-900 leading-relaxed break-words">
+            {/* Content */}
+            {/* Content */}
+            {/* Content */}
+            <div className="w-full h-auto">
+                <p className="w-full h-auto text-lg md:text-2xl font-serif text-gray-900 leading-normal break-words whitespace-pre-wrap">
                     {belief}
                 </p>
             </div>

@@ -1,116 +1,133 @@
-import Link from "next/link";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import Link from 'next/link';
+import { Navbar } from '@/components/landing/Navbar';
+import { Hero } from '@/components/landing/Hero';
+import { CommandCenter } from '@/components/landing/CommandCenter';
+import { SmartStudio } from '@/components/landing/SmartStudio';
+import { TheBrain } from '@/components/landing/TheBrain';
+import { Testimonials } from '@/components/landing/Testimonials';
+import { Footer } from '@/components/landing/Footer';
+import { usePostHog } from 'posthog-js/react';
 
 export default function Home() {
+  const [scrolled, setScrolled] = useState(false);
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--background)]">
-      <Header />
+    <div className="min-h-screen bg-[#fcfcfc]">
+      <Navbar isScrolled={scrolled} />
 
-      <main className="flex-1">
-        {/* HERO Section - Dark */}
-        <section className="bg-[var(--surface-dark)] text-[var(--text-on-dark)] py-24 md:py-32">
-          <div className="container">
-            <div className="max-w-4xl">
-              <h1 className="text-5xl md:text-7xl font-semibold tracking-tight mb-8 leading-[1.1]">
-                Know what you believe <br />
-                <span className="text-[var(--text-on-dark-muted)]">before you write it.</span>
-              </h1>
+      <main>
+        <Hero />
 
-              <div className="flex flex-col sm:flex-row gap-4 mt-12">
-                <Link href="/onboarding" className="btn btn-primary px-8 py-4 text-lg h-auto">
-                  Start Thinking
+        <section id="the-brain" className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          {/* ... */}
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-50 border border-green-100 text-[10px] font-bold text-green-700 mb-6 tracking-widest uppercase">
+              STRATEGIC FOUNDATION
+            </div>
+            <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter text-zinc-900">Strategy, then Syllables.</h2>
+            <p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+              Don't outsource your brain to a prompt. Our engine pressure-tests your expertise against industry clichés before the first draft is ever generated.
+            </p>
+          </div>
+          <TheBrain />
+        </section>
+
+        <section id="command-center" className="py-32 bg-zinc-50 border-y border-zinc-100 overflow-hidden">
+          {/* ... */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-end justify-between gap-12 mb-20">
+              <div className="md:w-3/5">
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-white border border-zinc-200 text-[10px] font-bold text-zinc-500 mb-6 tracking-widest uppercase shadow-sm">
+                  INTELLECTUAL PIPELINE
+                </div>
+                <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter leading-[1.1] text-zinc-900">An OS for your Insights.</h2>
+                <p className="text-zinc-500 text-lg md:text-xl max-w-xl">
+                  Move past fragmented notes. Our command center is an editorial instrument designed to scale your unique perspective with surgical precision.
+                </p>
+              </div>
+              <div className="hidden md:flex gap-3 mb-4">
+                <button className="h-12 w-12 rounded-full border border-zinc-200 bg-white flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:border-zinc-300 transition-all">←</button>
+                <button className="h-12 w-12 rounded-full border border-zinc-200 bg-white flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:border-zinc-300 transition-all">→</button>
+              </div>
+            </div>
+            <CommandCenter />
+          </div>
+        </section>
+
+        <section id="smart-studio" className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          {/* ... */}
+          <div className="flex flex-col lg:flex-row gap-20 items-start">
+            <div className="lg:w-1/3 lg:sticky lg:top-32">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-50 border border-green-100 text-[10px] font-bold text-green-700 mb-6 tracking-widest uppercase">
+                SMART STUDIO
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-8 tracking-tighter leading-tight text-zinc-900">The Semantic Remix.</h2>
+              <p className="text-zinc-500 text-lg mb-10 leading-relaxed">
+                Platform-native assets that actually sound like you. We don't just crop text; we restructure ideas for the specific psychology of each network.
+              </p>
+              <div className="space-y-6">
+                {[
+                  { label: "High-Signal LinkedIn Content", desc: "Built for deep professional engagement." },
+                  { label: "Dense Editorial Threads", desc: "Complex ideas, simplified for X/Threads." },
+                  { label: "Visual Strategy Slides", desc: "Convert documents into stunning visual assets." }
+                ].map((item, i) => (
+                  <div key={i} className="group cursor-default">
+                    <div className="flex items-center gap-3 text-zinc-800 font-bold mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-600"></div>
+                      {item.label}
+                    </div>
+                    <p className="text-zinc-400 text-sm pl-4.5">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="lg:w-2/3 w-full">
+              <SmartStudio />
+            </div>
+          </div>
+        </section>
+
+        {/* <Testimonials /> */}
+
+        <section className="py-40 text-center relative overflow-hidden bg-white">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-green-600/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+          <div className="relative z-10 max-w-4xl mx-auto px-4">
+            <h2 className="text-5xl md:text-7xl font-bold mb-10 tracking-tighter text-zinc-900">Own your expertise.</h2>
+            <p className="text-zinc-500 text-xl md:text-2xl max-w-2xl mx-auto mb-12 font-light">
+              Join the experts building meaningful authority in the age of generative noise.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+              <SignedOut>
+                <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'footer' })}>
+                  <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-green-600/20">
+                    Join the Experts
+                  </button>
                 </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* THE PROBLEM - Provocative */}
-        <section className="py-24 border-b border-[var(--border)]">
-          <div className="container max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-medium mb-6">
-              Most creators repeat themselves without realizing it.
-            </h2>
-            <p className="text-xl text-[var(--text-muted)] leading-relaxed">
-              You publish every day, but are you saying anything new? <br />
-              Without a map of your beliefs, you’re just making noise.
-            </p>
-          </div>
-        </section>
-
-        {/* WHAT COUNTERDRAFT DOES - Editorial Framing */}
-        <section className="py-24 bg-[var(--surface-elevated)]">
-          <div className="container">
-            <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
-              <div>
-                <h3 className="text-xl font-semibold mb-3">Finds your beliefs</h3>
-                <p className="text-[var(--text-muted)]">
-                  Extracts the core axioms buried in your past writing.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold mb-3">Surfaces contradictions</h3>
-                <p className="text-[var(--text-muted)]">
-                  Highlights where you disagree with yourself so you can resolve it.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold mb-3">Directs your pen</h3>
-                <p className="text-[var(--text-muted)]">
-                  Tells you exactly what you <em>haven't</em> written yet.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* SCREENSHOT PLACEHOLDER */}
-        <section className="py-24 border-y border-[var(--border)] overflow-hidden">
-          <div className="container">
-            <div className="max-w-5xl mx-auto bg-[var(--surface)] border border-[var(--border)] rounded-xl aspect-[16/9] flex items-center justify-center shadow-lg">
-              <p className="text-[var(--text-subtle)]">[ Interface Preview: Belief + Tension Card ]</p>
-            </div>
-            <p className="text-center text-sm text-[var(--text-muted)] mt-4">
-              See where your thinking breaks.
-            </p>
-          </div>
-        </section>
-
-        {/* WHO THIS IS NOT FOR - Exclusionary */}
-        <section className="py-24 bg-[#F3F4F6]"> {/* Slightly darker grey for contrast */}
-          <div className="container max-w-3xl mx-auto">
-            <h2 className="text-2xl font-semibold mb-8">Who this is NOT for</h2>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3 opacity-60">
-                <span className="text-red-500 text-xl">×</span>
-                <p>If you want AI to write content for you, go elsewhere.</p>
-              </li>
-              <li className="flex items-start gap-3 opacity-60">
-                <span className="text-red-500 text-xl">×</span>
-                <p>If you prioritize viral hooks over depth, go elsewhere.</p>
-              </li>
-              <li className="flex items-start gap-3 opacity-60">
-                <span className="text-red-500 text-xl">×</span>
-                <p>If you want a "second brain" that just stores notes, use Notion.</p>
-              </li>
-            </ul>
-            <p className="mt-8 font-medium">
-              Counterdraft is for people who want to <span className="underline decoration-[var(--accent)] decoration-2 underline-offset-2">think harder</span>.
-            </p>
-          </div>
-        </section>
-
-        {/* CTA - Dark */}
-        <section className="bg-[var(--surface-dark)] text-[var(--text-on-dark)] py-24 text-center">
-          <div className="container max-w-2xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-semibold mb-6">
-              Ready to do the hard work?
-            </h2>
-            <div className="flex justify-center mt-8">
-              <Link href="/onboarding" className="btn btn-primary px-8 py-4 text-lg h-auto">
-                Begin Analysis
-              </Link>
+              </SignedOut>
+              <SignedIn>
+                <Link href="/workspace">
+                  <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-green-600/20">
+                    Go to Dashboard
+                  </button>
+                </Link>
+              </SignedIn>
+              <button className="w-full sm:w-auto bg-white border border-zinc-200 text-zinc-900 px-10 py-5 rounded-xl font-bold text-xl hover:bg-zinc-50 transition-all">
+                The Philosophy
+              </button>
             </div>
           </div>
         </section>

@@ -1,11 +1,13 @@
-"use client";
 
 import { useState, useEffect } from "react";
-import { Lightbulb, Settings, FileText, CheckCircle, Loader2, Archive, Trash2, Plus, ArrowRight, Wand2 } from "lucide-react";
+import { Lightbulb, Settings, FileText, CheckCircle, Loader2, Archive, Trash2, Plus, ArrowRight, Wand2, User } from "lucide-react";
 import { DevelopmentWizard } from "./DevelopmentWizard";
+import { NewDraftModal } from "./NewDraftModal";
+import { LimitModal } from "../modal/LimitModal";
+import { ProfileSetupModal } from "../modal/ProfileSetupModal";
+import { BrainMetadata, ContentItem as GlobalContentItem } from "@/types";
 
 type Stage = 'idea' | 'developing' | 'draft' | 'published';
-
 
 interface ContentItem {
     id: string;
@@ -21,6 +23,7 @@ interface ContentItem {
     updated_at: string;
     published_at?: string;
     platform?: string;
+    brain_metadata?: BrainMetadata;
 }
 
 interface ColumnProps {
@@ -33,97 +36,162 @@ interface ColumnProps {
     loading?: boolean;
 }
 
-function Column({ title, icon, items, stage, color, onAction, loading }: ColumnProps) {
+function SkeletonCard() {
     return (
-        <div className="flex-1 min-w-[280px] sm:min-w-[250px] max-w-full sm:max-w-[300px] bg-gray-50 rounded-xl p-4">
-            {/* Header */}
-            <div className="flex items-center gap-2 mb-4">
-                <span className={`p-1.5 rounded-lg ${color}`}>{icon}</span>
-                <h3 className="font-medium text-gray-900">{title}</h3>
-                <span className="ml-auto text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
-                    {items.length}
-                </span>
+        <div className="bg-white p-4 rounded-xl border border-gray-100/80 shadow-sm flex flex-col gap-3 h-auto min-h-[140px] animate-pulse">
+            <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                    <div className="h-5 w-16 bg-gray-100 rounded"></div>
+                    <div className="h-5 w-12 bg-gray-100 rounded"></div>
+                </div>
+                <div className="h-4 w-12 bg-gray-100 rounded"></div>
             </div>
 
-            {/* Items */}
-            <div className="space-y-2">
+            <div className="space-y-2 mt-1">
+                <div className="h-5 w-3/4 bg-gray-100 rounded"></div>
+                <div className="space-y-1">
+                    <div className="h-3 w-full bg-gray-50 rounded"></div>
+                    <div className="h-3 w-5/6 bg-gray-50 rounded"></div>
+                </div>
+            </div>
+
+            <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50">
+                <div className="flex gap-2">
+                    <div className="h-8 w-12 bg-gray-50 rounded-lg"></div>
+                    <div className="h-8 w-12 bg-gray-50 rounded-lg"></div>
+                </div>
+                <div className="flex gap-1">
+                    <div className="h-7 w-7 bg-gray-50 rounded-md"></div>
+                    <div className="h-7 w-7 bg-gray-50 rounded-md"></div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function Column({ title, icon, items, stage, color, onAction, loading }: ColumnProps) {
+    return (
+        <div className="flex-1 min-w-[280px] sm:min-w-[250px] max-w-full sm:max-w-[300px] bg-transparent rounded-xl p-3">
+            <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-serif font-medium text-gray-900">{title}</h3>
+                    <span className="text-xs font-medium text-gray-500 bg-gray-200/60 px-2 py-0.5 rounded-full">
+                        {loading ? '-' : items.length}
+                    </span>
+                </div>
+            </div>
+
+            <div className="space-y-3">
                 {loading ? (
-                    <div className="flex justify-center py-8 text-gray-400">
-                        <Loader2 size={20} className="animate-spin" />
-                    </div>
+                    <>
+                        <SkeletonCard />
+                        <SkeletonCard />
+                    </>
                 ) : items.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-4">No items</p>
+                    <div className="h-32 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center">
+                        <p className="text-sm text-gray-400">Empty</p>
+                    </div>
                 ) : (
                     items.map(item => (
-                        <div key={item.id} className="bg-white p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-all group">
-                            <p className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
-                                {item.hook || item.draft_content?.slice(0, 80) || 'Untitled'}
-                            </p>
-                            {item.format && (
-                                <span className="text-xs text-gray-400 uppercase tracking-wider">
-                                    {item.format}
+                        <div key={item.id} className="bg-white p-4 rounded-xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3 h-auto min-h-[140px]">
+                            <div className="flex items-center justify-between">
+                                <div className="flex gap-2">
+                                    {item.format && (
+                                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-semibold uppercase tracking-wider">
+                                            {item.format}
+                                        </span>
+                                    )}
+                                    {item.platform && (
+                                        <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-600 text-[10px] font-semibold uppercase tracking-wider">
+                                            {item.platform}
+                                        </span>
+                                    )}
+                                    {item.brain_metadata?.confidence && (
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${item.brain_metadata.confidence === 'high' ? 'bg-green-50 text-green-700' :
+                                            item.brain_metadata.confidence === 'medium' ? 'bg-amber-50 text-amber-700' :
+                                                'bg-gray-100 text-gray-500'
+                                            }`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${item.brain_metadata.confidence === 'high' ? 'bg-green-500' :
+                                                item.brain_metadata.confidence === 'medium' ? 'bg-amber-500' :
+                                                    'bg-gray-400'
+                                                }`} />
+                                            {item.brain_metadata.confidence}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-medium text-gray-400">
+                                    {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                 </span>
-                            )}
-                            {item.dev_step && stage === 'developing' && (
-                                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                                    {item.dev_step}
-                                </span>
-                            )}
+                            </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {stage === 'idea' && (
-                                    <>
+                            <div className="space-y-1.5">
+                                <h3 className="text-[17px] font-serif font-medium text-gray-900 leading-snug text-balance">
+                                    {item.hook || 'Untitled Idea'}
+                                </h3>
+                                <p className="text-[13px] text-gray-500 line-clamp-3 leading-relaxed font-sans">
+                                    {item.draft_content || item.angle || "No content yet..."}
+                                </p>
+                            </div>
+
+                            <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div className="flex gap-2">
+                                    {stage === 'idea' && (
+                                        <>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onAction(item.id, 'develop'); }}
+                                                className="flex flex-col items-center gap-1 p-2 hover:bg-amber-50 text-gray-400 hover:text-amber-700 rounded-lg transition-colors group/btn min-w-[50px]"
+                                                title="Develop"
+                                            >
+                                                <Wand2 size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
+                                                <span className="text-[10px] font-medium leading-none">Develop</span>
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onAction(item.id, 'start_draft'); }}
+                                                className="flex flex-col items-center gap-1 p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-700 rounded-lg transition-colors group/btn min-w-[50px]"
+                                                title="Quick Draft"
+                                            >
+                                                <ArrowRight size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
+                                                <span className="text-[10px] font-medium leading-none">Draft</span>
+                                            </button>
+                                        </>
+                                    )}
+                                    {stage === 'developing' && (
                                         <button
-                                            onClick={() => onAction(item.id, 'develop')}
-                                            className="flex items-center gap-1 text-xs px-2 py-1 bg-amber-50 text-amber-600 rounded hover:bg-amber-100"
+                                            onClick={(e) => { e.stopPropagation(); onAction(item.id, 'develop'); }}
+                                            className="flex flex-col items-center gap-1 p-2 hover:bg-amber-50 text-gray-400 hover:text-amber-700 rounded-lg transition-colors group/btn min-w-[50px]"
+                                            title="Continue Development"
                                         >
-                                            <Wand2 size={12} /> Develop
+                                            <Wand2 size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
+                                            <span className="text-[10px] font-medium leading-none">Continue</span>
                                         </button>
+                                    )}
+                                    {stage === 'draft' && (
                                         <button
-                                            onClick={() => onAction(item.id, 'start_draft')}
-                                            className="flex items-center gap-1 text-xs px-2 py-1 bg-[var(--accent)]/10 text-[var(--accent)] rounded hover:bg-[var(--accent)]/20"
+                                            onClick={(e) => { e.stopPropagation(); onAction(item.id, 'edit'); }}
+                                            className="flex flex-col items-center gap-1 p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-700 rounded-lg transition-colors group/btn min-w-[50px]"
                                         >
-                                            <ArrowRight size={12} /> Quick
+                                            <FileText size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
+                                            <span className="text-[10px] font-medium leading-none">Open</span>
                                         </button>
-                                        <button
-                                            onClick={() => onAction(item.id, 'archive')}
-                                            className="p-1 text-gray-400 hover:text-gray-600"
-                                        >
-                                            <Archive size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => onAction(item.id, 'delete')}
-                                            className="p-1 text-gray-400 hover:text-red-500"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </>
-                                )}
-                                {stage === 'draft' && (
-                                    <>
-                                        <button
-                                            onClick={() => onAction(item.id, 'edit')}
-                                            className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => onAction(item.id, 'archive')}
-                                            className="p-1 text-gray-400 hover:text-gray-600"
-                                        >
-                                            <Archive size={14} />
-                                        </button>
-                                    </>
-                                )}
-                                {stage === 'published' && (
-                                    <a
-                                        href="#"
-                                        className="text-xs text-gray-500 hover:text-[var(--accent)]"
+                                    )}
+                                </div>
+
+                                <div className="flex gap-1 items-center">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onAction(item.id, 'archive'); }}
+                                        className="p-1.5 hover:bg-gray-100 text-gray-300 hover:text-gray-500 rounded-md transition-colors"
+                                        title="Archive"
                                     >
-                                        View on {item.platform || 'LinkedIn'}
-                                    </a>
-                                )}
+                                        <Archive size={14} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onAction(item.id, 'delete'); }}
+                                        className="p-1.5 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-md transition-colors"
+                                        title="Delete"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))
@@ -135,15 +203,25 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
 
 export interface CommandCenterProps {
     onEdit?: (id: string) => void;
-    onDraftCreated?: () => void;
+    onDraftCreated?: () => Promise<void> | void;
+    onNewDraft?: () => void;
 }
 
-export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
+export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDraft }: CommandCenterProps) {
     const [items, setItems] = useState<ContentItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [developingItem, setDevelopingItem] = useState<ContentItem | null>(null);
     const [activeStage, setActiveStage] = useState<Stage>('idea');
     const [isMobile, setIsMobile] = useState(false);
+    const [isNewDraftModalOpen, setIsNewDraftModalOpen] = useState(false);
+
+    // Profile State
+    const [showProfileBanner, setShowProfileBanner] = useState(false);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+    // Limit State
+    const [limitModalOpen, setLimitModalOpen] = useState(false);
+    const [limitState, setLimitState] = useState({ tier: 'free', usage: 0, limit: 0 });
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -154,7 +232,21 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
 
     useEffect(() => {
         fetchItems();
+        checkProfile();
     }, []);
+
+    const checkProfile = async () => {
+        try {
+            const res = await fetch('/api/user/status');
+            const data = await res.json();
+            // If any field is missing, show banner
+            if (data.profile && (!data.profile.role || !data.profile.context || !data.profile.voice_tone)) {
+                setShowProfileBanner(true);
+            }
+        } catch (e) {
+            console.error("Failed to check profile", e);
+        }
+    };
 
     const fetchItems = async () => {
         setLoading(true);
@@ -175,11 +267,8 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
             const res = await fetch('/api/directions', { method: 'POST' });
             const data = await res.json();
             if (data.success && data.persisted) {
-                // Refresh items to show new suggestions
                 await fetchItems();
             } else if (data.ideas && !data.persisted) {
-                // If not persisted, we might need to manually add them to state?
-                // But for now assume persistence works.
                 console.warn("Ideas generated but not persisted?", data);
             }
         } catch (err) {
@@ -202,6 +291,24 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
                 });
                 setItems(prev => prev.filter(i => i.id !== id));
             } else if (action === 'start_draft') {
+                // Check Limit before promoting to draft
+                try {
+                    const res = await fetch('/api/user/status');
+                    const data = await res.json();
+                    if (data.usage && !data.usage.is_allowed) {
+                        setLimitState({
+                            tier: data.usage.tier,
+                            usage: data.usage.count,
+                            limit: data.usage.limit
+                        });
+                        setLimitModalOpen(true);
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to check limit", e);
+                }
+
+                console.log("Start Draft clicked");
                 await fetch('/api/content', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -220,27 +327,59 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
     };
 
     const handleWizardComplete = async (draftContent: string) => {
+        // NOTE: Wizard completion usually implies promotion to draft.
+        // The API backend handles the limit check on PATCH.
+        // If it fails, the Wizard will likely error out.
+        // We should add a try/catch here to show the modal if API returns 403.
+
         if (!developingItem) return;
 
-        // 1. Update Content Item (Pipeline Status)
-        await fetch('/api/content', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: developingItem.id,
-                stage: 'draft',
-                draft_content: draftContent,
-            }),
-        });
-
-        // 2. Create Real Draft (Bridge to Editor)
-        // We create a synchronized record in the 'drafts' table for the Editor to use.
         try {
+            // 1. Update Content Item (Pipeline Status)
+            const res = await fetch('/api/content', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: developingItem.id,
+                    stage: 'draft',
+                    draft_content: draftContent,
+                }),
+            });
+
+            if (res.status === 403) {
+                // Catch the limit error from backend
+                const data = await res.json();
+                if (data.error === 'Limit Reached') {
+                    setLimitState({
+                        tier: data.tier,
+                        usage: data.message.includes('used') ? parseInt(data.message.match(/used (\d+)/)?.[1] || '0') : 0,
+                        // Fallback parsing, ideally API returns structured
+                        limit: 2 // We know Free limit
+                    });
+                    // Better: fetch fresh status or trust API response structure if we improved it.
+                    // Let's just create a generic state for now or fetch status.
+                    const statusRes = await fetch('/api/user/status');
+                    const statusData = await statusRes.json();
+                    if (statusData.usage) {
+                        setLimitState({
+                            tier: statusData.usage.tier,
+                            usage: statusData.usage.count,
+                            limit: statusData.usage.limit
+                        });
+                        setLimitModalOpen(true);
+                    } else {
+                        alert(data.message);
+                    }
+                    return;
+                }
+            }
+
+            // 2. Create Real Draft (Bridge to Editor)
             const draftRes = await fetch('/api/drafts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id: developingItem.id, // FORCE SYNC: Use same ID as Pipeline Item
+                    id: developingItem.id,
                     beliefText: developingItem.angle || developingItem.hook,
                     content: draftContent,
                 }),
@@ -248,26 +387,51 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
             const draftData = await draftRes.json();
 
             if (draftData.draft) {
-                // Notify parent to refresh drafts list
-                if (onDraftCreated) onDraftCreated();
-
-                // Open the NEW draft ID in the editor
+                if (onDraftCreated) await onDraftCreated();
                 if (onEdit) onEdit(draftData.draft.id);
             }
 
+            setItems(prev => prev.map(i =>
+                i.id === developingItem.id
+                    ? { ...i, stage: 'draft', draft_content: draftContent }
+                    : i
+            ));
+
+            setDevelopingItem(null);
+
         } catch (e) {
-            console.error("Failed to sync to drafts table:", e);
-            // Fallback to old behavior (might result in blank screen if not synced)
-            if (onEdit) onEdit(developingItem.id);
+            console.error("Failed to sync/update:", e);
         }
+    };
 
-        setItems(prev => prev.map(i =>
-            i.id === developingItem.id
-                ? { ...i, stage: 'draft', draft_content: draftContent }
-                : i
-        ));
+    const handleNewDraftStart = async (topic: string, metadata: BrainMetadata) => {
+        try {
+            const res = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    hook: topic,
+                    stage: 'developing',
+                    brain_metadata: metadata,
+                    dev_step: null
+                }),
+            });
 
-        setDevelopingItem(null);
+            if (res.ok) {
+                const data = await res.json();
+                await fetchItems();
+            } else {
+                const data = await res.json();
+                if (data.error === 'Limit Reached') {
+                    // Should be caught by proactive check, but good fallback
+                    setLimitModalOpen(true); // Using stale state might be risky, but usually okay
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to create new draft:", error);
+        }
     };
 
     const ideas = items.filter(i => i.stage === 'idea');
@@ -277,11 +441,10 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
 
     return (
         <div className="h-full flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between p-6 pb-4">
                 <div>
-                    <h1 className="text-2xl font-serif text-gray-900">Command Center</h1>
-                    <p className="text-sm text-gray-500">Your content pipeline at a glance</p>
+                    <h1 className="text-4xl font-serif text-gray-900 mb-1">Command Center</h1>
+                    <p className="text-base text-gray-500 font-serif">Your content pipeline.</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -292,17 +455,62 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
                         <Wand2 size={16} />
                         Suggest Ideas
                     </button>
-                    {/* <button className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-dark)] transition-colors">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const res = await fetch('/api/user/status');
+                                const data = await res.json();
+                                if (data.usage && !data.usage.is_allowed) {
+                                    setLimitState({
+                                        tier: data.usage.tier,
+                                        usage: data.usage.count,
+                                        limit: data.usage.limit
+                                    });
+                                    setLimitModalOpen(true);
+                                    return;
+                                }
+                            } catch (e) {
+                                console.error("Failed to check limit", e);
+                            }
+                            setIsNewDraftModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
                         <Plus size={16} />
-                        New Idea
-                    </button> */}
+                        New Draft
+                    </button>
                 </div>
             </div>
 
-            {/* Pipeline - Responsive Grid */}
-            {/* Pipeline - Responsive Grid */}
+            {showProfileBanner && (
+                <div className="mx-6 mb-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between animate-fade-in">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                            <User size={16} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-indigo-900">Your profile is incomplete.</h3>
+                            <p className="text-xs text-indigo-700">Set your Role & Voice to help the Brain write better drafts.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowProfileBanner(false)}
+                            className="text-xs font-bold text-indigo-400 hover:text-indigo-600 px-3 py-2"
+                        >
+                            Dismiss
+                        </button>
+                        <button
+                            onClick={() => setIsProfileModalOpen(true)}
+                            className="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                            Complete Setup
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex-1 overflow-x-auto p-4 md:p-6 pt-2 pb-24 md:pb-6">
-                {/* Mobile Tabs */}
                 {isMobile && (
                     <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
                         {(['idea', 'developing', 'draft', 'published'] as Stage[]).map(stage => (
@@ -370,16 +578,36 @@ export function CommandCenter({ onEdit, onDraftCreated }: CommandCenterProps) {
                 </div>
             </div>
 
-            {/* Development Wizard Modal */}
-            {
-                developingItem && (
-                    <DevelopmentWizard
-                        item={developingItem}
-                        onClose={() => setDevelopingItem(null)}
-                        onComplete={handleWizardComplete}
-                    />
-                )
-            }
-        </div >
+            {developingItem && (
+                <DevelopmentWizard
+                    item={developingItem}
+                    onClose={() => setDevelopingItem(null)}
+                    onComplete={handleWizardComplete}
+                />
+            )}
+
+            <NewDraftModal
+                isOpen={isNewDraftModalOpen}
+                onClose={() => setIsNewDraftModalOpen(false)}
+                onStart={handleNewDraftStart}
+            />
+
+            <LimitModal
+                isOpen={limitModalOpen}
+                onClose={() => setLimitModalOpen(false)}
+                tier={limitState.tier}
+                usage={limitState.usage}
+                limit={limitState.limit}
+            />
+
+            <ProfileSetupModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                onComplete={() => {
+                    setShowProfileBanner(false);
+                    // Could refresh other things if needed
+                }}
+            />
+        </div>
     );
 }

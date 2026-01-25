@@ -67,6 +67,10 @@ export function useBeliefs() {
                     isStable: b.is_stable ?? false,
                     evidenceCount: b.evidence_count ?? 1,
                     context: b.original_statement, // Mapped from DB
+                    // Genealogy Fields
+                    parentId: b.parent_id,
+                    rootId: b.root_id,
+                    tags: b.tags || []
                 });
 
                 // Separate confirmed (accepted) from unreviewed
@@ -77,10 +81,14 @@ export function useBeliefs() {
                 const overused = unconfirmed.filter((b: any) => b.belief_type === 'overused').map(mapBelief) || [];
                 const emerging = unconfirmed.filter((b: any) => b.belief_type === 'emerging').map(mapBelief) || [];
 
+                // New types (fallbacks to core if UI doesn't support yet, but here we separate)
+                const roots = unconfirmed.filter((b: any) => b.belief_type === 'root').map(mapBelief) || [];
+                const pillars = unconfirmed.filter((b: any) => b.belief_type === 'pillar').map(mapBelief) || [];
+
                 const confirmed = confirmedData.map(mapBelief) || [];
 
                 setBeliefs({
-                    core: core as Belief[],
+                    core: [...core, ...roots, ...pillars] as Belief[], // Merge new types into 'core' bucket for now so they appear in UI
                     overused: overused as Belief[],
                     emerging: emerging as Belief[],
                     tensions: [],
@@ -156,5 +164,38 @@ export function useBeliefs() {
         }
     };
 
-    return { beliefs, loading, error, submitFeedback };
+    // Update belief statement (Edit)
+    const updateBelief = async (beliefId: string, newStatement: string): Promise<boolean> => {
+        try {
+            const { error: updateError } = await supabase
+                .from('beliefs')
+                .update({
+                    statement: newStatement,
+                    user_edited: true,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', beliefId);
+
+            if (updateError) throw updateError;
+
+            // Update local state
+            setBeliefs(prev => {
+                const updateList = (list: Belief[]) => list.map(b => b.id === beliefId ? { ...b, statement: newStatement, userEdited: true } : b);
+                return {
+                    core: updateList(prev.core),
+                    overused: updateList(prev.overused),
+                    emerging: updateList(prev.emerging),
+                    tensions: prev.tensions,
+                    confirmed: updateList(prev.confirmed)
+                };
+            });
+
+            return true;
+        } catch (err) {
+            console.error("Error updating belief:", err);
+            return false;
+        }
+    };
+
+    return { beliefs, loading, error, submitFeedback, updateBelief };
 }

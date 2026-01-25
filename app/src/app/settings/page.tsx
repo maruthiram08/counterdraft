@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw } from "lucide-react";
+import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon } from "lucide-react";
 
 interface IntegrationStatus {
     platform: string;
@@ -115,6 +116,12 @@ export default function SettingsPage() {
                         </p>
                     </div>
 
+                    {/* Profile Section */}
+                    <ProfileSection />
+
+                    {/* Usage Section */}
+                    <UsageSection />
+
                     {/* Integrations Section */}
                     <section className="mb-12">
                         <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
@@ -167,6 +174,54 @@ export default function SettingsPage() {
 
             <Footer />
         </div>
+    );
+}
+
+function ProfileSection() {
+    const { user, isLoaded } = useUser();
+
+    if (!isLoaded) {
+        return (
+            <div className="mb-12 p-6 border rounded-lg animate-pulse">
+                <div className="h-6 bg-gray-200 w-1/4 mb-4 rounded"></div>
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                    <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 w-32 rounded"></div>
+                        <div className="h-4 bg-gray-200 w-48 rounded"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) return null;
+
+    return (
+        <section className="mb-12">
+            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
+                <UserIcon size={18} />
+                Profile
+            </h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">
+                Your personal account details used in the workspace.
+            </p>
+
+            <div className="p-6 border border-[var(--border)] rounded-lg bg-[var(--surface)]">
+                <div className="flex items-center gap-6">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={user.imageUrl}
+                        alt={user.fullName || "User"}
+                        className="w-16 h-16 rounded-full border border-[var(--border)]"
+                    />
+                    <div>
+                        <h3 className="font-semibold text-lg">{user.fullName}</h3>
+                        <p className="text-[var(--text-muted)]">{user.primaryEmailAddress?.emailAddress}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     );
 }
 
@@ -292,5 +347,74 @@ function IntegrationCard({
                 )}
             </div>
         </div>
+    );
+}
+
+function UsageSection() {
+    const [usage, setUsage] = useState<{ usage: number; limit: number; tier: string } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/user/usage')
+            .then(res => res.json())
+            .then(data => {
+                setUsage(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to load usage", err);
+                setLoading(false);
+            });
+    }, []);
+
+    if (loading) return null;
+    if (!usage) return null;
+
+    const percent = Math.min(100, (usage.usage / (usage.limit === Infinity ? 1 : usage.limit)) * 100);
+    const isUnlimited = usage.limit === Infinity;
+
+    return (
+        <section className="mb-12">
+            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
+                <Settings size={18} /> {/* Reusing icon for visual consistency */}
+                Plan & Usage
+            </h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">
+                Your monthly content generation limits.
+            </p>
+
+            <div className="p-6 border border-[var(--border)] rounded-lg bg-[var(--surface)]">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-lg capitalize">{usage.tier} Plan</h3>
+                            {usage.tier === 'free' && (
+                                <a href="/pricing" className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium hover:bg-blue-200">
+                                    Upgrade to Pro
+                                </a>
+                            )}
+                        </div>
+                        <p className="text-sm text-[var(--text-muted)]">
+                            {isUnlimited ? 'Unlimited drafts' : `${usage.limit} drafts per month`}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-2xl font-bold">
+                            {usage.usage} <span className="text-sm text-[var(--text-muted)] font-normal">/ {isUnlimited ? '∞' : usage.limit}</span>
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">Drafts used</div>
+                    </div>
+                </div>
+
+                {!isUnlimited && (
+                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                        <div
+                            className={`h-2.5 rounded-full ${percent >= 90 ? 'bg-red-500' : 'bg-green-500'}`}
+                            style={{ width: `${percent}%` }}
+                        ></div>
+                    </div>
+                )}
+            </div>
+        </section>
     );
 }

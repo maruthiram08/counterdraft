@@ -15,7 +15,8 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
             belief_type: 'core',
             original_statement: b.context || b.reasoning,
             confidence: mapConfidence(b.confidence),
-            confidence_level: b.confidence?.toLowerCase() || 'medium'
+            confidence_level: b.confidence?.toLowerCase() || 'medium',
+            tags: b.tags || []
         })),
         ...(analysis.overusedAngles || []).map((b: any) => ({
             user_id: userId,
@@ -23,7 +24,8 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
             belief_type: 'overused',
             original_statement: b.context || b.reasoning,
             confidence: mapConfidence(b.confidence),
-            confidence_level: b.confidence?.toLowerCase() || 'medium'
+            confidence_level: b.confidence?.toLowerCase() || 'medium',
+            tags: b.tags || []
         })),
         ...(analysis.emergingThesis || []).map((b: any) => ({
             user_id: userId,
@@ -31,7 +33,8 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
             belief_type: 'emerging',
             original_statement: b.context || b.reasoning,
             confidence: mapConfidence(b.confidence),
-            confidence_level: b.confidence?.toLowerCase() || 'medium'
+            confidence_level: b.confidence?.toLowerCase() || 'medium',
+            tags: b.tags || []
         }))
     ];
 
