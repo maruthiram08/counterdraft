@@ -1,0 +1,51 @@
+# Costing Audit & Unit Economics (Pro Plan) 📊
+
+This report breaks down the estimated costs of running Counterdraft per Pro user and identifies the break-even points for your infrastructure.
+
+## 1. Per-User Variable Costs (LLM & APIs)
+*Assumes high-engagement usage: 10 full articles + 10 verification runs + 5 Brain analyzes + 5 Images per month.*
+
+| Feature | Provider / Model | Monthly Usage | Cost Est. |
+| :--- | :--- | :--- | :--- |
+| **Draft Generation** | OpenAI GPT-4o | 10 drafts (3k tokens ea) | ~$0.29 |
+| **Claims & Plagiarism** | Tavily Search | 150 searches | ~$1.13 |
+| **Logic & Judgment** | GPT-4o-mini | 150 verify/extract calls | ~$0.02 |
+| **Brain Analysis** | Claude 3.5 Sonnet | 5 analyze/idea runs | ~$0.15 |
+| **Smart Studio** | OpenAI DALL-E 3 | 5 images (1024x1024) | ~$0.20 |
+| **Anti-Slop** | N/A (Regex) | unlimited | $0.00 |
+| **TOTAL** | | | **$1.79 / user** |
+
+## 2. Fixed Monthly Infrastructure Overhead
+*Base costs required to keep the platform live regardless of user count.*
+
+| Service | Tier / Plan | Cost | Notes |
+| :--- | :--- | :--- | :--- |
+| **Supabase** | Pro Plan | $25.00 | Database, Auth, Storage |
+| **Vercel** | Pro Plan (1 seat) | $20.00 | Hosting & Edge Functions |
+| **Clerk** | B2C Free/Standard | $0.00 | Free for first 10,000 MAUs |
+| **PostHog** | Free Tier | $0.00 | Free for first 1,000,000 events |
+| **Others** | Domain / Extras | ~$5.00 | Estimated |
+| **TOTAL** | | **$50.00** | |
+
+## 3. Break-Even Analysis 📈
+
+Based on the **$1.79** variable cost and **$50.00** fixed overhead, here are your break-even scenarios:
+
+### Scenario A: Pro Plan @ $29/mo (Highly Competitive)
+*   **Net Margin per User**: $27.21
+*   **Break-even User Count**: **2 Users**
+*   **Profit at 100 Users**: ~$2,670/mo
+
+### Scenario B: Pro Plan @ $49/mo (Professional Grade)
+*   **Net Margin per User**: $47.21
+*   **Break-even User Count**: **1 User**
+*   **Profit at 100 Users**: ~$4,670/mo
+
+## 4. Risks & Optimization Tips 💡
+*   **Tavily Usage**: Tavily is your largest variable cost ($1.13/user). Consider caching common search results or offering a "Lite" verification mode that uses fewer credits.
+*   **Model Switching**: GLM-4-flash (Zhipu) is extremely cheap. We should consider routing "low-stakes" extraction asks to GLM or GPT-4o-mini instead of Claude/Sonnet where possible.
+*   **PostHog/Clerk Scale**: Once you hit 10k users, Clerk starts costing $0.02/user. At that scale, fixed costs decrease in importance compared to variable ones.
+
+---
+> [!IMPORTANT]
+> These are estimates based on standard market rates for 2025/2026. Actual usage patterns (e.g. users editing a single article 50 times) may influence the real numbers.

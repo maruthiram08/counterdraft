@@ -55,7 +55,9 @@ export async function POST(req: NextRequest) {
 
         // 2. Save to DB (if draftId)
         if (draftId) {
-            // Optional: Clear old verifications? Not for now, history is okay or just append.
+            // Clear old verifications to ensure we only show the latest state
+            await supabaseAdmin.from('content_verifications').delete().eq('draft_id', draftId);
+
             const rows = results.map(r => ({
                 draft_id: draftId,
                 claim_text: r.claim,

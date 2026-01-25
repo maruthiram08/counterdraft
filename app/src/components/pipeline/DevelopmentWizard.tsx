@@ -112,6 +112,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: item.id,
+                    stage: 'developing', // FORCE STAGE UPDATE
                     ...updates
                 }),
             });

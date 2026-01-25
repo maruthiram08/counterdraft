@@ -581,7 +581,10 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
             {developingItem && (
                 <DevelopmentWizard
                     item={developingItem}
-                    onClose={() => setDevelopingItem(null)}
+                    onClose={() => {
+                        setDevelopingItem(null);
+                        fetchItems(); // PIPELINE FIX: Refresh list to show stage changes
+                    }}
                     onComplete={handleWizardComplete}
                 />
             )}

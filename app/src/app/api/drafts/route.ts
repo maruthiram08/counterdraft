@@ -23,6 +23,7 @@ export async function GET() {
             return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
         }
 
+        // 1. Fetch Drafts (from drafts table)
         const { data: draftsData, error } = await supabase
             .from('drafts')
             .select('*, published_posts(*)')
@@ -31,13 +32,14 @@ export async function GET() {
 
         if (error) throw error;
 
-        // Fetch content items to get metadata (Platform, Length, Parent)
+        // 2. Fetch Content Items (to sync metadata & check for orphans)
         const { data: contentItems } = await supabase
             .from('content_items')
-            .select('id, brain_metadata, hook')
+            .select('id, brain_metadata, hook, stage, draft_content')
             .eq('user_id', userId);
 
-        const drafts = draftsData.map(draft => {
+        // 3. Map existing drafts with metadata
+        const drafts = (draftsData || []).map(draft => {
             // Find corresponding content item
             const item = contentItems?.find(ci =>
                 ci.id === draft.id ||
@@ -57,7 +59,36 @@ export async function GET() {
             };
         });
 
-        return NextResponse.json({ drafts });
+        // 4. AUTO-HEAL: Check for orphans (items marked 'draft' in content_items but missing from drafts table)
+        const existingDraftIds = new Set(drafts.map(d => d.id));
+        const orphans = (contentItems || [])
+            .filter(ci =>
+                (ci.stage === 'draft') && // It thinks it is a draft
+                !existingDraftIds.has(ci.id) // But it is not in the drafts list
+            )
+            .map(ci => ({
+                id: ci.id,
+                user_id: userId,
+                belief_text: ci.hook || 'Untitled Draft',
+                content: ci.draft_content || '',
+                status: 'draft',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                published_posts: [],
+                labels: {
+                    platform: ci.brain_metadata?.platform,
+                    length: ci.brain_metadata?.length,
+                    parentId: ci.brain_metadata?.repurpose?.parentId
+                },
+                is_healed: true // Flag for debugging
+            }));
+
+        // Combine and sort
+        const allDrafts = [...drafts, ...orphans].sort((a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        return NextResponse.json({ drafts: allDrafts });
     } catch (error: any) {
         console.error('[GET /api/drafts] Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

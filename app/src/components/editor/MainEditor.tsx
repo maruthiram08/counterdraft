@@ -47,6 +47,9 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     const [competitorResult, setCompetitorResult] = useState<CompetitorCheckResult | null>(null);
     const [competitorLoading, setCompetitorLoading] = useState(false);
 
+    // New: History Loading State
+    const [historyLoading, setHistoryLoading] = useState(false);
+
     // 4. Refs (Keep these consistent)
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -78,11 +81,11 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
         return {
             totalScore,
-            fact: { score: factScore, hasRun: factHasRun, loading: verifying },
-            uniqueness: { score: plagiarismScore, hasRun: plagiarismHasRun, loading: checkingPlagiarism },
+            fact: { score: factScore, hasRun: factHasRun, loading: verifying || historyLoading },
+            uniqueness: { score: plagiarismScore, hasRun: plagiarismHasRun, loading: checkingPlagiarism || historyLoading },
             style: { score: slopScore, hasRun: true, loading: slopLoading }
         };
-    }, [verifications, plagiarismResult, slopMatches, verifying, checkingPlagiarism, slopLoading]);
+    }, [verifications, plagiarismResult, slopMatches, verifying, checkingPlagiarism, slopLoading, historyLoading]);
 
     const handleRunMetric = async (type: 'fact' | 'uniqueness' | 'style' | 'run-all') => {
         if (type === 'run-all') {
@@ -103,6 +106,7 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
     // --- Persistence: Fetch existing verification results ---
     const fetchExistingVerification = async (id: string) => {
+        setHistoryLoading(true);
         try {
             // Fetch Facts
             const factRes = await fetch(`/api/tools/fact-check?draftId=${id}`);
@@ -125,6 +129,8 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
             }
         } catch (e) {
             console.error("Error fetching existing verification:", e);
+        } finally {
+            setHistoryLoading(false);
         }
     };
 
@@ -500,7 +506,8 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
             .replace(/>/g, '&gt;');
 
         // Highlight problematic claims (disputed/unverified)
-        // Sort by length to handle overlapping replacements
+        // Check for Markdown formatting in original sentences and normalize
+        // We strip markdown chars from content for matching to make it robust
         const sorted = [...verifications]
             .filter(v => v.status !== 'verified' && v.original_sentence)
             .sort((a, b) => (b.original_sentence?.length || 0) - (a.original_sentence?.length || 0));
@@ -660,8 +667,12 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                         <div className="relative w-full">
                             {/* Highlighting Backdrop */}
                             <div
-                                className="absolute inset-0 pointer-events-none text-base md:text-lg leading-relaxed md:leading-loose text-transparent font-sans break-words whitespace-pre-wrap select-none"
+                                className="absolute inset-0 pointer-events-none text-base md:text-lg leading-relaxed md:leading-loose text-transparent font-sans break-words whitespace-pre-wrap select-none p-0 bg-transparent z-0 overflow-hidden"
                                 aria-hidden="true"
+                                style={{
+                                    whiteSpace: 'pre-wrap',
+                                    overflowWrap: 'break-word',
+                                }}
                                 dangerouslySetInnerHTML={{ __html: renderHighlights() || '' }}
                             />
 
@@ -679,9 +690,16 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                                     blurTimeoutRef.current = setTimeout(() => { }, 200);
                                 }}
                                 className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden break-words relative z-10"
-                                style={{ outline: 'none', border: 'none', boxShadow: 'none' }}
-                                placeholder="Start writing..."
                                 spellCheck={false}
+                                style={{
+                                    outline: 'none',
+                                    border: 'none',
+                                    boxShadow: 'none',
+                                    backgroundColor: 'transparent',
+                                    color: 'inherit',
+                                    whiteSpace: 'pre-wrap',
+                                    overflowWrap: 'break-word',
+                                }}
                             />
                         </div>
                     )}
@@ -718,10 +736,10 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 isOpen={showFactCheck}
                 onClose={() => setShowFactCheck(false)}
                 factResults={verifications}
-                factLoading={verifying}
+                factLoading={verifying || historyLoading}
                 onFactVerify={handleVerify}
                 plagiarismResult={plagiarismResult}
-                plagiarismLoading={checkingPlagiarism}
+                plagiarismLoading={checkingPlagiarism || historyLoading}
                 onPlagiarismCheck={handlePlagiarismCheck}
                 slopMatches={slopMatches}
                 slopLoading={slopLoading}

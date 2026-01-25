@@ -40,13 +40,6 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
                         className="w-full pl-6 pr-2 py-1.5 text-xs bg-transparent border-0 border-b border-gray-200 focus:border-[var(--accent)] focus:ring-0 placeholder:text-gray-300 transition-all font-medium"
                     />
                 </div>
-                <button
-                    onClick={onNew}
-                    className="p-1.5 text-gray-400 hover:text-[var(--accent)] hover:bg-gray-50 rounded-md transition-all"
-                    title="New Draft"
-                >
-                    <Plus size={16} />
-                </button>
             </div>
 
             {/* List - Clean, no borders */}

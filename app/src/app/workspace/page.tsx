@@ -63,12 +63,29 @@ function WorkspaceContent() {
     // Handle Deep Linking
     useEffect(() => {
         const draftId = searchParams.get('draftId');
-        if (draftId) {
+        // Only trigger deep link if we are actually allowed to (or if we are already in drafts/pipeline context)
+        // AND if we aren't already there?
+        if (draftId && activeSection !== 'drafts') {
+            console.log("Deep linking to draft:", draftId);
             setSelectedDraftId(draftId);
             setActiveSection('drafts');
             setPostsTab('drafts');
+        } else if (draftId && activeSection === 'drafts' && selectedDraftId !== draftId) {
+            // Handle case where we are in drafts but ID changed in URL manually
+            setSelectedDraftId(draftId);
         }
-    }, [searchParams]);
+
+        // Auto-cleanup: If we are on a non-draft tab but draftId exists, strip it quietly
+        // This handles the "Refresh on Pipeline -> Lands on Library" bug
+        const tab = searchParams.get('tab');
+        if (tab && tab !== 'drafts' && draftId) {
+            const newParams = new URLSearchParams(searchParams.toString());
+            newParams.delete('draftId');
+            router.replace(`/workspace?${newParams.toString()}`, { scroll: false });
+            // We return early to avoid setting activeSection='drafts' due to race conditions
+            if (activeSection === 'drafts') setActiveSection(tab as any);
+        }
+    }, [searchParams, activeSection, selectedDraftId]);
 
     // Agent update handler
     const handleAgentApply = (refinedContent: string) => {
@@ -148,7 +165,14 @@ function WorkspaceContent() {
                         // Update URL without full reload
                         const params = new URLSearchParams(searchParams.toString());
                         params.set('tab', section);
-                        router.push(`/workspace?${params.toString()}`, { scroll: false });
+
+                        // FIX: Clear draftId if leaving drafts section to prevent auto-redirect loop
+                        if (section !== 'drafts') {
+                            params.delete('draftId');
+                        }
+
+                        // Use replace to prevent polluting history stack with "sticky" params
+                        router.replace(`/workspace?${params.toString()}`, { scroll: false });
                     }
                 }}
                 onNewDraft={() => {
@@ -442,6 +466,13 @@ function WorkspaceContent() {
                             <CommandCenter
                                 onDraftCreated={refetch}
                                 onEdit={(draftId) => {
+                                    // Force URL update for robust navigation/selection
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set('tab', 'drafts');
+                                    params.set('draftId', draftId);
+                                    router.push(`/workspace?${params.toString()}`);
+
+                                    // redundant but immediate feedback
                                     setSelectedDraftId(draftId);
                                     setActiveSection('drafts');
                                     setPostsTab('drafts');
