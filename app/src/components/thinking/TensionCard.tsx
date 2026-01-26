@@ -65,7 +65,7 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
             )}
 
             {/* Main Tension Statement */}
-            <h3 className="text-xl font-medium text-gray-900 mb-8 max-w-2xl leading-snug">
+            <h3 className="text-xl font-medium text-gray-900 mb-8 leading-snug whitespace-pre-wrap">
                 {tension}
             </h3>
 

@@ -14,6 +14,11 @@ export interface Draft {
         published_at: string;
         url?: string;
     }[];
+    labels?: {
+        platform?: string;
+        length?: string;
+        parentId?: string;
+    };
 }
 
 export function useDrafts() {
@@ -26,7 +31,7 @@ export function useDrafts() {
         setError(null);
 
         try {
-            const res = await fetch('/api/drafts');
+            const res = await fetch('/api/drafts', { cache: 'no-store' });
             const data = await res.json();
 
             if (!res.ok) throw new Error(data.error);

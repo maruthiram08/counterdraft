@@ -54,9 +54,13 @@ export async function POST(req: Request) {
             source_topics,
             stage = 'idea',
             draft_content,
+            brain_metadata,
+            dev_step,
+            references = [] // Array of { type, title, content, url, filePath }
         } = body;
 
-        const { data, error } = await supabaseAdmin
+        // 1. Create Content Item
+        const { data: item, error: itemError } = await supabaseAdmin
             .from('content_items')
             .insert({
                 user_id: userId,
@@ -68,13 +72,36 @@ export async function POST(req: Request) {
                 source_topics,
                 stage,
                 draft_content,
+                brain_metadata,
+                dev_step,
             })
             .select()
             .single();
 
-        if (error) throw error;
+        if (itemError) throw itemError;
 
-        return NextResponse.json({ item: data }, { status: 201 });
+        // 2. Create References (if any)
+        if (references && references.length > 0) {
+            const formattedRefs = references.map((ref: any) => ({
+                content_item_id: item.id,
+                reference_type: ref.type,
+                title: ref.title || 'Untitled Reference',
+                content: ref.content,
+                url: ref.url,
+                file_path: ref.filePath // Optional, for files
+            }));
+
+            const { error: refError } = await supabaseAdmin
+                .from('content_references')
+                .insert(formattedRefs);
+
+            if (refError) {
+                console.error('Error creating references:', refError);
+                // We don't fail the whole request, but logging is important
+            }
+        }
+
+        return NextResponse.json({ item }, { status: 201 });
     } catch (err: any) {
         console.error('Content API POST Error:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
@@ -108,6 +135,18 @@ export async function PATCH(req: Request) {
             .single();
 
         if (error) throw error;
+
+        // SYNC: If moving to draft stage, ensure it exists in drafts table (Editor Visibility)
+        if (updates.stage === 'draft') {
+            await supabaseAdmin.from('drafts').upsert({
+                id: data.id,
+                user_id: userId,
+                belief_text: data.hook || data.angle || 'Untitled Draft',
+                content: data.draft_content || '',
+                status: 'draft',
+                updated_at: new Date().toISOString()
+            });
+        }
 
         return NextResponse.json({ item: data });
     } catch (err: any) {

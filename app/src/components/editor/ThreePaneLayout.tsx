@@ -8,9 +8,8 @@ interface ThreePaneLayoutProps {
 }
 
 export function ThreePaneLayout({ leftPane, middlePane, rightPane }: ThreePaneLayoutProps) {
-    // Responsive state - starts with desktop defaults
     const [isLeftPaneVisible, setIsLeftPaneVisible] = useState(true);
-    const [isRightPaneVisible, setIsRightPaneVisible] = useState(true);
+    const [isRightPaneVisible, setIsRightPaneVisible] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isTablet, setIsTablet] = useState(false);
 
