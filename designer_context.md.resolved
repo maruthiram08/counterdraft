@@ -1,0 +1,57 @@
+# Counterdraft: Design Context & Brief
+
+## 1. The Core Philosophy
+**Counterdraft** is the antidote to "AI Slop."
+While other tools generate generic, soulless content at scale, Counterdraft is built for **Thought Leaders** who care about depth, nuance, and strategy.
+
+*   **We are not** a "Magic Button" that writes for you.
+*   **We are** a "Thinking Partner" that helps you articulate your unique beliefs and repurpose them intelligently.
+*   **The Mantra**: "Deep Work First, Automate Second."
+
+## 2. Who is this for?
+*   **Subject Matter Experts**: Founders, executives, and consultants who need to share *real* expertise.
+*   **The "Anti-Influencer"**: People who hate clickbait but understand they need a digital presence.
+*   **Visual Storytellers**: Those who want their ideas to look as good as they sound (via Smart Studio).
+
+## 3. Product Metaphors & Architecture
+
+### 🧠 The Brain (Strategy Layer)
+Everything starts with strategy, not random prompts.
+*   **Inputs**: Audience, Outcome (Goal), Stance (Controversial? Earnest?), Format.
+*   **The Vibe**: Precision, Control, Instrument Panel. Not a "chat box."
+
+### 🎛 The Command Center (Workflow Layer)
+A Kanban-style view of your intellectual property pipeline.
+*   **Stages**: Ideas → Developing → Drafts → Published.
+*   **The Vibe**: Clarity, Progress, "Inbox Zero" for your mind.
+
+### 🎨 The Smart Studio (Production Layer)
+Where deep thoughts become visual assets.
+*   **The Feature**: "Repurpose Engine." One "Source of Truth" document becomes a LinkedIn post, a Twitter thread, and a Carousel instantly.
+*   **The Magic**: We don't just crop text; we use AI to "Semantically Remix" content and generate pixel-perfect visuals (via the new **Smart Studio** engine).
+
+## 4. Aesthetic & Tone
+We are building a **Pro Tool**, not a toy.
+*   **Keywords**: Editorial, Lucid, Calm, Powerful, "Stripe for Thought Leadership."
+*   **Typography**: Clean sans-serifs (Inter/Outfit) that feel modern but timeless.
+*   **Visuals**:
+    *   **Dark Mode First**: Sleek, premium feel.
+    *   **Glassmorphism**: Subtle depth and layers (e.g., our new Overlay Sidebar).
+    *   **Motion**: Smooth, staggered transitions—never jarring.
+
+## 5. The Homepage Objective
+We are upgrading the homepage to reflect this premium status.
+*   **Goal**: Communicate "This is a serious tool for serious thinkers" within 3 seconds.
+*   **Hero Section**: Needs to showcase the **Command Center** and **Smart Studio** in action.
+*   **Feature Highlight**: Show the "One Draft → Many Formats" flow visually.
+*   **Social Proof**: Testimonials from "Smart People," not just "Marketers."
+
+## 6. Current Feature Set (For Visualization)
+*   **Interactive Outlines**: Users edit the skeleton of their ideas before generating.
+*   **Wide-Screen Repurpose Modal**: A massive 2-column studio for adapting content.
+*   **Draggable Kanban**: Smooth drag-and-drop management of content cards.
+*   **Concept Cards**: "Beliefs" and "Tensions" that float as inspirational objects.
+
+---
+
+> **Designer Note**: Avoid "AI Sparkles" and "Magic Wands" as primary motifs. Use purposeful iconography (gears, brains, structural grids) instead. We are building an *engine*, not a *toy*.

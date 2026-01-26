@@ -19,6 +19,37 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 
 -- ===========================================
+-- MARKETING LEADS (Live Trial Captures)
+-- ===========================================
+CREATE TABLE marketing_leads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email VARCHAR(255) NOT NULL,
+  source VARCHAR(50) DEFAULT 'homepage_audit',
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_marketing_leads_email ON marketing_leads(email);
+
+-- ===========================================
+-- BILLING (Dodo Payments)
+-- ===========================================
+CREATE TABLE user_subscriptions (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  dodo_customer_id VARCHAR(255),
+  dodo_subscription_id VARCHAR(255) UNIQUE,
+  status VARCHAR(50) NOT NULL DEFAULT 'free', -- 'active', 'past_due', 'cancelled', 'expired', 'free'
+  plan_id VARCHAR(100), -- 'pro_m_in', 'pro_m_gl'
+  variant_name VARCHAR(100),
+  renews_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_subscriptions_user ON user_subscriptions(user_id);
+CREATE INDEX idx_subscriptions_status ON user_subscriptions(status);
+
+-- ===========================================
 -- RAW POSTS (Ingested content)
 -- ===========================================
 CREATE TABLE raw_posts (
@@ -137,7 +168,36 @@ CREATE TABLE user_feedback (
 );
 
 CREATE INDEX idx_user_feedback_user ON user_feedback(user_id);
+CREATE INDEX idx_user_feedback_user ON user_feedback(user_id);
 CREATE INDEX idx_user_feedback_entity ON user_feedback(entity_type, entity_id);
+
+-- ===========================================
+-- DRAFTS (Content Creation)
+-- ===========================================
+CREATE TABLE drafts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  belief_text TEXT,
+  content TEXT,
+  status VARCHAR(20) DEFAULT 'draft' CHECK (status IN (
+    'draft', 'published', 'archived'
+  )),
+  
+  -- Platform Agnostic Fields
+  platform VARCHAR(50) DEFAULT 'linkedin', -- primary target platform
+  platform_metadata JSONB DEFAULT '{}'::jsonb, -- flexible storage for labels, flags, visual settings
+  
+  -- Nested Content (Threads/Carousels)
+  parent_id UUID REFERENCES drafts(id) ON DELETE CASCADE, -- direct parent
+  root_id UUID REFERENCES drafts(id) ON DELETE CASCADE, -- top-level parent (for efficient querying)
+  position INT DEFAULT 0, -- order in thread/carousel
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_drafts_user ON drafts(user_id);
+CREATE INDEX idx_drafts_root ON drafts(root_id); -- efficient retrieval of full threads
 
 -- ===========================================
 -- UPDATED_AT TRIGGER
@@ -164,4 +224,8 @@ CREATE TRIGGER update_tensions_updated_at
 
 CREATE TRIGGER update_idea_directions_updated_at
   BEFORE UPDATE ON idea_directions
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_drafts_updated_at
+  BEFORE UPDATE ON drafts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

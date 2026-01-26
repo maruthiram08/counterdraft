@@ -303,7 +303,38 @@ users
 
 ---
 
-## 7. The Brain (Decision Engine) [NEW]
+## 7. Smart Studio (Visual Production) [NEW]
+
+**Role**: Automated visual asset generation engine.
+
+**Core Capabilities**:
+1.  **Auto-Carousel**: Splits long-form text into slide-sized chunks using semantic boundaries.
+2.  **Dynamic Rendering**: Uses `@vercel/og` (Satori) to generate high-quality PNGs on the fly.
+3.  **Semantic Shuffle**: Uses GPT-4o-mini to re-extract quotes or key points when the user requests a "remix".
+4.  **Batch Export**: Client-side zipping (`jszip`) for one-click download of full carousel decks.
+
+**Architecture**:
+- **Frontend**: React canvas for real-time preview.
+- **Backend**: `/api/generate-image` endpoint for server-side rendering.
+- **Optimization**: Caching headers to prevent re-rendering identical configs.
+
+---
+
+## 8. Repurpose Engine V2
+
+**Role**: Multi-modal adaptation of core "Source of Truth" drafts.
+
+**UX Pattern**: Wide-screen Split View
+- **Left Panel (Strategy)**: Platform selection, tone adjustments, format toggles.
+- **Right Panel (Canvas)**: Real-time preview of the adapted content (Text or Visuals).
+
+**Workflows**:
+- **Text-to-Text**: Thread, LinkedIn Post, Newsletter.
+- **Text-to-Visual**: Quote Card, Carousel, Twitter Visual.
+
+---
+
+## 9. The Brain (Decision Engine) [NEW]
 
 **Role**: Deterministic decision system. Runs *before* AI generation.
 
@@ -320,7 +351,7 @@ users
 
 ---
 
-## 8. Security & Privacy
+## 10. Security & Privacy
 
 - **Auth**: Clerk or Supabase Auth
 - **Data**: Per-user isolated, no cross-user access
@@ -330,21 +361,22 @@ users
 
 ---
 
-## 8. Tech Stack Summary
+## 11. Tech Stack Summary
 
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js 14, React, Tailwind CSS |
 | Backend | Next.js API Routes |
 | Database | PostgreSQL (Supabase) + pgvector |
-| AI | Claude 3.5 Sonnet (Anthropic API) |
+| AI | Claude 3.5 Sonnet (Anthropic API) + GPT-4o-mini |
+| Visuals | @vercel/og (Satori), html-to-image |
 | Auth | Clerk or Supabase Auth |
 | Hosting | Vercel (frontend + API) |
 | File Storage | Supabase Storage (if needed) |
 
 ---
 
-## 9. Infrastructure Diagram
+## 12. Infrastructure Diagram
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
@@ -361,7 +393,7 @@ users
 
 ---
 
-## 10. Out of Scope (V1)
+## 13. Out of Scope (V1)
 
 - Native iOS/Android app (PWA for now)
 - Browser extension

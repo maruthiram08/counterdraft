@@ -156,5 +156,38 @@ export function useBeliefs() {
         }
     };
 
-    return { beliefs, loading, error, submitFeedback };
+    // Update belief statement (Edit)
+    const updateBelief = async (beliefId: string, newStatement: string): Promise<boolean> => {
+        try {
+            const { error: updateError } = await supabase
+                .from('beliefs')
+                .update({
+                    statement: newStatement,
+                    user_edited: true,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', beliefId);
+
+            if (updateError) throw updateError;
+
+            // Update local state
+            setBeliefs(prev => {
+                const updateList = (list: Belief[]) => list.map(b => b.id === beliefId ? { ...b, statement: newStatement, userEdited: true } : b);
+                return {
+                    core: updateList(prev.core),
+                    overused: updateList(prev.overused),
+                    emerging: updateList(prev.emerging),
+                    tensions: prev.tensions,
+                    confirmed: updateList(prev.confirmed)
+                };
+            });
+
+            return true;
+        } catch (err) {
+            console.error("Error updating belief:", err);
+            return false;
+        }
+    };
+
+    return { beliefs, loading, error, submitFeedback, updateBelief };
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw } from "lucide-react";
+import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon } from "lucide-react";
 
 interface IntegrationStatus {
     platform: string;
@@ -115,6 +116,9 @@ export default function SettingsPage() {
                         </p>
                     </div>
 
+                    {/* Profile Section */}
+                    <ProfileSection />
+
                     {/* Integrations Section */}
                     <section className="mb-12">
                         <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
@@ -167,6 +171,54 @@ export default function SettingsPage() {
 
             <Footer />
         </div>
+    );
+}
+
+function ProfileSection() {
+    const { user, isLoaded } = useUser();
+
+    if (!isLoaded) {
+        return (
+            <div className="mb-12 p-6 border rounded-lg animate-pulse">
+                <div className="h-6 bg-gray-200 w-1/4 mb-4 rounded"></div>
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                    <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 w-32 rounded"></div>
+                        <div className="h-4 bg-gray-200 w-48 rounded"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) return null;
+
+    return (
+        <section className="mb-12">
+            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
+                <UserIcon size={18} />
+                Profile
+            </h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">
+                Your personal account details used in the workspace.
+            </p>
+
+            <div className="p-6 border border-[var(--border)] rounded-lg bg-[var(--surface)]">
+                <div className="flex items-center gap-6">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={user.imageUrl}
+                        alt={user.fullName || "User"}
+                        className="w-16 h-16 rounded-full border border-[var(--border)]"
+                    />
+                    <div>
+                        <h3 className="font-semibold text-lg">{user.fullName}</h3>
+                        <p className="text-[var(--text-muted)]">{user.primaryEmailAddress?.emailAddress}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     );
 }
 

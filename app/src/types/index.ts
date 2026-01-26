@@ -175,3 +175,128 @@ export interface RawPostWithEligibility extends RawPost {
   platformPostId?: string;
 }
 
+// ===========================================
+// THE BRAIN (DECISION ENGINE)
+// ===========================================
+
+// Brain: Outcome types (what the post optimizes for)
+export type Outcome = 'authority' | 'engagement' | 'conversion' | 'connection';
+
+// Brain: Stance types (editorial posture)
+export type Stance = 'supportive' | 'contrarian' | 'exploratory';
+
+// Brain: Post formats
+export type PostFormat = 'thought_leadership' | 'personal_story' | 'tactical_guide' | 'listicle';
+
+// Brain: Development wizard step tracking
+export type DevStep =
+  | 'deep_dive_in_progress'
+  | 'deep_dive_complete'
+  | 'outline_in_progress'
+  | 'outline_complete'
+  | 'draft_in_progress'
+  | null; // null = wizard not started
+
+// Brain: Audience targeting
+export interface Audience {
+  role: string;
+  pain: string;
+}
+
+// Brain: Metadata structure (stored in content_items.brain_metadata)
+export interface BrainMetadata {
+  outcome: Outcome;
+  audience?: Audience;
+  stance?: Stance;
+  format?: PostFormat;
+  confidence: ConfidenceLevel;
+  source?: {
+    type: 'belief' | 'tension' | 'idea' | 'manual';
+    id?: string;
+  };
+  inferred?: {
+    outcome?: boolean;
+    stance?: boolean;
+  };
+  references?: ContentReference[]; // V1: Store references directly in metadata
+  repurpose?: {
+    platform: string;
+    generatedAssets: any[];
+    parentId?: string;
+  };
+}
+
+// Brain: Content Item (Pipeline item)
+export interface ContentItem {
+  id: string;
+  userId: string;
+  hook: string; // The idea/topic
+  stage: 'idea' | 'developing' | 'draft' | 'published';
+  devStep?: DevStep | null;
+  brainMetadata?: BrainMetadata;
+  deepDive?: {
+    research: string;
+    analysis: string;
+    sources?: string[];
+  };
+  outline?: {
+    sections: {
+      title: string;
+      points: string[];
+    }[];
+  };
+  draftContent?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Brain: Reference attachment
+export type ReferenceType = 'text' | 'file' | 'link';
+
+export interface ContentReference {
+  id: string;
+  contentItemId: string;
+  referenceType: ReferenceType;
+  title: string;
+  content?: string;
+  url?: string;
+  filePath?: string;
+  createdAt: Date;
+}
+
+// Brain: Logging & Tracing
+export type BrainAction =
+  | 'belief_extraction'
+  | 'tension_analysis'
+  | 'idea_generation'
+  | 'deep_dive'
+  | 'outline_generation'
+  | 'draft_generation'
+  | 'content_refinement'
+  | 'outcome_inference'
+  | 'confidence_calculation';
+
+export interface BrainTraceLog {
+  id: string;
+  contentItemId?: string;
+  action: BrainAction;
+  inputContext: any; // Flexible JSON
+  outputResult: any; // Flexible JSON
+  toolCalls?: any; // Flexible JSON for tool usage
+  modelConfig: {
+    model: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+  latencyMs: number;
+  tokensUsed?: number;
+  createdAt: Date;
+}
+
+export interface ConfidenceResult {
+  level: ConfidenceLevel; // 'low' | 'medium' | 'high'
+  score: number; // 0-100
+  reasoning: string;
+  conflictingBeliefIds?: string[];
+}
+
