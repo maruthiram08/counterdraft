@@ -11,9 +11,10 @@ export class UsageService {
         const supabase = supabaseAdmin;
 
         // 1. Get Usage Record (Lazy Create if missing)
+        // Join with users table to get real-time subscription status
         let { data: usage, error } = await supabase
             .from('user_usage')
-            .select('*')
+            .select('*, users!inner(subscription_status, subscription_plan)')
             .eq('user_id', userId)
             .single();
 
@@ -22,7 +23,7 @@ export class UsageService {
             const { data: newUsage, error: createError } = await supabase
                 .from('user_usage')
                 .insert({ user_id: userId, plan_tier: 'free' }) // Default to free, sync later
-                .select()
+                .select('*, users!inner(subscription_status, subscription_plan)') // Ensure we select the joined data
                 .single();
 
             if (createError) {
@@ -33,14 +34,25 @@ export class UsageService {
         }
 
         // 2. Determine Tier & Limit
-        // We trust the 'plan_tier' column in user_usage, which should be kept in sync via webhooks.
-        // Fallback to Free if unknown.
-        const tierStr = (usage.plan_tier || 'free').toUpperCase();
-        const tier: Tier = PRICING_CONFIG.TIERS[tierStr as keyof typeof PRICING_CONFIG.TIERS] || PRICING_CONFIG.TIERS.FREE;
-        const limit = PRICING_CONFIG.LIMITS[tier].DRAFTS_PER_MONTH;
+        // PRIORITY: Trust 'users.subscription_status' first.
+        // If active, map plan to Tier. Else fall back to free.
+        let effectiveTier: Tier = PRICING_CONFIG.TIERS.FREE;
+
+        // Check if we have joined user data (we should)
+        const userSub = (usage as any).users;
+
+        if (userSub && userSub.subscription_status === 'active') {
+            // Map 'pro_monthly' -> 'PRO'
+            if (userSub.subscription_plan?.includes('pro')) {
+                effectiveTier = PRICING_CONFIG.TIERS.PRO;
+            }
+            // Add business logic if needed
+        }
+
+        const limit = PRICING_CONFIG.LIMITS[effectiveTier].DRAFTS_PER_MONTH;
 
         if (limit === Infinity) {
-            return { allowed: true, tier, usage: usage.draft_count, limit: Infinity };
+            return { allowed: true, tier: effectiveTier, usage: usage.draft_count, limit: Infinity };
         }
 
         // 3. Check Reset (Monthly)
@@ -61,12 +73,12 @@ export class UsageService {
                 allowed: false,
                 reason: `Monthly limit of ${limit} drafts reached.`,
                 usage: usage.draft_count,
-                tier,
+                tier: effectiveTier,
                 limit
             };
         }
 
-        return { allowed: true, usage: usage.draft_count, tier, limit };
+        return { allowed: true, usage: usage.draft_count, tier: effectiveTier, limit };
     }
 
     /**
@@ -107,7 +119,7 @@ export class UsageService {
         // 1. Get Usage
         let { data: usage, error } = await supabase
             .from('user_usage')
-            .select('*')
+            .select('*, users!inner(subscription_status, subscription_plan)')
             .eq('user_id', userId)
             .single();
 
@@ -118,8 +130,16 @@ export class UsageService {
         }
 
         // 2. Determine Tier & Limit
-        const tierStr = (usage.plan_tier || 'free').toUpperCase();
-        const tier: Tier = PRICING_CONFIG.TIERS[tierStr as keyof typeof PRICING_CONFIG.TIERS] || PRICING_CONFIG.TIERS.FREE;
+        let effectiveTier: Tier = PRICING_CONFIG.TIERS.FREE;
+        const userSub = (usage as any).users;
+
+        if (userSub && userSub.subscription_status === 'active') {
+            if (userSub.subscription_plan?.includes('pro')) {
+                effectiveTier = PRICING_CONFIG.TIERS.PRO;
+            }
+        }
+
+        const tier = effectiveTier; // Alias for cleaner return
         const limit = PRICING_CONFIG.LIMITS[tier].SEARCHES_PER_MONTH || 20;
 
         if (limit === Infinity) {

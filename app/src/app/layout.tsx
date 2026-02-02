@@ -6,6 +6,7 @@ import { CSPostHogProvider } from "./providers";
 import PostHogPageView from "./PostHogPageView";
 import { FloatingFeedbackButton } from "@/components/shared/FloatingFeedbackButton";
 import { Toaster } from 'sonner';
+import { CouponClaimer } from "@/components/auth/CouponClaimer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -60,6 +61,7 @@ export default function RootLayout({
           >
             <PostHogPageView />
             <FloatingFeedbackButton />
+            <CouponClaimer />
             {children}
             <Toaster position="bottom-right" />
           </body>

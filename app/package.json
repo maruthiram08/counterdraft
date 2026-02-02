@@ -28,6 +28,7 @@
     "p-map": "^7.0.4",
     "posthog-js": "^1.335.2",
     "pptxgenjs": "^4.0.1",
+    "razorpay": "^2.9.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-resizable-panels": "^4.4.1",

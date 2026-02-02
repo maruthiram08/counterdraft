@@ -6,6 +6,18 @@
 
 export type BeliefType = 'core' | 'overused' | 'emerging' | 'rejected' | 'root' | 'pillar' | 'leaf';
 
+export interface User {
+  id: string;
+  email: string;
+  fullName?: string;
+  avatarUrl?: string;
+  tier: 'free' | 'pro' | 'business';
+  subscription_status?: 'active' | 'inactive' | 'past_due';
+  subscription_plan?: string;
+  subscription_id?: string;
+  createdAt: Date;
+  lastLogin: Date;
+}
 export interface Belief {
   id: string;
   userId: string;

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { TraceLogger } from '@/lib/trace';
+import { moderateContent, getModerationErrorMessage } from '@/lib/moderation';
+import { SAFETY_PREAMBLE } from '@/lib/openai';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +24,19 @@ export async function POST(req: Request) {
         }
 
         const { action, hook, angle, deep_dive, outline, references, userContext, currentText, type, brainMetadata } = await req.json();
+
+        // 🛡️ CONTENT MODERATION CHECK (on user-provided text fields)
+        const inputToModerate = [hook, angle, userContext, currentText].filter(Boolean).join(' ');
+        if (inputToModerate) {
+            const modResult = await moderateContent(inputToModerate);
+            if (modResult.flagged) {
+                return NextResponse.json({
+                    error: getModerationErrorMessage(modResult),
+                    flagged: true,
+                    categories: modResult.categories
+                }, { status: 400 });
+            }
+        }
 
         // Format references for inclusion in prompts
         const formatReferences = (refs: any[] | undefined): string => {
@@ -55,19 +71,31 @@ export async function POST(req: Request) {
                 sourceContextChars: brainMetadata?.sourceContext?.length || 0
             });
 
+            TraceLogger.log('deep_dive', 'Research Phase Input', {
+                hook,
+                sourceMaterialPreview: sourceMaterial.substring(0, 200) + '...',
+                fullSourceLength: sourceMaterial.length
+            });
+
             const completion = await getOpenAI().chat.completions.create({
                 model: 'gpt-4o-mini',
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a research assistant helping a thought leader prepare content.
+                        content: `${SAFETY_PREAMBLE}
+
+You are a research assistant helping a thought leader prepare content.
 Given a topic hook, angle, and optional reference materials, provide:
 
 1. Research findings: A comprehensive, OBJECTIVE list of facts, statistics, historical context, or modern trends. These findings should be "Domain Broad"—providing a sturdy foundation of truth regardless of the final audience. Do not limit the number artificially; cover the topic thoroughly.
 
 2. Key insights: Strategic synthesis of the topic. UNLIKE the findings, these must be heavily TAILORED to the provided Strategic Context (Goal, Stance, and Audience). Find the "So What?" for this specific audience and project goal.${brainContext}
-
-If SOURCE MATERIAL is provided, prioritize it above general knowledge.
+76:
+77: INSTRUCTIONS ON SOURCE MATERIAL:
+78: - The User's "Hook" and "Angle" are the NORTH STAR. Frame everything through this lens.
+79: - If SOURCE MATERIAL is provided, treat it as PRIMARY EVIDENCE to support the user's angle.
+80: - If the Source Material's tone differs from the Angle (e.g. Source is "Fear" but Angle is "Productivity"), aggressively mine the source for relevant facts to support the REQUESTED angle.
+81: - You MAY supplement the Source Material with external knowledge if the source is too narrow, but do not hallucinate specific data points.
 
 IMPORTANT: Return a valid JSON object with the following structure:
 {
@@ -84,7 +112,12 @@ IMPORTANT: Return a valid JSON object with the following structure:
             });
 
             const result = JSON.parse(completion.choices[0].message.content || '{}');
-            return NextResponse.json({ deep_dive: result });
+
+            // Add AI disclaimer to response
+            return NextResponse.json({
+                deep_dive: result,
+                disclaimer: "AI-generated content. Please verify facts and statistics before publishing."
+            });
 
         } else if (action === 'refine_point') {
             // New Action: Refine a single research point
@@ -189,12 +222,32 @@ IMPORTANT: Return a JSON object with a "sections" key containing an array of str
                 ? `\n\nStrategic Context:\n- Goal: ${brainMetadata.outcome}\n- Audience: ${brainMetadata.audience?.role} (Pain: ${brainMetadata.audience?.pain})\n- Stance: ${brainMetadata.stance}\n- Format: ${format}`
                 : '';
 
+            // NEW: Include all user context that was available during research
+            const referencesContext = formatReferences(references);
+            const userContextString = userContext ? `\n\nUser's Special Instructions:\n${userContext}` : '';
+            const sourceContext = brainMetadata?.sourceContext
+                ? `\n\nOriginal Source Material (for reference/citations):\n${brainMetadata.sourceContext.substring(0, 2000)}...`
+                : '';
+
+            // Log all context being passed to draft
+            TraceLogger.log('draft', 'Draft Generation Context', {
+                hook,
+                angle: angle || 'None',
+                format,
+                hasUserContext: !!userContext,
+                hasReferences: !!references?.length,
+                hasSourceContext: !!brainMetadata?.sourceContext,
+                outlineSections: outline?.length || 0,
+            });
+
             const completion = await getOpenAI().chat.completions.create({
                 model: 'gpt-4o-mini',
                 messages: [
                     {
                         role: 'system',
-                        content: `You are an expert LinkedIn content writer.
+                        content: `${SAFETY_PREAMBLE}
+
+You are an expert LinkedIn content writer.
 Write a COMPREHENSIVE LinkedIn post based on the given outline.
 - This is the "Source of Truth" document. Do NOT summarize or cut content.
 - Fully explore each point in the outline.
@@ -206,11 +259,15 @@ ${styleInstruction}${brainContext}`
                     },
                     {
                         role: 'user',
-                        content: `Topic: ${hook}\n\nOutline (Follow this EXACTLY):\n${outline?.map((s: any, i: number) => {
+                        content: `Topic: ${hook}
+Angle: ${angle || 'General exploration'}
+
+Outline (Follow this EXACTLY):
+${outline?.map((s: any, i: number) => {
                             const text = typeof s === 'string' ? s : s.text;
                             const notes = s.notes && s.notes.length ? `\n   > USER INSTRUCTIONS FOR THIS SECTION: ${s.notes.join('; ')}` : '';
                             return `${i + 1}. ${text}${notes}`;
-                        }).join('\n') || 'Write a compelling post'}`
+                        }).join('\n') || 'Write a compelling post'}${referencesContext}${sourceContext}${userContextString}`
                     }
                 ],
             });

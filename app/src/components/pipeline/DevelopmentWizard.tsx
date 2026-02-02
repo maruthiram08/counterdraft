@@ -267,6 +267,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     angle: item.angle,
                     deep_dive: deepDive,
                     brainMetadata: localBrainMetadata,
+                    userContext: globalContext,
+                    references: localBrainMetadata?.references || [],
                 }),
             });
             const data = await res.json();
@@ -296,6 +298,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     angle: item.angle,
                     outline: outline,
                     brainMetadata: localBrainMetadata,
+                    userContext: globalContext,
+                    references: localBrainMetadata?.references || [],
                 }),
             });
             const data = await res.json();

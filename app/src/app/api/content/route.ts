@@ -5,6 +5,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { brainService } from '@/lib/brain/service';
 import { Belief } from '@/types';
+import { TraceLogger } from '@/lib/trace';
 
 // GET /api/content - List content items with optional stage filter
 export async function GET(req: Request) {
@@ -62,6 +63,8 @@ export async function POST(req: Request) {
             dev_step,
             references = [] // Array of { type, title, content, url, filePath }
         } = body;
+
+        TraceLogger.log('pipeline', 'Saving Draft', { hook, stage, hasSourceContext: !!brain_metadata?.sourceContext });
 
         // Check Usage Limits (Only if creating a real draft/dev item, not just an idea)
         // Ideas are free.

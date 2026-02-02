@@ -8,6 +8,7 @@ interface ChatMessage {
     content: string;
     topics?: FeedItem[];
     ideas?: PostIdea[];
+    relatedQuery?: string; // Track which query generated this
 }
 
 interface FeedItem {
@@ -61,6 +62,7 @@ export function ExplorerChat() {
                     ? `Here's what I found on "${query}":`
                     : `I couldn't find trending topics for "${query}". Try a different search.`,
                 topics: data.feed || [],
+                relatedQuery: query, // CAPTURE QUERY
             };
             setMessages(prev => [...prev, assistantMessage]);
         } catch {
@@ -84,7 +86,7 @@ export function ExplorerChat() {
         });
     };
 
-    const generatePostIdeas = async (topics: FeedItem[]) => {
+    const generatePostIdeas = async (topics: FeedItem[], originalQuery?: string) => {
         const titles = topics.map(t => t.title);
         const displayTitle = titles.length > 1
             ? `${titles.length} combined topics`
@@ -96,7 +98,7 @@ export function ExplorerChat() {
             const res = await fetch('/api/explore/ideas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ titles }), // Send array of titles
+                body: JSON.stringify({ titles, context: originalQuery }), // Send array of titles + intent context
             });
             const data = await res.json();
 
@@ -107,6 +109,8 @@ export function ExplorerChat() {
                         ? `Post ideas combining ${titles.length} topics:`
                         : `Post ideas for "${titles[0]}":`,
                     ideas: data.ideas,
+                    topics: topics, // Store related topics here for context transfer
+                    relatedQuery: originalQuery // Store original query
                 };
                 setMessages(prev => [...prev, ideaMessage]);
                 setSelectedTopics([]); // Clear selection after generating
@@ -129,8 +133,37 @@ export function ExplorerChat() {
     const [savingIdea, setSavingIdea] = useState<string | null>(null);
     const [savedIdeas, setSavedIdeas] = useState<Set<string>>(new Set());
 
-    const saveIdeaToPipeline = async (idea: PostIdea) => {
+    const saveIdeaToPipeline = async (idea: PostIdea, contextTopics?: FeedItem[], contextQuery?: string) => {
         setSavingIdea(idea.hook);
+
+        // Construct rich context for the Development Wizard
+        // Construct rich context for the Development Wizard
+        let sourceContext = "";
+        if (contextQuery) sourceContext += `Original Search Query: "${contextQuery}"\n\n`;
+
+        if (contextTopics && contextTopics.length > 0) {
+            sourceContext += `Source Topics:\n${contextTopics.map(t => `- ${t.title} (${t.sourceUrl})`).join('\n')}\n\n`;
+
+            // Fetch Full Content for the primary source
+            const primarySource = contextTopics[0];
+            try {
+                const scrapeRes = await fetch('/api/brain/read-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: primarySource.sourceUrl })
+                });
+
+                if (scrapeRes.ok) {
+                    const scrapeData = await scrapeRes.json();
+                    if (scrapeData.content) {
+                        sourceContext += `--- PRIMARY SOURCE CONTENT ---\nTitle: ${scrapeData.title}\nURL: ${primarySource.sourceUrl}\n\n${scrapeData.content.substring(0, 15000)}\n------------------------------\n`;
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to scrape source context", e);
+            }
+        }
+
         try {
             const res = await fetch('/api/content', {
                 method: 'POST',
@@ -141,6 +174,9 @@ export function ExplorerChat() {
                     format: idea.format,
                     source_type: 'explore',
                     stage: 'idea',
+                    brain_metadata: {
+                        sourceContext: sourceContext // Pass the critical context
+                    }
                 }),
             });
             if (res.ok) {
@@ -235,7 +271,7 @@ export function ExplorerChat() {
                                                                             Read
                                                                         </a>
                                                                         <button
-                                                                            onClick={() => generatePostIdeas([topic])}
+                                                                            onClick={() => generatePostIdeas([topic], msg.relatedQuery)}
                                                                             disabled={generatingIdeas !== null}
                                                                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)]/20 transition-colors disabled:opacity-50"
                                                                         >
@@ -277,7 +313,7 @@ export function ExplorerChat() {
                                                                     </span>
                                                                 ) : (
                                                                     <button
-                                                                        onClick={() => saveIdeaToPipeline(idea)}
+                                                                        onClick={() => saveIdeaToPipeline(idea, msg.topics, msg.relatedQuery)}
                                                                         disabled={savingIdea === idea.hook}
                                                                         className="text-xs px-2 py-1 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-dark)] transition-colors disabled:opacity-50"
                                                                     >
@@ -318,7 +354,7 @@ export function ExplorerChat() {
                 <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-[var(--accent)] text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-4 animate-slide-up">
                     <span className="text-sm font-medium">{selectedTopics.length} topics selected</span>
                     <button
-                        onClick={() => generatePostIdeas(selectedTopics)}
+                        onClick={() => generatePostIdeas(selectedTopics, messages.findLast(m => m.role === 'assistant')?.relatedQuery)}
                         disabled={generatingIdeas !== null}
                         className="flex items-center gap-2 px-4 py-2 bg-white text-[var(--accent)] rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
                     >

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon } from "lucide-react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
+import { RazorpayButton } from "@/components/billing/RazorpayButton";
 import { useRouter } from 'next/navigation';
 
 interface IntegrationStatus {
@@ -386,8 +387,9 @@ function UsageSection() {
     if (loading) return null;
     if (!usage) return null;
 
-    const percent = Math.min(100, (usage.usage / (usage.limit === Infinity ? 1 : usage.limit)) * 100);
-    const isUnlimited = usage.limit === Infinity;
+    const effectiveLimit = (usage.limit === Infinity || usage.limit === null) ? Infinity : usage.limit;
+    const percent = effectiveLimit === Infinity ? 0 : Math.min(100, (usage.usage / effectiveLimit) * 100);
+    const isUnlimited = usage.limit === Infinity || usage.limit === null;
 
     return (
         <section className="mb-12">
@@ -405,9 +407,14 @@ function UsageSection() {
                         <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-lg capitalize">{usage.tier} Plan</h3>
                             {usage.tier === 'free' && (
-                                <a href="/pricing" className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium hover:bg-blue-200">
-                                    Upgrade to Pro
-                                </a>
+                                <div className="flex gap-2 items-center">
+                                    <RazorpayButton
+                                        planId="pro_monthly"
+                                        buttonText="Upgrade to Pro (₹29)"
+                                        className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-full font-medium hover:bg-blue-700 transition"
+                                        onSuccess={() => window.location.reload()}
+                                    />
+                                </div>
                             )}
                         </div>
                         <p className="text-sm text-[var(--text-muted)]">

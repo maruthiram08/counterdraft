@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { refineSearchQuery } from '@/lib/openai';
+import { TraceLogger } from '@/lib/trace';
 
 // Mapping from our categories to Google News search terms
 const CATEGORY_TO_QUERY: Record<string, string> = {
@@ -32,7 +34,7 @@ interface RSSItem {
 }
 
 // Simple RSS parser (no external deps)
-async function fetchGoogleNewsRSS(query: string): Promise<RSSItem[]> {
+export async function fetchGoogleNewsRSS(query: string): Promise<RSSItem[]> {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
 
     try {
@@ -75,12 +77,26 @@ export async function GET(req: Request) {
         let queries: string[] = [];
 
         if (directQuery) {
-            // Format query for better Google News results
-            // Add "news" or "trends" suffix if query seems like a topic
-            const formattedQuery = directQuery.toLowerCase().includes('news') || directQuery.toLowerCase().includes('trends')
-                ? directQuery
-                : `${directQuery} news trends`;
-            queries = [formattedQuery];
+            // Intelligent Refinement:
+            // If query is "complex" (has > 3 words), use LLM to extract keywords.
+            // Otherwise, just do simple formatting.
+            const wordCount = directQuery.split(' ').length;
+
+            if (wordCount > 3) {
+                console.log(`[Explore] Refine complex query: "${directQuery}"`);
+                try {
+                    queries = await refineSearchQuery(directQuery);
+                } catch (e) {
+                    console.error("Refine failed, fallback to raw query", e);
+                    queries = [directQuery];
+                }
+            } else {
+                // Simple formatting for short queries
+                const formattedQuery = directQuery.toLowerCase().includes('news') || directQuery.toLowerCase().includes('trends')
+                    ? directQuery
+                    : `${directQuery} news trends`;
+                queries = [formattedQuery];
+            }
         } else {
             // Fallback to saved interests
             const { data: interestData } = await supabaseAdmin
@@ -110,7 +126,18 @@ export async function GET(req: Request) {
         const allItems: (RSSItem & { category: string })[] = [];
         for (const q of queries.slice(0, 3)) { // Limit to 3 queries to avoid rate limits
             const items = await fetchGoogleNewsRSS(q);
+            TraceLogger.log('explore', `Feed Search: "${q}"`, { results: items.length });
             allItems.push(...items.map(item => ({ ...item, category: q })));
+        }
+
+        // P2.3: Handle empty search results gracefully
+        if (allItems.length === 0) {
+            TraceLogger.log('explore', 'No results found', { queries });
+            return NextResponse.json({
+                feed: [],
+                message: "No recent news found for your topics. Try broadening your search terms or check back later for fresh content.",
+                queries: queries
+            });
         }
 
         // 4. Get user beliefs for relatability (basic keyword matching)
