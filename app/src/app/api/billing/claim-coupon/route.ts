@@ -11,8 +11,11 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
     try {
         const { userId } = await auth();
+        console.log('[ClaimCoupon] Auth Check:', { userId, hasHeaders: !!req.headers.get('cookie') });
+
         if (!userId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            console.error('[ClaimCoupon] Unauthorized: No userId found.');
+            return NextResponse.json({ error: 'Unauthorized (No Session)' }, { status: 401 });
         }
 
         const body = await req.json();

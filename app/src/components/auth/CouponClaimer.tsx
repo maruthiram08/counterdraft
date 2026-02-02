@@ -22,6 +22,7 @@ export function CouponClaimer() {
                 const res = await fetch('/api/billing/claim-coupon', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ code: pendingCode })
                 });
 
