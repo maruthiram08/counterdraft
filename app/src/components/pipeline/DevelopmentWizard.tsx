@@ -168,6 +168,11 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     brainMetadata: localBrainMetadata
                 }),
             });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || `Server Error ${res.status}`);
+            }
+
             const data = await res.json();
 
             // Convert strings to objects
@@ -201,9 +206,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                         dev_step: 'deep_dive_complete'
                     });
                 }
+            } else {
+                throw new Error("No research data returned.");
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("Deep dive failed", e);
+            alert(`Research Agent failed: ${e.message}. Please try again.`); // User visibility
         } finally {
             setLoading(false);
         }
@@ -305,7 +313,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             generateOutline();
         } else if (step === 'outline' && outlineApproved) {
             // Strategic Gate Check
-            const isVague = !localBrainMetadata?.outcome || !localBrainMetadata?.audience?.role || !localBrainMetadata?.audience?.pain;
+            const isVague = !localBrainMetadata?.outcome || !localBrainMetadata?.audience?.role;
 
             if (isVague && !showStrategyWarning) {
                 setShowStrategyWarning(true);

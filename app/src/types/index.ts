@@ -216,9 +216,12 @@ export interface BrainMetadata {
   format?: PostFormat;
   confidence: ConfidenceLevel;
   source?: {
-    type: 'belief' | 'tension' | 'idea' | 'manual';
+    type: 'belief' | 'tension' | 'idea' | 'manual' | 'artifact' | 'synthesis';
     id?: string;
   };
+  tags?: string[];
+  entities?: string[];
+  sourceContext?: string; // Content from source
   inferred?: {
     outcome?: boolean;
     stance?: boolean;

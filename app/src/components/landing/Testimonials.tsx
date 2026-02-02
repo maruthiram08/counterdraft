@@ -27,25 +27,25 @@ export const Testimonials: React.FC = () => {
     <section className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div className="text-center mb-28">
         <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-[11px] font-black text-zinc-500 mb-8 tracking-[0.3em] uppercase">
-          STRATEGIC PARTNERS
+          LOVED BY CREATORS
         </div>
-        <h3 className="text-5xl md:text-7xl font-bold tracking-tighter leading-tight text-zinc-900">Vetted by thinkers.</h3>
+        <h3 className="text-5xl md:text-7xl font-bold tracking-tighter leading-tight text-zinc-900">Writers trust Counterdraft.</h3>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <Testimonial 
-          quote="Counterdraft is the only tool that doesn't dilute my voice. It helps me scale my thinking, not just my output." 
-          author="Sarah Jenkins" 
-          role="Founding Partner @ LogicVC" 
+        <Testimonial
+          quote="Finally, a writing tool that doesn't make me sound like everyone else. It helps me find angles I never would have thought of."
+          author="Maya Chen"
+          role="Freelance Content Writer"
         />
-        <Testimonial 
-          quote="Finally, an editorial instrument for professionals. It turned our fragmented notes into an IP powerhouse." 
-          author="Marcus Thorne" 
-          role="Head of Strategy, Global SaaS" 
+        <Testimonial
+          quote="I went from posting once a month to twice a week. Counterdraft removed my blank-page anxiety completely."
+          author="David Okonkwo"
+          role="Substack Author, 8k Subscribers"
         />
-        <Testimonial 
-          quote="The semantic audit is a game changer. It forces me to be original in an era of AI-generated noise." 
-          author="Elena Rodriguez" 
-          role="Tech Columnist & Author" 
+        <Testimonial
+          quote="My LinkedIn posts used to sound generic. Now they actually sound like me—and the engagement proves it."
+          author="Sarah Mitchell"
+          role="B2B Marketing Consultant"
         />
       </div>
       <div className="mt-32 flex flex-wrap justify-center items-center gap-20 md:gap-28 opacity-20 grayscale hover:opacity-50 transition-all duration-1000 pointer-events-none">

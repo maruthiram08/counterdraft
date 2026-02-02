@@ -2,7 +2,7 @@
 
 import { Plus, Search } from "lucide-react";
 import { Draft } from "@/hooks/useDrafts";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface DraftsSidebarProps {
     drafts: Draft[];
@@ -13,17 +13,41 @@ interface DraftsSidebarProps {
 
 export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: DraftsSidebarProps) {
     const [search, setSearch] = useState("");
+    const selectedRef = useRef<HTMLButtonElement>(null);
+
+    // Auto-scroll to selected draft on load / change
+    useEffect(() => {
+        // Small timeout to ensure DOM is ready
+        const timeout = setTimeout(() => {
+            if (selectedDraftId && selectedRef.current) {
+                selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
+        return () => clearTimeout(timeout);
+    }, [selectedDraftId, drafts.length]); // Scroll when selection changes OR when list populates
 
     const filteredDrafts = drafts.filter(d =>
         d.content.toLowerCase().includes(search.toLowerCase()) ||
         d.belief_text.toLowerCase().includes(search.toLowerCase())
     );
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric'
-        });
+    const formatRelativeTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `${diffInHours}h ago`;
+
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 7) return `${diffInDays}d ago`;
+
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     };
 
     return (
@@ -85,18 +109,20 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
     );
 
     function renderDraftItem(draft: Draft, isChild = false) {
-        console.log('Draft Labels:', draft.belief_text, draft.labels);
+        const isSelected = selectedDraftId === draft.id;
+
         return (
             <button
                 key={draft.id}
+                ref={isSelected ? selectedRef : null}
                 onClick={() => onSelect(draft)}
-                className={`w-full text-left py-3 px-3 rounded-lg transition-all group overflow-hidden ${selectedDraftId === draft.id
-                    ? "bg-gray-50 shadow-sm"
-                    : "hover:bg-gray-50/50"
+                className={`w-full text-left py-3 px-3 rounded-lg transition-all group overflow-hidden relative ${isSelected
+                    ? "bg-white shadow-md ring-1 ring-black/5 border-l-4 border-[var(--accent)]"
+                    : "hover:bg-gray-50/50 border border-transparent"
                     }`}
             >
                 <div className="mb-1 overflow-hidden">
-                    <span className={`text-sm font-medium block truncate mb-0.5 transition-colors ${selectedDraftId === draft.id
+                    <span className={`text-sm font-medium block truncate mb-0.5 transition-colors ${isSelected
                         ? "text-[var(--foreground)]"
                         : "text-gray-700 group-hover:text-gray-900"
                         }`}>
@@ -122,7 +148,7 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
                         </div>
                     )}
 
-                    <p className={`text-xs line-clamp-2 leading-relaxed font-sans break-words ${selectedDraftId === draft.id
+                    <p className={`text-xs line-clamp-2 leading-relaxed font-sans break-words ${isSelected
                         ? "text-gray-500"
                         : "text-gray-400"
                         }`}>
@@ -130,8 +156,8 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
                     </p>
                 </div>
                 {!isChild && (
-                    <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-[10px] text-gray-300 font-medium">{formatDate(draft.updated_at)}</span>
+                    <div className={`flex items-center gap-1 mt-1.5 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <span className="text-[10px] text-gray-400 font-medium">{formatRelativeTime(draft.updated_at)}</span>
                     </div>
                 )}
             </button>

@@ -27,7 +27,7 @@ export async function POST(req: Request) {
             if (!refs || refs.length === 0) return '';
             const formattedRefs = refs.map((ref, i) => {
                 if (ref.referenceType === 'link') return `[${i + 1}] URL: ${ref.url}`;
-                else return `[${i + 1}] ${ref.title || 'Reference'}:\n${ref.content?.substring(0, 2000) || ''}`;
+                else return `[${i + 1}] ${ref.title || 'Reference'}:\n${ref.content || ''}`;
             }).join('\n\n');
             return `\n\nUser-provided references to consider:\n${formattedRefs}`;
         };
@@ -36,9 +36,24 @@ export async function POST(req: Request) {
             // Step 1: Research and analyze the topic
             const referencesContext = formatReferences(references);
             const userContextString = userContext ? `\n\nAdditional User Context/Instructions:\n${userContext}` : '';
+
+            // NEW: Use source context if available (e.g. from Artifacts) to ground the research
+            const sourceMaterial = brainMetadata?.sourceContext
+                ? `\n\nSOURCE MATERIAL (Use this as the primary ground truth):\n${brainMetadata.sourceContext}`
+                : '';
+
             const brainContext = brainMetadata
                 ? `\n\nStrategic Context (To be applied ONLY to Key Insights):\n- Goal: ${brainMetadata.outcome || 'General'}\n- Stance: ${brainMetadata.stance || 'Balanced'}\n- Audience: ${brainMetadata.audience?.role || 'General Professional'} (Pain Point: ${brainMetadata.audience?.pain || 'General challenges'})`
                 : '';
+
+            // LOGGING: Verify content is being passed to LLM
+            console.log('[/api/content/develop] Deep dive prompt context:', {
+                hook,
+                referencesContextLength: referencesContext.length,
+                sourceMaterialLength: sourceMaterial.length,
+                hasSourceMaterial: !!brainMetadata?.sourceContext,
+                sourceContextChars: brainMetadata?.sourceContext?.length || 0
+            });
 
             const completion = await getOpenAI().chat.completions.create({
                 model: 'gpt-4o-mini',
@@ -52,15 +67,17 @@ Given a topic hook, angle, and optional reference materials, provide:
 
 2. Key insights: Strategic synthesis of the topic. UNLIKE the findings, these must be heavily TAILORED to the provided Strategic Context (Goal, Stance, and Audience). Find the "So What?" for this specific audience and project goal.${brainContext}
 
-Respond in JSON format:
+If SOURCE MATERIAL is provided, prioritize it above general knowledge.
+
+IMPORTANT: Return a valid JSON object with the following structure:
 {
-  "research": ["fact 1", "fact 2", ...],
-  "insights": ["insight 1", "insight 2", ...]
+  "research": ["list of strings containing facts"],
+  "insights": ["list of strings containing strategic insights"]
 }`
                     },
                     {
                         role: 'user',
-                        content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${referencesContext}${userContextString}`
+                        content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${referencesContext}${sourceMaterial}${userContextString}`
                     }
                 ],
                 response_format: { type: 'json_object' },

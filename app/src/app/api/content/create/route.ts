@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { Outcome, Stance, Audience, BrainMetadata, ConfidenceLevel } from '@/types';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
+import { getOpenAI } from '@/lib/openai';
 
 export async function POST(req: NextRequest) {
     try {
@@ -41,8 +42,12 @@ export async function POST(req: NextRequest) {
             outcome: Outcome;
             audience?: Audience;
             stance?: Stance;
-            sourceType?: 'belief' | 'tension' | 'idea' | 'manual';
+            sourceType?: 'belief' | 'tension' | 'idea' | 'manual' | 'artifact' | 'synthesis';
             sourceId?: string;
+            tags?: string[];
+            entities?: string[];
+            stage?: 'idea' | 'developing' | 'draft';
+            context?: string; // NEW: Accept context/content from source
         } = body;
 
         // Validate required fields
@@ -74,6 +79,9 @@ export async function POST(req: NextRequest) {
             stance,
             confidence,
             source: sourceType ? { type: sourceType, id: sourceId } : undefined,
+            tags: body.tags,
+            entities: body.entities,
+            sourceContext: body.context, // NEW: Store starting context
             inferred: {
                 // Track which values were inferred vs. explicitly provided
                 outcome: false, // User selected it
@@ -81,15 +89,43 @@ export async function POST(req: NextRequest) {
             },
         };
 
+        // 3. AI Title Generation for Synthesis
+        if (sourceType === 'synthesis' && body.context && body.context.length > 10) {
+            try {
+                console.log("Generating title for synthesis context:", body.context.slice(0, 50));
+                const openai = getOpenAI();
+                const completion = await openai.chat.completions.create({
+                    model: "gpt-4o",
+                    messages: [
+                        { role: "system", content: "You are an editor. Generate a provocative, 5-7 word title for this collection of notes. Return ONLY the title." },
+                        { role: "user", content: body.context }
+                    ],
+                    max_tokens: 20
+                });
+                const aiTitle = completion.choices[0].message.content?.trim().replace(/^"|"$/g, '');
+                if (aiTitle) {
+                    // Update hook with AI title
+                    // Note: We need to re-validate length if we were strict, but AI titles are usually fine.
+                    // We modify the hook variable.
+                    (body as any).hook = aiTitle;
+                }
+            } catch (e) {
+                console.error("AI Title Gen Failed", e);
+            }
+        }
+
+        const finalHook = (body as any).hook || hook.trim();
+
         // Create content_item
         const { data: contentItem, error: insertError } = await supabaseAdmin
             .from('content_items')
             .insert({
                 user_id: userId,
-                hook: hook.trim(),
-                stage: 'developing', // Goes directly to "In Development"
+                hook: finalHook,
+                stage: body.stage || 'developing', // Allow override
                 dev_step: null, // Wizard hasn't started yet
                 brain_metadata: brainMetadata,
+                draft_content: body.context || null, // NEW: Populate draft_content with synthesis text so it shows on card
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             })

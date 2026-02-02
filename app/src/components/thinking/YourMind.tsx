@@ -2,17 +2,30 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Layers, Zap, Network } from 'lucide-react';
+import { Layers, Zap, Network, Loader2 } from 'lucide-react';
 import { BeliefCard } from '@/components/thinking/BeliefCard';
 import { TensionCard } from '@/components/thinking/TensionCard';
 import { AddContentModal } from '@/components/thinking/AddContentModal';
+import { UrlPreviewModal } from '@/components/modal/UrlPreviewModal';
 import { useBeliefs } from '@/hooks/useBeliefs';
 import { useTensions } from '@/hooks/useTensions';
 import { useDrafts } from '@/hooks/useDrafts';
 import { GenealogyTree } from '@/components/thinking/GenealogyTree';
+import { ArtifactGrid } from '@/components/brain/ArtifactGrid';
+import { BookMarked } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface YourMindProps {
+    onDraftRequest?: (data: {
+        id?: string;
+        hook: string;
+        type: string;
+        references?: any[];
+    }) => void;
+}
 
 function SkeletonBeliefCard() {
-    return (
+    return ( // ... unchanged ...
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm animate-pulse">
             <div className="flex items-center gap-2 mb-4">
                 <div className="h-5 w-24 bg-gray-100 rounded"></div>
@@ -30,7 +43,7 @@ function SkeletonBeliefCard() {
 }
 
 function SkeletonTensionCard() {
-    return (
+    return ( // ... unchanged ...
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm animate-pulse">
             <div className="h-5 w-1/3 bg-gray-100 rounded mb-6 mx-auto"></div>
             <div className="flex gap-4 mb-6">
@@ -51,17 +64,22 @@ function SkeletonTensionCard() {
     );
 }
 
-export function YourMind() {
+export function YourMind({ onDraftRequest }: YourMindProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
     // Persist sub-tabs and views in URL
-    const initialTab = searchParams.get('subtab') as 'beliefs' | 'tensions' || 'beliefs';
+    const initialTab = searchParams.get('subtab') as 'beliefs' | 'tensions' | 'artifacts' || 'beliefs';
     const initialView = searchParams.get('view') as 'list' | 'tree' || 'list';
 
-    const [activeTab, setActiveTab] = useState<'beliefs' | 'tensions'>(initialTab);
+    const [activeTab, setActiveTab] = useState<'beliefs' | 'tensions' | 'artifacts'>(initialTab);
     const [beliefView, setBeliefView] = useState<'list' | 'tree'>(initialView);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
+    const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+
+    // NEW: URL Preview Modal state
+    const [urlPreviewModalOpen, setUrlPreviewModalOpen] = useState(false);
+    const [selectedArtifact, setSelectedArtifact] = useState<any>(null);
 
     // Sync helpers
     const updateUrl = (key: string, value: string) => {
@@ -70,7 +88,7 @@ export function YourMind() {
         router.push(`/workspace?${params.toString()}`, { scroll: false });
     };
 
-    const handleTabChange = (tab: 'beliefs' | 'tensions') => {
+    const handleTabChange = (tab: 'beliefs' | 'tensions' | 'artifacts') => {
         setActiveTab(tab);
         updateUrl('subtab', tab);
     };
@@ -96,22 +114,32 @@ export function YourMind() {
         setReviewedBeliefIds(prev => new Set([...prev, beliefId]));
     };
 
-    const handleWriteAbout = async (beliefData: { id: string; text: string; type: string }) => {
+    const handleWriteAbout = async (beliefData: { id: string; text: string; type: string; tags?: string[]; entities?: string[]; context?: string }) => {
         try {
-            await fetch('/api/content/create', {
+            const res = await fetch('/api/content/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     hook: beliefData.text,
-                    outcome: 'Thought Leadership', // Default outcome
-                    sourceType: 'belief',
+                    outcome: 'Thought Leadership',
+                    sourceType: beliefData.type,
                     sourceId: beliefData.id,
-                    stance: 'agree' // Default stance, user can change later
+                    stance: 'agree',
+                    tags: beliefData.tags,
+                    entities: beliefData.entities,
+                    context: beliefData.context, // Content
+                    urls: (beliefData as any).urls, // Pass URLs for scraping
+                    stage: 'idea' // As requested: Goes to Ideas pile
                 }),
             });
-            // We don't hide the belief here, just show success in the card (handled by card component)
+
+            if (res.ok) {
+                const data = await res.json();
+                // Redirect to pipeline (Command Center) where Ideas live
+                window.location.href = `/workspace?tab=pipeline`;
+            }
         } catch (error) {
-            console.error('Error creating draft from belief:', error);
+            console.error('Error creating draft:', error);
         }
     };
 
@@ -140,6 +168,22 @@ export function YourMind() {
         }
     };
 
+    // Helper to fetch content if missing
+    const fetchUrlContent = async (url: string) => {
+        try {
+            const res = await fetch('/api/brain/read-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            if (!res.ok) throw new Error("Failed to fetch");
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    };
+
     // Filter items
     const unreviewedCore = beliefs.core.filter((b: { id: string }) => !reviewedBeliefIds.has(b.id));
     const unreviewedEmerging = beliefs.emerging.filter((b: { id: string }) => !reviewedBeliefIds.has(b.id));
@@ -152,7 +196,10 @@ export function YourMind() {
             {/* Header */}
             <div className="flex-none px-6 pt-6 pb-2">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-serif text-gray-900">Your Mind</h1>
+                    <h1 className="text-2xl font-serif text-gray-900 flex items-center gap-3">
+                        Your Mind
+                        {isFetchingUrl && <Loader2 className="animate-spin text-blue-500" size={20} />}
+                    </h1>
                     <button
                         onClick={() => setAddContentModalOpen(true)}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
@@ -182,6 +229,16 @@ export function YourMind() {
                     >
                         <Zap size={16} />
                         Tensions
+                    </button>
+                    <button
+                        onClick={() => handleTabChange('artifacts')}
+                        className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 font-medium text-sm ${activeTab === 'artifacts'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-900'
+                            }`}
+                    >
+                        <BookMarked size={16} />
+                        Artifacts
                     </button>
                 </div>
             </div>
@@ -328,12 +385,77 @@ export function YourMind() {
                         )}
                     </div>
                 )}
+
+                {activeTab === 'artifacts' && (
+                    <ArtifactGrid
+                        onDraft={(artifact) => {
+                            // NEW: Open preview modal instead of direct draft
+                            if (artifact.source_url) {
+                                setSelectedArtifact(artifact);
+                                setUrlPreviewModalOpen(true);
+                            } else if (onDraftRequest) {
+                                // No URL, use ocr_text directly (e.g., screenshots)
+                                onDraftRequest({
+                                    id: artifact.id,
+                                    hook: artifact.user_note || "New Draft from Artifact",
+                                    type: 'artifact',
+                                    references: artifact.ocr_text ? [{
+                                        id: `ref-${Date.now()}`,
+                                        contentItemId: '',
+                                        referenceType: 'text',
+                                        content: artifact.ocr_text,
+                                        title: "Screenshot Content",
+                                        createdAt: new Date()
+                                    }] : []
+                                });
+                            } else {
+                                // Fallback (Legacy)
+                                handleWriteAbout({
+                                    id: artifact.id,
+                                    text: artifact.user_note || (artifact.ocr_text ? artifact.ocr_text.slice(0, 100) + "..." : "Saved Highlight"),
+                                    context: artifact.ocr_text,
+                                    type: 'artifact',
+                                    tags: artifact.ai_metadata?.tags,
+                                    entities: artifact.ai_metadata?.entities
+                                });
+                            }
+                        }}
+                    />
+                )}
             </div>
 
             <AddContentModal
                 isOpen={addContentModalOpen}
                 onClose={() => setAddContentModalOpen(false)}
                 onSuccess={() => window.location.reload()}
+            />
+
+            {/* NEW: URL Preview Modal */}
+            <UrlPreviewModal
+                isOpen={urlPreviewModalOpen}
+                onClose={() => {
+                    setUrlPreviewModalOpen(false);
+                    setSelectedArtifact(null);
+                }}
+                artifact={selectedArtifact}
+                onCreateDraft={(content, title, url) => {
+                    if (onDraftRequest) {
+                        onDraftRequest({
+                            id: selectedArtifact?.id,
+                            hook: selectedArtifact?.user_note || title || "New Draft from URL",
+                            type: 'artifact',
+                            references: content ? [{
+                                id: `ref-${Date.now()}`,
+                                contentItemId: '',
+                                referenceType: 'text',
+                                content: content,
+                                url: url,
+                                title: title || "Fetched Article Content",
+                                createdAt: new Date()
+                            }] : []
+                        });
+                    }
+                }}
             />
         </div>
     );

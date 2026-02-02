@@ -12,7 +12,21 @@ export default clerkMiddleware(async (auth, req) => {
     const res = NextResponse.next();
     res.headers.set('x-user-country', country);
 
-    // 2. Protect Routes
+    // 2. Extension CORS (Dynamic)
+    const origin = req.headers.get('origin');
+    if (origin && origin.startsWith('chrome-extension://')) {
+        res.headers.set('Access-Control-Allow-Origin', origin);
+        res.headers.set('Access-Control-Allow-Credentials', 'true');
+        res.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT,OPTIONS');
+        res.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+        // Handle Preflight directly
+        if (req.method === 'OPTIONS') {
+            return new NextResponse(null, { headers: res.headers });
+        }
+    }
+
+    // 3. Protect Routes
     if (isProtectedRoute(req)) {
         await auth.protect();
     }

@@ -35,7 +35,7 @@ export async function GET() {
         // 2. Fetch Content Items (to sync metadata & check for orphans)
         const { data: contentItems } = await supabase
             .from('content_items')
-            .select('id, brain_metadata, hook, stage, draft_content')
+            .select('id, brain_metadata, hook, stage, draft_content, created_at, updated_at')
             .eq('user_id', userId);
 
         // 3. Map existing drafts with metadata
@@ -72,8 +72,8 @@ export async function GET() {
                 belief_text: ci.hook || 'Untitled Draft',
                 content: ci.draft_content || '',
                 status: 'draft',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
+                created_at: ci.created_at || new Date().toISOString(), // Use real timestamp if available
+                updated_at: ci.updated_at || ci.created_at || new Date().toISOString(), // Use real timestamp
                 published_posts: [],
                 labels: {
                     platform: ci.brain_metadata?.platform,

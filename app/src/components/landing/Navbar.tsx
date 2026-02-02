@@ -25,10 +25,10 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
             The Navbar component needs the hook at the top level. 
         */}
         <div className="hidden lg:flex items-center gap-10">
-          <a href="#the-brain" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">The Brain</a>
-          <a href="#command-center" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">Pipeline</a>
-          <a href="#smart-studio" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">Studio</a>
-          <a href="#" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">Journal</a>
+          <a href="#the-brain" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">How It Works</a>
+          <a href="#command-center" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">Organize</a>
+          <a href="#smart-studio" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">Repurpose</a>
+          <a href="#" className="text-zinc-500 hover:text-green-600 transition-colors text-xs font-bold uppercase tracking-widest">Blog</a>
         </div>
 
         <div className="flex items-center gap-6">

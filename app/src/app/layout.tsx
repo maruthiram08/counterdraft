@@ -5,6 +5,7 @@ import "./globals.css";
 import { CSPostHogProvider } from "./providers";
 import PostHogPageView from "./PostHogPageView";
 import { FloatingFeedbackButton } from "@/components/shared/FloatingFeedbackButton";
+import { Toaster } from 'sonner';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -28,6 +29,23 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+export const metadata: Metadata = {
+  title: "Counterdraft — Write Content That Sounds Like You",
+  description: "The writing tool for LinkedIn posts, blog articles, newsletters, and books. Find your angle and publish without sounding generic.",
+  keywords: ["writing tool", "LinkedIn content", "newsletter creator", "blog writing", "content creation", "Substack", "Medium"],
+  openGraph: {
+    title: "Counterdraft — Write Content That Sounds Like You",
+    description: "The writing tool for creators who want to stand out.",
+    type: "website",
+    url: "https://counterdraft.com",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Counterdraft",
+    description: "The writing tool for creators who want to stand out.",
+  }
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,10 +61,10 @@ export default function RootLayout({
             <PostHogPageView />
             <FloatingFeedbackButton />
             {children}
+            <Toaster position="bottom-right" />
           </body>
         </CSPostHogProvider>
       </html>
     </ClerkProvider>
   );
 }
-

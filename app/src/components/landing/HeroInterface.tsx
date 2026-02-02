@@ -13,7 +13,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                     <img src="/brand/logo-text.png" alt="Counterdraft" className="h-4 w-auto hidden md:block" />
                 </div>
                 <div className="p-4 space-y-2">
-                    {['Dashboard', 'Journal', 'The Brain', 'Settings'].map((item, i) => (
+                    {['Dashboard', 'My Drafts', 'Ideas', 'Settings'].map((item, i) => (
                         <div key={item} className={`p-3 rounded-lg flex items-center gap-3 cursor-default ${i === 0 ? 'bg-green-50 text-green-700' : 'text-zinc-400'}`}>
                             <div className={`w-4 h-4 rounded ${i === 0 ? 'bg-green-600' : 'bg-zinc-200'}`}></div>
                             <span className={`text-sm font-bold hidden md:block ${i === 0 ? 'text-zinc-900' : ''}`}>{item}</span>
@@ -26,7 +26,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
             <div className="flex-1 p-4 md:p-8 flex flex-col overflow-y-auto min-h-0">
                 <div className="mb-6 md:mb-8 shrink-0">
                     <h2 className="text-2xl md:text-3xl font-serif text-zinc-900 mb-2">Morning, Alex.</h2>
-                    <p className="text-sm md:text-base text-zinc-400 font-medium">Your strategy on <span className="text-zinc-900 border-b border-zinc-200 pb-0.5">"AI Sovereignty"</span> is trending.</p>
+                    <p className="text-sm md:text-base text-zinc-400 font-medium">Your latest <span className="text-zinc-900 border-b border-zinc-200 pb-0.5">LinkedIn post</span> is picking up engagement.</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-4">
@@ -39,10 +39,10 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                         </div>
 
                         <h3 className="text-2xl md:text-3xl font-serif text-zinc-900 leading-tight mb-4">
-                            Why the "Service Economy" is actually a Trap for Agencies.
+                            Why consistency beats virality for building an audience.
                         </h3>
                         <p className="text-zinc-500 leading-relaxed mb-8 max-w-lg">
-                            The traditional agency model relies on headcount scaling. In the age of leverage, this becomes a liability...
+                            Most creators chase viral moments. But the real growth comes from showing up consistently with ideas that resonate with your specific reader...
                         </p>
 
                         <div className="mt-auto flex items-center gap-4">
@@ -53,7 +53,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                                 <div className="w-8 h-8 rounded-full border-2 border-white bg-zinc-100 flex items-center justify-center text-[9px] font-black text-zinc-400">AI</div>
                                 <div className="w-8 h-8 rounded-full border-2 border-white bg-zinc-200 flex items-center justify-center text-[9px] font-black text-zinc-500">ME</div>
                             </div>
-                            <span className="text-xs text-zinc-400 font-bold ml-2">Co-Authoring Active</span>
+                            <span className="text-xs text-zinc-400 font-bold ml-2">AI assists, you're in control</span>
                         </div>
                     </div>
 
@@ -61,7 +61,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                     <div className="space-y-4">
                         {/* Stat 1 */}
                         <div className="bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm">
-                            <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Audience Resonance</div>
+                            <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Originality Score</div>
                             <div className="flex items-end gap-2">
                                 <span className="text-3xl font-black text-zinc-900">94%</span>
                                 <span className="text-xs font-bold text-green-600 mb-1.5">↑ 12%</span>
@@ -85,9 +85,9 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                         {/* Context Card */}
                         <div className="bg-zinc-900 p-5 rounded-2xl border border-zinc-900 shadow-sm text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-                            <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">Live Insight</div>
+                            <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">Writing Tip</div>
                             <p className="text-sm font-medium leading-relaxed opacity-90">
-                                "Your argument on agency scaling conflicts with your previous post about 'Human-Centric Service'. Review stance?"
+                                "Your intro hook is strong. Consider adding a specific example in paragraph 2 to make it more relatable."
                             </p>
                         </div>
                     </div>

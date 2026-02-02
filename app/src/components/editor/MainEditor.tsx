@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Save, Check, RefreshCw, Eye, Edit2, Image as ImageIcon, ShieldCheck } from "lucide-react";
 import { Draft } from "@/hooks/useDrafts";
@@ -8,16 +8,18 @@ import { ContextualToolbar } from "./ContextualToolbar";
 import { PublishModal } from "./PublishModal";
 import { RepurposeModal } from "./RepurposeModal";
 import { VerificationSidebar, VerificationResult, PlagiarismResult, SlopMatch, CompetitorCheckResult } from "./FactCheckSidebar";
-import { QualityScoreFooter } from "./QualityScoreFooter";
 import { AntiSlopService } from "@/lib/tools/anti-slop";
 import { getCaretCoordinates } from "@/lib/textarea-utils";
+
+import { StrategyBar } from "./StrategyBar";
 
 interface MainEditorProps {
     draft: Draft | null;
     onSave: (id: string, content: string) => Promise<boolean>;
+    onUpdateMetadata?: (id: string, metadata: any) => Promise<boolean>;
 }
 
-export function MainEditor({ draft, onSave }: MainEditorProps) {
+export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps) {
     const router = useRouter();
 
     // 1. Basic Content State
@@ -47,6 +49,9 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     const [competitorResult, setCompetitorResult] = useState<CompetitorCheckResult | null>(null);
     const [competitorLoading, setCompetitorLoading] = useState(false);
 
+    // New: Explicit State for Human Audit Run
+    const [slopHasRun, setSlopHasRun] = useState(false);
+
     // New: History Loading State
     const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -58,7 +63,8 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     const scores = useMemo(() => {
         const factHasRun = verifications.length > 0;
         const plagiarismHasRun = plagiarismResult !== null;
-        const slopHasRun = true;
+        // Use true state, not assumption
+        const slopHasRunState = slopHasRun;
 
         // 1. Factuality Score (40%)
         // If not run, it's 0% verified.
@@ -74,18 +80,24 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
         const plagiarismScore = plagiarismResult ? plagiarismResult.uniqueness_score : 0;
 
         // 3. Style/Slop Score (20%)
-        const slopScore = Math.max(0, 100 - (slopMatches.length * 5));
+        // If not run, return 100 (optimistic) or 0 (pessimistic)?
+        // For score aggregation, we usually treat un-run as 0 or exclude.
+        // Let's treat it as max(0) if issues found, but if not run, don't penalize?
+        // Actually, if not run, it shouldn't contribute to "Quality".
+        const slopScore = slopHasRunState ? Math.max(0, 100 - (slopMatches.length * 5)) : 0;
 
         // Aggregate Weighted Score
+        // Normalize based on what has run?
+        // For simplicity: If not run, score is 0.
         const totalScore = Math.round((factScore * 0.4) + (plagiarismScore * 0.4) + (slopScore * 0.2));
 
         return {
             totalScore,
             fact: { score: factScore, hasRun: factHasRun, loading: verifying || historyLoading },
             uniqueness: { score: plagiarismScore, hasRun: plagiarismHasRun, loading: checkingPlagiarism || historyLoading },
-            style: { score: slopScore, hasRun: true, loading: slopLoading }
+            style: { score: slopScore, hasRun: slopHasRunState, loading: slopLoading }
         };
-    }, [verifications, plagiarismResult, slopMatches, verifying, checkingPlagiarism, slopLoading, historyLoading]);
+    }, [verifications, plagiarismResult, slopMatches, verifying, checkingPlagiarism, slopLoading, historyLoading, slopHasRun]);
 
     const handleRunMetric = async (type: 'fact' | 'uniqueness' | 'style' | 'run-all') => {
         if (type === 'run-all') {
@@ -122,10 +134,16 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 if (plagData.result) setPlagiarismResult(plagData.result);
             }
 
-            // Trigger real-time slop scan
+            // Trigger real-time slop scan IF we have content
+            // NOTE: Only if user previously ran it? For now, we don't persist "slopHasRun" boolean in DB.
+            // So we might need to assume if we load draft, we don't know.
+            // But user asked for "Not Run" initially.
+            // Let's leave slopHasRun false until user acts OR unless we want auto-scan on load?
+            // User feedback implies they want explicit run. So keep false.
             if (content) {
-                const matches = AntiSlopService.scan(content);
-                setSlopMatches(matches);
+                // We do NOT auto-scan here to respect the "Not Run" state.
+                // UNLESS we want to load previews?
+                // Let's keep it manual.
             }
         } catch (e) {
             console.error("Error fetching existing verification:", e);
@@ -143,6 +161,7 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
             setPlagiarismResult(null);
             setSlopMatches([]);
             setCompetitorResult(null);
+            setSlopHasRun(false); // Reset state
             return;
         }
 
@@ -345,17 +364,55 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
         }
     };
 
-    const handleSlopScan = () => {
-        if (!content) return;
+    // 5. Anti-Slop / Human Scan
+    // Now stateful
+    const handleSlopScan = async () => {
+        if (!content) return; // Added check for content
         setSlopLoading(true);
-        setShowFactCheck(true);
+        setShowFactCheck(true); // Added to open sidebar
 
-        // Scan is fast, so we do it client-side
-        setTimeout(() => {
+        try {
+            // Simulate minimal delay for feel
+            await new Promise(r => setTimeout(r, 600));
             const matches = AntiSlopService.scan(content);
             setSlopMatches(matches);
+            setSlopHasRun(true);
+        } catch (error) {
+            console.error(error);
+        } finally {
             setSlopLoading(false);
-        }, 500);
+        }
+    };
+
+    // 6. Apply Suggestion
+    const handleApplySlopSuggestion = (match: SlopMatch) => {
+        // String replacement logic
+        // We need to be careful about indices if user has typed!
+        // Ideally we re-verify before apply.
+        // For now, simpler: apply at index if matches.
+
+        const currentText = content;
+        const target = currentText.substring(match.startIndex, match.endIndex);
+
+        // Safety check: Does the text at index still match?
+        if (target !== match.word) {
+            console.warn("Text mismatch, operation cancelled.", target, match.word);
+            // Force re-scan to fix UI
+            handleSlopScan();
+            return;
+        }
+
+        const pre = currentText.substring(0, match.startIndex);
+        const post = currentText.substring(match.endIndex);
+        const newContent = pre + match.suggestion + post;
+
+        setContent(newContent);
+
+        // IMPORTANT: updating content will trigger re-render, but our 'slopMatches' are now stale indices.
+        // We MUST re-run scan immediately on the new content.
+        // We can do this synchronously-ish since it's local regex.
+        const newMatches = AntiSlopService.scan(newContent);
+        setSlopMatches(newMatches);
     };
 
     const handleCompetitorCheck = async (competitorUrl?: string) => {
@@ -390,31 +447,73 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
 
     // --- Contextual Editing Handlers ---
 
-    const handleSelect = () => {
+    const handleSelect = useCallback(() => {
         if (!textareaRef.current) return;
 
-        const start = textareaRef.current.selectionStart;
-        const end = textareaRef.current.selectionEnd;
+        // Small timeout to allow browser to settle selection state
+        setTimeout(() => {
+            if (!textareaRef.current) return;
 
-        // Ensure real selection (at least 2 chars)
-        if (start === end || (end - start) < 2) {
-            setToolbarPosition(null);
-            setSelectionRange(null);
-            return;
-        }
+            const start = textareaRef.current.selectionStart;
+            const end = textareaRef.current.selectionEnd;
 
-        // Calculate Pixel Coordinates
-        const { top, left, height } = getCaretCoordinates(textareaRef.current, start);
+            // Ensure real selection (at least 2 chars)
+            if (start === end || (end - start) < 2) {
+                // Only hide if we aren't currently refining (to prevent unrelated clicks from closing it mid-operation)
+                // But generally, if selection is gone, we should close.
+                // We'll trust the caller to know or we strictly follow selection.
+                // Actually, if we click "Actions", selection might be lost? 
+                // ContextualToolbar handles "onMouseDown(preventDefault)" to keep focus.
+                setToolbarPosition(null);
+                setSelectionRange(null);
+                return;
+            }
 
-        // FIX: Use viewport-relative coordinates for fixed positioning
-        // This ensures the toolbar stays attached to the text even when scrolling
-        const rect = textareaRef.current.getBoundingClientRect();
-        const fixedTop = rect.top + top;
-        const fixedLeft = rect.left + left;
+            // Calculate Pixel Coordinates
+            const { top, left, height } = getCaretCoordinates(textareaRef.current, start);
 
-        setSelectionRange({ start, end });
-        setToolbarPosition({ top: fixedTop, left: fixedLeft });
-    };
+            const rect = textareaRef.current.getBoundingClientRect();
+
+            // Clamp top to be visible (account for header ~64px + toolbar height ~60px)
+            const viewportHeight = window.innerHeight;
+            const toolbarHeight = 160;
+            const headerOffset = 80;
+
+            let fixedTop = rect.top + top;
+            let fixedLeft = rect.left + left;
+
+            // Ensure it doesn't go above header
+            if (fixedTop < headerOffset + toolbarHeight) {
+                fixedTop = fixedTop + height + headerOffset;
+            }
+
+            // Ensure it doesn't go off right screen
+            if (fixedLeft > window.innerWidth - 340) {
+                fixedLeft = window.innerWidth - 340;
+            }
+
+            setSelectionRange({ start, end });
+            setToolbarPosition({ top: fixedTop, left: fixedLeft });
+        }, 10);
+    }, []);
+
+    // Global listener to catch selection release even if mouse is outside textarea
+    useEffect(() => {
+        const handler = () => handleSelect();
+
+        // Listen to document events for max reliability
+        document.addEventListener('mouseup', handler);
+        document.addEventListener('keyup', handler);
+
+        // Also listen to selectionchange for good measure (debounced?) 
+        // No, standard mouseup/keyup is best for "Action Finished" trigger.
+        // selectionchange fires too often.
+
+        return () => {
+            document.removeEventListener('mouseup', handler);
+            document.removeEventListener('keyup', handler);
+        };
+    }, [handleSelect]);
 
     const handleExecuteRefinement = async (instruction: string) => {
         if (!draft || !selectionRange) return;
@@ -497,6 +596,20 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
     };
 
     const renderHighlights = () => {
+        // 1. Priority: Show Active Selection (Persistent even when blurred)
+        if (selectionRange) {
+            const { start, end } = selectionRange;
+            if (start >= 0 && end <= content.length) {
+                const pre = content.substring(0, start).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const sel = content.substring(start, end).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const post = content.substring(end).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                // Use a distinct, clear highlight color (indigo-100 is good for 'focused' feel)
+                return `${pre}<span class="bg-indigo-200">${sel}</span>${post}` + (content.endsWith('\n') ? '<br/>&nbsp;' : '');
+            }
+        }
+
+        // 2. Secondary: Show Validation Highlights (if no selection)
         if (verifications.length === 0) return null;
 
         // Escape HTML
@@ -544,77 +657,107 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 </div>
             )}
 
-            {/* Minimal Header / Status - Floating Pill */}
-            <div className="absolute top-6 right-8 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm shadow-sm border border-gray-100 rounded-full px-4 py-1.5">
-                    {/* View Toggle */}
-                    <button
-                        onClick={() => setIsPreview(!isPreview)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all border mr-2 ${isPreview
-                            ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'}`}
-                    >
-                        {isPreview ? <Edit2 size={12} /> : <Eye size={12} />}
-                        {isPreview ? 'Edit' : 'Preview'}
-                    </button>
 
-                    <span className="text-xs text-[var(--text-muted)] font-medium mr-2">
-                        {saving ? "Saving..." : saved ? "Saved" : "Draft"}
-                    </span>
-                    <div className="w-px h-4 bg-gray-200 mx-1"></div>
-                    <button
-                        onClick={handleCopy}
-                        className="text-xs font-medium text-gray-500 hover:text-[var(--foreground)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
-                    >
-                        {copied ? <Check size={12} /> : <Copy size={12} />}
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="text-xs font-medium text-gray-500 hover:text-[var(--accent)] px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
-                    >
-                        <Save size={12} />
-                    </button>
-                    {/* Customize Button */}
-                    <button
-                        onClick={() => setShowRepurposeModal(true)}
-                        className="text-xs font-medium text-indigo-500 hover:text-indigo-600 px-2 py-1 hover:bg-indigo-50 rounded-md transition-all"
-                    >
-                        <RefreshCw size={12} />
-                    </button>
-
-                    {/* Fact Check Button */}
-                    <button
-                        onClick={() => setShowFactCheck(true)}
-                        className="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-1 hover:bg-teal-50 rounded-md transition-all"
-                        title="Verify Claims"
-                    >
-                        <ShieldCheck size={12} />
-                    </button>
-
-                    {/* Design Download (Instagram Only) */}
-                    {draft.platform === 'instagram' && (
-                        <button
-                            onClick={handleDownloadDesign}
-                            className="text-xs font-medium text-pink-500 hover:text-pink-600 px-2 py-1 hover:bg-pink-50 rounded-md transition-all"
-                            title="Download Design File"
-                        >
-                            <ImageIcon size={12} />
-                        </button>
-                    )}
-                    {/* Publish */}
-                    <button
-                        onClick={() => setShowPublishModal(true)}
-                        className="text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1 hover:bg-gray-50 rounded-md transition-all"
-                    >
-                        Publish
-                    </button>
-                </div>
-            </div>
 
             {/* Document Surface */}
             <div className="flex-1 overflow-y-auto relative">
                 <div className="max-w-4xl mx-auto py-8 md:py-20 px-4 md:px-16 min-h-full relative">
+
+                    {/* Sticky Header Actions */}
+                    <div className="sticky top-6 flex flex-row items-center justify-end gap-2 z-20 pointer-events-none mb-4 -mt-10 mr-[-20px] xl:mr-[-60px]">
+                        {/* 1. View Mode Switcher (Segmented Control) */}
+                        <div className="flex items-center p-1 bg-gray-100/50 backdrop-blur-sm border border-gray-200 rounded-lg pointer-events-auto transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+                            <button
+                                onClick={() => setIsPreview(false)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${!isPreview
+                                    ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                                    }`}
+                            >
+                                <Edit2 size={12} />
+                                <span>Edit</span>
+                            </button>
+                            <button
+                                onClick={() => setIsPreview(true)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${isPreview
+                                    ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                                    }`}
+                            >
+                                <Eye size={12} />
+                                <span>Preview</span>
+                            </button>
+                        </div>
+
+                        {/* 2. Actions Bar + Status */}
+                        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm shadow-sm border border-gray-100 rounded-xl px-3 py-1.5 pointer-events-auto transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+
+                            {/* Status Badge (Non-clickable) */}
+                            <div className="flex items-center gap-1.5 mr-2 pl-1 pr-3 border-r border-gray-100 select-none">
+                                <div className={`w-1.5 h-1.5 rounded-full ${saving ? 'bg-amber-400 animate-pulse' : saved ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+                                    {saving ? "Saving" : saved ? "Saved" : "Draft"}
+                                </span>
+                            </div>
+
+                            <button
+                                onClick={handleCopy}
+                                title="Copy to Clipboard"
+                                className="text-gray-400 hover:text-gray-700 p-1.5 hover:bg-gray-50 rounded-lg transition-all"
+                            >
+                                {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                            </button>
+
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                title="Save Draft (Cmd+S)"
+                                className="text-gray-400 hover:text-[var(--accent)] p-1.5 hover:bg-gray-50 rounded-lg transition-all"
+                            >
+                                <Save size={14} />
+                            </button>
+
+                            {/* Separator */}
+                            <div className="w-px h-3 bg-gray-200 mx-0.5"></div>
+
+                            {/* Customize Button */}
+                            <button
+                                onClick={() => setShowRepurposeModal(true)}
+                                title="Repurpose / Rewrite"
+                                className="text-indigo-500 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded-lg transition-all"
+                            >
+                                <RefreshCw size={14} />
+                            </button>
+
+                            {/* Fact Check Button */}
+                            <button
+                                onClick={() => setShowFactCheck(true)}
+                                title="Verify Claims & Plagiarism"
+                                className="text-teal-600 hover:text-teal-700 p-1.5 hover:bg-teal-50 rounded-lg transition-all"
+                            >
+                                <ShieldCheck size={14} />
+                            </button>
+
+                            {/* Design Download (Instagram Only) */}
+                            {draft.platform === 'instagram' && (
+                                <button
+                                    onClick={handleDownloadDesign}
+                                    title="Download Design (PPTX)"
+                                    className="text-pink-500 hover:text-pink-600 p-1.5 hover:bg-pink-50 rounded-lg transition-all"
+                                >
+                                    <ImageIcon size={14} />
+                                </button>
+                            )}
+
+                            {/* Publish (Primary) */}
+                            <button
+                                onClick={() => setShowPublishModal(true)}
+                                className="ml-2 px-3 py-1 bg-gray-900 hover:bg-black text-white text-xs font-medium rounded-lg shadow-sm transition-all"
+                            >
+                                Publish
+                            </button>
+                        </div>
+                    </div>
 
                     {toolbarPosition && (
                         <ContextualToolbar
@@ -645,6 +788,9 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                             </button>
                         </div>
                     )}
+
+                    {/* Strategy Bar */}
+
 
                     {/* Title / Context - Refined Typography */}
                     <div className="mb-6 md:mb-12 select-none">
@@ -685,11 +831,10 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                                     e.target.style.height = 'auto';
                                     e.target.style.height = e.target.scrollHeight + 'px';
                                 }}
-                                onSelect={handleSelect}
                                 onBlur={() => {
                                     blurTimeoutRef.current = setTimeout(() => { }, 200);
                                 }}
-                                className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/10 overflow-hidden break-words relative z-10"
+                                className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/30 overflow-hidden break-words relative z-10"
                                 spellCheck={false}
                                 style={{
                                     outline: 'none',
@@ -721,17 +866,6 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 isProcessing={isRepurposing}
                 sourceContent={getFullContent()}
             />
-            <QualityScoreFooter
-                score={scores.totalScore}
-                metrics={{
-                    fact: scores.fact,
-                    uniqueness: scores.uniqueness,
-                    style: scores.style
-                }}
-                onRunMetric={handleRunMetric}
-                onOpenSidebar={() => setShowFactCheck(true)}
-                isVisible={true}
-            />
             <VerificationSidebar
                 isOpen={showFactCheck}
                 onClose={() => setShowFactCheck(false)}
@@ -747,6 +881,14 @@ export function MainEditor({ draft, onSave }: MainEditorProps) {
                 competitorResult={competitorResult}
                 competitorLoading={competitorLoading}
                 onCompetitorCheck={handleCompetitorCheck}
+                overallScore={scores.totalScore}
+                metrics={{
+                    fact: scores.fact,
+                    uniqueness: scores.uniqueness,
+                    style: scores.style
+                }}
+                onRunAll={() => handleRunMetric('run-all')}
+                onApplySlopSuggestion={handleApplySlopSuggestion}
             />
         </div>
     );

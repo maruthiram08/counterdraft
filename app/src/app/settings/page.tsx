@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon } from "lucide-react";
+import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
+import { useRouter } from 'next/navigation';
 
 interface IntegrationStatus {
     platform: string;
@@ -37,6 +37,7 @@ const PLATFORM_INFO: Record<string, { name: string; description: string; icon: s
 };
 
 export default function SettingsPage() {
+    const router = useRouter();
     const [integrations, setIntegrations] = useState<IntegrationStatus[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -100,79 +101,94 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[var(--background)]">
-            <Header />
+        <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+            <GlobalSidebar
+                activeSection="settings"
+                onNavigate={(section) => {
+                    if (section === 'settings') return; // Already here
+                    // Navigate back to workspace with tab
+                    router.push(`/workspace?tab=${section}`);
+                }}
+                onNewDraft={() => {
+                    // Navigate to workspace to open modal
+                    router.push('/workspace?action=new-draft');
+                }}
+                onImport={() => {
+                    // Navigate to workspace to open import
+                    router.push('/workspace?action=import');
+                }}
+            />
 
-            <main className="flex-1 py-12">
-                <div className="container max-w-3xl">
-                    {/* Page Header */}
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-semibold mb-2 flex items-center gap-3">
-                            <Settings size={24} />
-                            Settings
-                        </h1>
-                        <p className="text-[var(--text-muted)]">
-                            Manage your account and connected platforms.
-                        </p>
+            <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-paper">
+                <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-24 md:pb-12">
+                    <div className="max-w-3xl mx-auto">
+                        {/* Page Header */}
+                        <div className="mb-8">
+                            <h1 className="text-2xl font-semibold mb-2 flex items-center gap-3">
+                                <Settings size={24} />
+                                Settings
+                            </h1>
+                            <p className="text-[var(--text-muted)]">
+                                Manage your account and connected platforms.
+                            </p>
+                        </div>
+
+                        {/* Profile Section */}
+                        <ProfileSection />
+
+                        {/* Usage Section */}
+                        <UsageSection />
+
+                        {/* Integrations Section */}
+                        <section className="mb-12">
+                            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
+                                <Link2 size={18} />
+                                Integrations
+                            </h2>
+                            <p className="text-sm text-[var(--text-muted)] mb-6">
+                                Connect platforms to import content and publish your drafts.
+                            </p>
+
+                            {loading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="animate-spin text-[var(--text-muted)]" size={24} />
+                                </div>
+                            ) : error ? (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                    {error}
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {integrations.map((integration) => {
+                                        const info = PLATFORM_INFO[integration.platform];
+                                        if (!info) return null;
+
+                                        return (
+                                            <IntegrationCard
+                                                key={integration.platform}
+                                                platform={integration.platform}
+                                                name={info.name}
+                                                description={info.description}
+                                                icon={info.icon}
+                                                connected={integration.connected}
+                                                profileName={integration.profileName}
+                                                profilePicture={integration.profilePicture}
+                                                connectedAt={integration.connectedAt}
+                                                available={info.available}
+                                                onConnect={() => handleConnect(integration.platform)}
+                                                onDisconnect={() => handleDisconnect(integration.platform)}
+                                                onSync={() => handleSync(integration.platform)}
+                                                syncing={syncing === integration.platform}
+                                                lastSyncResult={syncResult}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </section>
                     </div>
-
-                    {/* Profile Section */}
-                    <ProfileSection />
-
-                    {/* Usage Section */}
-                    <UsageSection />
-
-                    {/* Integrations Section */}
-                    <section className="mb-12">
-                        <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
-                            <Link2 size={18} />
-                            Integrations
-                        </h2>
-                        <p className="text-sm text-[var(--text-muted)] mb-6">
-                            Connect platforms to import content and publish your drafts.
-                        </p>
-
-                        {loading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="animate-spin text-[var(--text-muted)]" size={24} />
-                            </div>
-                        ) : error ? (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                                {error}
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {integrations.map((integration) => {
-                                    const info = PLATFORM_INFO[integration.platform];
-                                    if (!info) return null;
-
-                                    return (
-                                        <IntegrationCard
-                                            key={integration.platform}
-                                            platform={integration.platform}
-                                            name={info.name}
-                                            description={info.description}
-                                            icon={info.icon}
-                                            connected={integration.connected}
-                                            profileName={integration.profileName}
-                                            profilePicture={integration.profilePicture}
-                                            connectedAt={integration.connectedAt}
-                                            available={info.available}
-                                            onConnect={() => handleConnect(integration.platform)}
-                                            onDisconnect={() => handleDisconnect(integration.platform)}
-                                            onSync={() => handleSync(integration.platform)}
-                                            syncing={syncing === integration.platform}
-                                            lastSyncResult={syncResult}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </section>
                 </div>
             </main>
-
-            <Footer />
         </div>
     );
 }

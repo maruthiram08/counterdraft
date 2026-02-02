@@ -25,10 +25,10 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
     if (!isMobile) return null;
 
     const primaryNavItems = [
-        { id: 'pipeline', label: 'Home', icon: Home },
         { id: 'explore', label: 'Explore', icon: Compass },
-        { id: 'drafts', label: 'Library', icon: Book },
-        { id: 'beliefs', label: 'Mind', icon: Brain },
+        { id: 'pipeline', label: 'Home', icon: Home },
+        { id: 'drafts', label: 'Your Post', icon: Book },
+        { id: 'mind', label: 'Mind', icon: Brain },
     ];
 
     const moreNavItems = [

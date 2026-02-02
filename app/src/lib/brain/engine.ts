@@ -46,11 +46,11 @@ export function evaluateContent(item: ContentItem): BrainResult {
     }
 
     // B. Audience (Crucial: 30 pts)
-    if (meta.audience && meta.audience.role && meta.audience.pain) {
+    if (meta.audience && meta.audience.role) {
         score += 30;
     } else {
         if (!meta.audience?.role) result.missingContext.push("Target Audience Role is missing");
-        if (!meta.audience?.pain) result.missingContext.push("Audience Pain Point is missing");
+        // if (!meta.audience?.pain) result.missingContext.push("Audience Pain Point is missing"); // Relaxed for Smart Fill
         result.suggestions.push("Define who you are writing for.");
     }
 

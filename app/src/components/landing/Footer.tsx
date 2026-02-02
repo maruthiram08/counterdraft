@@ -11,7 +11,7 @@ export const Footer: React.FC = () => {
               <img src="/brand/logo-text.png" alt="Counterdraft" className="h-7 w-auto mt-1" />
             </div>
             <p className="text-zinc-500 text-lg max-w-sm leading-relaxed font-medium">
-              The professional OS for thinkers. Built for the era of unique perspectives, not automated noise.
+              The writing tool for creators who want to stand out. Built for LinkedIn, blogs, newsletters, and beyond.
             </p>
           </div>
 
@@ -56,7 +56,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="flex flex-col md:flex-row items-center justify-between border-t border-zinc-100 pt-12 text-[10px] text-zinc-400 font-mono font-bold tracking-[0.2em] uppercase">
-          <p>© 2025 Counterdraft Inc. — Strategy First.</p>
+          <p>© 2025 Counterdraft Inc. — Write like you.</p>
           <div className="flex gap-10 mt-6 md:mt-0">
             <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> System Operational</span>
             <span>Build_v4.1.2</span>

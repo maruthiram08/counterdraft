@@ -63,29 +63,33 @@ function WorkspaceContent() {
     // Handle Deep Linking
     useEffect(() => {
         const draftId = searchParams.get('draftId');
-        // Only trigger deep link if we are actually allowed to (or if we are already in drafts/pipeline context)
-        // AND if we aren't already there?
+
+        // 1. Handle Selection / Navigation
         if (draftId && activeSection !== 'drafts') {
             console.log("Deep linking to draft:", draftId);
             setSelectedDraftId(draftId);
             setActiveSection('drafts');
             setPostsTab('drafts');
         } else if (draftId && activeSection === 'drafts' && selectedDraftId !== draftId) {
-            // Handle case where we are in drafts but ID changed in URL manually
             setSelectedDraftId(draftId);
         }
 
+        // 2. Handle Stale Data (Sync Fix)
+        // If we have a draftId but it's not in our list, force a refresh
+        if (draftId && !draftsLoading && drafts.length > 0 && !drafts.find(d => d.id === draftId)) {
+            console.log("Deep linked draft not found, refreshing list...", draftId);
+            refetch();
+        }
+
         // Auto-cleanup: If we are on a non-draft tab but draftId exists, strip it quietly
-        // This handles the "Refresh on Pipeline -> Lands on Library" bug
         const tab = searchParams.get('tab');
         if (tab && tab !== 'drafts' && draftId) {
             const newParams = new URLSearchParams(searchParams.toString());
             newParams.delete('draftId');
             router.replace(`/workspace?${newParams.toString()}`, { scroll: false });
-            // We return early to avoid setting activeSection='drafts' due to race conditions
             if (activeSection === 'drafts') setActiveSection(tab as any);
         }
-    }, [searchParams, activeSection, selectedDraftId]);
+    }, [searchParams, activeSection, selectedDraftId, drafts, draftsLoading, refetch]);
 
     // Agent update handler
     const handleAgentApply = (refinedContent: string) => {
@@ -101,8 +105,12 @@ function WorkspaceContent() {
         hook?: string;
         sourceType?: 'belief' | 'tension' | 'idea' | 'manual';
         sourceId?: string;
+        references?: any[]; // Using any to avoid importing ContentReference to page
     } | undefined>(undefined);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
+
+    // Auto-navigation state
+    const [autoNavToWizardId, setAutoNavToWizardId] = useState<string | undefined>(undefined);
 
     // Mobile detection for responsive layouts
     const [isMobile, setIsMobile] = useState(false);
@@ -186,7 +194,17 @@ function WorkspaceContent() {
                 {/* Your Mind Section - New 3-tab layout */}
                 {activeSection === 'mind' && (
                     <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-                        <YourMind />
+                        <YourMind
+                            onDraftRequest={(data) => {
+                                setNewDraftPrefill({
+                                    hook: data.hook,
+                                    sourceType: data.type as any,
+                                    sourceId: data.id,
+                                    references: data.references
+                                });
+                                setDraftModalOpen(true);
+                            }}
+                        />
                     </div>
                 )}
 
@@ -477,6 +495,8 @@ function WorkspaceContent() {
                                     setActiveSection('drafts');
                                     setPostsTab('drafts');
                                 }}
+                                autoOpenItemId={autoNavToWizardId}
+                                onAutoOpenHandled={() => setAutoNavToWizardId(undefined)}
                             />
                         </div>
                     )
@@ -537,6 +557,9 @@ function WorkspaceContent() {
                                                                 const success = await updateDraft(id, { content });
                                                                 return success;
                                                             }}
+                                                            onUpdateMetadata={async (id, metadata) => {
+                                                                return await updateDraft(id, { brain_metadata: metadata });
+                                                            }}
                                                         />
                                                     </div>
 
@@ -590,6 +613,9 @@ function WorkspaceContent() {
                                                         const success = await updateDraft(id, { content });
                                                         return success;
                                                     }}
+                                                    onUpdateMetadata={async (id, metadata) => {
+                                                        return await updateDraft(id, { brain_metadata: metadata });
+                                                    }}
                                                 />
                                             }
                                             rightPane={
@@ -629,26 +655,46 @@ function WorkspaceContent() {
                 }}
                 prefill={newDraftPrefill}
                 onSubmit={async (data) => {
-                    await fetch('/api/content', {
+                    // Build brain_metadata with references included
+                    // so the DevelopmentWizard has access to them
+                    const brainMetadata = {
+                        outcome: data.outcome,
+                        audience: data.audience,
+                        stance: data.stance,
+                        references: data.references, // CRITICAL: Include references in metadata
+                        // sourceContext is now reconstructed on server to save bandwidth
+                    };
+
+                    console.log('[NewDraft] Creating draft with references:', {
+                        refCount: data.references?.length || 0,
+                    });
+
+                    const res = await fetch('/api/content', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             hook: data.hook,
-                            angle: "Draft created from Command Center", // Default angle potentially? or derived?
-                            // We need to pass the new metadata fields to the API
-                            // The API expects 'brain_metadata' for these
-                            brain_metadata: {
-                                outcome: data.outcome,
-                                audience: data.audience,
-                                stance: data.stance
-                            },
-                            // Map source info from prefill if available
+                            angle: "Draft created from Command Center",
+                            brain_metadata: brainMetadata,
                             source_type: newDraftPrefill?.sourceType,
                             source_id: newDraftPrefill?.sourceId,
-                            stage: 'developing', // As per plan, start in developing
-                            references: data.references
+                            stage: 'developing',
+                            references: data.references // Keep for backward compat
                         }),
                     });
+
+                    if (res.ok) {
+                        const responseData = await res.json();
+                        // API returns { item: ... }
+                        const newItemId = responseData.item?.id || responseData.id;
+
+                        if (newItemId) {
+                            console.log('[NewDraft] Auto-navigating to wizard for:', newItemId);
+                            setAutoNavToWizardId(newItemId);
+                            setActiveSection('pipeline');
+                        }
+                    }
+
                     setDraftModalOpen(false);
                     setNewDraftPrefill(undefined);
                     refetch(); // Refresh the pipeline

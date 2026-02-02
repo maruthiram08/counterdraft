@@ -63,6 +63,16 @@ interface VerificationSidebarProps {
     competitorResult: CompetitorCheckResult | null;
     competitorLoading: boolean;
     onCompetitorCheck: (url?: string) => void;
+    // Quality Score Footer Props
+    overallScore: number;
+    metrics: {
+        fact: { score: number; hasRun: boolean; loading: boolean };
+        uniqueness: { score: number; hasRun: boolean; loading: boolean };
+        style: { score: number; hasRun: boolean; loading: boolean };
+    };
+    onRunAll: () => void;
+    // Actions
+    onApplySlopSuggestion?: (match: SlopMatch) => void;
 }
 
 export function VerificationSidebar({
@@ -79,7 +89,11 @@ export function VerificationSidebar({
     onSlopScan,
     competitorResult,
     competitorLoading,
-    onCompetitorCheck
+    onCompetitorCheck,
+    overallScore,
+    metrics,
+    onRunAll,
+    onApplySlopSuggestion
 }: VerificationSidebarProps) {
     const [activeTab, setActiveTab] = useState<'fact' | 'plagiarism' | 'style' | 'competitor'>('fact');
     const [compUrl, setCompUrl] = useState('');
@@ -117,7 +131,7 @@ export function VerificationSidebar({
                     className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'style' ? 'border-b-2 border-orange-600 text-orange-600 bg-white' : 'text-gray-400 hover:text-gray-600'
                         }`}
                 >
-                    <Sparkles size={14} /> Style
+                    <Sparkles size={14} /> Human
                 </button>
                 <button
                     onClick={() => setActiveTab('competitor')}
@@ -246,7 +260,7 @@ export function VerificationSidebar({
                                             <div key={i} className="p-3 bg-white border rounded-xl hover:shadow-sm transition-shadow">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold">
-                                                        Match {source.overlap_score}x
+                                                        Overlap: Level {source.overlap_score}
                                                     </span>
                                                     <a href={source.url} target="_blank" className="text-gray-400 hover:text-blue-500">
                                                         <ExternalLink size={14} />
@@ -271,7 +285,7 @@ export function VerificationSidebar({
                     </>
                 )}
 
-                {/* STYLE / ANTI-SLOP TAB */}
+                {/* HUMAN / ANTI-SLOP TAB */}
                 {activeTab === 'style' && (
                     <>
                         {slopLoading ? (
@@ -279,15 +293,27 @@ export function VerificationSidebar({
                                 <RefreshCw className="animate-spin text-orange-500" size={32} />
                                 <p className="text-sm">Scanning for AI-isms...</p>
                             </div>
-                        ) : slopMatches.length === 0 ? (
+                        ) : (!metrics.style.hasRun) ? (
                             <div className="text-center py-12 px-4 text-gray-500">
                                 <MessageSquareX className="mx-auto mb-4 text-orange-200" size={48} />
-                                <p className="mb-4">No AI cliches found! Your writing sounds clean.</p>
+                                <p className="mb-4">Analyze if your content sounds too artificial.</p>
                                 <button
                                     onClick={onSlopScan}
                                     className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-all"
                                 >
-                                    Scan for Slop
+                                    Run Human Audit
+                                </button>
+                            </div>
+                        ) : slopMatches.length === 0 ? (
+                            <div className="text-center py-12 px-4 text-gray-500">
+                                <MessageSquareX className="mx-auto mb-4 text-green-200" size={48} />
+                                <p className="mb-4 text-green-700 font-medium">No AI cliches found!</p>
+                                <p className="text-xs text-gray-400 mb-6">Your writing sounds authentic and human.</p>
+                                <button
+                                    onClick={onSlopScan}
+                                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm font-medium transition-all"
+                                >
+                                    Re-scan
                                 </button>
                             </div>
                         ) : (
@@ -325,6 +351,12 @@ export function VerificationSidebar({
                                                 <span className="text-xs font-medium text-gray-700">
                                                     {match.suggestion || "Delete it"}
                                                 </span>
+                                                <button
+                                                    onClick={() => onApplySlopSuggestion && onApplySlopSuggestion(match)}
+                                                    className="ml-auto px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded hover:bg-green-200 transition-colors"
+                                                >
+                                                    Apply
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
@@ -424,7 +456,6 @@ export function VerificationSidebar({
                                         );
                                     })}
                                 </div>
-
                                 <button onClick={() => onCompetitorCheck()} className="w-full py-2 text-xs text-emerald-600 font-medium hover:bg-emerald-50 rounded-lg border border-emerald-100 transition-colors">
                                     Refresh Comparison
                                 </button>
@@ -432,8 +463,60 @@ export function VerificationSidebar({
                         )}
                     </>
                 )}
-
             </div>
-        </div>
+
+            {/* FIXED BOTTOM: Quality Score Footer */}
+            <div className="p-4 border-t bg-white z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        {/* Donut Chart (CSS Conic Gradient) */}
+                        <div className="relative w-12 h-12 flex items-center justify-center rounded-full bg-gray-100"
+                            style={{
+                                background: `conic-gradient(${overallScore > 80 ? '#10b981' : overallScore > 50 ? '#f59e0b' : '#ef4444'} ${overallScore}%, #e5e7eb 0)`
+                            }}
+                        >
+                            <div className="absolute inset-[3px] bg-white rounded-full flex items-center justify-center">
+                                <span className={`text-xs font-bold ${overallScore > 80 ? 'text-green-600' : overallScore > 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                                    {overallScore}%
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Trust Score</div>
+                            <div className={`font-serif font-bold text-sm leading-tight ${overallScore > 80 ? 'text-green-700' : overallScore > 50 ? 'text-amber-700' : 'text-red-700'}`}>
+                                {overallScore > 80 ? 'Credible' : overallScore > 50 ? 'Needs Review' : 'Unverified'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={onRunAll}
+                        className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-black shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                        <RefreshCw size={14} className={metrics.fact.loading || metrics.uniqueness.loading ? "animate-spin" : ""} />
+                        Run Audit
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                    {/* Fact Metric */}
+                    <button onClick={() => setActiveTab('fact')} className="flex flex-col items-center p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className={`text-[10px] uppercase font-bold mb-1 ${metrics.fact.hasRun ? (metrics.fact.score > 80 ? 'text-green-600' : 'text-amber-500') : 'text-gray-400'}`}>Facts</div>
+                        <div className={`w-full h-1 rounded-full ${metrics.fact.hasRun ? (metrics.fact.score > 80 ? 'bg-green-500' : 'bg-amber-400') : 'bg-gray-200'}`}></div>
+                    </button>
+                    {/* Unique Metric */}
+                    <button onClick={() => setActiveTab('plagiarism')} className="flex flex-col items-center p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className={`text-[10px] uppercase font-bold mb-1 ${metrics.uniqueness.hasRun ? (metrics.uniqueness.score > 80 ? 'text-purple-600' : 'text-amber-500') : 'text-gray-400'}`}>Unique</div>
+                        <div className={`w-full h-1 rounded-full ${metrics.uniqueness.hasRun ? (metrics.uniqueness.score > 80 ? 'bg-purple-500' : 'bg-amber-400') : 'bg-gray-200'}`}></div>
+                    </button>
+                    {/* Style Metric */}
+                    <button onClick={() => setActiveTab('style')} className="flex flex-col items-center p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className={`text-[10px] uppercase font-bold mb-1 ${metrics.style.hasRun ? (metrics.style.score > 80 ? 'text-orange-600' : 'text-amber-500') : 'text-gray-400'}`}>Human</div>
+                        <div className={`w-full h-1 rounded-full ${metrics.style.hasRun ? (metrics.style.score > 80 ? 'bg-orange-500' : 'bg-amber-400') : 'bg-gray-200'}`}></div>
+                    </button>
+                </div>
+            </div>
+        </div >
     );
+
 }

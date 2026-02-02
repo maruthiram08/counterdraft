@@ -34,6 +34,8 @@ interface ColumnProps {
     color: string;
     onAction: (id: string, action: string) => void;
     loading?: boolean;
+    className?: string;
+    cols?: number;
 }
 
 function SkeletonCard() {
@@ -69,9 +71,9 @@ function SkeletonCard() {
     );
 }
 
-function Column({ title, icon, items, stage, color, onAction, loading }: ColumnProps) {
+function Column({ title, icon, items, stage, color, onAction, loading, className = "", cols = 1 }: ColumnProps) {
     return (
-        <div className="flex-1 min-w-[280px] sm:min-w-[250px] max-w-full sm:max-w-[300px] bg-transparent rounded-xl p-3">
+        <div className={`flex-1 min-w-[280px] sm:min-w-[250px] bg-transparent rounded-xl p-3 ${className}`}>
             <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                     <h3 className="text-lg font-serif font-medium text-gray-900">{title}</h3>
@@ -81,14 +83,20 @@ function Column({ title, icon, items, stage, color, onAction, loading }: ColumnP
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div className={cols > 1 ? `grid grid-cols-1 md:grid-cols-${cols} gap-3` : "space-y-3"}>
                 {loading ? (
                     <>
                         <SkeletonCard />
                         <SkeletonCard />
+                        {cols > 1 && (
+                            <>
+                                <SkeletonCard />
+                                <SkeletonCard />
+                            </>
+                        )}
                     </>
                 ) : items.length === 0 ? (
-                    <div className="h-32 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center">
+                    <div className={`h-32 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center ${cols > 1 ? 'col-span-full' : ''}`}>
                         <p className="text-sm text-gray-400">Empty</p>
                     </div>
                 ) : (
@@ -205,9 +213,11 @@ export interface CommandCenterProps {
     onEdit?: (id: string) => void;
     onDraftCreated?: () => Promise<void> | void;
     onNewDraft?: () => void;
+    autoOpenItemId?: string; // ID of item to auto-open in wizard
+    onAutoOpenHandled?: () => void; // Callback after auto-open is processed
 }
 
-export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDraft }: CommandCenterProps) {
+export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDraft, autoOpenItemId, onAutoOpenHandled }: CommandCenterProps) {
     const [items, setItems] = useState<ContentItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [developingItem, setDevelopingItem] = useState<ContentItem | null>(null);
@@ -234,6 +244,19 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
         fetchItems();
         checkProfile();
     }, []);
+
+    // Auto-open wizard if autoOpenItemId is provided
+    useEffect(() => {
+        if (autoOpenItemId && items.length > 0 && !loading && !developingItem) {
+            const itemToOpen = items.find(i => i.id === autoOpenItemId);
+            if (itemToOpen) {
+                console.log('[CommandCenter] Auto-opening wizard for:', itemToOpen.hook);
+                setDevelopingItem(itemToOpen);
+                setActiveStage('developing'); // Switch to developing tab
+                if (onAutoOpenHandled) onAutoOpenHandled();
+            }
+        }
+    }, [autoOpenItemId, items, loading, developingItem, onAutoOpenHandled]);
 
     const checkProfile = async () => {
         try {
@@ -562,17 +585,8 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                             color="bg-blue-100"
                             onAction={handleAction}
                             loading={loading}
-                        />
-                    )}
-                    {(!isMobile || activeStage === 'published') && (
-                        <Column
-                            title="Published"
-                            icon={<CheckCircle size={16} className="text-green-600" />}
-                            items={published}
-                            stage="published"
-                            color="bg-green-100"
-                            onAction={handleAction}
-                            loading={loading}
+                            className="lg:col-span-2"
+                            cols={2}
                         />
                     )}
                 </div>

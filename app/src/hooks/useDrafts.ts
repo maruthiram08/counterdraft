@@ -21,6 +21,7 @@ export interface Draft {
         length?: string;
         parentId?: string;
     };
+    brain_metadata?: any;
 }
 
 export function useDrafts() {
@@ -82,7 +83,7 @@ export function useDrafts() {
         }
     };
 
-    const updateDraft = async (id: string, updates: Partial<Pick<Draft, 'content' | 'status'>>): Promise<boolean> => {
+    const updateDraft = async (id: string, updates: Partial<Pick<Draft, 'content' | 'status' | 'platform_metadata' | 'brain_metadata'>>): Promise<boolean> => {
         try {
             const res = await fetch(`/api/drafts/${id}`, {
                 method: 'PATCH',

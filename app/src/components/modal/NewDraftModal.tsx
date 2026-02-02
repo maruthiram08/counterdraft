@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Users, Scale, AlertCircle } from 'lucide-react';
 import type { Outcome, Stance, Audience, ContentReference, ConfidenceResult } from '@/types';
 import { ReferenceSection } from '@/components/common/ReferenceSection'; // Ensure this path is correct
 import { ConfidenceIndicator } from '@/components/brain/ConfidenceIndicator';
@@ -32,6 +32,7 @@ interface NewDraftModalProps {
         stance?: Stance;
         sourceType?: 'belief' | 'tension' | 'idea' | 'manual';
         sourceId?: string;
+        references?: ContentReference[];
     };
 }
 
@@ -45,8 +46,7 @@ export default function NewDraftModal({
     const debouncedHook = useDebounce(hook, 1000); // 1s debounce
 
     const [outcome, setOutcome] = useState<Outcome | null>(null);
-    const [audienceRole, setAudienceRole] = useState('');
-    const [audiencePain, setAudiencePain] = useState('');
+    const [audience, setAudience] = useState('');
     const [stance, setStance] = useState<Stance | null>(null);
     const [references, setReferences] = useState<(ContentReference & { file?: File })[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
@@ -67,7 +67,7 @@ export default function NewDraftModal({
                     method: 'POST',
                     body: JSON.stringify({
                         topic: debouncedHook,
-                        audience: audienceRole ? { role: audienceRole, pain: audiencePain } : undefined
+                        audience: audience ? { role: audience, pain: '' } : undefined
                     })
                 });
                 const data = await res.json();
@@ -81,14 +81,24 @@ export default function NewDraftModal({
         };
 
         analyze();
-    }, [debouncedHook, audienceRole, audiencePain]);
+    }, [debouncedHook, audience]);
 
-    // Pre-fill form if triggered from belief/tension
+    // Pre-fill form if triggered from belief/tension/artifact
     useEffect(() => {
+        console.log('[NewDraftModal] prefill changed:', {
+            prefill,
+            hasReferences: !!prefill?.references,
+            refCount: prefill?.references?.length,
+            refContentLength: prefill?.references?.[0]?.content?.length
+        });
         if (prefill) {
             if (prefill.hook) setHook(prefill.hook);
             if (prefill.outcome) setOutcome(prefill.outcome);
             if (prefill.stance) setStance(prefill.stance);
+            if (prefill.references && prefill.references.length > 0) {
+                console.log('[NewDraftModal] Setting references:', prefill.references);
+                setReferences(prefill.references);
+            }
         }
     }, [prefill]);
 
@@ -105,7 +115,7 @@ export default function NewDraftModal({
 
     const handleClose = () => {
         // Confirm if fields are filled
-        if (hook || outcome || audienceRole || audiencePain || stance) {
+        if (hook || outcome || audience || stance) {
             if (!confirm('You have unsaved changes. Discard draft?')) {
                 return;
             }
@@ -114,8 +124,7 @@ export default function NewDraftModal({
         // Reset form
         setHook('');
         setOutcome(null);
-        setAudienceRole('');
-        setAudiencePain('');
+        setAudience('');
         setStance(null);
         setReferences([]);
         setErrors([]);
@@ -143,14 +152,13 @@ export default function NewDraftModal({
 
         setIsSubmitting(true);
 
-        const audience:
-            | Audience
-            | undefined = audienceRole || audiencePain
-                ? {
-                    role: audienceRole,
-                    pain: audiencePain,
-                }
-                : undefined;
+        // Map single audience string to object for backend compatibility
+        const audienceObj: Audience | undefined = audience
+            ? {
+                role: audience,
+                pain: '', // Simplified for friction reduction
+            }
+            : undefined;
 
         // Process references (upload files if needed)
         const processedReferences = await Promise.all(references.map(async (ref) => {
@@ -184,7 +192,7 @@ export default function NewDraftModal({
         onSubmit({
             hook: hook.trim(),
             outcome: outcome!,
-            audience,
+            audience: audienceObj,
             stance: stance || undefined,
             references: processedReferences,
         });
@@ -214,7 +222,10 @@ export default function NewDraftModal({
                 <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b">
-                        <h2 className="text-2xl font-semibold">✍️ New Draft</h2>
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="text-purple-600" size={24} />
+                            <h2 className="text-2xl font-bold font-serif text-gray-900">New Draft</h2>
+                        </div>
                         <button
                             onClick={handleClose}
                             className="p-2 hover:bg-gray-100 rounded-full transition"
@@ -224,7 +235,9 @@ export default function NewDraftModal({
                     </div>
 
                     {/* Body */}
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-8">
+                        {/* Intro Text */}
+                        <p className="text-gray-500 -mt-4 mb-4">Define your intent, and the Brain will guide the rest.</p>
                         {/* Errors */}
                         {errors.length > 0 && (
                             <div className="bg-red-50 border border-red-200 rounded p-4">
@@ -272,23 +285,22 @@ export default function NewDraftModal({
                             </p>
                         </div>
 
-                        {/* Section 2: Outcome Picker */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-sm font-medium text-gray-700">
-                                    What should this post optimize for?
+                        {/* Section 2: Outcome Picker (Pills) */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                    <span className="text-blue-500">◎</span> What is the goal? (The Outcome)
                                 </label>
-                                {isAnalyzing && <span className="text-xs text-blue-500 flex items-center gap-1"><Sparkles size={12} /> AI analyzing...</span>}
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 {(['authority', 'engagement', 'conversion', 'connection'] as Outcome[]).map(
                                     (opt) => (
                                         <button
                                             key={opt}
                                             onClick={() => setOutcome(opt)}
-                                            className={`px-4 py-3 rounded-lg border-2 transition capitalize ${outcome === opt
-                                                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                                                : 'border-gray-300 hover:border-gray-400'
+                                            className={`px-3 py-3 rounded-xl border transition-all text-sm font-medium capitalize ${outcome === opt
+                                                ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm ring-1 ring-blue-200'
+                                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                                                 }`}
                                         >
                                             {opt}
@@ -298,51 +310,58 @@ export default function NewDraftModal({
                             </div>
                         </div>
 
-                        {/* Section 3: Audience Input */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Who is this for?
-                            </label>
+                        {/* Split Row: Audience & Stance */}
+                        <div className="grid md:grid-cols-2 gap-8">
+
+                            {/* Section 3: Audience (Smart Fill) */}
                             <div className="space-y-3">
-                                <input
-                                    type="text"
-                                    value={audienceRole}
-                                    onChange={(e) => setAudienceRole(e.target.value)}
-                                    placeholder="Role: Startup founders, Product managers, etc."
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    maxLength={50}
-                                />
-                                <input
-                                    type="text"
-                                    value={audiencePain}
-                                    onChange={(e) => setAudiencePain(e.target.value)}
-                                    placeholder="Pain: What problem are they facing right now?"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    maxLength={100}
-                                />
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                    <Users size={16} className="text-amber-500" /> Who is this for?
+                                </label>
+                                <div className="space-y-3">
+                                    <input
+                                        type="text"
+                                        value={audience}
+                                        onChange={(e) => setAudience(e.target.value)}
+                                        placeholder="e.g. Founders, Engineers..."
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none"
+                                        maxLength={100}
+                                    />
+                                    {/* Smart Audeince Pills */}
+                                    <div className="flex flex-wrap gap-2">
+                                        {['Founders', 'Engineers', 'Investors', 'Designers', 'Overwhelmed'].map(a => (
+                                            <button
+                                                key={a}
+                                                onClick={() => setAudience(a)}
+                                                className="px-3 py-1.5 bg-gray-50 border border-gray-200 hover:border-amber-300 hover:bg-amber-50 text-xs font-medium text-gray-600 hover:text-amber-800 rounded-lg transition-colors"
+                                            >
+                                                {a}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                        </div
 
-                        >
-
-                        {/* Section 4: Stance Toggle */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Your stance:
-                            </label>
-                            <div className="flex gap-3">
-                                {(['supportive', 'contrarian', 'exploratory'] as Stance[]).map((opt) => (
-                                    <button
-                                        key={opt}
-                                        onClick={() => setStance(opt)}
-                                        className={`flex-1 px-4 py-3 rounded-lg border-2 transition capitalize ${stance === opt
-                                            ? 'bg-blue-50 border-blue-500 text-blue-700'
-                                            : 'border-gray-300 hover:border-gray-400'
-                                            }`}
-                                    >
-                                        {opt}
-                                    </button>
-                                ))}
+                            {/* Section 4: Stance Toggle */}
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                    <Scale size={16} className="text-green-500" /> What's your stance?
+                                </label>
+                                <div className="flex flex-col gap-2">
+                                    {(['supportive', 'contrarian', 'exploratory'] as Stance[]).map((opt) => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => setStance(opt)}
+                                            className={`w-full px-4 py-3 rounded-xl border text-left transition-all text-sm font-medium capitalize flex items-center justify-between ${stance === opt
+                                                ? 'bg-green-50 border-green-500 text-green-700 shadow-sm ring-1 ring-green-200'
+                                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {opt}
+                                            {stance === opt && <div className="w-2 h-2 rounded-full bg-green-500" />}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -359,6 +378,7 @@ export default function NewDraftModal({
                     {/* Footer */}
                     <div className="flex items-center justify-between p-6 border-t bg-gray-50">
                         <button
+                            type="button"
                             onClick={handleClose}
                             className="px-6 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition"
                             disabled={isSubmitting}
@@ -366,6 +386,7 @@ export default function NewDraftModal({
                             Cancel
                         </button>
                         <button
+                            type="button"
                             onClick={handleSubmit}
                             disabled={isSubmitting}
                             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"

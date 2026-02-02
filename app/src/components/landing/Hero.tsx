@@ -14,20 +14,20 @@ export const Hero: React.FC = () => {
     <section className="relative pt-40 pb-24 md:pt-52 md:pb-40 px-4 hero-gradient overflow-hidden">
       <div className="max-w-7xl mx-auto text-center relative z-10">
         <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-green-50 border border-green-100 text-[11px] font-black text-green-700 mb-10 tracking-[0.2em] uppercase animate-fade-in-up shadow-sm">
-          EDITORIAL ENGINE 2.5
+          FOR WRITERS & CREATORS
         </div>
         <h1 className="font-display text-6xl md:text-[7rem] font-black tracking-tighter mb-10 max-w-6xl mx-auto leading-[0.9] text-zinc-900 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          Write with <span className="text-green-600">conviction</span>, not a prompt.
+          Write content that <span className="text-green-600">sounds like you</span>.
         </h1>
         <p className="text-zinc-500 text-xl md:text-2xl max-w-2xl mx-auto mb-14 font-medium leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          Stop publishing generative noise. Counterdraft is the <strong>Professional OS for Thought Leadership</strong>—designed to scale your unique expertise.
+          LinkedIn posts. Blog articles. Newsletters. Even books. Counterdraft helps you <strong>find your angle, organize your ideas, and publish without sounding generic</strong>.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-28 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <SignedOut>
             <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'hero' })}>
               <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-green-600/20">
-                Start Building
+                Start Writing
               </button>
             </Link>
           </SignedOut>

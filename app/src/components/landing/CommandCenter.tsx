@@ -59,8 +59,8 @@ export const CommandCenter: React.FC = () => {
       count: 12,
       color: "bg-zinc-300",
       cards: [
-        { title: "The Anti-Influencer Playbook: Strategic silence.", category: "Manifesto", tagColor: "bg-purple-50 text-purple-700 border-purple-100", date: "2m ago" },
-        { title: "GTM Bloodloss: Why Q3 projections fail.", category: "Strategy", tagColor: "bg-blue-50 text-blue-700 border-blue-100", date: "4h ago" }
+        { title: "Why your LinkedIn posts aren't getting traction", category: "LinkedIn", tagColor: "bg-blue-50 text-blue-700 border-blue-100", date: "2m ago" },
+        { title: "5 lessons from my first 1,000 newsletter subscribers", category: "Substack", tagColor: "bg-orange-50 text-orange-700 border-orange-100", date: "4h ago" }
       ]
     },
     {
@@ -68,7 +68,7 @@ export const CommandCenter: React.FC = () => {
       count: 3,
       color: "bg-amber-400",
       cards: [
-        { title: "Refactoring the CTO: From coder to leader.", category: "Essay", tagColor: "bg-amber-50 text-amber-700 border-amber-100", date: "1d ago" }
+        { title: "How I structure a 2,000-word blog post in 30 minutes", category: "Blog", tagColor: "bg-purple-50 text-purple-700 border-purple-100", date: "1d ago" }
       ]
     },
     {
@@ -76,7 +76,7 @@ export const CommandCenter: React.FC = () => {
       count: 1,
       color: "bg-green-500",
       cards: [
-        { title: "Metaphors for Non-Technical Buyers.", category: "Guide", tagColor: "bg-green-50 text-green-700 border-green-100", date: "2d ago" }
+        { title: "Client case study: B2B content that converts", category: "Portfolio", tagColor: "bg-green-50 text-green-700 border-green-100", date: "2d ago" }
       ]
     },
     {
@@ -84,7 +84,7 @@ export const CommandCenter: React.FC = () => {
       count: 84,
       color: "bg-zinc-800",
       cards: [
-        { title: "The Antidote to AI Slop: A guide for experts.", category: "Playbook", tagColor: "bg-zinc-100 text-zinc-600 border-zinc-200", date: "Oct 24" }
+        { title: "Chapter 3: Finding your writing voice", category: "Book", tagColor: "bg-zinc-100 text-zinc-600 border-zinc-200", date: "Oct 24" }
       ]
     }
   ];

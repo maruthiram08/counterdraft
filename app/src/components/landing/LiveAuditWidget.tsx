@@ -64,7 +64,7 @@ export const LiveAuditWidget: React.FC = () => {
             <div className="bg-zinc-50 border-b border-zinc-100 px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-400">Live Engine v2.5</span>
+                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-400">Try It Now</span>
                 </div>
                 <div className="text-xs font-bold text-zinc-400">Public Access</div>
             </div>
@@ -76,7 +76,7 @@ export const LiveAuditWidget: React.FC = () => {
                     <div className="flex-1 flex flex-col">
                         <textarea
                             className="w-full flex-1 resize-none bg-transparent border-none focus:ring-0 text-lg text-zinc-800 placeholder:text-zinc-300 font-serif leading-relaxed"
-                            placeholder="Paste a paragraph here to test your 'Voice Authority'..."
+                            placeholder="Paste a paragraph from your latest LinkedIn post or blog draft..."
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                         />
@@ -159,8 +159,8 @@ export const LiveAuditWidget: React.FC = () => {
                                 </div>
 
                                 <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                                    <h3 className="font-bold text-lg mb-1">Fix the thinking, not just the words.</h3>
-                                    <p className="text-zinc-400 text-xs mb-4">Unlock the deep strategic audit used by industry leaders.</p>
+                                    <h3 className="font-bold text-lg mb-1">See what's really holding your writing back.</h3>
+                                    <p className="text-zinc-400 text-xs mb-4">Get the full breakdown—free.</p>
 
                                     <div className="flex gap-2">
                                         <input

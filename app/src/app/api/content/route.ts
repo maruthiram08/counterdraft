@@ -85,7 +85,12 @@ export async function POST(req: Request) {
             }
         }
 
-        // 1. Create Content Item
+        // 1. Reconstruct sourceContext if missing (client optimization)
+        if (brain_metadata && !brain_metadata.sourceContext && references && references.length > 0) {
+            brain_metadata.sourceContext = references[0].content;
+        }
+
+        // 2. Create Content Item
         const { data: item, error: itemError } = await supabaseAdmin
             .from('content_items')
             .insert({
@@ -98,7 +103,7 @@ export async function POST(req: Request) {
                 source_topics,
                 stage,
                 draft_content,
-                brain_metadata,
+                brain_metadata, // Now includes sourceContext
                 dev_step,
             })
             .select()
@@ -107,59 +112,60 @@ export async function POST(req: Request) {
         if (itemError) throw itemError;
 
         // 1.5 Deep Logic: Genealogy & Confidence Check
-        if (stage === 'developing' || stage === 'idea') {
-            try {
-                // Determine Genealogy (Find Parent/Root)
-                const { data: beliefs } = await supabaseAdmin
-                    .from('beliefs')
-                    .select('id, statement, belief_type')
-                    .eq('user_id', userId);
+        // 1.5 Deep Logic: Genealogy & Confidence Check (Backgrounded)
+        (async () => {
+            if (stage === 'developing' || stage === 'idea') {
+                try {
+                    // Determine Genealogy (Find Parent/Root)
+                    const { data: beliefs } = await supabaseAdmin
+                        .from('beliefs')
+                        .select('id, statement, belief_type')
+                        .eq('user_id', userId);
 
-                const roots = (beliefs || []).map(b => ({
-                    id: b.id,
-                    statement: b.statement,
-                    type: b.belief_type
-                }));
+                    const roots = (beliefs || []).map(b => ({
+                        id: b.id,
+                        statement: b.statement,
+                        type: b.belief_type
+                    }));
 
-                const [genealogy, confidence] = await Promise.all([
-                    brainService.analyzeGenealogy(hook, roots),
-                    brainService.calculateConfidence(hook, (beliefs || []) as any as Belief[])
-                ]);
+                    const [genealogy, confidence] = await Promise.all([
+                        brainService.analyzeGenealogy(hook, roots),
+                        brainService.calculateConfidence(hook, (beliefs || []) as any as Belief[])
+                    ]);
 
-                // Update item with genealogy and update metadata with confidence
-                const updatedMetadata = {
-                    ...brain_metadata,
-                    confidence: confidence.level,
-                    confidence_score: confidence.score,
-                    confidence_reasoning: confidence.reasoning
-                };
+                    // Update item with genealogy and update metadata with confidence
+                    const updatedMetadata = {
+                        ...brain_metadata,
+                        confidence: confidence.level,
+                        confidence_score: confidence.score,
+                        confidence_reasoning: confidence.reasoning
+                    };
 
-                await supabaseAdmin
-                    .from('content_items')
-                    .update({
-                        root_belief_id: genealogy.rootId,
-                        brain_metadata: updatedMetadata
-                    })
-                    .eq('id', item.id);
+                    await supabaseAdmin
+                        .from('content_items')
+                        .update({
+                            root_belief_id: genealogy.rootId,
+                            brain_metadata: updatedMetadata
+                        })
+                        .eq('id', item.id);
 
-                // Refresh item in response
-                item.root_belief_id = genealogy.rootId;
-                item.brain_metadata = updatedMetadata;
+                    console.log(`[POST /api/content] Background analysis complete for ${item.id}`);
 
-            } catch (logicError) {
-                console.error('Brain V1 Logic Failed (non-blocking):', logicError);
+                } catch (logicError) {
+                    console.error('Brain V1 Logic Failed (background):', logicError);
+                }
             }
-        }
+        })();
 
         // 2. Create References (if any)
         if (references && references.length > 0) {
             const formattedRefs = references.map((ref: any) => ({
                 content_item_id: item.id,
-                reference_type: ref.type,
+                reference_type: ref.referenceType || ref.type || 'text', // Support both naming conventions
                 title: ref.title || 'Untitled Reference',
                 content: ref.content,
                 url: ref.url,
-                file_path: ref.filePath // Optional, for files
+                file_path: ref.filePath
             }));
 
             const { error: refError } = await supabaseAdmin
@@ -178,6 +184,12 @@ export async function POST(req: Request) {
         }
 
         console.log(`[POST /api/content] Created item ${item.id} with stage ${item.stage}`);
+
+        // OPTIMIZATION: Remove large sourceContext from response to prevent network timeouts
+        if (item.brain_metadata && item.brain_metadata.sourceContext) {
+            delete item.brain_metadata.sourceContext;
+        }
+
         return NextResponse.json({ item }, { status: 201 });
     } catch (err: any) {
         console.error('Content API POST Error:', err);

@@ -80,7 +80,13 @@ export function ReferenceSection({ references, onAdd, onRemove }: ReferenceSecti
             <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <FileText size={16} />
                 References
-                <span className="text-xs font-normal text-gray-400">(Optional)</span>
+                {references.length > 0 ? (
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                        {references.length} attached ✓
+                    </span>
+                ) : (
+                    <span className="text-xs font-normal text-gray-400">(Optional)</span>
+                )}
             </h3>
 
             {/* Input Area */}

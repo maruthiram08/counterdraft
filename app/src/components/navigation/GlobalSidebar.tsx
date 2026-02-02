@@ -17,10 +17,10 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
     const [isMobile, setIsMobile] = useState(false);
 
     const navItems = [
-        { id: 'pipeline', label: 'Command Center', icon: Home },
-        { id: 'mind', label: 'Your Mind', icon: Brain },
         { id: 'explore', label: 'Explore', icon: Compass },
-        { id: 'drafts', label: 'Library', icon: Book },
+        { id: 'pipeline', label: 'Command Center', icon: Home },
+        { id: 'drafts', label: 'Your Post', icon: Book },
+        { id: 'mind', label: 'Your Mind', icon: Brain },
     ];
 
     // Responsive detection

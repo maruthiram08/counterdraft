@@ -16,10 +16,28 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus input on mount
+    // Auto-focus input on mount
     useEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-        }
+        // Robust focus strategy:
+        // 1. Immediate try
+        // 2. Short timeout
+        // 3. RAF for next paint
+        const attemptFocus = () => {
+            if (inputRef.current) {
+                inputRef.current.focus({ preventScroll: true });
+            }
+        };
+
+        attemptFocus();
+        const t1 = setTimeout(attemptFocus, 50);
+        const raf = requestAnimationFrame(() => {
+            attemptFocus();
+        });
+
+        return () => {
+            clearTimeout(t1);
+            cancelAnimationFrame(raf);
+        };
     }, []);
 
     if (!position) return null;
@@ -53,14 +71,14 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
             ) : (
                 <>
                     {/* Top: Large Input Area */}
-                    <form onSubmit={handleCustomSubmit} className="p-4 border-b border-gray-100 bg-gray-50/30">
+                    <form onSubmit={handleCustomSubmit} className="p-3 border-b border-gray-100 bg-gray-50/50">
                         <input
                             ref={inputRef}
                             type="text"
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
-                            placeholder="Describe your change..."
-                            className="w-full text-lg font-medium outline-none bg-transparent placeholder:text-gray-400 text-gray-800"
+                            placeholder="Ask AI to refine selection..."
+                            className="w-full text-[15px] font-medium outline-none bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-800 placeholder:text-gray-400 focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-sm"
                             autoFocus
                             onKeyDown={(e) => {
                                 if (e.key === 'Escape') onClose();
