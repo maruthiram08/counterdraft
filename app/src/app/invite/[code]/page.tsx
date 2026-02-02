@@ -12,15 +12,17 @@ const supabase = createClient(
 );
 
 interface Props {
-    params: { code: string }
+    params: Promise<{ code: string }>
 }
 
 export default async function InvitePage({ params }: Props) {
+    const { code } = await params;
+
     // 1. Validate Code
     const { data: coupon } = await supabase
         .from('coupons')
         .select('*, access_plans(*)')
-        .eq('code', params.code)
+        .eq('code', code)
         .eq('max_redemptions', 1) // Ensure it's a magic link type
         .single();
 
@@ -56,7 +58,7 @@ export default async function InvitePage({ params }: Props) {
                             <strong>Zero Cost.</strong> No credit card required.
                         </div>
 
-                        <InviteClient code={params.code} />
+                        <InviteClient code={code} />
                     </>
                 )}
             </div>
