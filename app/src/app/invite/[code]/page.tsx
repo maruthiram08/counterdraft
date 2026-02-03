@@ -23,7 +23,6 @@ export default async function InvitePage({ params }: Props) {
         .from('coupons')
         .select('*, access_plans(*)')
         .eq('code', code)
-        .eq('max_redemptions', 1) // Ensure it's a magic link type
         .single();
 
     if (!coupon) {
