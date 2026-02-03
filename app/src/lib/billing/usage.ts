@@ -34,19 +34,29 @@ export class UsageService {
         }
 
         // 2. Determine Tier & Limit
-        // PRIORITY: Trust 'users.subscription_status' first.
-        // If active, map plan to Tier. Else fall back to free.
+        // CHECK NEW SUBSCRIPTIONS TABLE
         let effectiveTier: Tier = PRICING_CONFIG.TIERS.FREE;
 
-        // Check if we have joined user data (we should)
-        const userSub = (usage as any).users;
+        const { data: subscription } = await supabase
+            .from('subscriptions')
+            .select('plan_id, status')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .maybeSingle();
 
-        if (userSub && userSub.subscription_status === 'active') {
-            // Map 'pro_monthly' -> 'PRO'
-            if (userSub.subscription_plan?.includes('pro')) {
+        if (subscription && subscription.status === 'active') {
+            // Map 'pro_beta_2026' -> 'PRO'
+            if (subscription.plan_id.includes('pro')) {
                 effectiveTier = PRICING_CONFIG.TIERS.PRO;
             }
-            // Add business logic if needed
+        } else {
+            // FALLBACK: Legacy check on users table (if needed during migration)
+            const userSub = (usage as any).users;
+            if (userSub && userSub.subscription_status === 'active') {
+                if (userSub.subscription_plan?.includes('pro')) {
+                    effectiveTier = PRICING_CONFIG.TIERS.PRO;
+                }
+            }
         }
 
         const limit = PRICING_CONFIG.LIMITS[effectiveTier].DRAFTS_PER_MONTH;
@@ -131,11 +141,24 @@ export class UsageService {
 
         // 2. Determine Tier & Limit
         let effectiveTier: Tier = PRICING_CONFIG.TIERS.FREE;
-        const userSub = (usage as any).users;
 
-        if (userSub && userSub.subscription_status === 'active') {
-            if (userSub.subscription_plan?.includes('pro')) {
+        const { data: subscription } = await supabase
+            .from('subscriptions')
+            .select('plan_id, status')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .maybeSingle();
+
+        if (subscription && subscription.status === 'active') {
+            if (subscription.plan_id.includes('pro')) {
                 effectiveTier = PRICING_CONFIG.TIERS.PRO;
+            }
+        } else {
+            const userSub = (usage as any).users;
+            if (userSub && userSub.subscription_status === 'active') {
+                if (userSub.subscription_plan?.includes('pro')) {
+                    effectiveTier = PRICING_CONFIG.TIERS.PRO;
+                }
             }
         }
 
