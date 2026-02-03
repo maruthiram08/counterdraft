@@ -20,7 +20,8 @@ export async function getOrCreateUser(): Promise<string | null> {
         .single();
 
     if (existingUser) {
-        return existingUser.id;
+        // RETURN CLERK_ID (NOT INTERNAL ID) because Subscriptions use ClerkID
+        return userId;
     }
 
     // Get user details from Clerk and create in Supabase
@@ -40,5 +41,5 @@ export async function getOrCreateUser(): Promise<string | null> {
         return null;
     }
 
-    return newUser?.id || null;
+    return userId; // Always return Clerk ID
 }
