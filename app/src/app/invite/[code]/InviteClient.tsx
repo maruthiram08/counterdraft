@@ -14,7 +14,7 @@ export default function InviteClient({ code }: { code: string }) {
         // We redirect to a dedicated sign-up-sso logic or just home.
         // Clerk will handle the auth. 
         // We'll redirect to /workspace, which triggers Clerk's "SignIn if not auth" logic
-        router.push('/workspace');
+        window.location.assign('/workspace');
     };
 
     return (
