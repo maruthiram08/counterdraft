@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
 
         // Check Limits
         const limitCheck = await UsageService.checkDraftLimit(userId);
+        console.log('[API Status] Limit Check Result:', JSON.stringify(limitCheck, null, 2));
 
         // Safe access to pricing config
         const tierConfig = PRICING_CONFIG.LIMITS[limitCheck.tier as Tier];
