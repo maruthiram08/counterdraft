@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
         }
 
         const limits = await UsageService.checkDraftLimit(userId);
+        console.log('[API Usage] Limits:', JSON.stringify(limits, null, 2));
 
         return NextResponse.json({
             usage: limits.usage,
