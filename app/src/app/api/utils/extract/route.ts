@@ -6,6 +6,10 @@ import { getOrCreateUser } from '@/lib/user-sync';
 // Force dynamic to prevent caching of failed results
 export const dynamic = 'force-dynamic';
 
+/**
+ * Validates if a URL is safe for server-side extraction.
+ * Blocks localhost, private IP ranges, and cloud metadata services to prevent SSRF.
+ */
 function isSafeUrl(url: string) {
     try {
         const parsed = new URL(url);
