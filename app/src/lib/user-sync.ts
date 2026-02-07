@@ -9,6 +9,7 @@ export async function getOrCreateUser(): Promise<string | null> {
     const { userId } = await auth();
 
     if (!userId) {
+        console.warn('getOrCreateUser: No userId from auth()');
         return null;
     }
 
@@ -20,9 +21,11 @@ export async function getOrCreateUser(): Promise<string | null> {
         .single();
 
     if (existingUser) {
-        // RETURN CLERK_ID (NOT INTERNAL ID) because Subscriptions use ClerkID
-        return userId;
+        // Return INTERNAL ID - all foreign keys reference users.id
+        return existingUser.id;
     }
+
+    console.log('getOrCreateUser: Creating new user for', userId);
 
     // Get user details from Clerk and create in Supabase
     // For now, use clerk_id as email placeholder
@@ -41,5 +44,5 @@ export async function getOrCreateUser(): Promise<string | null> {
         return null;
     }
 
-    return userId; // Always return Clerk ID
+    return newUser.id; // Return internal Supabase ID
 }

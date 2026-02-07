@@ -44,6 +44,7 @@ export async function POST(req: Request) {
             .select('id')
             .eq('content_id', content_id)
             .eq('content_type', content_type)
+            .eq('user_id', userId)
             .single();
 
         if (existing) {
@@ -54,8 +55,10 @@ export async function POST(req: Request) {
                     content_text,
                     embedding: JSON.stringify(embedding),
                     updated_at: new Date().toISOString(),
+                    user_id: userId // Ensure ownership
                 })
-                .eq('id', existing.id);
+                .eq('id', existing.id)
+                .eq('user_id', userId); // Extra safety
 
             if (error) throw error;
             return NextResponse.json({ message: 'Embedding updated', id: existing.id });
@@ -68,6 +71,7 @@ export async function POST(req: Request) {
                     content_type,
                     content_text,
                     embedding: JSON.stringify(embedding),
+                    user_id: userId // Scope to user
                 })
                 .select('id')
                 .single();
@@ -108,6 +112,7 @@ export async function GET(req: Request) {
             query_embedding: queryEmbedding,
             match_count: limit,
             filter_type: contentType || null,
+            filter_user_id: userId // Critical Security Filter
         });
 
         if (error) {
@@ -119,7 +124,40 @@ export async function GET(req: Request) {
             });
         }
 
-        return NextResponse.json({ similar: data || [] });
+        let filtered = Array.isArray(data) ? data : [];
+        if (filtered.length > 0) {
+            if ('user_id' in filtered[0]) {
+                filtered = filtered.filter((row: any) => row.user_id === userId);
+            } else if ('id' in filtered[0]) {
+                const ids = filtered.map((row: any) => row.id).filter(Boolean);
+                if (ids.length > 0) {
+                    const { data: allowed } = await supabase
+                        .from('content_embeddings')
+                        .select('id')
+                        .eq('user_id', userId)
+                        .in('id', ids);
+                    const allowedIds = new Set((allowed || []).map((row: any) => row.id));
+                    filtered = filtered.filter((row: any) => allowedIds.has(row.id));
+                } else {
+                    filtered = [];
+                }
+            } else if ('content_id' in filtered[0]) {
+                const contentIds = filtered.map((row: any) => row.content_id).filter(Boolean);
+                if (contentIds.length > 0) {
+                    const { data: allowed } = await supabase
+                        .from('content_embeddings')
+                        .select('content_id')
+                        .eq('user_id', userId)
+                        .in('content_id', contentIds);
+                    const allowedIds = new Set((allowed || []).map((row: any) => row.content_id));
+                    filtered = filtered.filter((row: any) => allowedIds.has(row.content_id));
+                } else {
+                    filtered = [];
+                }
+            }
+        }
+
+        return NextResponse.json({ similar: filtered });
 
     } catch (err: any) {
         console.error('Similarity Search Error:', err);

@@ -21,28 +21,7 @@ export async function POST(req: Request) {
             userId = await getOrCreateUser();
 
             if (!userId) {
-                // Fallback to test user for development
-                const { data: existingUser } = await supabaseAdmin
-                    .from("users")
-                    .select("id")
-                    .eq("email", "test@counterdraft.com")
-                    .single();
-
-                if (existingUser) {
-                    userId = existingUser.id;
-                } else {
-                    const { data: newUser, error: createError } = await supabaseAdmin
-                        .from("users")
-                        .insert({
-                            email: "test@counterdraft.com",
-                            name: "Test User",
-                        })
-                        .select("id")
-                        .single();
-
-                    if (createError) throw createError;
-                    userId = newUser.id;
-                }
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
             }
 
             // 2. Insert Content into raw_posts

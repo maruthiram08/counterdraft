@@ -6,6 +6,8 @@ import { UsageService } from '@/lib/billing/usage';
 import { brainService } from '@/lib/brain/service';
 import { Belief } from '@/types';
 import { TraceLogger } from '@/lib/trace';
+import { extractBeliefs } from '@/lib/openai';
+import { storeAnalysisResults } from '@/lib/belief-storage';
 
 // GET /api/content - List content items with optional stage filter
 export async function GET(req: Request) {
@@ -116,6 +118,7 @@ export async function POST(req: Request) {
 
         // 1.5 Deep Logic: Genealogy & Confidence Check
         // 1.5 Deep Logic: Genealogy & Confidence Check (Backgrounded)
+        // 1.5 Deep Logic: Genealogy & Confidence Check (Backgrounded)
         (async () => {
             if (stage === 'developing' || stage === 'idea') {
                 try {
@@ -224,6 +227,7 @@ export async function PATCH(req: Request) {
                 .from('content_items')
                 .select('stage')
                 .eq('id', id)
+                .eq('user_id', userId) // FIX: Scope to user to prevent leaking existence
                 .single();
 
             // FIX: Count limit if we are moving TO 'draft' from ANY other stage (idea, developing)
@@ -298,6 +302,8 @@ export async function PATCH(req: Request) {
             console.log(`[PATCH /api/content] Incrementing usage for User ${userId}`);
             await UsageService.incrementDraftCount(userId);
         }
+
+
 
         return NextResponse.json({ item: data });
     } catch (err: any) {

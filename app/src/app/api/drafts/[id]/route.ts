@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabase } from '@/lib/supabase';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { extractBeliefs } from '@/lib/openai';
+import { storeAnalysisResults } from '@/lib/belief-storage';
+
 
 // DELETE /api/drafts/[id] - Delete a draft
 export async function DELETE(
@@ -86,6 +89,8 @@ export async function PATCH(
             .single();
 
         if (error) throw error;
+
+
 
         return NextResponse.json({ draft, success: true });
     } catch (error: any) {

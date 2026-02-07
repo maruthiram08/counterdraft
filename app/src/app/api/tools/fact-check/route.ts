@@ -3,13 +3,29 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { FactCheckService } from '@/lib/tools/fact-check';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
+export const maxDuration = 120; // Allow 2 minutes for multiple Tavily + LLM calls
+
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const draftId = searchParams.get('draftId');
 
+        const userId = await getOrCreateUser();
+        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         if (!draftId) {
             return NextResponse.json({ error: 'Draft ID required' }, { status: 400 });
+        }
+
+        // Check ownership
+        const { data: draft } = await supabaseAdmin
+            .from('drafts')
+            .select('user_id')
+            .eq('id', draftId)
+            .single();
+
+        if (!draft || draft.user_id !== userId) {
+            return NextResponse.json({ error: 'Draft not found or unauthorized' }, { status: 403 });
         }
 
         const { data, error } = await supabaseAdmin
@@ -55,6 +71,17 @@ export async function POST(req: NextRequest) {
 
         // 2. Save to DB (if draftId)
         if (draftId) {
+            // Check ownership first
+            const { data: draft } = await supabaseAdmin
+                .from('drafts')
+                .select('user_id')
+                .eq('id', draftId)
+                .single();
+
+            if (!draft || draft.user_id !== userId) {
+                return NextResponse.json({ error: 'Draft unauthorized' }, { status: 403 });
+            }
+
             // Clear old verifications to ensure we only show the latest state
             await supabaseAdmin.from('content_verifications').delete().eq('draft_id', draftId);
 

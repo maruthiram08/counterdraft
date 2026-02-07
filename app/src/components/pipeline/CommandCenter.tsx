@@ -182,6 +182,16 @@ function Column({ title, icon, items, stage, color, onAction, loading, className
                                             <span className="text-[10px] font-medium leading-none">Open</span>
                                         </button>
                                     )}
+                                    {stage === 'published' && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onAction(item.id, 'edit'); }}
+                                            className="flex flex-col items-center gap-1 p-2 hover:bg-green-50 text-gray-400 hover:text-green-700 rounded-lg transition-colors group/btn min-w-[50px]"
+                                            title="View/Edit"
+                                        >
+                                            <FileText size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
+                                            <span className="text-[10px] font-medium leading-none">Open</span>
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="flex gap-1 items-center">
@@ -358,7 +368,12 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
         if (!developingItem) return;
 
         try {
-            // 1. Update Content Item (Pipeline Status)
+            // 1. Update Content Item (Pipeline Status) & Save Initial Draft for Voice Learning
+            const updatedMetadata = {
+                ...(developingItem.brain_metadata || {}),
+                initial_draft: draftContent
+            };
+
             const res = await fetch('/api/content', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -366,6 +381,7 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                     id: developingItem.id,
                     stage: 'draft',
                     draft_content: draftContent,
+                    brain_metadata: updatedMetadata
                 }),
             });
 
@@ -410,6 +426,18 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
             const draftData = await draftRes.json();
 
             if (draftData.draft) {
+                // Trigger Knowledge Extraction for the new draft
+                try {
+                    fetch('/api/knowledge/extract', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: draftContent,
+                            contentId: draftData.draft.id
+                        })
+                    });
+                } catch (ignore) { }
+
                 if (onDraftCreated) await onDraftCreated();
                 if (onEdit) onEdit(draftData.draft.id);
             }
@@ -585,8 +613,17 @@ export function CommandCenter({ onEdit, onDraftCreated, onNewDraft: parentNewDra
                             color="bg-blue-100"
                             onAction={handleAction}
                             loading={loading}
-                            className="lg:col-span-2"
-                            cols={2}
+                        />
+                    )}
+                    {(!isMobile || activeStage === 'published') && (
+                        <Column
+                            title="Published"
+                            icon={<CheckCircle size={16} className="text-green-600" />}
+                            items={published}
+                            stage="published"
+                            color="bg-green-100"
+                            onAction={handleAction}
+                            loading={loading}
                         />
                     )}
                 </div>

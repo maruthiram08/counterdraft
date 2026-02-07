@@ -1,11 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, Loader2, Check, RefreshCw, X, Download, Plus, AlertTriangle } from "lucide-react";
+import {
+    Check, ChevronRight, Download, Edit2, Layout, Loader2, Maximize2, MessageSquare,
+    Minimize2, Plus, RefreshCw, Save, Sparkles, Trash2, X, AlertTriangle, Play,
+    Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, ArrowLeft, ArrowRight, Target
+} from "lucide-react";
+import { toast } from "sonner";
 import { BrainHeaderPanel } from "./BrainHeaderPanel";
 import { BrainMetadata } from "@/types";
 import { ResearchItem } from "./ResearchItem";
 import { LimitModal } from "../modal/LimitModal";
+import { StrategyFeedbackPanel } from "./StrategyFeedbackPanel";
 
 interface ResearchPoint {
     text: string;
@@ -35,10 +41,78 @@ interface ContentItem {
     draft_content?: string;
 }
 
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
+
 interface DevelopmentWizardProps {
     item: ContentItem;
     onClose: () => void;
     onComplete: (draftContent: string) => void;
+}
+
+// Helper Sortable Component
+function SortableOutlineItem({
+    id,
+    index,
+    section,
+    onUpdate,
+    onAddNote,
+    onDeleteNote,
+    onDelete
+}: {
+    id: string;
+    index: number;
+    section: ResearchPoint;
+    onUpdate: (val: string) => void;
+    onAddNote: (note: string) => void;
+    onDeleteNote: (idx: number) => void;
+    onDelete: () => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 'auto',
+        position: isDragging ? 'relative' as const : 'static' as const,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className={`flex items-start gap-2 group ${isDragging ? 'opacity-50' : ''}`}>
+            <div
+                {...attributes}
+                {...listeners}
+                className="mt-2.5 p-1 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded"
+            >
+                <GripVertical size={14} />
+            </div>
+
+            <span className="w-8 h-8 bg-[var(--accent)] text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0 shadow-sm mt-1">
+                {index + 1}
+            </span>
+            <div className="flex-1">
+                <ResearchItem
+                    showBullet={false}
+                    text={section.text}
+                    notes={section.notes}
+                    isNew={section.isNew}
+                    onUpdate={onUpdate}
+                    onAddNote={onAddNote}
+                    onDeleteNote={onDeleteNote}
+                    onDelete={onDelete}
+                />
+            </div>
+        </div>
+    );
 }
 
 type WizardStep = 'deep_dive' | 'outline' | 'generate';
@@ -56,6 +130,121 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     // Draft state
     const [draftContent, setDraftContent] = useState('');
+
+    // Strategy Verification State
+    const [strategyAnalysis, setStrategyAnalysis] = useState<any>(null);
+    const [verifyingStrategy, setVerifyingStrategy] = useState(false);
+
+    const handleVerifyStrategy = async (contentOverride?: string) => {
+        const textToVerify = contentOverride || draftContent;
+        if (!textToVerify) return;
+
+        setVerifyingStrategy(true);
+        // Ensure context panel is open so user sees result
+        setShowContextPanel(true);
+
+        try {
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'verify_strategy',
+                    draft: textToVerify,
+                    brainMetadata: item.brain_metadata
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setStrategyAnalysis(data);
+                toast.success('Strategy analysis complete');
+            } else {
+                toast.error(data.error || 'Failed to verify strategy');
+            }
+        } catch (error) {
+            toast.error('Verification failed');
+        } finally {
+            setVerifyingStrategy(false);
+        }
+    };
+
+    const [fixingStrategy, setFixingStrategy] = useState(false);
+
+    // Fact Check State
+    const [factResults, setFactResults] = useState<any[]>([]);
+    const [verifyingFacts, setVerifyingFacts] = useState(false);
+
+    const handleVerifyFacts = async () => {
+        if (!draftContent) return;
+        setVerifyingFacts(true);
+        try {
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'verify_facts', // Backend must support this
+                    draft: draftContent,
+                    brainMetadata: item.brain_metadata
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setFactResults(data.facts || []);
+                if (data.facts?.length === 0) toast.info("No claims found to verify.");
+                else toast.success(`Verified ${data.facts.length} claims.`);
+            } else {
+                toast.error("Fact check failed");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Fact check failed");
+        } finally {
+            setVerifyingFacts(false);
+        }
+    };
+
+    const handleAutoFix = async (instruction: string) => {
+        if (!draftContent) return;
+        setFixingStrategy(true);
+        try {
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'auto_fix_strategy',
+                    draft: draftContent,
+                    fix_instruction: instruction,
+                    brainMetadata: item.brain_metadata
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.draft) {
+                setDraftContent(data.draft);
+                toast.success('Auto-fix applied! Re-verifying...');
+                // Automatically re-run verification on the NEW content
+                await handleVerifyStrategy(data.draft);
+                // Also clear old facts as they might be stale
+                setFactResults([]);
+            } else {
+                toast.error('Failed to apply fix');
+            }
+        } catch (error) {
+            toast.error('Auto-fix failed');
+        } finally {
+            setFixingStrategy(false);
+        }
+    };
+
+    const handleFactFix = (claim: string, analysis: string, sourceSnippet?: string, status?: string) => {
+        let instruction = "";
+        if (status === 'unverified') {
+            instruction = `The claim "${claim}" could not be verified by sources. Review the analysis: "${analysis}". If this claim is important, rewrite it to be more precise or explicitly hypothetical. If it's unsupported fluff, DELETE it completely.`;
+        } else {
+            instruction = `The claim "${claim}" is factually DISPUTED. Correct it immediately using this verified evidence: "${analysis}". ${sourceSnippet ? `Source context: ${sourceSnippet}` : ''} Keep the rest of the text unchanged.`;
+        }
+        handleAutoFix(instruction);
+    };
 
     // Limit State
     const [limitModalOpen, setLimitModalOpen] = useState(false);
@@ -143,8 +332,13 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const normalizeOutline = (data: any): ResearchPoint[] => {
         if (!data || !data.sections) return [];
         return data.sections.map((s: any) => {
-            if (typeof s === 'string') return { text: s, notes: [] };
-            return s as ResearchPoint;
+            let text = typeof s === 'string' ? s : s.text;
+
+            // CLEAN PREFIXES (Section 1:, 1., etc) so they don't conflict with UI numbering
+            text = text.replace(/^(Section\s+\d+[:.]?\s*|\d+[.:]\s*)/i, '').trim();
+
+            if (typeof s === 'string') return { text, notes: [] };
+            return { ...s, text } as ResearchPoint;
         });
     };
 
@@ -170,6 +364,19 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             });
             if (!res.ok) {
                 const errData = await res.json();
+
+                // NEW: Handle Limit Blocking Gracefully
+                if (res.status === 403) {
+                    setLimitState({
+                        tier: errData.usage?.tier || 'free',
+                        usage: errData.usage?.count || 0,
+                        limit: errData.usage?.limit || 20
+                    });
+                    setLimitModalOpen(true);
+                    setLoading(false);
+                    return; // Stop execution
+                }
+
                 throw new Error(errData.error || `Server Error ${res.status}`);
             }
 
@@ -271,6 +478,19 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     references: localBrainMetadata?.references || [],
                 }),
             });
+            if (!res.ok) {
+                const errData = await res.json();
+                if (res.status === 403) {
+                    setLimitState({
+                        tier: errData.usage?.tier || 'free',
+                        usage: errData.usage?.count || 0,
+                        limit: errData.usage?.limit || 20
+                    });
+                    setLimitModalOpen(true);
+                    return;
+                }
+                throw new Error(errData.error || `Server Error ${res.status}`);
+            }
             const data = await res.json();
             const normalizedSections = normalizeOutline(data.outline);
             setOutline(normalizedSections);
@@ -302,6 +522,23 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     references: localBrainMetadata?.references || [],
                 }),
             });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                if (res.status === 403) {
+                    setLimitState({
+                        tier: errData.usage?.tier || 'free',
+                        usage: errData.usage?.count || 0,
+                        limit: errData.usage?.limit || 20
+                    });
+                    setLimitModalOpen(true);
+                    // Don't throw, just stop
+                    setLoading(false);
+                    return;
+                }
+                throw new Error(errData.error || `Server Error ${res.status}`);
+            }
+
             const data = await res.json();
             setDraftContent(data.draft || '');
         } catch (err) {
@@ -415,6 +652,28 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         saveProgress({ outline: { sections: newList } });
     };
 
+    // Dnd Sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (active.id !== over?.id) {
+            const oldIndex = parseInt(String(active.id).replace('item-', ''));
+            const newIndex = parseInt(String(over?.id).replace('item-', ''));
+
+            if (!isNaN(oldIndex) && !isNaN(newIndex)) {
+                const newOutline = arrayMove(outline, oldIndex, newIndex);
+                setOutline(newOutline);
+                saveProgress({ outline: { sections: newOutline } });
+            }
+        }
+    };
+
     // Restoration logic
     useEffect(() => {
         // Hydrate data from item if available
@@ -457,6 +716,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     ];
 
     const currentStepIndex = steps.findIndex(s => s.key === step);
+
+    // Smart Visibility Logic
+    const hasStrategy = !!(localBrainMetadata && (localBrainMetadata.outcome || localBrainMetadata.audience?.role));
+    const hasOutline = outline.length > 0;
+    const hasResearch = !!(deepDive && deepDive.research.length > 0);
+    const hasContext = hasStrategy || hasOutline || hasResearch;
 
     return (
         <div className="fixed top-0 right-0 bottom-0 left-0 md:left-16 z-40 flex flex-col bg-white animate-in fade-in duration-200 border-l border-gray-200">
@@ -644,28 +909,35 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                                 Add Section
                                             </button>
                                         </div>
-                                        <div className="space-y-3">
-                                            {outline.map((section, i) => (
-                                                <div key={`out-wrap-${i}`} className="flex items-start gap-3">
-                                                    <span className="w-8 h-8 bg-[var(--accent)] text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0 shadow-sm mt-1">
-                                                        {i + 1}
-                                                    </span>
-                                                    <div className="flex-1">
-                                                        <ResearchItem
-                                                            key={`out-${i}`}
-                                                            showBullet={false}
-                                                            text={section.text}
-                                                            notes={section.notes}
-                                                            isNew={section.isNew}
+                                        <DndContext
+                                            sensors={sensors}
+                                            collisionDetection={closestCenter}
+                                            onDragEnd={handleDragEnd}
+                                        >
+                                            <SortableContext
+                                                items={outline.map((_, i) => `item-${i}`)}
+                                                strategy={verticalListSortingStrategy}
+                                            >
+                                                <div className="space-y-3">
+                                                    {outline.map((section, i) => (
+                                                        <SortableOutlineItem
+                                                            key={`item-${i}`} // Stable key issue: using index temporarily, but ideally needs semantic ID. 
+                                                            // Since outline items don't have IDs, we'll map by index for now but be careful.
+                                                            // Actually, using index as ID for sortable is tricky if items change. 
+                                                            // Let's use a stable ID strategy if possible, or just index for reorder.
+                                                            // For this implementation, we will use a simple wrapper.
+                                                            id={`item-${i}`}
+                                                            index={i}
+                                                            section={section}
                                                             onUpdate={(txt) => handleUpdateOutlinePoint(i, { text: txt })}
                                                             onAddNote={(note) => handleUpdateOutlinePoint(i, { notes: [...section.notes, note] })}
                                                             onDeleteNote={(nIdx) => handleUpdateOutlinePoint(i, { notes: section.notes.filter((_, idx) => idx !== nIdx) })}
                                                             onDelete={() => handleDeleteOutlinePoint(i)}
                                                         />
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </SortableContext>
+                                        </DndContext>
                                         <label className="flex items-center gap-2 mt-4 p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100/50 transition-colors">
                                             <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${outlineApproved ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-300'}`}>
                                                 {outlineApproved && <Check size={14} />}
@@ -687,74 +959,213 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
                         {/* Draft Step */}
                         {step === 'generate' && (
-                            <div className="space-y-4">
+                            <div className="flex-1 flex flex-col min-h-[600px] h-full">
                                 {loading ? (
                                     <div className="flex flex-col items-center py-12 text-gray-400">
                                         <Loader2 size={32} className="animate-spin mb-4" />
                                         <p>Writing your draft...</p>
                                     </div>
                                 ) : draftContent ? (
-                                    <div className="prose max-w-none">
-                                        <textarea
-                                            value={draftContent}
-                                            readOnly
-                                            className="w-full h-96 p-4 border rounded-lg bg-gray-50 font-mono text-sm resize-none focus:outline-none"
-                                        />
+                                    <div className="flex flex-1 gap-6">
+                                        {/* Editor Pane (Left) */}
+                                        <div className={`flex-1 flex flex-col transition-all duration-300 ${showContextPanel ? 'md:mr-0' : 'mx-auto max-w-3xl'}`}>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-medium text-gray-900">Draft Content</h3>
+                                                <div className="flex gap-2">
+                                                    {hasContext && (
+                                                        <button
+                                                            onClick={() => setShowContextPanel(!showContextPanel)}
+                                                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showContextPanel
+                                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                                }`}
+                                                        >
+                                                            {showContextPanel ? 'Hide Context' : 'Show Context'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+                                                {/* Mock Toolbar */}
+                                                <div className="flex items-center gap-1 p-2 border-b border-gray-100 bg-gray-50/50">
+                                                    <div className="flex gap-0.5">
+                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><Bold size={14} /></button>
+                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><Italic size={14} /></button>
+                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><Underline size={14} /></button>
+                                                    </div>
+                                                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                                                    <div className="flex gap-0.5">
+                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><AlignLeft size={14} /></button>
+                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><AlignCenter size={14} /></button>
+                                                    </div>
+                                                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                                                    <button
+                                                        onClick={() => handleVerifyStrategy()}
+                                                        disabled={verifyingStrategy}
+                                                        className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-[var(--accent)] bg-blue-50 border border-blue-100 hover:bg-blue-100 rounded transition-colors"
+                                                    >
+                                                        {verifyingStrategy ? <Loader2 size={12} className="animate-spin" /> : <Target size={12} />}
+                                                        Check Strategy
+                                                    </button>
+                                                    <div className="flex-1" />
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(draftContent);
+                                                            toast.success('Copied to clipboard');
+                                                        }}
+                                                        className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded"
+                                                    >
+                                                        <Copy size={12} /> Copy
+                                                    </button>
+                                                </div>
+                                                <div className="flex-1 relative">
+                                                    <textarea
+                                                        value={draftContent}
+                                                        onChange={(e) => setDraftContent(e.target.value)}
+                                                        className="absolute inset-0 w-full h-full resize-none outline-none font-serif text-lg leading-relaxed text-gray-800 placeholder-gray-300 p-8"
+                                                        placeholder="Start writing..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Context Pane (Right) */}
+                                        {showContextPanel && hasContext && (
+                                            <div className="w-80 shrink-0 hidden md:flex flex-col border-l border-gray-100 pl-6 animate-in slide-in-from-right-4 duration-300">
+                                                <div className="flex flex-col h-full bg-white/50 rounded-xl border border-gray-200/50 backdrop-blur-sm overflow-hidden">
+                                                    <div className="p-3 border-b border-gray-100 bg-gray-50/50">
+                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Strategic Context</h4>
+                                                    </div>
+                                                    <div className="flex-1 overflow-y-auto p-4 space-y-6">
+
+                                                        {/* Strategy */}
+                                                        {/* Strategy */}
+                                                        {hasStrategy && (
+                                                            <div className="space-y-2">
+                                                                <h5 className="text-sm font-medium text-gray-900 border-b border-gray-100 pb-1">Strategic Coach</h5>
+                                                                {/* Dynamic Analysis Panel */}
+                                                                <StrategyFeedbackPanel
+                                                                    analysis={strategyAnalysis}
+                                                                    loading={verifyingStrategy}
+                                                                    isFixing={fixingStrategy}
+                                                                    onVerify={handleVerifyStrategy}
+                                                                    onAutoFix={handleAutoFix}
+                                                                />
+
+                                                                {/* Fallback Static Info (only if no analysis yet) */}
+                                                                {!strategyAnalysis && !verifyingStrategy && (
+                                                                    <div className="text-xs text-gray-600 bg-blue-50/50 p-3 rounded-lg border border-blue-100 space-y-2 mt-2">
+                                                                        {localBrainMetadata?.audience?.role && (
+                                                                            <p><span className="font-semibold text-blue-800">Audience:</span> {localBrainMetadata.audience.role}</p>
+                                                                        )}
+                                                                        {localBrainMetadata?.outcome && (
+                                                                            <p><span className="font-semibold text-blue-800">Goal:</span> {localBrainMetadata.outcome}</p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Outline */}
+                                                        {hasOutline && (
+                                                            <div className="space-y-2">
+                                                                <h5 className="text-sm font-medium text-gray-900 border-b border-gray-100 pb-1">Outline</h5>
+                                                                <ul className="space-y-2">
+                                                                    {outline.map((sect, i) => (
+                                                                        <li key={i} className="text-xs text-gray-600 pl-3 border-l-2 border-gray-200">
+                                                                            {sect.text}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Key Stats/Research */}
+                                                        {hasResearch && (
+                                                            <div className="space-y-2">
+                                                                <h5 className="text-sm font-medium text-gray-900 border-b border-gray-100 pb-1">Key Findings</h5>
+                                                                <ul className="space-y-2">
+                                                                    {deepDive?.research.slice(0, 5).map((r, i) => (
+                                                                        <li key={i} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                                                            {r.text}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
-                                    <p className="text-gray-500">Ready to draft.</p>
+                                    <div className="flex items-center justify-center h-full text-gray-400">Ready to draft.</div>
                                 )}
                             </div>
                         )}
-                    </div>
 
-                </div>
-                {/* Bottom Sheet Context Panel */}
-                {showContextPanel && (
-                    <div className="absolute bottom-[72px] left-0 right-0 z-40 bg-white border-t border-[var(--accent)] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-6 animate-in slide-in-from-bottom-4 duration-300">
-                        <div className="max-w-4xl mx-auto w-full">
-                            <div className="flex justify-between items-center mb-4">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
-                                    <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-                                    Refine Research
-                                </label>
-                                <button
-                                    onClick={() => setShowContextPanel(false)}
-                                    className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
 
-                            <div className="flex gap-4">
-                                <textarea
-                                    value={globalContext}
-                                    onChange={(e) => setGlobalContext(e.target.value)}
-                                    disabled={loading}
-                                    autoFocus
-                                    placeholder="Paste a URL or describe missing angles (e.g., 'Include statistics about Gen Z usage')..."
-                                    className="flex-1 text-sm p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 min-h-[80px] bg-gray-50 resize-none"
-                                />
-                                <div className="flex flex-col justify-end">
-                                    <button
-                                        onClick={() => runDeepDive('append')}
-                                        disabled={loading || !globalContext.trim()}
-                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-[var(--accent)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all shadow-sm disabled:opacity-50 h-[80px]"
-                                    >
-                                        <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                                        {loading ? "Updating..." : "Update"}
-                                    </button>
+                        {/* Bottom Sheet Context Panel */}
+                        {showContextPanel && step !== 'generate' && (
+                            <div className="absolute bottom-[72px] left-0 right-0 z-40 bg-white border-t border-[var(--accent)] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-6 animate-in slide-in-from-bottom-4 duration-300">
+                                <div className="max-w-4xl mx-auto w-full">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <label className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                                            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+                                            Refine Research
+                                        </label>
+                                        <button
+                                            onClick={() => setShowContextPanel(false)}
+                                            className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex gap-4">
+                                        <textarea
+                                            value={globalContext}
+                                            onChange={(e) => setGlobalContext(e.target.value)}
+                                            disabled={loading}
+                                            autoFocus
+                                            placeholder="Paste a URL or describe missing angles (e.g., 'Include statistics about Gen Z usage')..."
+                                            className="flex-1 text-sm p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 min-h-[80px] bg-gray-50 resize-none"
+                                        />
+                                        <div className="flex flex-col justify-end">
+                                            <button
+                                                onClick={() => runDeepDive('append')}
+                                                disabled={loading || !globalContext.trim()}
+                                                className="flex items-center justify-center gap-2 px-6 py-3 bg-[var(--accent)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all shadow-sm disabled:opacity-50 h-[80px]"
+                                            >
+                                                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                                                {loading ? "Updating..." : "Update"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 text-xs text-gray-500">
+                                        Findings will be appended. Existing notes preserved.
+                                    </p>
                                 </div>
                             </div>
-                            <p className="mt-2 text-xs text-gray-500">
-                                Findings will be appended. Existing notes preserved.
-                            </p>
-                        </div>
-                    </div>
-                )}
+                        )}
 
-                {/* Footer Actions */}
-                <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
+
+
+                    </div>
+
+
+
+                    <LimitModal
+                        isOpen={limitModalOpen}
+                        onClose={() => setLimitModalOpen(false)}
+                        tier={limitState.tier}
+                        usage={limitState.usage}
+                        limit={limitState.limit}
+                    />
+                </div>
+
+                {/* Footer Actions (Sticky Bottom) */}
+                <div className="p-4 border-t bg-gray-50 flex justify-between items-center z-50 shrink-0">
                     <button
                         onClick={handleBack}
                         disabled={step === 'deep_dive' || loading}
@@ -792,51 +1203,13 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 disabled={loading || (step === 'outline' && !outlineApproved) || (step === 'deep_dive' && !deepDive)}
                                 className="px-6 py-2 bg-[var(--foreground)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-sm"
                             >
-                                Next Step <ArrowRight size={16} />
+                                <ArrowRight size={16} /> Next Step
+                                {/* <ArrowRight size={16} /> */}
                             </button>
                         )}
                     </div>
                 </div>
-
-                {/* Strategy Warning Overlay */}
-                {showStrategyWarning && (
-                    <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 bg-white/80 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="max-w-md w-full bg-white border border-amber-200 shadow-2xl rounded-2xl p-6 text-center">
-                            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <AlertTriangle size={32} className="text-amber-500" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">Wait, your strategy is vague!</h3>
-                            <p className="text-sm text-gray-500 mb-6">
-                                Without a specific **Goal** and **Audience**, the AI will generate a generic draft. High-quality posts need strategic precision.
-                            </p>
-
-                            <div className="space-y-3">
-                                <button
-                                    onClick={() => setShowStrategyWarning(false)}
-                                    className="w-full py-3 bg-[var(--accent)] text-white font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
-                                >
-                                    <Check size={18} />
-                                    I'll fix the strategy
-                                </button>
-                                <button
-                                    onClick={confirmProceedVague}
-                                    className="w-full py-2 text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    No, write a generic draft anyway
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
-
-            <LimitModal
-                isOpen={limitModalOpen}
-                onClose={() => setLimitModalOpen(false)}
-                tier={limitState.tier}
-                usage={limitState.usage}
-                limit={limitState.limit}
-            />
         </div>
     );
 }

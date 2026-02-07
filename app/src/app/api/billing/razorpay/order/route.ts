@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { razorpay } from '@/lib/billing/razorpay';
 import { getOrCreateUser } from '@/lib/user-sync';
 
+import { PRICING_CONFIG } from '@/lib/constants/pricing';
+
 const PLANS: Record<string, { amount: number; currency: string }> = {
-    'pro_monthly': { amount: 2900, currency: 'INR' }, // ₹29
-    'pro_yearly': { amount: 29900, currency: 'INR' }, // ₹299
+    [PRICING_CONFIG.PLANS.INDIA.MONTHLY]: { amount: 999, currency: 'INR' }, // ₹999
+    [PRICING_CONFIG.PLANS.INDIA.YEARLY]: { amount: 9999, currency: 'INR' }, // ₹9,999
 };
 
 export async function POST(req: NextRequest) {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
             orderId: order.id,
             currency: order.currency,
             amount: order.amount,
-            keyId: process.env.RP_KEY_ID
+            keyId: process.env.RP_KEY_ID || process.env.rp_key_id
         });
 
     } catch (error: any) {

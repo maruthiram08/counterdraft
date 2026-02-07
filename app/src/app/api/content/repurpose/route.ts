@@ -3,10 +3,17 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { repurposeContent, generateImage } from '@/lib/openai';
 
 import { UsageService } from '@/lib/billing/usage';
+import { getOrCreateUser } from '@/lib/user-sync';
 
 export async function POST(req: Request) {
     try {
         const { sourceId, platform, options } = await req.json();
+
+        // 0. Strict Auth
+        const authUserId = await getOrCreateUser();
+        if (!authUserId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         // 1. Fetch source (Check drafts first as request comes from Editor)
         let sourceContent = "";
@@ -31,10 +38,14 @@ export async function POST(req: Request) {
         }
 
         if (!userId) {
-            // Try to get from auth context if possible, but for now rely on source ownership
-            // Ideally we should use getOrCreateUser() here for security!
-            // Let's defer to the existing logic flow but we NEED userId for the check.
-            return NextResponse.json({ error: "User not found" }, { status: 401 });
+            // Should not happen if data integrity is good, but ownership check:
+            console.error("Source content has no user_id");
+            return NextResponse.json({ error: "Source not found" }, { status: 404 });
+        }
+
+        if (userId !== authUserId) {
+            console.error("Repurpose Ownership Mismatch", { authUserId, sourceUserId: userId });
+            return NextResponse.json({ error: "You do not own this content" }, { status: 403 });
         }
 
         // Check Usage Limits
@@ -111,11 +122,25 @@ export async function POST(req: Request) {
             imagePrompt = `Infographic style illustration for a social media post about "${titleForPrompt}". Bold typography, clean lines, educational, 1080x1080 aspect ratio.`;
         }
 
+        // CHECK IMAGE LIMIT
+        if (imagePrompt) {
+            const imgCheck = await UsageService.checkImageLimit(userId);
+            if (!imgCheck.allowed) {
+                console.log("Image limit reached, skipping generation.");
+                imagePrompt = ""; // Disable generation
+                // Ideally we'd notify user, but repurpose is background-ish.
+                // We'll leave assets empty.
+            }
+        }
+
         let finalContent = generatedContent;
 
         if (imagePrompt) {
             const imageUrl = await generateImage(imagePrompt);
             if (imageUrl) {
+                // Increment Usage
+                await UsageService.incrementImageCount(userId);
+
                 assets.push({
                     type: 'image',
                     role: platform === 'medium' ? 'cover' : 'infographic',

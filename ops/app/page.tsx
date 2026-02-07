@@ -27,7 +27,27 @@ export default async function Home() {
           <p className="text-neutral-500">Manage Plans, Mint Invites, Track Beta.</p>
         </div>
         <div className="flex gap-2">
-          {/* Actions will go here */}
+          <Link
+            href="/plans"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-700 rounded-md font-medium hover:bg-neutral-50 transition-colors"
+          >
+            <BadgeDollarSign size={16} />
+            Manage Plans
+          </Link>
+          <Link
+            href="/users"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-neutral-700 rounded-md font-medium hover:bg-neutral-50 transition-colors"
+          >
+            <Users size={16} />
+            Users
+          </Link>
+          <Link
+            href="/invites"
+            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-md font-medium hover:bg-neutral-800 transition-colors"
+          >
+            <Ticket size={16} />
+            Mint Invites
+          </Link>
         </div>
       </header>
 

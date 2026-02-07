@@ -149,14 +149,28 @@ export async function POST(request: NextRequest) {
         const linkedInPostId = publishData.id;
 
         // Update draft with LinkedIn post URN
-        await supabase
-            .from('drafts')
-            .update({
-                status: 'published',
-                linkedin_post_urn: linkedInPostId,
-                published_at: new Date().toISOString(),
-            })
-            .eq('id', draftId);
+        // Update draft with LinkedIn post URN AND content_items stage
+        await Promise.all([
+            supabase
+                .from('drafts')
+                .update({
+                    status: 'published',
+                    linkedin_post_urn: linkedInPostId,
+                    published_at: new Date().toISOString(),
+                })
+                .eq('id', draftId),
+
+            // Allow this to fail silently if content_item doesn't exist (legacy), but it should exist.
+            supabase
+                .from('content_items')
+                .update({
+                    stage: 'published',
+                    status: 'active', // FIX: Keep active so it shows in Command Center (which filters by status=active)
+                    published_at: new Date().toISOString(),
+                    platform: 'linkedin'
+                })
+                .eq('id', draftId)
+        ]);
 
         // Create published_posts record
         await supabase

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function CouponClaimer() {
-    const { isSignedIn, isLoaded } = useAuth();
+    const { isSignedIn, isLoaded, getToken } = useAuth();
     const [claimed, setClaimed] = useState(false);
 
     useEffect(() => {
@@ -18,11 +18,14 @@ export function CouponClaimer() {
             try {
                 // Show toast
                 const toastId = toast.loading('Applying your invite code...');
+                const token = await getToken();
 
                 const res = await fetch('/api/billing/claim-coupon', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ code: pendingCode })
                 });
 

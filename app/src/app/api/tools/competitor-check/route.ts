@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { CompetitorService } from '@/lib/tools/competitor';
 
+export const maxDuration = 120; // Allow 2 minutes for Tavily + LLM calls
+
 export async function POST(req: NextRequest) {
     try {
         const userId = await getOrCreateUser();

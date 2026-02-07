@@ -1,0 +1,16 @@
+# CodeRabbit configuration file
+# See https://docs.coderabbit.ai/getting-started/configuration/ for more information
+
+language: "en-US"
+tone: "professional"
+enable_review: true
+enable_instructions: true
+reviews:
+  # Automated reviews on every pull request
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poisonous_comment_detection: true
+
+chat:
+  enabled: true

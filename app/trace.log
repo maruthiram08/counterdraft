@@ -5774,3 +5774,848 @@ LLM Result
   ]
 }
 ----------------------------------------
+[2026-02-03T11:29:33.256Z] [OPENAI]
+refineSearchQuery: Input
+India-EU trade deal analysis
+----------------------------------------
+[2026-02-03T11:29:34.770Z] [OPENAI]
+refineSearchQuery: Output
+{ "queries": ["India EU trade deal", "India EU trade agreement analysis", "India EU economic partnership"] }
+----------------------------------------
+[2026-02-03T11:29:35.842Z] [EXPLORE]
+Feed Search: "India EU trade deal"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T11:29:36.398Z] [EXPLORE]
+Feed Search: "India EU trade agreement analysis"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T11:29:37.031Z] [EXPLORE]
+Feed Search: "India EU economic partnership"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T11:30:05.231Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"Is the India-EU Trade Deal a Game Changer for Global Economics?\",\n      \"angle\": \"Examine how this landmark agreement could be a blueprint for future trade deals around the world, potentially reshaping cross-border trade norms.\",\n      \"format\": \"hot take\"\n    },\n    {\n      \"hook\": \"3 Key Benefits Businesses Can't Ignore in the India-EU Trade Deal\",\n      \"angle\": \"Highlight the primary advantages businesses can leverage from this agreement, with a focus on tariffs, market access, and economic collaboration.\",\n      \"format\": \"listicle\"\n    },\n    {\n      \"hook\": \"The Hidden Winners and Losers of the India-EU Trade Deal\",\n      \"angle\": \"Look beyond the obvious benefits to understand the sectors and stakeholders poised to gain— or lose— due to this agreement.\",\n      \"format\": \"analysis story\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-03T11:30:22.858Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Is the India-EU Trade Deal a Game Changer for Global Economics?",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-03T11:31:00.102Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Is the India-EU Trade Deal a Game Changer for Global Economics?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"India-EU trade deal analysis\"\n\nSource Topics:\n- What to know about the US-India trade deal - Atlantic Council (https:/...",
+  "fullSourceLength": 1303
+}
+----------------------------------------
+[2026-02-03T11:31:00.204Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Is the India-EU Trade Deal a Game Changer for Global Economics?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"India-EU trade deal analysis\"\n\nSource Topics:\n- What to know about the US-India trade deal - Atlantic Council (https:/...",
+  "fullSourceLength": 1303
+}
+----------------------------------------
+[2026-02-03T11:32:35.412Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Is the India-EU Trade Deal a Game Changer for Global Economics?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"India-EU trade deal analysis\"\n\nSource Topics:\n- What to know about the US-India trade deal - Atlantic Council (https:/...",
+  "fullSourceLength": 1303
+}
+----------------------------------------
+[2026-02-03T11:34:07.893Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "Is the India-EU Trade Deal a Game Changer for Global Economics?",
+  "angle": "Examine how this landmark agreement could be a blueprint for future trade deals around the world, potentially reshaping cross-border trade norms.",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 15
+}
+----------------------------------------
+[2026-02-03T17:23:57.594Z] [EXPLORE]
+Feed Search: "technology AI trends"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T17:24:20.355Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"What if the most groundbreaking AI trend in 2026 isn’t about technology at all?\",\n      \"angle\": \"Explore the human-centric trends that are poised to shape the future of AI in 2026, highlighting how shifts in user expectation, ethics, and digital wellness could outpace the technological advancements themselves. Challenge the audience to consider the social responsibility of tech companies in dictating these changes.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"Why your ‘AI strategy’ for 2026 might already be obsolete.\",\n      \"angle\": \"Delve into the often-overlooked need for adaptive, flexible AI strategies amidst rapid technological change. Explain why companies can no longer rely on static plans and must instead foster an iterative approach to stay relevant. Highlight examples of businesses that prioritized adaptability over rigid strategic directions.\",\n      \"format\": \"narrative\"\n    },\n    {\n      \"hook\": \"Are we ready for AI to demand transparency and accountability like never before?\",\n      \"angle\": \"Discuss the emerging trend of AI systems requiring more rigorous standards of transparency and accountability. Argue that instead of the systems themselves, it’s the regulation and oversight that will be the real battleground for AI professionals by 2026. Explore the implications for leadership and compliance.\",\n      \"format\": \"question-led\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-03T17:24:27.707Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "What if the most groundbreaking AI trend in 2026 isn’t about technology at all?",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-03T17:24:35.366Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Are we ready for AI to demand transparency and accountability like never before?",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-03T17:24:43.544Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Are we ready for AI to demand transparency and accountability like never before?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"technology AI trends\"\n\nSource Topics:\n- The trends that will shape AI and tech in 2026 - IBM (https://news.google.com/...",
+  "fullSourceLength": 375
+}
+----------------------------------------
+[2026-02-03T17:24:43.940Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Are we ready for AI to demand transparency and accountability like never before?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"technology AI trends\"\n\nSource Topics:\n- The trends that will shape AI and tech in 2026 - IBM (https://news.google.com/...",
+  "fullSourceLength": 375
+}
+----------------------------------------
+[2026-02-03T17:25:23.061Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "Are we ready for AI to demand transparency and accountability like never before?",
+  "angle": "Discuss the emerging trend of AI systems requiring more rigorous standards of transparency and accountability. Argue that instead of the systems themselves, it’s the regulation and oversight that will be the real battleground for AI professionals by 2026. Explore the implications for leadership and compliance.",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 10
+}
+----------------------------------------
+[2026-02-03T17:38:19.622Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "What if the most groundbreaking AI trend in 2026 isn’t about technology at all?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"technology AI trends\"\n\nSource Topics:\n- The trends that will shape AI and tech in 2026 - IBM (https://news.google.com/...",
+  "fullSourceLength": 375
+}
+----------------------------------------
+[2026-02-03T17:38:20.415Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "What if the most groundbreaking AI trend in 2026 isn’t about technology at all?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"technology AI trends\"\n\nSource Topics:\n- The trends that will shape AI and tech in 2026 - IBM (https://news.google.com/...",
+  "fullSourceLength": 375
+}
+----------------------------------------
+[2026-02-03T18:03:00.771Z] [OPENAI]
+refineSearchQuery: Input
+Apple AI demand impact on profit margins
+----------------------------------------
+[2026-02-03T18:03:02.810Z] [OPENAI]
+refineSearchQuery: Output
+{"queries": ["Apple AI profit margin debate", "AI investment effects on Apple", "Apple AI cost vs revenue", "Apple AI strategy profitability", "AI-driven margin pressures Apple"]}
+----------------------------------------
+[2026-02-03T18:03:03.742Z] [EXPLORE]
+Feed Search: "Apple AI profit margin debate"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:03:04.291Z] [EXPLORE]
+Feed Search: "AI investment effects on Apple"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:03:04.801Z] [EXPLORE]
+Feed Search: "Apple AI cost vs revenue"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:04:34.064Z] [OPENAI]
+refineSearchQuery: Input
+AI tools in Excel Agent Mode
+----------------------------------------
+[2026-02-03T18:04:36.001Z] [OPENAI]
+refineSearchQuery: Output
+{
+  "queries": [
+    "Excel AI ethical concerns",
+    "AI tools Excel productivity",
+    "Excel Agent Mode limitations",
+    "AI-driven Excel decision-making"
+  ]
+}
+----------------------------------------
+[2026-02-03T18:04:36.998Z] [EXPLORE]
+Feed Search: "Excel AI ethical concerns"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:04:37.507Z] [EXPLORE]
+Feed Search: "AI tools Excel productivity"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:04:38.085Z] [EXPLORE]
+Feed Search: "Excel Agent Mode limitations"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:04:53.986Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"What happens when AI in business applications purposely makes mistakes?\",\n      \"angle\": \"With AI image generators adding 'flaws' for realism, what implications does this have for AI tools in Excel Agent Mode? Is the humanizing of AI a clever trick or a dangerous precedent? In the rush to make AI 'real' and relatable, could this trend undermine the precision and accuracy we rely on? This post challenges the assumption that more human-like AI is better, especially in high-stakes business environments.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"Is your AI assistant a friend or a foe? How adding 'flaws' might blur the lines.\",\n      \"angle\": \"As AI image generators intentionally introduce flaws for realism, the broader ethical concern emerges for AI in business tools like Excel Agent Mode. By blurring the line between human-like and artificial, do we risk losing control over AI’s reliability? This post explores the tension between relatable AI and the critical need for factual accuracy in business settings, prompting professionals to rethink their trust levels in AI assistance.\",\n      \"format\": \"question-led\"\n    },\n    {\n      \"hook\": \"The 'perfect imperfection' of AI: A double-edged sword for data-driven decisions.\",\n      \"angle\": \"AI image generators introducing flaws open a dialogue about AI’s role in data analysis tools such as Excel Agent Mode. While adding imperfections might make AI seem more relatable, what are the pitfalls when precision is paramount? This piece highlights the often-overlooked tradeoff between creativity-inspired AI features and the rigorous standards required in professional data analytics, challenging industry leaders to weigh the implications for decision-making.\",\n      \"format\": \"list\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-03T18:05:24.298Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "The 'perfect imperfection' of AI: A double-edged sword for data-driven decisions.",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-03T18:08:03.661Z] [OPENAI]
+refineSearchQuery: Input
+U.S. Department of Commerce national AI center San Francisco
+----------------------------------------
+[2026-02-03T18:08:05.367Z] [OPENAI]
+refineSearchQuery: Output
+{
+  "queries": [
+    "AI center San Francisco impact",
+    "Commerce Department AI policy",
+    "National AI center controversies"
+  ]
+}
+----------------------------------------
+[2026-02-03T18:08:06.902Z] [EXPLORE]
+Feed Search: "AI center San Francisco impact"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:08:07.519Z] [EXPLORE]
+Feed Search: "Commerce Department AI policy"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:08:08.115Z] [EXPLORE]
+Feed Search: "National AI center controversies"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:08:21.162Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"Is AI the unsung hero or the lurking villain in the quest for sustainable energy?\",\n      \"angle\": \"Explore the paradox of AI's potential to optimize energy grids and reduce consumption on one hand, while contributing significantly to global energy demands on the other. Discuss how policymakers and tech leaders can balance these opposing forces to drive innovation without compromising sustainability goals.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"Why is the AI-energy debate stuck in policy purgatory?\",\n      \"angle\": \"Address the disconnect between rapid AI advancements and lagging policy frameworks. Highlight the need for more agile, anticipatory governance models that not only keep pace with AI development but also preemptively tackle its environmental impacts. Encourage professionals to think critically about regulatory innovation.\",\n      \"format\": \"question-led analysis\"\n    },\n    {\n      \"hook\": \"Are we on a collision course between AI innovation and energy sustainability?\",\n      \"angle\": \"Delve into the often-overlooked tension where breakthrough AI innovations demand more energy, potentially exacerbating climate change. Argue for a strategic rethink where AI research and energy resource management co-evolve, rather than compete, to future-proof both technology and the planet.\",\n      \"format\": \"provocative insight\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-03T18:11:02.713Z] [OPENAI]
+refineSearchQuery: Input
+technology regulation and policy
+----------------------------------------
+[2026-02-03T18:11:04.148Z] [OPENAI]
+refineSearchQuery: Output
+{"queries": ["AI regulation challenges", "Data privacy legislation debates", "Tech industry antitrust issues"]}
+----------------------------------------
+[2026-02-03T18:11:05.268Z] [EXPLORE]
+Feed Search: "AI regulation challenges"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:11:05.898Z] [EXPLORE]
+Feed Search: "Data privacy legislation debates"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:11:06.563Z] [EXPLORE]
+Feed Search: "Tech industry antitrust issues"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-03T18:11:58.063Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"Is AI regulation stifling innovation or sparking it? The overlooked duality.\",\n      \"angle\": \"Explore the tension between regulation as a potential hindrance to rapid tech growth versus its role as a catalyst for responsible innovation and long-term success. Highlight examples where regulations have driven creativity by setting challenging boundaries, and ask whether the Hamilton Project’s recommendations effectively balance these dual interests.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"Who wins and who loses with AI regulations? It’s not who you think.\",\n      \"angle\": \"Dive into the unexpected consequences of AI regulations, particularly how they might benefit incumbents with resources to comply over startups with innovative potential but fewer resources. Discuss the Hamilton Project’s proposals in context, examining whether they adequately support new entrants or reinforce existing power dynamics.\",\n      \"format\": \"list\"\n    },\n    {\n      \"hook\": \"AI regulation: A global race or a collaborative effort? Let’s challenge this binary.\",\n      \"angle\": \"Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.\",\n      \"format\": \"question-led\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-03T18:12:05.586Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-03T18:13:01.507Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"technology regulation and policy\"\n\nSource Topics:\n- Opportunities and challenges in AI regulation - The Hamilton Proje...",
+  "fullSourceLength": 443
+}
+----------------------------------------
+[2026-02-03T18:13:02.420Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"technology regulation and policy\"\n\nSource Topics:\n- Opportunities and challenges in AI regulation - The Hamilton Proje...",
+  "fullSourceLength": 443
+}
+----------------------------------------
+[2026-02-03T18:14:07.070Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-03T18:31:37.186Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 12
+}
+----------------------------------------
+[2026-02-03T18:46:49.657Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-03T18:46:51.580Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-04T05:38:31.929Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-04T05:47:39.033Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-04T05:49:23.076Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-04T05:57:47.244Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-04T06:02:59.872Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "AI regulation: A global race or a collaborative effort? Let’s challenge this binary.",
+  "angle": "Challenge the common assumption that AI regulation is a zero-sum game where countries either win or lose based on their regulatory frameworks. Instead, discuss the potential for collaborative international regulatory standards as suggested by the Hamilton Project, questioning whether such cooperation is feasible or merely optimistic rhetoric.",
+  "format": "tactical_guide",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 11
+}
+----------------------------------------
+[2026-02-04T06:11:47.308Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "The 'perfect imperfection' of AI: A double-edged sword for data-driven decisions.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"AI tools in Excel Agent Mode\"\n\nSource Topics:\n- 2025 AI Image Generators Add Flaws for Realism, Raise Ethical Concerns...",
+  "fullSourceLength": 478
+}
+----------------------------------------
+[2026-02-04T06:11:47.904Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "The 'perfect imperfection' of AI: A double-edged sword for data-driven decisions.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"AI tools in Excel Agent Mode\"\n\nSource Topics:\n- 2025 AI Image Generators Add Flaws for Realism, Raise Ethical Concerns...",
+  "fullSourceLength": 478
+}
+----------------------------------------
+[2026-02-04T06:14:13.432Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "The 'perfect imperfection' of AI: A double-edged sword for data-driven decisions.",
+  "angle": "AI image generators introducing flaws open a dialogue about AI’s role in data analysis tools such as Excel Agent Mode. While adding imperfections might make AI seem more relatable, what are the pitfalls when precision is paramount? This piece highlights the often-overlooked tradeoff between creativity-inspired AI features and the rigorous standards required in professional data analytics, challenging industry leaders to weigh the implications for decision-making.",
+  "format": "story",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 10
+}
+----------------------------------------
+[2026-02-04T06:21:27.256Z] [OPENAI]
+refineSearchQuery: Input
+Netflix 50 Cent Diddy lawsuit news
+----------------------------------------
+[2026-02-04T06:21:28.559Z] [OPENAI]
+refineSearchQuery: Output
+{"queries": ["50 Cent Diddy Netflix lawsuit implications", "Netflix lawsuit entertainment industry impact", "50 Cent Diddy legal strategy debate"]}
+----------------------------------------
+[2026-02-04T06:21:29.603Z] [EXPLORE]
+Feed Search: "50 Cent Diddy Netflix lawsuit implications"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-04T06:21:30.272Z] [EXPLORE]
+Feed Search: "Netflix lawsuit entertainment industry impact"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-04T06:21:30.962Z] [EXPLORE]
+Feed Search: "50 Cent Diddy legal strategy debate"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-04T06:21:54.887Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"What happens when creative freedom in documentaries clashes with personal branding rights?\",\n      \"angle\": \"Explore the tension between the rights of artists and producers to portray real stories and the rights of individuals to control their public image. How should media platforms like Netflix navigate these waters to avoid legal pitfalls—and is there a solution that respects both artistic expression and personal branding?\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"The unintentional impact of a lawsuit: Can legal battles between high-profile individuals reshape industry norms?\",\n      \"angle\": \"Analyze how high-profile lawsuits like the one between 50 Cent, Netflix, and the Diddy documentary might create a ripple effect throughout the entertainment industry. What precedent might this set for documentary creators, and could it lead to significant changes in content production and negotiation strategies?\",\n      \"format\": \"narrative\"\n    },\n    {\n      \"hook\": \"Are business moguls making media partnerships more precarious with legal claims?\",\n      \"angle\": \"Discuss how the increasing trend of media personalities with strong business interests, like 50 Cent and Diddy, engaging in legal disputes could redefine partnership dynamics in the entertainment sector. What are the implications for collaboration and risk management strategies among content creators, platforms, and featured individuals in the current industry climate?\",\n      \"format\": \"question-led\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-04T06:22:44.928Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "What happens when creative freedom in documentaries clashes with personal branding rights?",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-04T06:22:52.984Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "What happens when creative freedom in documentaries clashes with personal branding rights?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"Netflix 50 Cent Diddy lawsuit news\"\n\nSource Topics:\n- 50 Cent, Netflix Slapped with $20M Lawsuit Over Diddy Doc - Digi...",
+  "fullSourceLength": 444
+}
+----------------------------------------
+[2026-02-04T06:22:53.100Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "What happens when creative freedom in documentaries clashes with personal branding rights?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"Netflix 50 Cent Diddy lawsuit news\"\n\nSource Topics:\n- 50 Cent, Netflix Slapped with $20M Lawsuit Over Diddy Doc - Digi...",
+  "fullSourceLength": 444
+}
+----------------------------------------
+[2026-02-04T06:25:26.128Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "What happens when creative freedom in documentaries clashes with personal branding rights?",
+  "angle": "Explore the tension between the rights of artists and producers to portray real stories and the rights of individuals to control their public image. How should media platforms like Netflix navigate these waters to avoid legal pitfalls—and is there a solution that respects both artistic expression and personal branding?",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 9
+}
+----------------------------------------
+[2026-02-05T09:05:42.928Z] [OPENAI]
+refineSearchQuery: Input
+SpaceX acquisition of xAI news
+----------------------------------------
+[2026-02-05T09:05:45.271Z] [OPENAI]
+refineSearchQuery: Output
+{"queries": ["SpaceX xAI merger implications", "xAI acquisition strategic goals", "SpaceX xAI industry impact"]}
+----------------------------------------
+[2026-02-05T09:05:45.864Z] [EXPLORE]
+Feed Search: "SpaceX xAI merger implications"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-05T09:05:46.459Z] [EXPLORE]
+Feed Search: "xAI acquisition strategic goals"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-05T09:05:47.034Z] [EXPLORE]
+Feed Search: "SpaceX xAI industry impact"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-05T09:06:22.141Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"Could the SpaceX-xAI merger upend the very fabric of social media?\",\n      \"angle\": \"Explore the potential for SpaceX's engineering prowess combined with xAI's cutting-edge artificial intelligence to revolutionize the content curation and moderation on social media platforms. Discuss the implications this merger could have on how information is disseminated and consumed, with a focus on the future role of AI in creating more ethical and efficient digital ecosystems.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"SpaceX and xAI are merging: What does this mean for job seekers in tech?\",\n      \"angle\": \"Delve into how this high-profile merger could reshape career paths for professionals in the technology and aerospace sectors. Consider the potential blending of roles and skills, the emergence of new interdisciplinary fields, and how job seekers can position themselves to take advantage of this shift. Offer insights on necessary skillsets that may become highly sought-after.\",\n      \"format\": \"list\"\n    },\n    {\n      \"hook\": \"Will the SpaceX-xAI merger leave traditional tech companies in the dust?\",\n      \"angle\": \"Challenge the dominance of traditional tech companies by exploring how the merger of SpaceX and xAI might set new benchmarks in innovation and disrupt the current competitive landscape. Discuss whether established companies can keep pace with this astronomical pairing and explore the strategic moves they might need to consider.\",\n      \"format\": \"question-led\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-05T09:07:18.600Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Will the SpaceX-xAI merger leave traditional tech companies in the dust?",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-05T09:12:27.379Z] [OPENAI]
+refineSearchQuery: Input
+Nvidia $100 billion investment OpenAI stalled
+----------------------------------------
+[2026-02-05T09:12:28.737Z] [OPENAI]
+refineSearchQuery: Output
+{
+  "queries": [
+    "Nvidia OpenAI investment impact",
+    "OpenAI funding challenges",
+    "Nvidia AI investment strategy"
+  ]
+}
+----------------------------------------
+[2026-02-05T09:12:29.534Z] [EXPLORE]
+Feed Search: "Nvidia OpenAI investment impact"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-05T09:12:30.020Z] [EXPLORE]
+Feed Search: "OpenAI funding challenges"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-05T09:12:30.730Z] [EXPLORE]
+Feed Search: "Nvidia AI investment strategy"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-05T09:12:49.089Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"Is OpenAI's financial cliff closer than we think?\",\n      \"angle\": \"The staggering $100 billion valuations and investments distract us from the core issue: sustainability. Let's dissect how OpenAI's spending and revenue models, primarily propped up by massive investments, may not be as sustainable as they seem. What can tech companies learn from OpenAI's rapid expansion about balancing innovation with financial prudence?\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"Nvidia and OpenAI: When strategic alignment turns into a cautionary tale.\",\n      \"angle\": \"While Nvidia's $100 billion investment into AI companies like OpenAI seems like a tech match made in heaven, what happens when the vision outweighs mutual financial gain? This post will explore the tension between strategic investments that skyrocket stock prices and those that truly ensure long-term viability.\",\n      \"format\": \"narrative\"\n    },\n    {\n      \"hook\": \"The hidden cost of AI: Why money isn't OpenAI's biggest problem.\",\n      \"angle\": \"Beyond the headlines of stalled investments and revenue, there's a deeper issue: the challenge of scaling AI responsibly while maintaining innovative momentum. Let's explore why OpenAI needs to confront these operational hurdles before their financial runway evaporates.\",\n      \"format\": \"question-led discussion\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-05T09:12:57.278Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "The hidden cost of AI: Why money isn't OpenAI's biggest problem.",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-05T09:13:16.345Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Will the SpaceX-xAI merger leave traditional tech companies in the dust?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"SpaceX acquisition of xAI news\"\n\nSource Topics:\n- How the Merger of SpaceX and xAI Will Impact X - Social Media Today ...",
+  "fullSourceLength": 454
+}
+----------------------------------------
+[2026-02-05T09:13:16.484Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Will the SpaceX-xAI merger leave traditional tech companies in the dust?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"SpaceX acquisition of xAI news\"\n\nSource Topics:\n- How the Merger of SpaceX and xAI Will Impact X - Social Media Today ...",
+  "fullSourceLength": 454
+}
+----------------------------------------
+[2026-02-05T09:14:20.844Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Will the SpaceX-xAI merger leave traditional tech companies in the dust?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"SpaceX acquisition of xAI news\"\n\nSource Topics:\n- How the Merger of SpaceX and xAI Will Impact X - Social Media Today ...",
+  "fullSourceLength": 454
+}
+----------------------------------------
+[2026-02-05T09:16:21.962Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "Will the SpaceX-xAI merger leave traditional tech companies in the dust?",
+  "angle": "Challenge the dominance of traditional tech companies by exploring how the merger of SpaceX and xAI might set new benchmarks in innovation and disrupt the current competitive landscape. Discuss whether established companies can keep pace with this astronomical pairing and explore the strategic moves they might need to consider.",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": true,
+  "outlineSections": 10
+}
+----------------------------------------
+[2026-02-05T09:29:17.680Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Article for investors",
+  "stage": "developing",
+  "hasSourceContext": false
+}
+----------------------------------------
+[2026-02-05T09:29:19.477Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Article for investors",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\niThe shape of timeIn the 19th century, the linear idea of time became dominant, forever changing how those in the West experience the worldby ...",
+  "fullSourceLength": 18237
+}
+----------------------------------------
+[2026-02-05T09:29:19.566Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Article for investors",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\niThe shape of timeIn the 19th century, the linear idea of time became dominant, forever changing how those in the West experience the worldby ...",
+  "fullSourceLength": 18237
+}
+----------------------------------------
+[2026-02-06T17:41:15.064Z] [EXPLORE]
+Feed Search: "generative ai trends"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-06T17:41:26.090Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"Are CEOs ready to trade their best intuition for GenAI's decision-making power?\",\n      \"angle\": \"Exploring the tension between executive experience and GenAI-driven insights, this post argues that while GenAI tools provide unprecedented data analysis capabilities, there is a delicate balance to maintain between human intuition and algorithmic recommendations. It questions the tendency to overly rely on AI data without considering the nuanced understanding that seasoned professionals bring to the table.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"Why the tools you choose will determine whether GenAI is your ally or a disruptor.\",\n      \"angle\": \"As GenAI becomes integral to decision intelligence strategies, it's crucial to examine its potential to either bolster strategic development or unintentionally lead businesses astray. This post will delve into how selecting the right GenAI tools can be a strategic advantage, while the wrong choices could result in major setbacks. It emphasizes the importance of aligning GenAI solutions with business goals and ethical standards.\",\n      \"format\": \"list\"\n    },\n    {\n      \"hook\": \"Decision intelligence in 2026: Is GenAI prepared to lead, or are we expecting too much?\",\n      \"angle\": \"Challenging the assumption that GenAI will seamlessly lead the charge in decision intelligence by 2026, this post explores the limitations and ethical considerations involved in the transition. It discusses the potential overreliance on GenAI in critical areas where human judgment and ethical discernment remain indispensable.\",\n      \"format\": \"question-led\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-06T17:41:41.780Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Why the tools you choose will determine whether GenAI is your ally or a disruptor.",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-06T17:41:51.391Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Why the tools you choose will determine whether GenAI is your ally or a disruptor.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"generative ai trends\"\n\nSource Topics:\n- The rise of GenAI in decision intelligence: Trends and tools for 2026 and beyo...",
+  "fullSourceLength": 517
+}
+----------------------------------------
+[2026-02-06T17:41:51.532Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Why the tools you choose will determine whether GenAI is your ally or a disruptor.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"generative ai trends\"\n\nSource Topics:\n- The rise of GenAI in decision intelligence: Trends and tools for 2026 and beyo...",
+  "fullSourceLength": 517
+}
+----------------------------------------
+[2026-02-06T17:45:30.200Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Why the tools you choose will determine whether GenAI is your ally or a disruptor.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"generative ai trends\"\n\nSource Topics:\n- The rise of GenAI in decision intelligence: Trends and tools for 2026 and beyo...",
+  "fullSourceLength": 517
+}
+----------------------------------------
+[2026-02-06T17:45:30.568Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Why the tools you choose will determine whether GenAI is your ally or a disruptor.",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"generative ai trends\"\n\nSource Topics:\n- The rise of GenAI in decision intelligence: Trends and tools for 2026 and beyo...",
+  "fullSourceLength": 517
+}
+----------------------------------------
+[2026-02-07T07:23:08.666Z] [OPENAI]
+refineSearchQuery: Input
+Amazon invest $50 billion OpenAI
+----------------------------------------
+[2026-02-07T07:23:09.451Z] [OPENAI]
+refineSearchQuery: Output
+{
+  "queries": [
+    "Amazon OpenAI partnership implications",
+    "AI ethics in corporate investments",
+    "Competition between Amazon and AI startups"
+  ]
+}
+----------------------------------------
+[2026-02-07T07:23:10.683Z] [EXPLORE]
+Feed Search: "Amazon OpenAI partnership implications"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-07T07:23:11.326Z] [EXPLORE]
+Feed Search: "AI ethics in corporate investments"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-07T07:23:12.104Z] [EXPLORE]
+Feed Search: "Competition between Amazon and AI startups"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-07T07:23:25.216Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"Is Amazon missing a golden opportunity by playing it safe with AI startups?\",\n      \"angle\": \"Despite investing billions in AI, Amazon's current approach might be overlooking the innovative potential of nimble AI startups. What if their 'fundamental shift' in cloud spending is more about adapting to new startup dynamics than about financial constraints? This post explores how Amazon can pivot to support and capitalize on startup-driven innovation.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"The Amazon paradox: When $50 billion isn't enough to win the AI race.\",\n      \"angle\": \"Everyone assumes that money talks in tech innovation, but Amazon's experience with cloud spending reveals otherwise. What if the real barrier is not financial but cultural and strategic? This post will delve into how Amazon could better align its massive investments with the needs and agility of AI startups.\",\n      \"format\": \"list\"\n    },\n    {\n      \"hook\": \"Is cloud spending the Achilles' heel in Amazon's AI domination strategy?\",\n      \"angle\": \"Amazon's massive cloud investments might be misaligned with the rapid pivots and unique demands of AI startups. This post will investigate the potential missteps Amazon might be making in its deployment of resources and suggest ways it could recalibrate to better serve the AI community.\",\n      \"format\": \"question-led\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-07T07:23:42.494Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Is Amazon missing a golden opportunity by playing it safe with AI startups?",
+  "stage": "idea",
+  "hasSourceContext": true
+}
+----------------------------------------
+[2026-02-07T07:23:53.826Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Is Amazon missing a golden opportunity by playing it safe with AI startups?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"Amazon invest $50 billion OpenAI\"\n\nSource Topics:\n- Amazon faces a 'fundamental' shift in how AI startups spend on the...",
+  "fullSourceLength": 484
+}
+----------------------------------------
+[2026-02-07T07:23:54.158Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Is Amazon missing a golden opportunity by playing it safe with AI startups?",
+  "sourceMaterialPreview": "\n\nSOURCE MATERIAL (Use this as the primary ground truth):\nOriginal Search Query: \"Amazon invest $50 billion OpenAI\"\n\nSource Topics:\n- Amazon faces a 'fundamental' shift in how AI startups spend on the...",
+  "fullSourceLength": 484
+}
+----------------------------------------
+[2026-02-07T07:29:13.261Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Unacademy the rise and fall of Indian edtech",
+  "stage": "developing",
+  "hasSourceContext": false
+}
+----------------------------------------
+[2026-02-07T07:29:19.397Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Unacademy the rise and fall of Indian edtech",
+  "sourceMaterialPreview": "...",
+  "fullSourceLength": 0
+}
+----------------------------------------
+[2026-02-07T07:29:20.026Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Unacademy the rise and fall of Indian edtech",
+  "sourceMaterialPreview": "...",
+  "fullSourceLength": 0
+}
+----------------------------------------
+[2026-02-07T07:30:33.535Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "Unacademy the rise and fall of Indian edtech",
+  "angle": "None",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": false,
+  "outlineSections": 9
+}
+----------------------------------------

@@ -14,6 +14,7 @@ import { GenealogyTree } from '@/components/thinking/GenealogyTree';
 import { ArtifactGrid } from '@/components/brain/ArtifactGrid';
 import { BookMarked } from 'lucide-react';
 import { toast } from 'sonner';
+import { LimitModal } from '@/components/modal/LimitModal';
 
 interface YourMindProps {
     onDraftRequest?: (data: {
@@ -107,6 +108,10 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
     const [reviewedBeliefIds, setReviewedBeliefIds] = useState<Set<string>>(new Set());
     const [classifiedTensionIds, setClassifiedTensionIds] = useState<Set<string>>(new Set());
 
+    // Limit Handling
+    const [limitModalOpen, setLimitModalOpen] = useState(false);
+    const [limitState, setLimitState] = useState({ tier: 'free', usage: 0, limit: 0 });
+
     // --- Handlers ---
 
     const handleBeliefReviewed = async (beliefId: string, feedback: 'accurate' | 'misses' | 'clarify') => {
@@ -137,9 +142,20 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                 const data = await res.json();
                 // Redirect to pipeline (Command Center) where Ideas live
                 window.location.href = `/workspace?tab=pipeline`;
+            } else if (res.status === 403) {
+                const data = await res.json();
+                setLimitState({
+                    tier: data.usage?.tier || 'free',
+                    usage: data.usage?.count || 0,
+                    limit: data.usage?.limit || 2
+                });
+                setLimitModalOpen(true);
+            } else {
+                toast.error("Failed to create draft");
             }
         } catch (error) {
             console.error('Error creating draft:', error);
+            toast.error("Network error");
         }
     };
 
@@ -456,6 +472,14 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                         });
                     }
                 }}
+            />
+
+            <LimitModal
+                isOpen={limitModalOpen}
+                onClose={() => setLimitModalOpen(false)}
+                tier={limitState.tier as any}
+                usage={limitState.usage}
+                limit={limitState.limit}
             />
         </div>
     );

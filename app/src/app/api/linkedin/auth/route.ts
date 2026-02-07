@@ -44,7 +44,16 @@ export async function GET() {
         authUrl.searchParams.set('scope', scopes.join(' '));
         authUrl.searchParams.set('state', state);
 
-        return NextResponse.redirect(authUrl.toString());
+        const response = NextResponse.redirect(authUrl.toString());
+        response.cookies.set('linkedin_oauth_state', state, {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 10, // 10 minutes
+            path: '/'
+        });
+
+        return response;
     } catch (error) {
         console.error('Error initiating LinkedIn OAuth:', error);
         return NextResponse.redirect(

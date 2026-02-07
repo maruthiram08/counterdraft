@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Compass, Book, Brain, MoreHorizontal, Zap, Network, Settings, X } from "lucide-react";
+import { Home, Compass, Book, Brain, MoreHorizontal, Zap, Network, Settings, X, PenTool } from "lucide-react";
 
 interface MobileBottomNavProps {
     activeSection: string;
@@ -32,6 +32,7 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
     ];
 
     const moreNavItems = [
+        { id: 'style', label: 'Your Voice', icon: PenTool },
         { id: 'tensions', label: 'Tensions', icon: Zap },
         { id: 'settings', label: 'Settings', icon: Settings },
     ];

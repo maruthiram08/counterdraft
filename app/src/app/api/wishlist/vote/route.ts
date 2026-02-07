@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getAuth } from '@clerk/nextjs/server';
+import { getOrCreateUser } from '@/lib/user-sync';
 
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = getAuth(req);
+        const userId = await getOrCreateUser();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

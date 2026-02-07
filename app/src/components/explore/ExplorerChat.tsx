@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X } from "lucide-react";
+import { Send, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "sonner";
 
 interface ChatMessage {
     role: 'user' | 'assistant';
@@ -24,11 +25,38 @@ interface PostIdea {
     format: string;
 }
 
-const QUICK_PROMPTS = [
-    { label: "Technology & AI", query: "technology AI trends" },
-    { label: "Culture & Society", query: "culture society trends" },
-    { label: "Business Strategy", query: "business strategy leadership" },
-    { label: "Personal Growth", query: "personal development productivity" },
+const DEFAULT_CATEGORIES = [
+    {
+        label: "Technology & AI",
+        trends: [
+            { label: "Generative AI", query: "generative ai trends" },
+            { label: "Tech Policy", query: "technology regulation and policy" },
+            { label: "Startups", query: "emerging tech startups" }
+        ]
+    },
+    {
+        label: "Culture & Society",
+        trends: [
+            { label: "Digital Culture", query: "internet culture trends" },
+            { label: "Future of Work", query: "remote work and office trends" }
+        ]
+    },
+    {
+        label: "Business Strategy",
+        trends: [
+            { label: "Leadership", query: "modern leadership trends" },
+            { label: "Market Shifts", query: "global market shifts analysis" },
+            { label: "Sustainability", query: "corporate sustainability trends" }
+        ]
+    },
+    {
+        label: "Personal Growth",
+        trends: [
+            { label: "Productivity", query: "productivity science news" },
+            { label: "Psychology", query: "psychology and mindset research" },
+            { label: "Learning", query: "accelerated learning techniques" }
+        ]
+    },
 ];
 
 export function ExplorerChat() {
@@ -36,14 +64,52 @@ export function ExplorerChat() {
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [generatingIdeas, setGeneratingIdeas] = useState<string | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedTopics, setSelectedTopics] = useState<FeedItem[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const [trendCategories, setTrendCategories] = useState(DEFAULT_CATEGORIES);
+    const [fetchingTrends, setFetchingTrends] = useState(false);
+
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        const fetchRealTrends = async () => {
+            setFetchingTrends(true);
+            try {
+                // Fetch trends for our 4 main buckets
+                const res = await fetch('/api/explore/trends', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        categories: DEFAULT_CATEGORIES.map(c => c.label)
+                    })
+                });
+                const data = await res.json();
+
+                if (data.groups && Array.isArray(data.groups)) {
+                    // Merge fetched trends with existing structure
+                    setTrendCategories(prev => prev.map(cat => {
+                        const newGroup = data.groups.find((g: any) => g.category === cat.label);
+                        return newGroup && newGroup.trends.length > 0
+                            ? { ...cat, trends: newGroup.trends }
+                            : cat;
+                    }));
+                }
+            } catch (e) {
+                console.warn("Failed to fetch real-time trends, using defaults", e);
+            } finally {
+                setFetchingTrends(false);
+            }
+        };
+
+        // Fire once on mount
+        fetchRealTrends();
+    }, []);
+
+    // ... scroll effect ...
 
     const sendQuery = async (query: string) => {
+        // ... (rest of function)
+
         if (!query.trim()) return;
 
         const userMessage: ChatMessage = { role: 'user', content: query };
@@ -181,6 +247,12 @@ export function ExplorerChat() {
             });
             if (res.ok) {
                 setSavedIdeas(prev => new Set([...prev, idea.hook]));
+                toast.success("Idea saved to Pipeline", {
+                    action: {
+                        label: "View Pipeline",
+                        onClick: () => window.location.href = "/workspace?tab=pipeline"
+                    }
+                });
             }
         } catch (err) {
             console.error('Failed to save idea:', err);
@@ -207,16 +279,42 @@ export function ExplorerChat() {
                         <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-8 max-w-md px-4">
                             Ask about any topic or click a suggestion below to discover trending discussions.
                         </p>
-                        <div className="flex flex-wrap justify-center gap-2">
-                            {QUICK_PROMPTS.map(prompt => (
-                                <button
-                                    key={prompt.label}
-                                    onClick={() => sendQuery(prompt.query)}
-                                    className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
-                                >
-                                    {prompt.label}
-                                </button>
-                            ))}
+                        <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {/* Categories */}
+                            <div className="flex flex-wrap justify-center gap-2">
+                                {trendCategories.map(cat => (
+                                    <button
+                                        key={cat.label}
+                                        onClick={() => setSelectedCategory(prev => prev === cat.label ? null : cat.label)}
+                                        className={`px-4 py-2 border rounded-full text-sm transition-all flex items-center gap-2 ${selectedCategory === cat.label
+                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md'
+                                            : 'bg-white border-gray-200 text-gray-700 hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                                            }`}
+                                    >
+                                        {cat.label}
+                                        {selectedCategory === cat.label ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Sub-Trends (Animated Expansion) */}
+                            {selectedCategory && (
+                                <div className="flex flex-wrap justify-center gap-2 max-w-lg mt-2 p-4 bg-gray-50/50 rounded-2xl border border-gray-100 animate-in zoom-in-95 duration-300">
+                                    <span className="w-full text-center text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">
+                                        {fetchingTrends ? "Updating trends..." : `Trending in ${selectedCategory}`}
+                                    </span>
+                                    {trendCategories.find(c => c.label === selectedCategory)?.trends.map(trend => (
+                                        <button
+                                            key={trend.label}
+                                            onClick={() => sendQuery(trend.query)}
+                                            className="px-3 py-1.5 bg-white border border-blue-100 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-50 hover:scale-105 transition-all shadow-sm"
+                                        >
+                                            <ExternalLink size={10} className="inline mr-1" />
+                                            {trend.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -393,19 +491,7 @@ export function ExplorerChat() {
                         <Send size={18} />
                     </button>
                 </form>
-                {messages.length > 0 && (
-                    <div className="max-w-3xl mx-auto mt-3 flex flex-wrap gap-2">
-                        {QUICK_PROMPTS.map(prompt => (
-                            <button
-                                key={prompt.label}
-                                onClick={() => sendQuery(prompt.query)}
-                                className="px-3 py-1 bg-gray-100 rounded-full text-xs text-gray-600 hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-colors"
-                            >
-                                {prompt.label}
-                            </button>
-                        ))}
-                    </div>
-                )}
+
             </div>
         </div>
     );

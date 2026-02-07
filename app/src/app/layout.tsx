@@ -64,6 +64,7 @@ export default function RootLayout({
             <CouponClaimer />
             {children}
             <Toaster position="bottom-right" />
+            <script src="https://checkout.razorpay.com/v1/checkout.js" async />
           </body>
         </CSPostHogProvider>
       </html>

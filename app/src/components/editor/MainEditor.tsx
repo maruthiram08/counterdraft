@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Save, Check, RefreshCw, Eye, Edit2, Image as ImageIcon, ShieldCheck } from "lucide-react";
+import { Copy, Save, Check, RefreshCw, Eye, Edit2, Image as ImageIcon, ShieldCheck, Sparkles, BrainCircuit } from "lucide-react";
+import { toast } from "sonner";
 import { Draft } from "@/hooks/useDrafts";
 import { ContextualToolbar } from "./ContextualToolbar";
 import { PublishModal } from "./PublishModal";
@@ -10,6 +11,7 @@ import { RepurposeModal } from "./RepurposeModal";
 import { VerificationSidebar, VerificationResult, PlagiarismResult, SlopMatch, CompetitorCheckResult } from "./FactCheckSidebar";
 import { AntiSlopService } from "@/lib/tools/anti-slop";
 import { getCaretCoordinates } from "@/lib/textarea-utils";
+import DOMPurify from 'isomorphic-dompurify';
 
 import { StrategyBar } from "./StrategyBar";
 
@@ -17,9 +19,10 @@ interface MainEditorProps {
     draft: Draft | null;
     onSave: (id: string, content: string) => Promise<boolean>;
     onUpdateMetadata?: (id: string, metadata: any) => Promise<boolean>;
+    onPublish?: (id: string, stage: string) => Promise<void>;
 }
 
-export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps) {
+export function MainEditor({ draft, onSave, onUpdateMetadata, onPublish }: MainEditorProps) {
     const router = useRouter();
 
     // 1. Basic Content State
@@ -54,6 +57,11 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
 
     // New: History Loading State
     const [historyLoading, setHistoryLoading] = useState(false);
+
+    // New: Voice Learning State
+    const [learning, setLearning] = useState(false);
+    // New: Knowledge Extraction State
+    const [extracting, setExtracting] = useState(false);
 
     // 4. Refs (Keep these consistent)
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -203,11 +211,43 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
         return content;
     };
 
+    const handleExtractKnowledge = async (text: string) => {
+        if (!draft || text.length < 200) return;
+        setExtracting(true);
+        try {
+            const res = await fetch('/api/knowledge/extract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text,
+                    contentId: draft.id
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.analysis && (data.analysis.beliefs > 0 || data.analysis.tensions > 0)) {
+                    // Subtle notification
+                    console.log(`[Knowledge] Extracted ${data.analysis.beliefs} beliefs, ${data.analysis.tensions} tensions.`);
+                }
+            }
+        } catch (e) {
+            console.error("Extraction failed", e);
+        } finally {
+            setExtracting(false);
+        }
+    };
+
     const handleSave = async () => {
         if (!draft) return;
         setSaving(true);
         try {
-            await onSave(draft.id, getFullContent());
+            const fullContent = getFullContent();
+            await onSave(draft.id, fullContent);
+
+            // Trigger extraction (don't await to keep UI responsive, but request will fire)
+            handleExtractKnowledge(fullContent);
+
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         } finally {
@@ -443,6 +483,76 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
         } finally {
             setCompetitorLoading(false);
         }
+
+    };
+
+    const handleFinalize = async () => {
+        if (!draft) return;
+        setLearning(true);
+        const toastId = toast.loading("Finalizing and updating Voice Profile...");
+
+        try {
+            // 1. Save Final Version
+            await onSave(draft.id, getFullContent());
+
+            // 2. Trigger Learning
+            const learnRes = await fetch('/api/voice/learn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    draftId: draft.id,
+                    finalContent: getFullContent()
+                })
+            });
+
+            if (learnRes.ok) {
+                const data = await learnRes.json();
+                if (data.learned) {
+                    toast.success("Voice Profile Updated!", { id: toastId, description: `Added ${data.newRulesCount} new rules based on your edits.` });
+                } else {
+                    toast.success("Analysis Complete", { id: toastId, description: "No significant style deviations found." });
+                }
+
+                // 3. Mark as Published / Finalized
+
+                // A. Update Pipeline (Command Center)
+                // We set stage='published' but status='active' so it remains visible in the default view
+                await fetch('/api/content', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: draft.id,
+                        stage: 'published',
+                        status: 'active', // Important: Keep active for Command Center visibility
+                        published_at: new Date().toISOString()
+                    })
+                });
+
+                // B. Update Editor Status (Your Posts) via Callback if available
+                if (onPublish) {
+                    await onPublish(draft.id, 'published');
+                } else {
+                    // Fallback to direct call if no handler provided (Legacy/Standalone)
+                    await fetch(`/api/drafts/${draft.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            status: 'published'
+                        })
+                    });
+                }
+
+                toast.success("Draft moved to Published", { duration: 3000 });
+
+            } else {
+                toast.error("Failed to update voice profile.", { id: toastId });
+            }
+        } catch (e) {
+            console.error("Learning failed", e);
+            toast.error("Network error.", { id: toastId });
+        } finally {
+            setLearning(false);
+        }
     };
 
     // --- Contextual Editing Handlers ---
@@ -567,7 +677,7 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
 
     // Simple Markdown Parser (Regex Based)
     const parseMarkdown = (text: string) => {
-        let html = text
+        const html = text
             // Headers
             .replace(/^#{3} (.*$)/gim, '<h3 class="text-xl font-bold mt-6 mb-2">$1</h3>')
             .replace(/^#{2} (.*$)/gim, '<h2 class="text-2xl font-serif font-bold mt-8 mb-4 border-b border-gray-100 pb-2">$1</h2>')
@@ -592,7 +702,75 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
                 return `<p class="mb-4 leading-relaxed text-lg text-gray-800">${trimmed.replace(/\n/g, '<br/>')}</p>`;
             }).join('');
 
-        return html;
+        return DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'br', 'strong', 'em', 'blockquote', 'img', 'a', 'li', 'ul', 'ol'],
+            ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'target', 'rel']
+        });
+    };
+
+    // 7. Auto-Fix Handler
+    const handleFactFix = async (claim: string, analysis: string, sourceSnippet?: string, status?: string) => {
+        if (!draft) return;
+        setRefining(true); // Reuse refining loading state
+        const toastId = toast.loading("Applying surgical fix...");
+
+        let instruction = "";
+        if (status === 'unverified' || status === 'irrelevant') {
+            // For Unverified: Suggest rewrite or deletion
+            instruction = `The claim "${claim}" could not be verified by sources (Status: ${status}). Review the analysis: "${analysis}". 
+             If this claim is central to the argument, rewrite it to be more precise/hypothetical. 
+             If it is unsupported fluff, DELETE it completely.`;
+        } else {
+            // For Disputed: Correct with evidence
+            instruction = `The claim "${claim}" is factually DISPUTED. Correct it immediately using this verified evidence: "${analysis}". 
+             ${sourceSnippet ? `Source context: ${sourceSnippet}` : ''} 
+             Keep the rest of the text unchanged and maintain the original tone.`;
+        }
+
+        try {
+            // We use the same 'auto_fix_strategy' endpoint which uses the "Surgical Editor" prompt
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'auto_fix_strategy',
+                    draft: content,
+                    fix_instruction: instruction,
+                    // We might need to pass metadata if available, but MainEditor might not have full brain metadata handy?
+                    // The API tries to fetch it if draftId is passed, but here we pass 'draft' content directly.
+                    // Ideally we pass brainId or similar. Let's rely on the API handling missing metadata gracefully or we simulate it.
+                    // Actually, the API expects 'brainMetadata' for context. 
+                    // MainEditor -> props.draft has 'platform_metadata' but maybe not full brain strategy?
+                    // Let's assume the API can handle it or we pass what we have.
+                    // For now, let's pass a minimal context if possible, or let the API default.
+                    brainMetadata: {
+                        outcome: 'Accuracy',
+                        audience: { role: 'General Reader' }
+                    }
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.draft) {
+                    setContent(data.draft);
+                    toast.success("Fix applied!", { id: toastId });
+                    // Re-run verification to signal "Job Done"
+                    // (Optional: might be expensive, but good UX)
+                    handleVerify();
+                } else {
+                    toast.error("Fixed failed to generate.", { id: toastId });
+                }
+            } else {
+                console.error("Auto-fix failed", res.status);
+                toast.error("Server error during fix.", { id: toastId });
+            }
+        } catch (e) {
+            console.error("Auto-fix error", e);
+            toast.error("Network error.", { id: toastId });
+        } finally {
+            setRefining(false);
+        }
     };
 
     const renderHighlights = () => {
@@ -694,9 +872,9 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
 
                             {/* Status Badge (Non-clickable) */}
                             <div className="flex items-center gap-1.5 mr-2 pl-1 pr-3 border-r border-gray-100 select-none">
-                                <div className={`w-1.5 h-1.5 rounded-full ${saving ? 'bg-amber-400 animate-pulse' : saved ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                <div className={`w-1.5 h-1.5 rounded-full ${saving ? 'bg-amber-400 animate-pulse' : extracting ? 'bg-blue-400 animate-pulse' : saved ? 'bg-green-500' : draft.status === 'published' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
                                 <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
-                                    {saving ? "Saving" : saved ? "Saved" : "Draft"}
+                                    {saving ? "Saving" : extracting ? "Analyzing" : saved ? "Saved" : draft.status === 'published' ? "Published" : "Draft"}
                                 </span>
                             </div>
 
@@ -708,14 +886,16 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
                                 {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                             </button>
 
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                title="Save Draft (Cmd+S)"
-                                className="text-gray-400 hover:text-[var(--accent)] p-1.5 hover:bg-gray-50 rounded-lg transition-all"
-                            >
-                                <Save size={14} />
-                            </button>
+                            {draft.status !== 'published' && (
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    title="Save Draft (Cmd+S)"
+                                    className="text-gray-400 hover:text-[var(--accent)] p-1.5 hover:bg-gray-50 rounded-lg transition-all"
+                                >
+                                    <Save size={14} />
+                                </button>
+                            )}
 
                             {/* Separator */}
                             <div className="w-px h-3 bg-gray-200 mx-0.5"></div>
@@ -728,6 +908,22 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
                             >
                                 <RefreshCw size={14} />
                             </button>
+
+                            {/* Separator */}
+                            <div className="w-px h-3 bg-gray-200 mx-0.5"></div>
+
+                            {/* Finalize / Learn Button */}
+                            {draft.status !== 'published' && (
+                                <button
+                                    onClick={handleFinalize}
+                                    disabled={learning}
+                                    title="Finalize & Learn (Updates Voice)"
+                                    className="text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
+                                >
+                                    <BrainCircuit size={14} />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Finalize</span>
+                                </button>
+                            )}
 
                             {/* Fact Check Button */}
                             <button
@@ -750,16 +946,18 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
                             )}
 
                             {/* Publish (Primary) */}
-                            <button
-                                onClick={() => setShowPublishModal(true)}
-                                className="ml-2 px-3 py-1 bg-gray-900 hover:bg-black text-white text-xs font-medium rounded-lg shadow-sm transition-all"
-                            >
-                                Publish
-                            </button>
+                            {draft.status !== 'published' && (
+                                <button
+                                    onClick={() => setShowPublishModal(true)}
+                                    className="ml-2 px-3 py-1 bg-gray-900 hover:bg-black text-white text-xs font-medium rounded-lg shadow-sm transition-all"
+                                >
+                                    Publish
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                    {toolbarPosition && (
+                    {toolbarPosition && draft.status !== 'published' && (
                         <ContextualToolbar
                             position={toolbarPosition}
                             onOptionSelect={handleExecuteRefinement}
@@ -792,9 +990,40 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
                     {/* Strategy Bar */}
 
 
+                    {/* Published Banner */}
+                    {draft.status === 'published' && (
+                        <div className="mb-8 p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex items-center justify-between group/banner animate-in fade-in slide-in-from-top-2 duration-500">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                    <Sparkles size={18} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-semibold text-blue-900">This post is published</h4>
+                                    <p className="text-xs text-blue-700/70">
+                                        Published on {draft.published_posts?.[0]?.published_at ? new Date(draft.published_posts[0].published_at).toLocaleDateString() : new Date(draft.updated_at).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleCopy}
+                                    className="px-3 py-1.5 text-xs font-medium bg-white text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+                                >
+                                    Copy Content
+                                </button>
+                                <button
+                                    onClick={() => setShowRepurposeModal(true)}
+                                    className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                                >
+                                    Repurpose
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Title / Context - Refined Typography */}
                     <div className="mb-6 md:mb-12 select-none">
-                        <h2 className="text-xl md:text-3xl font-serif font-medium text-gray-800 leading-tight mb-4 md:mb-6 break-words">
+                        <h2 className={`text-xl md:text-3xl font-serif font-medium leading-tight mb-4 md:mb-6 break-words ${draft.status === 'published' ? 'text-gray-500' : 'text-gray-800'}`}>
                             {draft.belief_text}
                         </h2>
                         {/* Subtle separator */}
@@ -825,7 +1054,9 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
                             <textarea
                                 ref={textareaRef}
                                 value={content}
+                                readOnly={draft.status === 'published'}
                                 onChange={(e) => {
+                                    if (draft.status === 'published') return;
                                     setContent(e.target.value);
                                     // Auto-resize on input
                                     e.target.style.height = 'auto';
@@ -872,6 +1103,7 @@ export function MainEditor({ draft, onSave, onUpdateMetadata }: MainEditorProps)
                 factResults={verifications}
                 factLoading={verifying || historyLoading}
                 onFactVerify={handleVerify}
+                onFixClaim={handleFactFix}
                 plagiarismResult={plagiarismResult}
                 plagiarismLoading={checkingPlagiarism || historyLoading}
                 onPlagiarismCheck={handlePlagiarismCheck}

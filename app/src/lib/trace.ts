@@ -20,8 +20,10 @@ export const TraceLogger = {
         const entry = `\n[${timestamp}] [${category.toUpperCase()}]\n${message}\n${payload ? payload + '\n' : ''}----------------------------------------`;
 
         try {
-            // Append to file synchronously (for simplicity in debug mode) or async
-            fs.appendFileSync(LOG_FILE, entry);
+            // Append to file synchronously (only in development)
+            if (process.env.NODE_ENV !== 'production') {
+                fs.appendFileSync(LOG_FILE, entry);
+            }
         } catch (e) {
             console.error("Failed to write to trace log", e);
         }

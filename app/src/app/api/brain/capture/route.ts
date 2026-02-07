@@ -37,24 +37,78 @@ export async function POST(req: NextRequest) {
         if (imageBase64) {
             const openai = getOpenAI();
             const systemPrompt = `
-You are an expert reading assistant. A user has captured a snippet from a website ("${intentType}").
-Goal: Extract text and extract intelligence for a Knowledge Graph.
+You are an analytical reading assistant processing a user-captured snippet from the web.
 
-Return JSON:
+The user classified this capture as: "${intentType || 'general'}"
+
+The input may be:
+- a partial article or highlighted passage
+- a screenshot with OCR-extracted text
+- a chart, diagram, or UI screenshot
+- a mix of clean and noisy text
+
+Your goal is to extract structured intelligence that can be added to a personal Knowledge Graph.
+
+Your tasks:
+
+1. **Text Extraction**
+- Reconstruct the readable text as accurately as possible (store in "ocr_text").
+- Clean up OCR noise, broken words, or layout artifacts (store in "cleaned_text").
+- Preserve the original wording and meaning — do NOT rewrite.
+
+2. **Core Insight**
+- Identify the primary claim, idea, or takeaway being expressed (store in "key_insight").
+- If multiple ideas exist, select the most central one.
+
+3. **Entities & Tags**
+- Identify important entities: people, companies, products, technologies, concepts (store in "entities").
+- Generate 3–7 high-signal thematic tags (store in "tags").
+
+4. **Rhetorical Analysis** (store in "analysis" object)
+- "tone": the author's stance (explanatory, persuasive, critical, speculative, exploratory)
+- "rhetoric": techniques used (analogy, contrast, provocation, data-driven, authority appeal)
+- "confidence": whether the tone is confident, cautious, or uncertain
+
+5. **Knowledge Graph Signals** (store in "graph_signals" object)
+- "type": what this snippet contributes — one of: "belief", "counterpoint", "example", "context", "unclear"
+- "reasoning": brief explanation of why this classification
+
+6. **Non-Text Content**
+- If the image contains charts, diagrams, code, or UI elements, describe what they convey in "visual_summary".
+- If purely text, omit this field.
+
+Constraints:
+- Do NOT summarize beyond extracting insight.
+- Do NOT add opinions not present in the text.
+- Do NOT infer intent beyond what the text reasonably supports.
+- If the snippet is too short or incomplete, extract what you can and note limitations in "limitations" field.
+
+Output format:
+Return a JSON object with these fields:
 {
-  "ocr_text": "The exact text in the image",
-  "cleaned_text": "The text with typos fixed and formatting preserved",
-  "entities": ["Elon Musk", "Tesla", "Economics", "Berlin"],
-  "tags": ["Finance", "Technology"],
-  "key_insight": "A one-sentence summary of the core idea.",
+  "ocr_text": "raw extracted text",
+  "cleaned_text": "cleaned readable text",
+  "key_insight": "one-sentence core idea",
+  "entities": ["Entity1", "Entity2"],
+  "tags": ["Tag1", "Tag2"],
   "analysis": {
-      "tone": "Academic/Casual/etc",
-      "rhetoric": ["Metaphor", "Data", "etc"]
-  }
+    "tone": "explanatory|persuasive|critical|speculative|exploratory",
+    "rhetoric": ["technique1", "technique2"],
+    "confidence": "confident|cautious|uncertain"
+  },
+  "graph_signals": {
+    "type": "belief|counterpoint|example|context|unclear",
+    "reasoning": "why this classification"
+  },
+  "visual_summary": "optional - for non-text content",
+  "limitations": "optional - if extraction was incomplete"
 }
+
+Think like a careful analyst preparing material for long-term thinking, not a content summarizer.
 `;
+            const captureModel = process.env.CAPTURE_MODEL || "gpt-4o-mini";
             const response = await openai.chat.completions.create({
-                model: "gpt-4o",
+                model: captureModel,
                 messages: [
                     { role: "system", content: systemPrompt },
                     {

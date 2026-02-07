@@ -20,19 +20,34 @@ const PRODUCT_MAP: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
     try {
-        // 1. Verify Webhook Signature (Critical for security)
+        // 1. Verify Webhook Signature
         const signature = req.headers.get('webhook-signature');
         const webhookId = req.headers.get('webhook-id');
+        const rawBody = await req.text(); // Read raw body for verification
 
         if (!signature || !webhookId) {
             return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
         }
 
-        // Note: Dodo SDK might have a verify method soon. 
-        // For now, we trust the payload if the secret matches (if strictly implemented)
-        // Ideally: client.webhooks.constructEvent(payload, signature, secret);
+        const secret = process.env.DODO_PAYMENTS_WEBHOOK_SECRET;
+        if (!secret) {
+            console.error('[Dodo Webhook] Missing DODO_PAYMENTS_WEBHOOK_SECRET');
+            return NextResponse.json({ error: 'Configuration Error' }, { status: 500 });
+        }
 
-        const payload = await req.json();
+        // Generate HMAC
+        const crypto = require('crypto');
+        const calculatedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(rawBody)
+            .digest('hex');
+
+        if (calculatedSignature !== signature) {
+            console.error('[Dodo Webhook] Invalid Signature', { calculated: calculatedSignature, received: signature });
+            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+        }
+
+        const payload = JSON.parse(rawBody); // Parse manually after verification
         const eventType = payload.type;
         const data = payload.data;
 

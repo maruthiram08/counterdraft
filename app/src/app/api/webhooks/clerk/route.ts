@@ -27,8 +27,7 @@ export async function POST(req: Request) {
     }
 
     // Get the body
-    const payload = await req.json();
-    const body = JSON.stringify(payload);
+    const body = await req.text();
 
     // Create a new Svix instance with your secret.
     const wh = new Webhook(WEBHOOK_SECRET);
@@ -58,24 +57,51 @@ export async function POST(req: Request) {
         const email = email_addresses && email_addresses.length > 0 ? email_addresses[0].email_address : null;
         const fullName = `${first_name || ''} ${last_name || ''}`.trim();
 
-        // Sync to Supabase
-        const { error } = await supabaseAdmin.from('users').upsert({
-            id: id,
-            email: email,
-            full_name: fullName,
-            avatar_url: image_url,
-            updated_at: new Date().toISOString()
-        });
+        // Check if user exists by clerk_id
+        const { data: existingUser } = await supabaseAdmin
+            .from('users')
+            .select('id')
+            .eq('clerk_id', id)
+            .single();
 
-        if (error) {
-            console.error('Error syncing user to Supabase:', error);
-            return new NextResponse('Error syncing user', { status: 500 });
+        if (existingUser) {
+            // Update existing user (don't touch id)
+            const { error } = await supabaseAdmin
+                .from('users')
+                .update({
+                    email: email,
+                    full_name: fullName,
+                    avatar_url: image_url,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('clerk_id', id);
+
+            if (error) {
+                console.error('Error updating user in Supabase:', error);
+                return new NextResponse('Error updating user', { status: 500 });
+            }
+        } else {
+            // Create new user (let Supabase generate id, set clerk_id)
+            const { error } = await supabaseAdmin
+                .from('users')
+                .insert({
+                    clerk_id: id,
+                    email: email,
+                    name: fullName || 'Counterdraft User',
+                    avatar_url: image_url,
+                });
+
+            if (error) {
+                console.error('Error creating user in Supabase:', error);
+                return new NextResponse('Error creating user', { status: 500 });
+            }
         }
     } else if (eventType === 'user.deleted') {
         const { id } = evt.data;
 
         if (id) {
-            const { error } = await supabaseAdmin.from('users').delete().eq('id', id);
+            // Delete by clerk_id, not by id
+            const { error } = await supabaseAdmin.from('users').delete().eq('clerk_id', id);
             if (error) {
                 console.error('Error deleting user from Supabase:', error);
                 return new NextResponse('Error deleting user', { status: 500 });

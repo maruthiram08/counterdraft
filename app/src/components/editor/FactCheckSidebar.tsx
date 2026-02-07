@@ -73,6 +73,7 @@ interface VerificationSidebarProps {
     onRunAll: () => void;
     // Actions
     onApplySlopSuggestion?: (match: SlopMatch) => void;
+    onFixClaim?: (claim: string, analysis: string, sourceSnippet?: string, status?: string) => void;
 }
 
 export function VerificationSidebar({
@@ -93,7 +94,8 @@ export function VerificationSidebar({
     overallScore,
     metrics,
     onRunAll,
-    onApplySlopSuggestion
+    onApplySlopSuggestion,
+    onFixClaim
 }: VerificationSidebarProps) {
     const [activeTab, setActiveTab] = useState<'fact' | 'plagiarism' | 'style' | 'competitor'>('fact');
     const [compUrl, setCompUrl] = useState('');
@@ -194,6 +196,26 @@ export function VerificationSidebar({
                                                 <ExternalLink size={10} /> Source Reference
                                             </a>
                                         )}
+                                        {(() => {
+                                            const normalizedStatus = res.status.toLowerCase();
+                                            const isActionable = normalizedStatus === 'disputed' || normalizedStatus === 'unverified' || normalizedStatus === 'irrelevant';
+
+                                            if (isActionable && onFixClaim) {
+                                                return (
+                                                    <button
+                                                        onClick={() => onFixClaim(res.claim, res.analysis, res.source?.snippet, normalizedStatus)}
+                                                        className={`mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-lg transition-colors border ${normalizedStatus === 'disputed'
+                                                                ? 'bg-red-100/50 hover:bg-red-100 text-red-700 border-red-200'
+                                                                : 'bg-yellow-100/50 hover:bg-yellow-100 text-yellow-700 border-yellow-200'
+                                                            }`}
+                                                    >
+                                                        <Sparkles size={12} />
+                                                        {normalizedStatus === 'disputed' ? 'Auto-Correct with Fact' : 'Auto-Fix (Clarify/Delete)'}
+                                                    </button>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                     </div>
                                 ))}
                             </div>

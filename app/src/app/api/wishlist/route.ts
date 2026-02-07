@@ -13,18 +13,18 @@ export async function GET(req: NextRequest) {
             .order('upvotes', { ascending: false });
 
         if (status) {
+            // Only allow filtering by 'pending' if authenticated
+            if (status === 'pending') {
+                const { userId } = getAuth(req);
+                if (!userId) {
+                    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+                }
+            }
             query = query.eq('status', status);
         } else {
             // Default: show approved/in_progress/done
-            query = query.in('status', ['approved', 'in_progress', 'done', 'pending']);
-            // Note: RLS usually filters 'pending' for non-owners, but since we use admin client here, 
-            // we must manually filter if we want public vs private.
-            // For simplicity, let's just return everything and filter in UI or refine this.
-            // Actually, let's strict it: 
-            // On public list, we usually don't show 'pending' unless it's "my" pending.
-            // But for this MVP, let's just return all non-pending for the main list, 
-            // and we might need a separate call for "my requests".
-            // Let's stick to returning "public" ones for now.
+            // Only show 'pending' if authenticated? 
+            // For now, let's keep it safe. Public list only shows approved/in_progress/done.
             query = query.in('status', ['approved', 'in_progress', 'done']);
         }
 

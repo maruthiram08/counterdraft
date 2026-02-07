@@ -107,6 +107,10 @@ export default function SettingsPage() {
                 activeSection="settings"
                 onNavigate={(section) => {
                     if (section === 'settings') return; // Already here
+                    if (section === 'style') {
+                        router.push('/style');
+                        return;
+                    }
                     // Navigate back to workspace with tab
                     router.push(`/workspace?tab=${section}`);
                 }}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
+import crypto from 'crypto';
 
 // POST /api/upload - Upload file to storage
 export async function POST(req: Request) {
@@ -17,9 +18,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
+        // 1. Validation limits
+        const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/plain', 'text/markdown'];
+
+        if (file.size > MAX_SIZE) {
+            return NextResponse.json({ error: 'File too large (Max 10MB)' }, { status: 413 });
+        }
+
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            return NextResponse.json({ error: 'Invalid file type' }, { status: 415 });
+        }
+
         // Sanitize filename
         const filename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const uniqueId = Math.random().toString(36).substring(2, 15);
+        const uniqueId = crypto.randomUUID();
         const path = `${userId}/${uniqueId}-${filename}`;
 
         // Convert file to ArrayBuffer for upload

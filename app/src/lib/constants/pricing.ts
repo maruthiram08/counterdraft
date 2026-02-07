@@ -8,15 +8,17 @@ export const PRICING_CONFIG = {
     // Limits (Easy to adjust for experimentation)
     LIMITS: {
         ['free']: {
-            DRAFTS_PER_MONTH: 2, // Hard limit for creation
-            SEARCHES_PER_MONTH: 20, // New Explore Limit
-            BRAIN_DEPTH: 'shallow', // Result filter level
-            ALLOW_BELIEFS: false, // Feature flag
-            ALLOW_TENSIONS: false, // Feature flag
+            DRAFTS_PER_MONTH: 0, // STRICT BETA PAYWALL
+            SEARCHES_PER_MONTH: 0, // No free searches
+            IMAGES_PER_MONTH: 0,
+            BRAIN_DEPTH: 'shallow',
+            ALLOW_BELIEFS: false,
+            ALLOW_TENSIONS: false,
         },
         ['pro']: {
             DRAFTS_PER_MONTH: Infinity,
             SEARCHES_PER_MONTH: Infinity,
+            IMAGES_PER_MONTH: Infinity,
             BRAIN_DEPTH: 'deep',
             ALLOW_BELIEFS: true,
             ALLOW_TENSIONS: true,

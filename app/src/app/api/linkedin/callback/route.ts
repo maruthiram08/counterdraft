@@ -52,7 +52,12 @@ export async function GET(request: NextRequest) {
 
         console.log('[LinkedIn Callback] Processing callback for code:', code.substring(0, 10) + '...');
 
-        // Decode and validate state
+        if (!storedState || storedState !== state) {
+            console.error('[LinkedIn Callback] State mismatch or missing', { received: state, stored: storedState });
+            return NextResponse.redirect(new URL('/settings?error=csrf_state_mismatch', process.env.NEXT_PUBLIC_APP_URL!));
+        }
+
+        // Decode and validate state (Double check timestamp inside payload)
         let stateData: { clerkUserId: string; timestamp: number };
         try {
             stateData = JSON.parse(Buffer.from(state, 'base64').toString());

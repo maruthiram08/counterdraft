@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Brain, Compass, Book, Plus, Import, Settings, Zap, Network, Menu, X } from "lucide-react";
+import { Home, Brain, Compass, Book, Plus, Import, Settings, Zap, Network, Menu, X, PenTool } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
 interface GlobalSidebarProps {
@@ -21,6 +21,7 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
         { id: 'pipeline', label: 'Command Center', icon: Home },
         { id: 'drafts', label: 'Your Post', icon: Book },
         { id: 'mind', label: 'Your Mind', icon: Brain },
+        { id: 'style', label: 'Your Voice', icon: PenTool },
     ];
 
     // Responsive detection

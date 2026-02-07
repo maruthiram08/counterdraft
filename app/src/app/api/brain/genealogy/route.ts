@@ -2,11 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { brainService } from '@/lib/brain/service';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { auth } from '@clerk/nextjs/server';
+import { getOrCreateUser } from '@/lib/user-sync';
 
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getOrCreateUser();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

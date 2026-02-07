@@ -3,6 +3,8 @@ import { dodo } from '@/lib/billing/dodo';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
     try {
         const userId = await getOrCreateUser();
@@ -10,7 +12,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { productId, billingCycle } = await req.json(); // e.g., 'prod_gl_monthly'
+        const { productId, billingCycle, country } = await req.json(); // e.g., 'prod_gl_monthly'
 
         if (!productId) {
             return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
@@ -29,6 +31,8 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Create Checkout
+        console.log(`[Checkout] Creating session for ${user.email} | Plan: ${productId} | Country: ${country || 'US'}`);
+
         // We pass metadata so the webhook knows who paid
         const payment = await dodo.subscriptions.create({
             product_id: productId,
@@ -38,7 +42,7 @@ export async function POST(req: NextRequest) {
             },
             billing: {
                 city: "Unknown",
-                country: "US", // Default or extract from header
+                country: country || "US",
                 state: "NY",
                 street: "123 Unknown",
                 zipcode: "10001"

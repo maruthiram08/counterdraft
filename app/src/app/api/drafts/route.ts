@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { extractBeliefs } from '@/lib/openai';
+import { storeAnalysisResults } from '@/lib/belief-storage';
 
 import { UsageService } from '@/lib/billing/usage';
 
@@ -175,6 +177,8 @@ export async function POST(req: NextRequest) {
             console.log(`[POST /api/drafts] Incrementing usage for User ${userId}`);
             await UsageService.incrementDraftCount(userId);
         }
+
+
 
         return NextResponse.json({ draft, success: true });
     } catch (error: any) {

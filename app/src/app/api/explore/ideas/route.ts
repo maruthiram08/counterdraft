@@ -3,6 +3,8 @@ import OpenAI from 'openai';
 import { TraceLogger } from '@/lib/trace';
 import { moderateContent, getModerationErrorMessage } from '@/lib/moderation';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
+import { getOrCreateUser } from '@/lib/user-sync';
+import { UsageService } from '@/lib/billing/usage';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -27,6 +29,11 @@ const TONE_GUIDANCE: Record<string, string> = {
 
 export async function POST(req: Request) {
     try {
+        const userId = await getOrCreateUser();
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await req.json();
 
         // P3: Extract personalization params with defaults
@@ -59,6 +66,19 @@ export async function POST(req: Request) {
             }, { status: 400 });
         }
 
+        const limitCheck = await UsageService.checkSearchLimit(userId);
+        if (!limitCheck.allowed) {
+            return NextResponse.json(
+                {
+                    error: 'Limit Reached',
+                    message: limitCheck.reason,
+                    tier: limitCheck.tier,
+                    upgradeUrl: '/pricing'
+                },
+                { status: 403 }
+            );
+        }
+
         const subject = titles.length > 1
             ? `Multiple topics: ${titles.join('; ')}`
             : titles[0];
@@ -68,24 +88,45 @@ export async function POST(req: Request) {
 
         const systemPrompt = `${SAFETY_PREAMBLE}
 
-You are a content strategist helping a thought leader create ${platformDesc}.
-Given a trending topic, suggest ${count} compelling post ideas. Each idea should have:
-- A hook (attention-grabbing opening line)
-- An angle (the unique perspective or argument)
-- A format suggestion (story, listicle, hot take, question, etc.)
+You are an editorial content strategist helping a creator turn a trending topic into strong, differentiated post ideas for ${platformDesc}.
 
-TONE: ${toneDesc}
+You are given:
+- A trending topic or theme
+- Optional audience context (who they are and what they care about)
+- Tone guidance: ${toneDesc}
 
-Output as JSON:
-{
-  "ideas": [
-    {
-      "hook": "opening line",
-      "angle": "the perspective",
-      "format": "suggested format"
-    }
-  ]
-}`;
+Your task is to generate up to ${count} post ideas that are worth writing — not just reacting.
+
+Each post idea must:
+- Take a clear position or reveal a tension (not a neutral summary)
+- Be framed around a real audience question, pain point, or overlooked angle
+- Go beyond what is already being widely said about the topic
+- Be appropriate for ${platformDesc} in tone and structure
+
+For each idea, include:
+- "hook": an opening line or framing that would stop the right reader
+- "angle": the specific point of view, argument, or tension the post would explore
+- "format": the structural approach (e.g., short insight, mini-essay, list, narrative, how-to, question-led)
+
+Prioritize ideas that:
+- Reframe the trend from an unexpected or under-discussed angle
+- Challenge common assumptions or surface tradeoffs
+- Help the reader think more clearly, not just stay informed
+
+Avoid:
+- Generic trend summaries or explanatory overviews
+- Obvious or widely repeated takes
+- Engagement bait or sensational framing
+- Ideas that could apply to any trend without modification
+
+Quality over quantity: If you cannot find ${count} genuinely differentiated angles, return fewer. Do not pad with weak ideas.
+
+Output format:
+Return a JSON object with an "ideas" array.
+Each item must include "hook", "angle", and "format".
+
+Think like an editor helping a creator stand out during a noisy moment — not an AI generating trend content.
+`;
 
         const completion = await openai.chat.completions.create({
             messages: [
@@ -102,6 +143,8 @@ Output as JSON:
         if (!result) throw new Error("No response from OpenAI");
 
         const parsed = JSON.parse(result);
+
+        await UsageService.incrementSearchCount(userId);
 
         return NextResponse.json({
             ideas: parsed.ideas || [],

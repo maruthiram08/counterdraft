@@ -36,19 +36,82 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
         },
         india: {
             monthly: { price: "₹999", perMonth: "₹999", billed: "billed monthly", id: "prod_in_monthly" },
-            yearly: { price: "₹9,999", perMonth: "₹833", billed: "billed annually", id: "prod_in_yearly", save: "20%" }
+            yearly: { price: "₹9,999", perMonth: "₹833", billed: "billed yearly", id: "prod_in_yearly", save: "16%" } // 999*12 = 11988. 9999/11988 ~ 16.5% discount
         }
     };
 
     const currentRegion = isIndia ? plans.india : plans.global;
     const currentPlan = billingCycle === 'monthly' ? currentRegion.monthly : currentRegion.yearly;
 
+    const handleRazorpaySubscription = async (planId: string) => {
+        try {
+            // 1. Create Order
+            const res = await fetch('/api/billing/razorpay/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planId })
+            });
+            const data = await res.json();
+
+            if (data.error) throw new Error(data.error);
+
+            // 2. Open Modal
+            const options = {
+                key: data.keyId,
+                amount: data.amount,
+                currency: data.currency,
+                name: "CounterDraft",
+                description: "Pro Subscription",
+                order_id: data.orderId,
+                handler: async function (response: any) {
+                    // 3. Verify Payment
+                    try {
+                        const verifyRes = await fetch('/api/billing/razorpay/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...response,
+                                planId
+                            })
+                        });
+                        const verifyData = await verifyRes.json();
+                        if (verifyData.success) {
+                            window.location.href = verifyData.redirectUrl;
+                        } else {
+                            alert("Payment verification failed. Please contact support.");
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert("Verification error.");
+                    }
+                },
+                theme: { color: "#16a34a" }
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+
+        } catch (e: any) {
+            console.error("Razorpay Error:", e);
+            alert("Payment failed: " + e.message);
+        }
+    };
+
     const handleSubscribe = async (planId: string) => {
+        if (isIndia) {
+            await handleRazorpaySubscription(planId);
+            return;
+        }
+
         try {
             const res = await fetch('/api/billing/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productId: planId, billingCycle })
+                body: JSON.stringify({
+                    productId: planId,
+                    billingCycle,
+                    country: isIndia ? 'IN' : 'US'
+                })
             });
 
             const data = await res.json();
@@ -59,6 +122,9 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
 
             if (data.checkoutUrl) {
                 window.location.href = data.checkoutUrl;
+            } else {
+                console.warn('No checkout URL returned', data);
+                alert('Payment provider did not return a checkout URL. Please try again.');
             }
         } catch (e) {
             console.error(e);
@@ -104,6 +170,18 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                     <span className={`text-sm font-bold ${billingCycle === 'yearly' ? 'text-zinc-900' : 'text-zinc-400'}`}>
                         Yearly <span className="text-xs text-green-600 font-black ml-1">(SAVE 20%)</span>
                     </span>
+                </div>
+
+                {/* COUNTRY TOGGLE (For Beta/Testing) */}
+                <div className="flex justify-center mb-8">
+                    <button
+                        onClick={() => setIsIndia(!isIndia)}
+                        className="text-xs font-medium text-zinc-400 hover:text-zinc-600 flex items-center gap-2 border border-zinc-200 rounded-full px-3 py-1 bg-white"
+                    >
+                        <span>{isIndia ? "🇮🇳 India" : "🌎 Global"}</span>
+                        <span className="text-zinc-300">|</span>
+                        <span>Click to Switch</span>
+                    </button>
                 </div>
 
                 {/* TIERS GRID */}
@@ -177,7 +255,8 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                             </div>
                             <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">
                                 {currentPlan.billed}
-                                {billingCycle === 'yearly' && <span className="text-green-500 ml-2"> (Total {currentPlan.price}/yr)</span>}
+                                {billingCycle === 'yearly' && isIndia && <span className="text-green-500 ml-2"> (₹9,999/yr)</span>}
+                                {billingCycle === 'yearly' && !isIndia && <span className="text-green-500 ml-2"> (Total {currentPlan.price}/yr)</span>}
                             </p>
                         </div>
 

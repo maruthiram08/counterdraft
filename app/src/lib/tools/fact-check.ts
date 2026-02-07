@@ -13,6 +13,9 @@ export interface VerificationResult {
 }
 
 export class FactCheckService {
+    private static cache = new Map<string, { value: VerificationResult; expiresAt: number }>();
+    private static readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+    private static readonly MAX_CLAIMS = 5;
 
     /**
      * verifyDraft
@@ -28,7 +31,8 @@ export class FactCheckService {
         console.log("FactCheck: extracted claims", claims.length);
 
         // 2. Verify each item (Parallel)
-        const results = await Promise.all(claims.map(item => this.verifyClaim(item.claim, item.original_sentence)));
+        const limitedClaims = claims.slice(0, this.MAX_CLAIMS);
+        const results = await Promise.all(limitedClaims.map(item => this.verifyClaim(item.claim, item.original_sentence)));
 
         return results;
     }
@@ -39,12 +43,16 @@ export class FactCheckService {
      */
     static async extractClaims(text: string): Promise<{ claim: string, original_sentence: string }[]> {
         const prompt = `
-            Analyze the following text and extract a list of specific, verifiable factual claims.
-            For each claim, you MUST also provide the "original_sentence" from the text where this claim originates.
+            Analyze the following text and extract a list of SPECIFIC, VERIFIABLE factual claims.
+            
+            RULES for Extraction:
+            1. **Specific Facts Only:** Extract verifiable assertions (dates, numbers, laws, historical events, scientific facts). Ignore opinions or broad generalizations.
+            2. **Verbatim-ish:** The "claim" should be a standalone summary, but "original_sentence" MUST be the exact quote from the text.
+            3. **Completeness:** Ensure the extracted claim contains enough context to be verified (e.g. "It increased by 50%" -> "Q3 Revenue increased by 50%").
             
             Return ONLY a raw JSON array of objects:
             [
-              { "claim": "summarized claim", "original_sentence": "exact sentence from text" },
+              { "claim": "Precise verifiable statement", "original_sentence": "Exact sentence from text" },
               ...
             ]
 
@@ -56,7 +64,8 @@ export class FactCheckService {
             const response = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [{ role: "user", content: prompt }],
-                response_format: { type: "json_object" }
+                response_format: { type: "json_object" },
+                temperature: 0.1 // FORCE DETERMINISM
             });
 
             const content = response.choices[0].message.content || "{}";
@@ -74,15 +83,23 @@ export class FactCheckService {
      */
     static async verifyClaim(claim: string, original_sentence?: string): Promise<VerificationResult> {
         try {
+            const cacheKey = claim.trim().toLowerCase();
+            const cached = this.cache.get(cacheKey);
+            if (cached && cached.expiresAt > Date.now()) {
+                return cached.value;
+            }
+
             // 1. Search Tavily
             const sources = await this.searchTavily(claim);
             if (sources.length === 0) {
-                return {
+                const result: VerificationResult = {
                     claim,
                     status: 'unverified',
                     confidence: 0,
                     analysis: "No relevant web sources found."
                 };
+                this.cache.set(cacheKey, { value: result, expiresAt: Date.now() + this.CACHE_TTL_MS });
+                return result;
             }
 
             // 2. Judge (LLM evaluate claim vs source)
@@ -100,13 +117,14 @@ export class FactCheckService {
             const response = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [{ role: "user", content: prompt }],
-                response_format: { type: "json_object" }
+                response_format: { type: "json_object" },
+                temperature: 0.1
             });
 
             const content = response.choices[0].message.content || "{}";
             const judgement = JSON.parse(content);
 
-            return {
+            const result: VerificationResult = {
                 claim,
                 original_sentence,
                 status: judgement.status || 'unverified',
@@ -117,6 +135,8 @@ export class FactCheckService {
                 },
                 analysis: judgement.analysis || 'Analysis failed'
             };
+            this.cache.set(cacheKey, { value: result, expiresAt: Date.now() + this.CACHE_TTL_MS });
+            return result;
 
         } catch (e: any) {
             console.error("FactCheck: verification failed for claim", claim, e);

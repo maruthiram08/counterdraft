@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
+import { getOrCreateUser } from '@/lib/user-sync';
 
 // Initialize Supabase Admin strictly for this transaction
 const supabase = createClient(
@@ -10,7 +10,7 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const userId = await getOrCreateUser();
         console.log('[ClaimCoupon] Auth Check:', { userId, hasHeaders: !!req.headers.get('cookie') });
 
         if (!userId) {

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, User, Briefcase, Mic } from "lucide-react";
+import { X, Loader2, User, Briefcase, PenTool, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { StyleAnalysisModal } from "./StyleAnalysisModal";
 
 interface ProfileSetupModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
     const [role, setRole] = useState("");
     const [context, setContext] = useState("");
     const [voice, setVoice] = useState("");
+    const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
 
     const handleSubmit = async () => {
         setLoading(true);
@@ -82,23 +84,49 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                         />
                     </div>
 
-                    {/* Voice */}
+                    {/* Writing Style */}
                     <div>
-                        <label className="text-sm font-bold text-zinc-900 mb-2 block flex items-center gap-2">
-                            <Mic size={16} /> Voice Tone
+                        <label className="text-sm font-bold text-zinc-900 mb-2 block flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <PenTool size={16} /> Writing Style
+                            </div>
+                            <button
+                                onClick={() => setIsAnalysisOpen(true)}
+                                className="text-xs font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 rounded-md flex items-center gap-1 transition-colors"
+                            >
+                                <Wand2 size={12} /> Analyze My Style
+                            </button>
                         </label>
+
                         <div className="grid grid-cols-2 gap-2">
-                            {['Contrarian', 'Academic', 'Direct', 'Visionary'].map(v => (
+                            {['Neutral', 'Academic', 'Direct', 'Storyteller'].map(v => (
                                 <button
                                     key={v}
                                     onClick={() => setVoice(v)}
-                                    className={`p-2 text-xs font-medium rounded-lg border transition-all ${voice === v ? 'bg-black text-white border-black' : 'bg-white border-zinc-200 hover:border-zinc-400'}`}
+                                    className={`p-3 text-xs font-medium rounded-lg border transition-all text-center ${voice === v ? 'bg-black text-white border-black ring-2 ring-black/20' : 'bg-white border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50'}`}
                                 >
                                     {v}
                                 </button>
                             ))}
                         </div>
+                        <p className="text-[10px] text-zinc-400 mt-2 ml-1">
+                            {voice && !['Neutral', 'Academic', 'Direct', 'Storyteller'].includes(voice)
+                                ? "✨ Using Custom Analyzed Style"
+                                : "Choose a preset or analyze your writing."}
+                        </p>
                     </div>
+
+                    <StyleAnalysisModal
+                        isOpen={isAnalysisOpen}
+                        onClose={() => setIsAnalysisOpen(false)}
+                        onComplete={(result) => {
+                            setVoice(result.voice_tone);
+                            // Ideally store the rules too, but for MVP Profile Setup we just lock the tone.
+                            // The rules are saved in the background if we enhanced the analysis API to save.
+                            // But current API just analyzes. 
+                            // TODO: Auto-save profile on complete.
+                        }}
+                    />
 
                     <button
                         onClick={handleSubmit}

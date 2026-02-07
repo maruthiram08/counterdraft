@@ -20,6 +20,9 @@ SAFETY RULES (Apply to ALL responses):
 4. All content you generate is AI-assisted. Remind users to verify facts before publishing.
 `.trim();
 
+const refineQueryCache = new Map<string, { value: string[]; expiresAt: number }>();
+const REFINE_QUERY_TTL_MS = 24 * 60 * 60 * 1000;
+
 export async function generateImage(prompt: string): Promise<string | undefined> {
   try {
     const response = await openai.images.generate({
@@ -95,16 +98,22 @@ export async function repurposeContent(content: string, platform: string, option
     ${platform === 'medium' ? mediumPrompt : instagramPrompt}
   `;
 
-  const completion = await openai.chat.completions.create({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Original Content:\n${content}` }
-    ],
-    model: "gpt-4o",
-    response_format: { type: "json_object" },
-  });
+  const preferredModel = platform === 'instagram' ? 'gpt-4o-mini' : 'gpt-4o-mini';
+  let result: string | null = null;
 
-  const result = completion.choices[0].message.content;
+  const attempt = async (model: string) => {
+    const completion = await openai.chat.completions.create({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Original Content:\n${content}` }
+      ],
+      model,
+      response_format: { type: "json_object" },
+    });
+    return completion.choices[0].message.content;
+  };
+
+  result = await attempt(preferredModel);
   if (!result) return { title: "Untitled Repurposed Draft", content: "" };
 
   try {
@@ -128,8 +137,24 @@ export async function repurposeContent(content: string, platform: string, option
       };
     }
 
+    if (platform === 'medium') {
+      if (!parsed.title || !parsed.content) {
+        throw new Error("Missing required fields");
+      }
+    }
+
     return parsed;
   } catch (e) {
+    // Retry with higher-capability model for Medium if JSON/fields are invalid
+    if (platform === 'medium') {
+      try {
+        const retry = await attempt('gpt-4o');
+        if (retry) {
+          const parsedRetry = JSON.parse(retry);
+          if (parsedRetry?.title && parsedRetry?.content) return parsedRetry;
+        }
+      } catch {}
+    }
     // Fallback if model refuses JSON
     return {
       title: "Repurposed Draft",
@@ -447,21 +472,38 @@ Note: Some beliefs may remain as roots if they don't logically fit under others.
  * Refines a user's natural language search request into optimized Google News queries.
  */
 export async function refineSearchQuery(userInput: string): Promise<string[]> {
+  const cacheKey = userInput.trim().toLowerCase();
+  const cached = refineQueryCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
   const systemPrompt = `
-    You are a Search Query Optimizer for a Google News RSS feed.
-    The user will input a natural language request (e.g., "What's happening in AI regulation?", "Show me tech trends in Japan").
-    
-    Your goal is to extract 1-3 specific, high-quality keyword search queries that will yield the best news results.
-    
-    Rules:
-    - Return ONLY a JSON object with a "queries" array of strings.
-    - Queries should be concise (2-5 words).
-    - If the user asks for a specific topic, prioritize that.
-    - Remove conversational fluff ("show me", "I want to know about").
-    
-    Example:
-    Input: "How is AI affecting jobs in healthcare?"
-    Output: { "queries": ["AI healthcare jobs", "AI medical workforce impact", "artificial intelligence healthcare labor"] }
+You are an intellectual query designer for a research-driven content exploration tool.
+
+The user will input a natural-language request describing a topic they want to explore.
+Your job is to generate 1–3 high-quality Google News search queries that surface:
+- emerging debates
+- unresolved questions
+- conflicting viewpoints
+- second-order implications
+
+These queries are used to help users form original opinions — not to summarize news.
+
+Rules:
+- Return ONLY a JSON object with a "queries" array of strings.
+- Each query must be 2–5 words.
+- Queries must be specific, opinion-relevant, and intellectually generative.
+- Prefer angles that reveal tension, disagreement, or change.
+- If the topic is broad, generate queries from clearly different angles.
+
+Hard constraints:
+- Do NOT include words like: "latest", "breaking", "today", "top", "update".
+- Do NOT include conversational filler (e.g., "show me", "I want to know").
+- Do NOT generate near-duplicate queries.
+- Do NOT optimize for popularity or virality.
+
+Think like an editor seeking intellectual friction, not a news aggregator.
   `;
 
   try {
@@ -472,7 +514,7 @@ export async function refineSearchQuery(userInput: string): Promise<string[]> {
         { role: "system", content: systemPrompt },
         { role: "user", content: userInput }
       ],
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.3, // Low temperature for deterministic results
     });
@@ -483,7 +525,9 @@ export async function refineSearchQuery(userInput: string): Promise<string[]> {
     if (!result) return [userInput];
 
     const parsed = JSON.parse(result);
-    return parsed.queries || [userInput];
+    const queries = parsed.queries || [userInput];
+    refineQueryCache.set(cacheKey, { value: queries, expiresAt: Date.now() + REFINE_QUERY_TTL_MS });
+    return queries;
 
   } catch (error) {
     console.error("Query refinement failed:", error);

@@ -10,6 +10,8 @@ interface BrainHeaderPanelProps {
         brainMetadata?: BrainMetadata;
         deepDive?: { research: string[]; insights?: string[] };
         deep_dive?: { research: string[]; insights?: string[] };
+        hook?: string;
+        title?: string;
     };
     onUpdate?: (metadata: BrainMetadata) => void;
 }
@@ -21,8 +23,8 @@ export function BrainHeaderPanel({ item, onUpdate }: BrainHeaderPanelProps) {
     // Mock Draft object for StrategyBar compatibility
     const mockDraft: any = {
         id: item.id || 'temp',
+        title: (item as any).hook || (item as any).title || 'Untitled',
         brain_metadata: metadata,
-        // Add other fields if StrategyBar starts needing them, but currently it only needs brain_metadata
     };
 
     const handleUpdate = async (updates: any) => {

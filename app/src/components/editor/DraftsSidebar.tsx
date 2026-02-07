@@ -9,9 +9,18 @@ interface DraftsSidebarProps {
     selectedDraftId: string | null;
     onSelect: (draft: Draft) => void;
     onNew: () => void;
+    placeholder?: string;
+    emptyMessage?: string;
 }
 
-export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: DraftsSidebarProps) {
+export function DraftsSidebar({
+    drafts,
+    selectedDraftId,
+    onSelect,
+    onNew,
+    placeholder = "Search drafts...",
+    emptyMessage = "No drafts"
+}: DraftsSidebarProps) {
     const [search, setSearch] = useState("");
     const selectedRef = useRef<HTMLButtonElement>(null);
 
@@ -58,7 +67,7 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
                     <Search size={14} className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--accent)] transition-colors" />
                     <input
                         type="text"
-                        placeholder="Search drafts..."
+                        placeholder={placeholder}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-6 pr-2 py-1.5 text-xs bg-transparent border-0 border-b border-gray-200 focus:border-[var(--accent)] focus:ring-0 placeholder:text-gray-300 transition-all font-medium"
@@ -70,7 +79,7 @@ export function DraftsSidebar({ drafts, selectedDraftId, onSelect, onNew }: Draf
             <div className="flex-1 overflow-y-auto px-3 md:px-2 pb-4 flex flex-col gap-1">
                 {filteredDrafts.length === 0 ? (
                     <div className="p-8 text-center text-[var(--text-muted)] text-xs">
-                        {search ? "No matches" : "No drafts"}
+                        {search ? "No matches" : emptyMessage}
                     </div>
                 ) : (
                     (() => {

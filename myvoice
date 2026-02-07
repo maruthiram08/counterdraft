@@ -1,0 +1,180 @@
+I am planning to build a feature where I want to create a writing style guide specific to the user and an implementation style guide specific to the user. The below is the approach I found on the internet. Let's debate and wear PM hat 
+
+
+# ✅ Step-by-Step Process to Build an AI Writing System
+
+## **1. Collect your writing samples**
+
+* Gather examples that reflect your current writing style.
+* Prefer **recent, professional/public writing**.
+* Example from video: ~20 long essays (~70k words).
+* Practical recommendation:
+
+  * Minimum: **5–10 samples**
+  * More samples = better style accuracy.
+
+👉 Goal: Give AI enough data to learn *how you think, structure ideas, and communicate*.
+
+---
+
+## **2. Generate an AI writing style guide**
+
+Ask AI to:
+
+> Analyze writing samples and create a comprehensive style guide capturing writing, thinking, and communication patterns.
+
+The guide should include:
+
+* Tone, vocabulary, structure
+* Argument style
+* Communication patterns
+* Thinking frameworks
+
+👉 This becomes the foundation of your AI writing voice.
+
+---
+
+## **3. Improve the style guide with examples**
+
+Refine the initial guide:
+
+* Add **positive examples (what to do)**
+* Add **counterexamples (what NOT to do)**
+* Ensure specificity instead of abstract descriptions.
+
+👉 This improves AI consistency dramatically.
+
+---
+
+## **4. Prioritize writing principles (create hierarchy)**
+
+Problem:
+
+* Too many guidelines confuse AI.
+
+Solution:
+
+* Rank each guideline from:
+
+  * Most essential → least essential
+  * Non-negotiable principles at top.
+
+👉 Writing is hierarchical; AI needs clarity on priorities.
+
+---
+
+## **5. Create an implementation guide**
+
+This is critical.
+
+Add instructions telling AI to:
+
+* Ask questions before writing
+* Gather inputs like:
+
+  * Topic
+  * Perspective
+  * Key arguments
+  * Insights
+  * Evidence/examples.
+
+Also:
+
+* Ask questions **one at a time**.
+
+👉 Prevents generic AI output.
+
+---
+
+## **6. Save the system as a reusable project**
+
+Workflow:
+
+1. Export style guide (e.g., Markdown doc).
+2. Create an AI project/workspace.
+3. Upload style guide as project context.
+
+👉 This makes the system reusable and consistent.
+
+---
+
+## **7. Generate writing using guided prompts**
+
+Typical process:
+
+* AI asks structured questions.
+* You provide:
+
+  * Notes, excerpts, ideas, research.
+* AI drafts the piece based on:
+
+  * Style guide
+  * Implementation inputs.
+
+👉 Result: Faster drafts aligned with your voice.
+
+---
+
+## **8. Provide deeper context when needed**
+
+Example shown:
+
+* Upload research notes/books excerpts.
+* Let AI extract frameworks, thesis, connections.
+* Approve or modify suggestions.
+
+👉 AI becomes a collaborative thinking partner.
+
+---
+
+## **9. Review and refine the draft**
+
+Key points:
+
+* AI saves time but doesn’t eliminate effort.
+* Expect roughly:
+
+  * ~50% time savings
+  * Not instant automation.
+
+👉 Human insight still required.
+
+---
+
+## **10. Create a self-improving feedback loop (crucial step)**
+
+Whenever you see:
+
+* Awkward phrasing
+* Clichés
+* Off-tone language
+
+Do this:
+
+1. Highlight issue.
+2. Tell AI why it’s wrong.
+3. Ask it to add a new rule to the style guide.
+
+👉 Each correction improves future outputs.
+
+---
+
+## **11. Save updates back to the project**
+
+* Copy new guidelines into project knowledge.
+* Maintain one evolving style system.
+
+👉 This keeps the AI continuously improving.
+
+---
+
+# ⭐ Final Simplified Framework (From Video)
+
+**4-Step Template:**
+
+1. Build style guide from writing samples
+2. Add implementation workflow
+3. Use AI to generate writing systematically
+4. Continuously improve style guide via feedback
+
+---

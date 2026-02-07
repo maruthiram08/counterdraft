@@ -7,7 +7,6 @@ import { BeliefCard } from "@/components/thinking/BeliefCard";
 import { useBeliefs } from "@/hooks/useBeliefs";
 import { TensionCard } from "@/components/thinking/TensionCard";
 import { DirectionCard } from "@/components/thinking/DirectionCard";
-import { DraftModal } from "@/components/thinking/DraftModal";
 import { AddContentModal } from "@/components/thinking/AddContentModal";
 import { DraftCard } from "@/components/thinking/DraftCard";
 import { Layers, Zap, Compass, Plus, CheckCircle, Sparkles, Loader2, FileText } from "lucide-react";
@@ -66,23 +65,38 @@ function WorkspaceContent() {
 
         // 1. Handle Selection / Navigation
         if (draftId && activeSection !== 'drafts') {
-            console.log("Deep linking to draft:", draftId);
             setSelectedDraftId(draftId);
             setActiveSection('drafts');
-            setPostsTab('drafts');
+
+            // Sync tab based on draft status
+            const currentDraft = drafts.find(d => d.id === draftId);
+            if (currentDraft?.status === 'published') {
+                setPostsTab('published');
+            } else {
+                setPostsTab('drafts');
+            }
         } else if (draftId && activeSection === 'drafts' && selectedDraftId !== draftId) {
             setSelectedDraftId(draftId);
+
+            // Sync tab if status changes while on page
+            const currentDraft = drafts.find(d => d.id === draftId);
+            if (currentDraft?.status === 'published') {
+                setPostsTab('published');
+            }
         }
 
         // 2. Handle Stale Data (Sync Fix)
-        // If we have a draftId but it's not in our list, force a refresh
         if (draftId && !draftsLoading && drafts.length > 0 && !drafts.find(d => d.id === draftId)) {
-            console.log("Deep linked draft not found, refreshing list...", draftId);
             refetch();
         }
 
-        // Auto-cleanup: If we are on a non-draft tab but draftId exists, strip it quietly
+        // Auto-cleanup
         const tab = searchParams.get('tab');
+        if (tab === 'style') {
+            router.replace('/style');
+            return;
+        }
+
         if (tab && tab !== 'drafts' && draftId) {
             const newParams = new URLSearchParams(searchParams.toString());
             newParams.delete('draftId');
@@ -98,14 +112,20 @@ function WorkspaceContent() {
         }
     };
 
+    const handlePublish = async (id: string) => {
+        // 1. Update status effectively moving it to Published list
+        await updateDraft(id, { status: 'published' });
+        // 2. Switch tab immediately for visibility
+        setPostsTab('published');
+    };
+
     // Modal state
     const [draftModalOpen, setDraftModalOpen] = useState(false);
-    // const [selectedBelief, setSelectedBelief] = useState(""); // Deprecated
     const [newDraftPrefill, setNewDraftPrefill] = useState<{
         hook?: string;
         sourceType?: 'belief' | 'tension' | 'idea' | 'manual';
         sourceId?: string;
-        references?: any[]; // Using any to avoid importing ContentReference to page
+        references?: any[];
     } | undefined>(undefined);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
 
@@ -130,26 +150,22 @@ function WorkspaceContent() {
         );
     }
 
-    // Track and persist when a belief is reviewed
     const handleBeliefReviewed = async (beliefId: string, feedback: 'accurate' | 'misses' | 'clarify') => {
         setReviewedBeliefIds(prev => new Set([...prev, beliefId]));
         await submitFeedback(beliefId, feedback);
     };
 
-    // Filter out reviewed beliefs
     const unreviewedCore = beliefs.core.filter((b: { id: string }) => !reviewedBeliefIds.has(b.id));
     const unreviewedEmerging = beliefs.emerging.filter((b: { id: string }) => !reviewedBeliefIds.has(b.id));
     const unreviewedOverused = beliefs.overused.filter((b: { id: string }) => !reviewedBeliefIds.has(b.id));
     const allBeliefsReviewed = unreviewedCore.length === 0 && unreviewedEmerging.length === 0 && unreviewedOverused.length === 0 && beliefs.core.length + beliefs.emerging.length + beliefs.overused.length > 0;
 
-    // Helper to render empty states
     const renderEmptyState = (type: string) => (
         <div className="text-center py-12 border border-dashed border-[var(--border)] rounded-lg">
             <p className="text-[var(--text-muted)]">No {type} found yet.</p>
         </div>
     );
 
-    // Completion message when all reviewed
     const renderCompletionState = () => (
         <div className="text-center py-16 border border-green-200 bg-green-50/50 rounded-lg">
             <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
@@ -158,8 +174,8 @@ function WorkspaceContent() {
         </div>
     );
 
-    // Drafts Filtering Logic
     const draftItems = drafts.filter(d => d.status === 'draft');
+    const publishedItems = drafts.filter(d => d.status === 'published');
 
     return (
         <div className="flex h-screen bg-[var(--background)] overflow-hidden">
@@ -168,18 +184,15 @@ function WorkspaceContent() {
                 onNavigate={(section) => {
                     if (section === 'settings') {
                         router.push('/settings');
+                    } else if (section === 'style') {
+                        router.push('/style');
                     } else {
                         setActiveSection(section as any);
-                        // Update URL without full reload
                         const params = new URLSearchParams(searchParams.toString());
                         params.set('tab', section);
-
-                        // FIX: Clear draftId if leaving drafts section to prevent auto-redirect loop
                         if (section !== 'drafts') {
                             params.delete('draftId');
                         }
-
-                        // Use replace to prevent polluting history stack with "sticky" params
                         router.replace(`/workspace?${params.toString()}`, { scroll: false });
                     }
                 }}
@@ -191,7 +204,6 @@ function WorkspaceContent() {
             />
 
             <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-paper">
-                {/* Your Mind Section - New 3-tab layout */}
                 {activeSection === 'mind' && (
                     <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                         <YourMind
@@ -208,396 +220,359 @@ function WorkspaceContent() {
                     </div>
                 )}
 
-                {/* CONTENT AREA: Scrollable Container for Non-Drafts */}
-                {
-                    activeSection !== 'drafts' && activeSection !== 'explore' && activeSection !== 'pipeline' && activeSection !== 'mind' && (
-                        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-12 pb-24 md:pb-12">
-                            <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
-
-                                {/* BELIEFS SECTION */}
-                                {activeSection === 'beliefs' && (
-                                    <div className="space-y-6">
-                                        {/* View Toggle */}
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h2 className="text-xl font-serif">Belief Graph</h2>
-                                            <div className="bg-gray-100 p-1 rounded-lg flex items-center text-xs font-medium shrink-0">
-                                                <button
-                                                    onClick={() => setBeliefView('list')}
-                                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
-                                                >
-                                                    List
-                                                </button>
-                                                <button
-                                                    onClick={() => setBeliefView('tree')}
-                                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
-                                                >
-                                                    Mind Map
-                                                </button>
-                                            </div>
+                {activeSection !== 'drafts' && activeSection !== 'explore' && activeSection !== 'pipeline' && activeSection !== 'mind' && (
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-12 pb-24 md:pb-12">
+                        <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+                            {activeSection === 'beliefs' && (
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-xl font-serif">Belief Graph</h2>
+                                        <div className="bg-gray-100 p-1 rounded-lg flex items-center text-xs font-medium shrink-0">
+                                            <button
+                                                onClick={() => setBeliefView('list')}
+                                                className={`px-3 py-1 rounded-md transition-all ${beliefView === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                            >
+                                                List
+                                            </button>
+                                            <button
+                                                onClick={() => setBeliefView('tree')}
+                                                className={`px-3 py-1 rounded-md transition-all ${beliefView === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                            >
+                                                Mind Map
+                                            </button>
                                         </div>
-
-                                        {beliefView === 'tree' ? (
-                                            <GenealogyTree
-                                                beliefs={[...beliefs.core, ...beliefs.emerging, ...beliefs.overused, ...beliefs.confirmed]}
-                                                drafts={drafts}
-                                                onSelectDraft={(id) => {
-                                                    setSelectedDraftId(id);
-                                                    setActiveSection('drafts');
-                                                }}
-                                            />
-                                        ) : (
-                                            <>
-                                                {/* Guidance Banner */}
-                                                {!allBeliefsReviewed && (
-                                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                                        <p className="text-sm text-blue-800">
-                                                            <strong>Review your beliefs:</strong> Mark as <strong>Accurate</strong> if it reflects your thinking, <strong>Misses</strong> if it's wrong, or <strong>Clarify</strong> if it needs nuance.
-                                                        </p>
-                                                    </div>
-                                                )}
-                                                {/* Show completion if all reviewed */}
-                                                {allBeliefsReviewed && renderCompletionState()}
-                                            </>
-                                        )}
-
-                                        {/* Core Beliefs */}
-                                        {unreviewedCore.length > 0 && (
-                                            <section>
-                                                <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">CORE BELIEFS</h3>
-                                                <div className="space-y-4">
-                                                    {unreviewedCore.map((b: { id: string; statement: string }) => (
-                                                        <BeliefCard
-                                                            key={b.id}
-                                                            beliefId={b.id}
-                                                            type="core"
-                                                            belief={b.statement}
-                                                            sourceCount={1}
-                                                            onFeedback={handleBeliefReviewed}
-                                                            onWriteAbout={async (beliefData) => {
-                                                                setNewDraftPrefill({
-                                                                    hook: beliefData.text,
-                                                                    sourceType: 'belief',
-                                                                    sourceId: beliefData.id
-                                                                });
-                                                                setDraftModalOpen(true);
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        )}
-
-                                        {/* Emerging Beliefs */}
-                                        {unreviewedEmerging.length > 0 && (
-                                            <section>
-                                                <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">EMERGING THESES</h3>
-                                                <div className="space-y-4">
-                                                    {unreviewedEmerging.map((b: { id: string; statement: string }) => (
-                                                        <BeliefCard
-                                                            key={b.id}
-                                                            beliefId={b.id}
-                                                            type="emerging"
-                                                            belief={b.statement}
-                                                            sourceCount={1}
-                                                            onFeedback={handleBeliefReviewed}
-                                                            onWriteAbout={async (beliefData) => {
-                                                                setNewDraftPrefill({
-                                                                    hook: beliefData.text,
-                                                                    sourceType: 'belief',
-                                                                    sourceId: beliefData.id
-                                                                });
-                                                                setDraftModalOpen(true);
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        )}
-
-                                        {/* Overused Beliefs */}
-                                        {unreviewedOverused.length > 0 && (
-                                            <section>
-                                                <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">OVERUSED ANGLES</h3>
-                                                <div className="space-y-4">
-                                                    {unreviewedOverused.map((b: { id: string; statement: string }) => (
-                                                        <BeliefCard
-                                                            key={b.id}
-                                                            beliefId={b.id}
-                                                            type="overused"
-                                                            belief={b.statement}
-                                                            sourceCount={1}
-                                                            onFeedback={handleBeliefReviewed}
-                                                            onWriteAbout={async (beliefData) => {
-                                                                setNewDraftPrefill({
-                                                                    hook: beliefData.text,
-                                                                    sourceType: 'belief',
-                                                                    sourceId: beliefData.id
-                                                                });
-                                                                setDraftModalOpen(true);
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        )}
-
-                                        {/* Empty state when no beliefs ever existed */}
-                                        {beliefView === 'list' && beliefs.core.length === 0 && beliefs.emerging.length === 0 && beliefs.overused.length === 0 && renderEmptyState("beliefs")}
                                     </div>
-                                )}
 
-                                {/* TENSIONS SECTION */}
-                                {activeSection === 'tensions' && (
-                                    <div className="space-y-6">
-                                        {/* Guidance Banner */}
-                                        {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length > 0 && (
-                                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                                <p className="text-sm text-amber-800">
-                                                    <strong>Classify your tensions:</strong> Is this a real <strong>Inconsistency</strong> to resolve, an <strong>Intentional Nuance</strong> you hold, or something to <strong>Explore</strong> further?
-                                                </p>
-                                            </div>
-                                        )}
-                                        {tensionsLoading && (
-                                            <div className="text-center py-16">
-                                                <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
-                                                <p className="text-[var(--text-muted)]">Loading tensions...</p>
-                                            </div>
-                                        )}
+                                    {beliefView === 'tree' ? (
+                                        <GenealogyTree
+                                            beliefs={[...beliefs.core, ...beliefs.emerging, ...beliefs.overused, ...beliefs.confirmed]}
+                                            drafts={drafts}
+                                            onSelectDraft={(id) => {
+                                                setSelectedDraftId(id);
+                                                setActiveSection('drafts');
+                                            }}
+                                        />
+                                    ) : (
+                                        <>
+                                            {!allBeliefsReviewed && (
+                                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                                    <p className="text-sm text-blue-800">
+                                                        <strong>Review your beliefs:</strong> Mark as <strong>Accurate</strong> if it reflects your thinking, <strong>Misses</strong> if it's wrong, or <strong>Clarify</strong> if it needs nuance.
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {allBeliefsReviewed && renderCompletionState()}
+                                        </>
+                                    )}
 
-                                        {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length === 0 && (
-                                            tensions.length === 0
-                                                ? renderEmptyState("tensions")
-                                                : (
-                                                    <div className="text-center py-16 border border-green-200 bg-green-50/50 rounded-lg">
-                                                        <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
-                                                        <h3 className="text-xl font-medium text-green-700 mb-2">All tensions classified!</h3>
-                                                        <p className="text-[var(--text-muted)]">Great work! Add more content to detect new tensions.</p>
-                                                    </div>
-                                                )
-                                        )}
-
-                                        {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).map(t => (
-                                            <TensionCard
-                                                key={t.id}
-                                                tensionId={t.id}
-                                                tension={t.summary}
-                                                sideA={t.beliefA}
-                                                sideB={t.beliefB}
-                                                initialClassification={t.classification}
-                                                onClassify={(id, classification) => {
-                                                    classifyTension(id, classification);
-                                                    // Only hide immediately if NOT explore (so we can show the "Turn into Idea" prompt)
-                                                    if (classification !== 'explore') {
-                                                        setClassifiedTensionIds(prev => new Set([...prev, id]));
-                                                    }
-                                                }}
-                                                onTurnIntoIdea={async (tensionData) => {
-                                                    setNewDraftPrefill({
-                                                        hook: `Exploring the tension between "${tensionData.sideA}" and "${tensionData.sideB}"`,
-                                                        sourceType: 'tension',
-                                                        sourceId: tensionData.id
-                                                    });
-                                                    setDraftModalOpen(true);
-                                                }}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* DIRECTIONS SECTION */}
-                                {activeSection === 'directions' && (
-                                    <div className="space-y-6">
-                                        {/* Guidance Banner */}
-                                        {generated && directions.length > 0 && (
-                                            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                                <p className="text-sm text-green-800">
-                                                    <strong>Your writing directions:</strong> Based on your beliefs, here are ideas for what to write next. Click on a card to start drafting.
-                                                </p>
-                                            </div>
-                                        )}
-                                        {!generated && !directionsLoading && (
-                                            <div className="text-center py-16 border border-dashed border-[var(--border)] rounded-lg">
-                                                <Sparkles size={48} className="mx-auto text-[var(--accent)] mb-4" />
-                                                <h3 className="text-xl font-medium mb-2">Generate Content Ideas</h3>
-                                                <p className="text-[var(--text-muted)] mb-6">Based on your beliefs, AI will suggest what to write next.</p>
-                                                <button
-                                                    onClick={generateDirections}
-                                                    className="btn btn-primary"
-                                                >
-                                                    <Sparkles size={16} /> Generate Ideas
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {directionsLoading && (
-                                            <div className="text-center py-16">
-                                                <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
-                                                <p className="text-[var(--text-muted)]">Generating ideas...</p>
-                                            </div>
-                                        )}
-
-                                        {generated && directions.length > 0 && (
-                                            <div className="grid md:grid-cols-2 gap-6">
-                                                {directions.map((d, idx) => (
-                                                    <DirectionCard
-                                                        key={idx}
-                                                        title={d.theme}
-                                                        reason={d.rationale}
-                                                        relatedBelief={d.strengthensBelief}
-                                                        onDraft={(topic) => {
+                                    {unreviewedCore.length > 0 && (
+                                        <section>
+                                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">CORE BELIEFS</h3>
+                                            <div className="space-y-4">
+                                                {unreviewedCore.map((b: { id: string; statement: string }) => (
+                                                    <BeliefCard
+                                                        key={b.id}
+                                                        beliefId={b.id}
+                                                        type="core"
+                                                        belief={b.statement}
+                                                        sourceCount={1}
+                                                        onFeedback={handleBeliefReviewed}
+                                                        onWriteAbout={async (beliefData) => {
                                                             setNewDraftPrefill({
-                                                                hook: topic,
-                                                                sourceType: 'idea' // Direction is essentially an idea
+                                                                hook: beliefData.text,
+                                                                sourceType: 'belief',
+                                                                sourceId: beliefData.id
                                                             });
                                                             setDraftModalOpen(true);
                                                         }}
                                                     />
                                                 ))}
                                             </div>
-                                        )}
+                                        </section>
+                                    )}
 
-                                        {generated && directions.length === 0 && (
-                                            <div className="text-center py-12">
-                                                <p className="text-[var(--text-muted)]">No ideas generated. Try adding more content first.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )
-                }
-
-                {/* EXPLORE SECTION */}
-                {
-                    activeSection === 'explore' && (
-                        <div className="flex-1 overflow-y-auto bg-gray-50/30">
-                            <ExplorerView />
-                        </div>
-                    )
-                }
-
-                {/* PIPELINE SECTION (Command Center) */}
-                {
-                    activeSection === 'pipeline' && (
-                        <div className="flex-1 overflow-hidden bg-gray-50/30">
-                            <CommandCenter
-                                onDraftCreated={refetch}
-                                onEdit={(draftId) => {
-                                    // Force URL update for robust navigation/selection
-                                    const params = new URLSearchParams(searchParams.toString());
-                                    params.set('tab', 'drafts');
-                                    params.set('draftId', draftId);
-                                    router.push(`/workspace?${params.toString()}`);
-
-                                    // redundant but immediate feedback
-                                    setSelectedDraftId(draftId);
-                                    setActiveSection('drafts');
-                                    setPostsTab('drafts');
-                                }}
-                                autoOpenItemId={autoNavToWizardId}
-                                onAutoOpenHandled={() => setAutoNavToWizardId(undefined)}
-                            />
-                        </div>
-                    )
-                }
-
-                {/* POSTS SECTION (formerly Drafts) */}
-                {
-                    activeSection === 'drafts' && (
-                        <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-gray-50/30">
-                            {/* Sub-Tabs for Posts */}
-                            <div className="flex items-center gap-6 px-6 py-3 border-b bg-white">
-                                <button
-                                    onClick={() => setPostsTab('drafts')}
-                                    className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${postsTab === 'drafts'
-                                        ? 'border-[var(--foreground)] text-[var(--foreground)]'
-                                        : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
-                                        }`}
-                                >
-                                    Drafts
-                                </button>
-                                <button
-                                    onClick={() => setPostsTab('published')}
-                                    className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${postsTab === 'published'
-                                        ? 'border-[var(--foreground)] text-[var(--foreground)]'
-                                        : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
-                                        }`}
-                                >
-                                    Published
-                                </button>
-                            </div>
-
-                            {/* Content Area */}
-                            <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
-                                {postsTab === 'drafts' ? (
-                                    isMobile ? (
-                                        /* MOBILE: Full-width list or editor */
-                                        <div className="h-full flex flex-col pb-20">
-                                            {selectedDraftId ? (
-                                                /* Mobile Editor View */
-                                                <div className="flex-1 flex flex-col min-h-0">
-                                                    <div className="flex items-center gap-3 px-4 py-3 border-b bg-white shrink-0">
-                                                        <button
-                                                            onClick={() => setSelectedDraftId(null)}
-                                                            className="p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                                                        >
-                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                                <path d="M19 12H5M12 19l-7-7 7-7" />
-                                                            </svg>
-                                                        </button>
-                                                        <span className="font-medium text-gray-900 truncate flex-1 text-sm">
-                                                            {selectedDraft?.belief_text || 'Edit Draft'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex-1 overflow-y-auto pb-32">
-                                                        <MainEditor
-                                                            draft={selectedDraft}
-                                                            onSave={async (id, content) => {
-                                                                const success = await updateDraft(id, { content });
-                                                                return success;
-                                                            }}
-                                                            onUpdateMetadata={async (id, metadata) => {
-                                                                return await updateDraft(id, { brain_metadata: metadata });
-                                                            }}
-                                                        />
-                                                    </div>
-
-                                                    {/* Bottom Sheet AI Agent */}
-                                                    <MobileAgentSheet>
-                                                        <AgentSidebar
-                                                            currentContent={selectedDraft?.content || null}
-                                                            beliefContext={selectedDraft?.belief_text || null}
-                                                            availableBeliefs={beliefs.confirmed || []}
-                                                            onApplyParams={(refinedContent) => {
-                                                                if (selectedDraftId) {
-                                                                    updateDraft(selectedDraftId, { content: refinedContent });
-                                                                }
-                                                            }}
-                                                        />
-                                                    </MobileAgentSheet>
-                                                </div>
-                                            ) : (
-                                                /* Mobile List View */
-                                                <div className="flex-1 overflow-y-auto">
-                                                    <DraftsSidebar
-                                                        drafts={draftItems}
-                                                        selectedDraftId={selectedDraftId}
-                                                        onSelect={(draft) => setSelectedDraftId(draft.id)}
-                                                        onNew={() => {
-                                                            setNewDraftPrefill(undefined);
+                                    {unreviewedEmerging.length > 0 && (
+                                        <section>
+                                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">EMERGING THESES</h3>
+                                            <div className="space-y-4">
+                                                {unreviewedEmerging.map((b: { id: string; statement: string }) => (
+                                                    <BeliefCard
+                                                        key={b.id}
+                                                        beliefId={b.id}
+                                                        type="emerging"
+                                                        belief={b.statement}
+                                                        sourceCount={1}
+                                                        onFeedback={handleBeliefReviewed}
+                                                        onWriteAbout={async (beliefData) => {
+                                                            setNewDraftPrefill({
+                                                                hook: beliefData.text,
+                                                                sourceType: 'belief',
+                                                                sourceId: beliefData.id
+                                                            });
                                                             setDraftModalOpen(true);
                                                         }}
                                                     />
-                                                </div>
-                                            )}
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {unreviewedOverused.length > 0 && (
+                                        <section>
+                                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">OVERUSED ANGLES</h3>
+                                            <div className="space-y-4">
+                                                {unreviewedOverused.map((b: { id: string; statement: string }) => (
+                                                    <BeliefCard
+                                                        key={b.id}
+                                                        beliefId={b.id}
+                                                        type="overused"
+                                                        belief={b.statement}
+                                                        sourceCount={1}
+                                                        onFeedback={handleBeliefReviewed}
+                                                        onWriteAbout={async (beliefData) => {
+                                                            setNewDraftPrefill({
+                                                                hook: beliefData.text,
+                                                                sourceType: 'belief',
+                                                                sourceId: beliefData.id
+                                                            });
+                                                            setDraftModalOpen(true);
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {beliefView === 'list' && beliefs.core.length === 0 && beliefs.emerging.length === 0 && beliefs.overused.length === 0 && renderEmptyState("beliefs")}
+                                </div>
+                            )}
+
+                            {activeSection === 'tensions' && (
+                                <div className="space-y-6">
+                                    {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length > 0 && (
+                                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                            <p className="text-sm text-amber-800">
+                                                <strong>Classify your tensions:</strong> Is this a real <strong>Inconsistency</strong> to resolve, an <strong>Intentional Nuance</strong> you hold, or something to <strong>Explore</strong> further?
+                                            </p>
                                         </div>
-                                    ) : (
-                                        /* DESKTOP: ThreePaneLayout */
-                                        <ThreePaneLayout
-                                            leftPane={
+                                    )}
+                                    {tensionsLoading && (
+                                        <div className="text-center py-16">
+                                            <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
+                                            <p className="text-[var(--text-muted)]">Loading tensions...</p>
+                                        </div>
+                                    )}
+
+                                    {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length === 0 && (
+                                        tensions.length === 0
+                                            ? renderEmptyState("tensions")
+                                            : (
+                                                <div className="text-center py-16 border border-green-200 bg-green-50/50 rounded-lg">
+                                                    <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
+                                                    <h3 className="text-xl font-medium text-green-700 mb-2">All tensions classified!</h3>
+                                                    <p className="text-[var(--text-muted)]">Great work! Add more content to detect new tensions.</p>
+                                                </div>
+                                            )
+                                    )}
+
+                                    {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).map(t => (
+                                        <TensionCard
+                                            key={t.id}
+                                            tensionId={t.id}
+                                            tension={t.summary}
+                                            sideA={t.beliefA}
+                                            sideB={t.beliefB}
+                                            initialClassification={t.classification}
+                                            onClassify={(id, classification) => {
+                                                classifyTension(id, classification);
+                                                if (classification !== 'explore') {
+                                                    setClassifiedTensionIds(prev => new Set([...prev, id]));
+                                                }
+                                            }}
+                                            onTurnIntoIdea={async (tensionData) => {
+                                                setNewDraftPrefill({
+                                                    hook: `Exploring the tension between "${tensionData.sideA}" and "${tensionData.sideB}"`,
+                                                    sourceType: 'tension',
+                                                    sourceId: tensionData.id
+                                                });
+                                                setDraftModalOpen(true);
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {activeSection === 'directions' && (
+                                <div className="space-y-6">
+                                    {generated && directions.length > 0 && (
+                                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                            <p className="text-sm text-green-800">
+                                                <strong>Your writing directions:</strong> Based on your beliefs, here are ideas for what to write next. Click on a card to start drafting.
+                                            </p>
+                                        </div>
+                                    )}
+                                    {!generated && !directionsLoading && (
+                                        <div className="text-center py-16 border border-dashed border-[var(--border)] rounded-lg">
+                                            <Sparkles size={48} className="mx-auto text-[var(--accent)] mb-4" />
+                                            <h3 className="text-xl font-medium mb-2">Generate Content Ideas</h3>
+                                            <p className="text-[var(--text-muted)] mb-6">Based on your beliefs, AI will suggest what to write next.</p>
+                                            <button
+                                                onClick={generateDirections}
+                                                className="btn btn-primary"
+                                            >
+                                                <Sparkles size={16} /> Generate Ideas
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {directionsLoading && (
+                                        <div className="text-center py-16">
+                                            <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
+                                            <p className="text-[var(--text-muted)]">Generating ideas...</p>
+                                        </div>
+                                    )}
+
+                                    {generated && directions.length > 0 && (
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            {directions.map((d, idx) => (
+                                                <DirectionCard
+                                                    key={idx}
+                                                    title={d.theme}
+                                                    reason={d.rationale}
+                                                    relatedBelief={d.strengthensBelief}
+                                                    onDraft={(topic) => {
+                                                        setNewDraftPrefill({
+                                                            hook: topic,
+                                                            sourceType: 'idea'
+                                                        });
+                                                        setDraftModalOpen(true);
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {generated && directions.length === 0 && (
+                                        <div className="text-center py-12">
+                                            <p className="text-[var(--text-muted)]">No ideas generated. Try adding more content first.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'explore' && (
+                    <div className="flex-1 overflow-y-auto bg-gray-50/30">
+                        <ExplorerView />
+                    </div>
+                )}
+
+                {activeSection === 'pipeline' && (
+                    <div className="flex-1 overflow-hidden bg-gray-50/30">
+                        <CommandCenter
+                            onDraftCreated={refetch}
+                            onEdit={(draftId) => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set('tab', 'drafts');
+                                params.set('draftId', draftId);
+                                router.push(`/workspace?${params.toString()}`);
+                                setSelectedDraftId(draftId);
+                                setActiveSection('drafts');
+
+                                // Sync tab based on draft status
+                                const draft = drafts.find(d => d.id === draftId);
+                                if (draft?.status === 'published') {
+                                    setPostsTab('published');
+                                } else {
+                                    setPostsTab('drafts');
+                                }
+                            }}
+                            autoOpenItemId={autoNavToWizardId}
+                            onAutoOpenHandled={() => setAutoNavToWizardId(undefined)}
+                        />
+                    </div>
+                )}
+
+                {activeSection === 'drafts' && (
+                    <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-gray-50/30">
+                        {/* Sub-Tabs for Posts */}
+                        <div className="flex items-center gap-6 px-6 py-3 border-b bg-white">
+                            <button
+                                onClick={() => {
+                                    setPostsTab('drafts');
+                                    setSelectedDraftId(null);
+                                }}
+                                className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${postsTab === 'drafts'
+                                    ? 'border-[var(--foreground)] text-[var(--foreground)]'
+                                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
+                                    }`}
+                            >
+                                Drafts
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setPostsTab('published');
+                                    setSelectedDraftId(null);
+                                }}
+                                className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${postsTab === 'published'
+                                    ? 'border-[var(--foreground)] text-[var(--foreground)]'
+                                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
+                                    }`}
+                            >
+                                Published
+                            </button>
+                        </div>
+
+                        {/* Content Area */}
+                        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
+                            {(postsTab === 'drafts' || (postsTab === 'published' && selectedDraftId)) ? (
+                                isMobile ? (
+                                    <div className="h-full flex flex-col pb-20">
+                                        {selectedDraftId ? (
+                                            <div className="flex-1 flex flex-col min-h-0">
+                                                <div className="flex items-center gap-3 px-4 py-3 border-b bg-white shrink-0">
+                                                    <button
+                                                        onClick={() => setSelectedDraftId(null)}
+                                                        className="p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    >
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                                                        </svg>
+                                                    </button>
+                                                    <span className="font-medium text-gray-900 truncate flex-1 text-sm">
+                                                        {selectedDraft?.belief_text || 'Edit Draft'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex-1 overflow-y-auto pb-32">
+                                                    <MainEditor
+                                                        draft={selectedDraft}
+                                                        onSave={async (id, content) => {
+                                                            const success = await updateDraft(id, { content });
+                                                            return success;
+                                                        }}
+                                                        onUpdateMetadata={async (id, metadata) => {
+                                                            return await updateDraft(id, { brain_metadata: metadata });
+                                                        }}
+                                                        onPublish={handlePublish}
+                                                    />
+                                                </div>
+                                                <MobileAgentSheet>
+                                                    <AgentSidebar
+                                                        currentContent={selectedDraft?.content || null}
+                                                        beliefContext={selectedDraft?.belief_text || null}
+                                                        availableBeliefs={beliefs.confirmed || []}
+                                                        onApplyParams={handleAgentApply}
+                                                    />
+                                                </MobileAgentSheet>
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 overflow-y-auto">
                                                 <DraftsSidebar
-                                                    drafts={draftItems}
+                                                    drafts={postsTab === 'drafts' ? draftItems : publishedItems}
+                                                    placeholder={postsTab === 'published' ? "Search published..." : "Search drafts..."}
+                                                    emptyMessage={postsTab === 'published' ? "No published posts" : "No drafts"}
                                                     selectedDraftId={selectedDraftId}
                                                     onSelect={(draft) => setSelectedDraftId(draft.id)}
                                                     onNew={() => {
@@ -605,69 +580,71 @@ function WorkspaceContent() {
                                                         setDraftModalOpen(true);
                                                     }}
                                                 />
-                                            }
-                                            middlePane={
-                                                <MainEditor
-                                                    draft={selectedDraft}
-                                                    onSave={async (id, content) => {
-                                                        const success = await updateDraft(id, { content });
-                                                        return success;
-                                                    }}
-                                                    onUpdateMetadata={async (id, metadata) => {
-                                                        return await updateDraft(id, { brain_metadata: metadata });
-                                                    }}
-                                                />
-                                            }
-                                            rightPane={
-                                                <AgentSidebar
-                                                    currentContent={selectedDraft?.content || null}
-                                                    beliefContext={selectedDraft?.belief_text || null}
-                                                    availableBeliefs={beliefs.confirmed || []}
-                                                    onApplyParams={(refinedContent) => {
-                                                        if (selectedDraftId) {
-                                                            updateDraft(selectedDraftId, { content: refinedContent });
-                                                        }
-                                                    }}
-                                                />
-                                            }
-                                        />
-                                    )
-                                ) : (
-                                    <div className={`h-full overflow-y-auto ${isMobile ? 'pb-20' : ''}`}>
-                                        <PublishedPostsList drafts={drafts} />
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                ) : (
+                                    <ThreePaneLayout
+                                        leftPane={
+                                            <DraftsSidebar
+                                                drafts={postsTab === 'drafts' ? draftItems : publishedItems}
+                                                placeholder={postsTab === 'published' ? "Search published..." : "Search drafts..."}
+                                                emptyMessage={postsTab === 'published' ? "No published posts" : "No drafts"}
+                                                selectedDraftId={selectedDraftId}
+                                                onSelect={(draft) => setSelectedDraftId(draft.id)}
+                                                onNew={() => {
+                                                    setNewDraftPrefill(undefined);
+                                                    setDraftModalOpen(true);
+                                                }}
+                                            />
+                                        }
+                                        middlePane={
+                                            <MainEditor
+                                                draft={selectedDraft}
+                                                onSave={async (id, content) => {
+                                                    const success = await updateDraft(id, { content });
+                                                    return success;
+                                                }}
+                                                onUpdateMetadata={async (id, metadata) => {
+                                                    return await updateDraft(id, { brain_metadata: metadata });
+                                                }}
+                                                onPublish={handlePublish}
+                                            />
+                                        }
+                                        rightPane={
+                                            <AgentSidebar
+                                                currentContent={selectedDraft?.content || null}
+                                                beliefContext={selectedDraft?.belief_text || null}
+                                                availableBeliefs={beliefs.confirmed || []}
+                                                onApplyParams={handleAgentApply}
+                                            />
+                                        }
+                                    />
+                                )
+                            ) : (
+                                <div className={`h-full overflow-y-auto ${isMobile ? 'pb-20' : ''}`}>
+                                    <PublishedPostsList drafts={drafts} />
+                                </div>
+                            )}
                         </div>
-                    )
-                }
-            </main >
-
-
-
+                    </div>
+                )}
+            </main>
 
             <NewDraftModal
                 isOpen={draftModalOpen}
                 onClose={() => {
                     setDraftModalOpen(false);
-                    // Reset prefill after close
                     setNewDraftPrefill(undefined);
                 }}
                 prefill={newDraftPrefill}
                 onSubmit={async (data) => {
-                    // Build brain_metadata with references included
-                    // so the DevelopmentWizard has access to them
                     const brainMetadata = {
                         outcome: data.outcome,
                         audience: data.audience,
                         stance: data.stance,
-                        references: data.references, // CRITICAL: Include references in metadata
-                        // sourceContext is now reconstructed on server to save bandwidth
+                        references: data.references,
                     };
-
-                    console.log('[NewDraft] Creating draft with references:', {
-                        refCount: data.references?.length || 0,
-                    });
 
                     const res = await fetch('/api/content', {
                         method: 'POST',
@@ -679,17 +656,15 @@ function WorkspaceContent() {
                             source_type: newDraftPrefill?.sourceType,
                             source_id: newDraftPrefill?.sourceId,
                             stage: 'developing',
-                            references: data.references // Keep for backward compat
+                            references: data.references
                         }),
                     });
 
                     if (res.ok) {
                         const responseData = await res.json();
-                        // API returns { item: ... }
                         const newItemId = responseData.item?.id || responseData.id;
 
                         if (newItemId) {
-                            console.log('[NewDraft] Auto-navigating to wizard for:', newItemId);
                             setAutoNavToWizardId(newItemId);
                             setActiveSection('pipeline');
                         }
@@ -697,7 +672,7 @@ function WorkspaceContent() {
 
                     setDraftModalOpen(false);
                     setNewDraftPrefill(undefined);
-                    refetch(); // Refresh the pipeline
+                    refetch();
                 }}
             />
             <AddContentModal
@@ -706,11 +681,10 @@ function WorkspaceContent() {
                 onSuccess={() => window.location.reload()}
             />
 
-            {/* Mobile Bottom Navigation */}
             <MobileBottomNav
                 activeSection={activeSection}
                 onNavigate={(section) => setActiveSection(section as any)}
             />
-        </div >
+        </div>
     );
 }

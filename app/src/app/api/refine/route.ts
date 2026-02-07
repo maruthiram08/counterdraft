@@ -26,43 +26,76 @@ export async function POST(req: NextRequest) {
         // If selection is provided, we are in "Contextual Edit/Rewrite" mode
         // Otherwise, we are in "Global Refinement" mode
 
-        let prompt = "";
+        let systemMessage = "";
+        let userPrompt = "";
 
         if (selection) {
-            prompt = `
-You are an expert editor. rewrite the selected text below based on the instruction.
-Ensure the rewritten text flows naturally with the surrounding context.
+            // SELECTION MODE: Precise, minimal edits
+            systemMessage = `You are a professional editor revising text within an existing piece of writing.
 
-CONTEXT BEFORE: "${context?.before || ''}"
-CONTEXT AFTER: "${context?.after || ''}"
+Your task is to rewrite ONLY the selected text so that it:
+- Clearly follows the user's instruction
+- Preserves the author's voice, tone, and intent
+- Flows seamlessly with the surrounding context
+- Does not introduce new ideas, facts, or arguments
+
+Editing rules:
+- Make the minimum number of changes necessary to satisfy the instruction.
+- Do NOT rewrite sentences that already work.
+- Do NOT over-polish or neutralize the author's style.
+- Maintain consistency in tense, point of view, and terminology.
+- Do NOT change length significantly unless the instruction explicitly requests it.
+- If the instruction is ambiguous, choose the interpretation that best preserves meaning.
+
+Constraints:
+- Do NOT modify the surrounding context.
+- Do NOT add examples, metaphors, or explanations unless explicitly instructed.
+- Return ONLY the revised text, with no commentary or formatting.
+
+Think like a careful human editor improving clarity or tone, not an AI rewriting the piece.`;
+
+            userPrompt = `CONTEXT BEFORE: "${context?.before || ''}"
 
 SELECTED TEXT TO REWRITE: "${selection}"
 
-INSTRUCTION: ${instruction}
+CONTEXT AFTER: "${context?.after || ''}"
 
-Return ONLY the rewritten text for the replacement. Do not include quotes or explanations.
-`;
+INSTRUCTION: ${instruction}`;
+
         } else {
-            prompt = `
-You are an expert editor. Refine the following content based on the user's instruction.
-Keep the original meaning but improve clarity, tone, and impact.
+            // GLOBAL MODE: Holistic refinement
+            systemMessage = `You are a professional editor refining a complete piece of writing.
 
-BELIEF CONTEXT: "${beliefContext || 'None provided'}"
+Your task is to improve the content while:
+- Following the user's specific instruction
+- Preserving the author's voice, perspective, and intent
+- Maintaining the original meaning and key arguments
+- Keeping thematic coherence with any provided belief context
 
-CURRENT CONTENT:
-"${currentContent}"
+Editing approach:
+- Improve clarity, flow, and impact where needed.
+- Tighten loose prose; cut redundancy.
+- Do NOT over-polish into generic AI-sounding text.
+- Do NOT add new arguments or change the author's position.
+- Adjust length only if the instruction explicitly requests it.
 
-INSTRUCTION: ${instruction}
+Constraints:
+- Return ONLY the refined content.
+- Do NOT include explanations, commentary, or markdown code blocks.
 
-Return ONLY the refined content. Do not include markdown code blocks if not necessary.
-`;
+Think like a trusted editor making a piece publication-ready.`;
+
+            userPrompt = `${beliefContext ? `BELIEF/THEMATIC CONTEXT: "${beliefContext}"\n\n` : ''}CURRENT CONTENT:
+${currentContent}
+
+INSTRUCTION: ${instruction}`;
         }
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
-                { role: "system", content: "You are a precise and high-quality writing assistant." },
-                { role: "user", content: prompt }
+                { role: "system", content: systemMessage },
+                { role: "user", content: userPrompt }
             ],
         });
 
