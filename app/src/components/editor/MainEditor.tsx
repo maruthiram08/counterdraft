@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Draft } from "@/hooks/useDrafts";
+import type { Draft } from "@/types";
 import { ContextualToolbar } from "./ContextualToolbar";
 import { PublishModal } from "./PublishModal";
 import { RepurposeModal } from "./RepurposeModal";
@@ -231,7 +231,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                 const mapped = metadata.slides.map((s: InstagramSlide) => ({
                     title: s.header || "Slide",
                     body: s.body || "",
-                    type: 'content',
+                    type: 'content' as const,
                     visualNotes: s.visualDescription
                 }));
                 slides.push(...mapped);

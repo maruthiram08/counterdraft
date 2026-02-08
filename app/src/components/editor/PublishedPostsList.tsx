@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Draft } from "@/hooks/useDrafts";
+import type { Draft } from "@/types";
 import { ExternalLink, Calendar, Layers } from "lucide-react";
 
 interface PublishedPostsListProps {

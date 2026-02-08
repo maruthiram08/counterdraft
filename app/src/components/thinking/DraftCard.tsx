@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FileText, Copy, Trash2, Check, Clock } from "lucide-react";
-import type { Draft } from "@/hooks/useDrafts";
+import type { Draft } from "@/types";
 
 interface DraftCardProps {
     draft: Draft;

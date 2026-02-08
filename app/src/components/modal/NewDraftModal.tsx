@@ -32,7 +32,7 @@ interface NewDraftModalProps {
         stance?: Stance;
         sourceType?: 'belief' | 'tension' | 'idea' | 'manual';
         sourceId?: string;
-        references?: ContentReference[];
+        references?: Partial<ContentReference>[];
     };
 }
 
@@ -109,7 +109,18 @@ export default function NewDraftModal({
             if (prefill.outcome) setOutcome(prefill.outcome);
             if (prefill.stance) setStance(prefill.stance);
             if (prefill.references && prefill.references.length > 0) {
-                setReferences(prefill.references);
+                const validRefs: (ContentReference & { file?: File })[] = prefill.references.map(ref => ({
+                    id: ref.id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+                    contentItemId: ref.contentItemId || '',
+                    referenceType: ref.referenceType || 'text',
+                    title: ref.title || 'Untitled Reference',
+                    content: ref.content,
+                    url: ref.url,
+                    filePath: ref.filePath,
+                    createdAt: ref.createdAt || new Date(),
+                    file: undefined
+                }));
+                setReferences(validRefs);
             }
         }
     }, [prefill]);

@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Target, LayoutTemplate, Scale, Users, Info, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
-import { Draft } from "@/types";
+import { Draft, BrainMetadata } from "@/types";
 import { toast } from "sonner";
 
 interface StrategyBarProps {
@@ -12,7 +12,8 @@ interface StrategyBarProps {
 
 export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBarProps) {
     const [isExpanded, setIsExpanded] = useState(true);
-    const [metadata, setMetadata] = useState(draft.brain_metadata || {});
+    // Explicitly type as Partial<BrainMetadata>
+    const [metadata, setMetadata] = useState<Partial<BrainMetadata>>(draft.brain_metadata || {});
     const [isAutofilling, setIsAutofilling] = useState(false);
 
     // Sync specific fields
@@ -102,13 +103,15 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
             const existingPain = typeof metadata.audience === 'object' ? metadata.audience.pain : '';
             newMetadata.audience = { role: value, pain: existingPain };
         } else if (key === 'goal') {
-            newMetadata.outcome = value;
+            newMetadata.outcome = value as import("@/types").Outcome;
         } else {
-            newMetadata[key] = value;
+            // @ts-expect-error - Dynamic key access on defined type
+            newMetadata[key as keyof BrainMetadata] = value;
         }
 
         setMetadata(newMetadata);
-        await onUpdate({ brain_metadata: newMetadata });
+        // Cast to BrainMetadata to satisfy Draft type (even if partial)
+        await onUpdate({ brain_metadata: newMetadata as BrainMetadata });
     };
 
     return (

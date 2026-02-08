@@ -140,7 +140,6 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
             return;
         }
 
-        setLoading(true);
         setStep('analyzing');
 
         try {
@@ -159,8 +158,6 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
             console.error(e);
             alert("Failed to analyze style. Please try again.");
             setStep('input');
-        } finally {
-            setLoading(false);
         }
     };
 

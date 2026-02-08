@@ -1,5 +1,5 @@
 import { Edit2, Eye, Check, Copy, Save, RefreshCw, BrainCircuit, ShieldCheck, Image as ImageIcon } from "lucide-react";
-import { Draft } from "@/hooks/useDrafts";
+import type { Draft } from "@/types";
 
 interface EditorHeaderProps {
     draft: Draft;

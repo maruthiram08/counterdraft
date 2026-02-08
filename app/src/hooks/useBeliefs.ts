@@ -76,7 +76,7 @@ export function useBeliefs() {
                     id: b.id,
                     userId: b.user_id,
                     statement: b.statement,
-                    beliefType: b.belief_type,
+                    beliefType: b.belief_type as import("@/types").BeliefType,
                     confidence: b.confidence || 1.0,
                     firstSeen: new Date(b.first_seen || b.created_at),
                     lastSeen: new Date(b.last_seen || b.created_at),

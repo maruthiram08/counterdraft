@@ -67,7 +67,7 @@ export class BrainDecisionService {
      */
     async calculateConfidence(
         topic: string,
-        beliefs: Belief[]
+        beliefs: Pick<Belief, 'id' | 'statement' | 'beliefType'>[]
     ): Promise<ConfidenceResult> {
         const startTime = Date.now();
 

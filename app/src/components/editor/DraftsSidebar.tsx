@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { Draft } from "@/hooks/useDrafts";
+import type { Draft } from "@/types";
 import { useState, useEffect, useRef } from "react";
 
 interface DraftsSidebarProps {

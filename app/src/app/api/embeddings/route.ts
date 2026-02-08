@@ -145,7 +145,7 @@ export async function GET(req: Request) {
                         .eq('user_id', userId)
                         .in('id', ids);
                     const allowedIds = new Set((allowed || []).map((row: { id: string }) => row.id));
-                    filtered = filtered.filter((row: { id: string }) => allowedIds.has(row.id));
+                    filtered = filtered.filter((row) => row.id && allowedIds.has(row.id));
                 } else {
                     filtered = [];
                 }
@@ -158,7 +158,7 @@ export async function GET(req: Request) {
                         .eq('user_id', userId)
                         .in('content_id', contentIds);
                     const allowedIds = new Set((allowed || []).map((row: { content_id: string }) => row.content_id));
-                    filtered = filtered.filter((row: { content_id: string }) => allowedIds.has(row.content_id));
+                    filtered = filtered.filter((row) => row.content_id && allowedIds.has(row.content_id));
                 } else {
                     filtered = [];
                 }

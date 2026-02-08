@@ -93,7 +93,7 @@ export class UsageService {
         // Try simple read-update since RPCs might be missing
         const { data } = await supabase.from('user_usage').select(column).eq('user_id', userId).single();
         if (data) {
-            const row = data as Record<string, unknown>;
+            const row = data as unknown as Record<string, unknown>;
             const current = typeof row[column] === 'number' ? (row[column] as number) : 0;
             await supabase.from('user_usage').update({ [column]: current + 1 }).eq('user_id', userId);
         }

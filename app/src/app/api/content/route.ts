@@ -142,9 +142,15 @@ export async function POST(req: Request) {
                         type: b.belief_type
                     }));
 
+                    const formattedBeliefs = (beliefs || []).map(b => ({
+                        id: b.id,
+                        statement: b.statement,
+                        beliefType: b.belief_type as Belief['beliefType']
+                    }));
+
                     const [genealogy, confidence] = await Promise.all([
                         brainService.analyzeGenealogy(hook, roots),
-                        brainService.calculateConfidence(hook, (beliefs || []) as Belief[])
+                        brainService.calculateConfidence(hook, formattedBeliefs)
                     ]);
 
                     // Update item with genealogy and update metadata with confidence

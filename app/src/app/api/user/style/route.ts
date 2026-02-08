@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest) {
         const updates = await req.json();
 
         // Validate allowed fields
-        const allowedUpdates = ['voice_tone', 'rules', 'anti_patterns'];
+        const allowedUpdates: (keyof StyleProfileUpdate)[] = ['voice_tone', 'rules', 'anti_patterns'];
         const cleanUpdates: StyleProfileUpdate = {};
 
         for (const key of allowedUpdates) {

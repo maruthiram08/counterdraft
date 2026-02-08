@@ -305,8 +305,12 @@ export interface Artifact {
   id: string;
   userId: string;
   source_url?: string;
+  source_domain?: string;
+  source_title?: string;
   ocr_text?: string;
   user_note?: string;
+  intent_type?: 'agree' | 'counter' | 'evidence' | 'framing' | 'inspiration';
+  image_path?: string;
   ai_metadata?: {
     tags?: string[];
     entities?: string[];
@@ -314,6 +318,7 @@ export interface Artifact {
   };
   urls?: string[];
   createdAt: Date;
+  created_at?: string | Date; // Support DB raw shape
 }
 
 export interface BrainTraceLog {

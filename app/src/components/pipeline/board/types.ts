@@ -1,5 +1,5 @@
 
-import { BrainMetadata } from "@/types";
+import { BrainMetadata, DevStep } from "@/types";
 import { ResearchPoint } from "../wizard/types";
 
 export type Stage = 'idea' | 'developing' | 'draft' | 'published';
@@ -10,7 +10,7 @@ export interface ContentItem {
     angle?: string;
     format?: string;
     stage: Stage;
-    dev_step?: string;
+    dev_step?: DevStep;
     status: string;
     draft_content?: string;
     source_topics?: string[];

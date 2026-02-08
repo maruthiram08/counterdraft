@@ -4,10 +4,8 @@ import { AlertTriangle, CheckCircle, Target, Lightbulb, Sparkles, Loader2 } from
 interface StrategyFeedbackPanelProps {
     analysis: {
         score: number;
-        critique: string;
-        strengths: string[];
-        weaknesses: string[];
-        actionable_fix: string;
+        analysis: string;
+        suggestions: string[];
     } | null;
     loading: boolean;
     isFixing: boolean;
@@ -76,33 +74,35 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-tight mb-2">Coach&apos;s Critique</h4>
                 <p className="text-sm text-gray-800 leading-relaxed">
-                    &quot;{analysis.critique}&quot;
+                    &quot;{analysis.analysis}&quot;
                 </p>
             </div>
 
             {/* Fix */}
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <div className="flex items-start gap-3">
-                    <div className="p-1.5 bg-blue-100 rounded-md mt-0.5 shrink-0 text-blue-600">
-                        <Lightbulb size={16} />
-                    </div>
-                    <div>
-                        <h4 className="text-sm font-semibold text-blue-900 mb-1">Try this improvement</h4>
-                        <p className="text-sm text-blue-800 leading-snug mb-3">
-                            {analysis.actionable_fix}
-                        </p>
+            {analysis.suggestions && analysis.suggestions.length > 0 && (
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <div className="flex items-start gap-3">
+                        <div className="p-1.5 bg-blue-100 rounded-md mt-0.5 shrink-0 text-blue-600">
+                            <Lightbulb size={16} />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-semibold text-blue-900 mb-1">Try this improvement</h4>
+                            <p className="text-sm text-blue-800 leading-snug mb-3">
+                                {analysis.suggestions[0]}
+                            </p>
 
-                        <button
-                            onClick={() => onAutoFix(analysis.actionable_fix)}
-                            disabled={isFixing}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 w-full justify-center"
-                        >
-                            {isFixing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                            {isFixing ? 'Applying Fix...' : 'Auto-Fix Draft'}
-                        </button>
+                            <button
+                                onClick={() => onAutoFix(analysis.suggestions[0])}
+                                disabled={isFixing}
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 w-full justify-center"
+                            >
+                                {isFixing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                {isFixing ? 'Applying Fix...' : 'Auto-Fix Draft'}
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             <div className="flex justify-end pt-2">
                 <button

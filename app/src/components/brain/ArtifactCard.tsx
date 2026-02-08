@@ -61,7 +61,7 @@ export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCard
                             {artifact.source_domain || "Unknown Source"}
                         </span>
                         <span className="text-[10px] text-gray-400">
-                            {formatDistanceToNow(new Date(artifact.created_at), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(artifact.created_at || artifact.createdAt), { addSuffix: true })}
                         </span>
                     </div>
                 </div>

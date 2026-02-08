@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ComponentType, SVGProps } from "react";
+import type { ComponentType } from "react";
 import { X, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette } from "lucide-react";
 import { SmartStudioPanel } from "./SmartStudioPanel";
 import type { SlideContent } from "@/lib/pptx-generator";
@@ -25,7 +25,7 @@ interface PlatformOption {
 interface PlatformConfig {
     id: string;
     label: string;
-    icon: ComponentType<SVGProps<SVGSVGElement>>;
+    icon: ComponentType<{ className?: string; size?: number | string }>;
     colorClass: string;
     bgClass: string;
     textClass: string;
@@ -217,7 +217,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                     const mapped = metadata.slides.map((s) => ({
                         title: s.header || "Slide",
                         body: s.body || "",
-                        type: 'content',
+                        type: 'content' as const,
                         visualNotes: s.visualDescription
                     }));
                     slides.push(...mapped);
@@ -427,7 +427,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                 </div>
                                                 <input
                                                     type="text"
-                                                    value={currentValues[opt.id] || ''}
+                                                    value={(currentValues[opt.id] as string) || ''}
                                                     onChange={(e) => updateOption(opt.id, e.target.value)}
                                                     placeholder={opt.placeholder}
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-sm font-medium transition-all"
@@ -442,7 +442,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    checked={currentValues[opt.id]}
+                                                    checked={(currentValues[opt.id] as boolean) || false}
                                                     onChange={(e) => updateOption(opt.id, e.target.checked)}
                                                     className="hidden"
                                                 />

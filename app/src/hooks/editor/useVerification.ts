@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { VerificationResult, PlagiarismResult, SlopMatch, CompetitorCheckResult } from "@/components/editor/FactCheckSidebar";
 import { AntiSlopService } from "@/lib/tools/anti-slop";
-import { Draft } from "@/hooks/useDrafts";
+import { Draft } from "@/types";
 
 interface UseVerificationProps {
     draft: Draft | null;

@@ -1,5 +1,6 @@
 import { BrainMetadata, Draft } from "@/types";
 import { StrategyBar } from "@/components/editor/StrategyBar";
+import { ResearchPoint } from "./wizard/types";
 
 // Accept a generic item with either snake_case or camelCase brain metadata
 interface BrainHeaderPanelProps {
@@ -7,8 +8,8 @@ interface BrainHeaderPanelProps {
         id?: string;
         brain_metadata?: BrainMetadata;
         brainMetadata?: BrainMetadata;
-        deepDive?: { research: string[]; insights?: string[] };
-        deep_dive?: { research: string[]; insights?: string[] };
+        deepDive?: { research: (string | ResearchPoint)[]; insights?: (string | ResearchPoint)[] };
+        deep_dive?: { research: (string | ResearchPoint)[]; insights?: (string | ResearchPoint)[] };
         hook?: string;
         title?: string;
     };
@@ -17,7 +18,7 @@ interface BrainHeaderPanelProps {
 
 export function BrainHeaderPanel({ item, onUpdate }: BrainHeaderPanelProps) {
     // derived metadata for stability
-    const metadata = item.brain_metadata || item.brainMetadata || {};
+    const metadata = item.brain_metadata || item.brainMetadata;
 
     // Mock Draft object for StrategyBar compatibility
     const mockDraft: Draft & { title?: string; hook?: string } = {
