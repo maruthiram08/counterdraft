@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
             const rows = results.map(r => ({
                 draft_id: draftId,
                 claim_text: r.claim,
-                original_sentence: r.original_sentence,
+                // original_sentence: r.original_sentence, // Column missing in DB
                 status: r.status,
                 confidence_score: r.confidence,
                 source_url: r.source?.url,

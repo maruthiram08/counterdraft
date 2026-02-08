@@ -62,7 +62,7 @@ export async function GET() {
         const existingDraftIds = new Set(drafts.map(d => d.id));
         const orphans = (contentItems || [])
             .filter(ci =>
-                (ci.stage === 'draft') && // It thinks it is a draft
+                (ci.stage === 'draft' || ci.stage === 'published') && // It thinks it is a draft or published
                 !existingDraftIds.has(ci.id) // But it is not in the drafts list
             )
             .map(ci => ({
@@ -70,7 +70,7 @@ export async function GET() {
                 user_id: userId,
                 belief_text: ci.hook || 'Untitled Draft',
                 content: ci.draft_content || '',
-                status: 'draft',
+                status: ci.stage === 'published' ? 'published' : 'draft',
                 created_at: ci.created_at || new Date().toISOString(), // Use real timestamp if available
                 updated_at: ci.updated_at || ci.created_at || new Date().toISOString(), // Use real timestamp
                 published_posts: [],
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
         }
 
-        const { beliefText, content, id } = await req.json();
+        const { beliefText, content, id, status: passedStatus } = await req.json();
 
         if (!beliefText || !content) {
             return NextResponse.json(
@@ -128,18 +128,38 @@ export async function POST(req: NextRequest) {
         let isCreation = !id;
 
         if (id) {
-            console.log(`[POST /api/drafts] Checking existence for ID: ${id} with User: ${userId}`);
-            const { data: existing } = await supabase
+            console.log(`[POST /api/drafts] Checking ownership for ID: ${id} with User: ${userId}`);
+
+            // 1. Check if it exists in drafts for THIS user
+            const { data: existingDraft } = await supabase
                 .from('drafts')
                 .select('id')
                 .eq('id', id)
                 .eq('user_id', userId)
-                .single();
+                .maybeSingle();
 
-            if (!existing) {
+            if (!existingDraft) {
+                // 2. If not in drafts, it MUST exist in content_items for THIS user (e.g. initial sync from pipeline)
+                const { data: existingContent } = await supabase
+                    .from('content_items')
+                    .select('id')
+                    .eq('id', id)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                if (!existingContent) {
+                    // ID provided but matches nothing owned by this user -> IDOR Attempt
+                    console.error(`[POST /api/drafts] IDOR detected or invalid ID provided: ${id} by User: ${userId}`);
+                    return NextResponse.json({ error: 'Unauthorized or invalid ID' }, { status: 403 });
+                }
+
+                // Exists in content_items but not drafts table yet
                 isCreation = true;
+            } else {
+                // Exists in drafts table already
+                isCreation = false;
             }
-            console.log(`[POST /api/drafts] Exists? ${!!existing} | isCreation: ${isCreation}`);
+            console.log(`[POST /api/drafts] Ownership verified | isCreation: ${isCreation}`);
         }
 
         if (isCreation) {
@@ -159,13 +179,14 @@ export async function POST(req: NextRequest) {
 
         const { data: draft, error } = await supabase
             .from('drafts')
-            .insert({
+            .upsert({
                 ...(id ? { id } : {}),
                 user_id: userId,
                 belief_text: beliefText,
                 content: content,
-                status: 'draft'
-            })
+                status: passedStatus || 'draft',
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' })
             .select()
             .single();
 

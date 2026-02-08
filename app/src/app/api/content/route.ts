@@ -7,6 +7,8 @@ import { brainService } from '@/lib/brain/service';
 import { Belief } from '@/types';
 import { TraceLogger } from '@/lib/trace';
 
+export const dynamic = 'force-dynamic';
+
 type ContentReferenceInput = {
     referenceType?: string;
     type?: string;
@@ -299,16 +301,16 @@ export async function PATCH(req: Request) {
 
         if (error) throw error;
 
-        // SYNC: If moving to draft stage, ensure it exists in drafts table (Editor Visibility)
-        if (updates.stage === 'draft') {
+        // SYNC: If moving to draft or published stage, ensure it exists in drafts table (Editor Visibility)
+        if (updates.stage === 'draft' || updates.stage === 'published') {
             await supabaseAdmin.from('drafts').upsert({
                 id: data.id,
                 user_id: userId,
                 belief_text: data.hook || data.angle || 'Untitled Draft',
-                content: data.draft_content || '',
-                status: 'draft',
+                content: data.draft_content || updates.draft_content || '', // Handle missing content
+                status: updates.stage === 'published' ? 'published' : 'draft',
                 updated_at: new Date().toISOString()
-            });
+            }, { onConflict: 'id' });
         }
 
         // Increment usage if we successfully promoted

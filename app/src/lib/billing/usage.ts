@@ -117,4 +117,16 @@ export class UsageService {
         const check = await this.checkDraftLimit(userId);
         return PRICING_CONFIG.LIMITS[check.tier as Tier];
     }
+
+    /**
+     * Log a performance metric to the console (for Vercel/Datadog pickup).
+     */
+    static logPerformance(event: string, meta: Record<string, unknown>) {
+        console.log(JSON.stringify({
+            _type: 'metric',
+            event,
+            timestamp: new Date().toISOString(),
+            ...meta
+        }));
+    }
 }

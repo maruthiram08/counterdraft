@@ -6619,3 +6619,96 @@ Draft Generation Context
   "outlineSections": 9
 }
 ----------------------------------------
+[2026-02-08T05:04:34.806Z] [OPENAI]
+refineSearchQuery: Input
+Google Genie 3 AI gaming impact
+----------------------------------------
+[2026-02-08T05:04:36.690Z] [OPENAI]
+refineSearchQuery: Output
+{
+  "queries": [
+    "AI gaming ethical concerns",
+    "AI influence on player creativity",
+    "AI-generated content vs. human design"
+  ]
+}
+----------------------------------------
+[2026-02-08T05:04:38.110Z] [EXPLORE]
+Feed Search: "AI gaming ethical concerns"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-08T05:04:38.817Z] [EXPLORE]
+Feed Search: "AI influence on player creativity"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-08T05:04:39.441Z] [EXPLORE]
+Feed Search: "AI-generated content vs. human design"
+{
+  "results": 5
+}
+----------------------------------------
+[2026-02-08T05:04:46.206Z] [EXPLORE]
+Generated Ideas
+{
+  "platform": "linkedin",
+  "tone": "provocative",
+  "count": 3,
+  "result": "{\n  \"ideas\": [\n    {\n      \"hook\": \"What if AI is the new team member you never knew you needed?\",\n      \"angle\": \"While much of the discussion around AI focuses on efficiency and optimization, it's time to explore AI's role as a creative partner in design. This post would delve into how AI can enhance human creativity rather than just replicate it—specifically within the context of game design. It would question the boundaries of creativity and argue that AI can push human designers towards bolder, more unexpected visions.\",\n      \"format\": \"mini-essay\"\n    },\n    {\n      \"hook\": \"Is Google Genie 3 AI disrupting the traditional gaming design process or enriching it?\",\n      \"angle\": \"This post would investigate the tension between traditional game design methodologies and the new collaborative possibilities with AI like Google Genie 3. It would explore whether AI is seen as a threat to the creative jobs in gaming or as a tool that complements and expands the designers' creative capabilities.\",\n      \"format\": \"question-led narrative\"\n    },\n    {\n      \"hook\": \"Why 'human vs. AI' is the wrong perspective for the future of creativity in gaming\",\n      \"angle\": \"Shifting the conversation from the competition narrative to a synergy narrative, this post would argue that the true potential lies in human-AI partnerships in game design. It would highlight overlooked case studies or examples where human designers and AI have collaboratively led to groundbreaking gaming experiences, suggesting a new paradigm for creative processes.\",\n      \"format\": \"insight with case studies\"\n    }\n  ]\n}"
+}
+----------------------------------------
+[2026-02-08T05:26:21.868Z] [PIPELINE]
+Saving Draft
+{
+  "hook": "Why specialised AI agents will replace humans",
+  "stage": "developing",
+  "hasSourceContext": false
+}
+----------------------------------------
+[2026-02-08T05:26:26.761Z] [DEEP_DIVE]
+Research Phase Input
+{
+  "hook": "Why specialised AI agents will replace humans",
+  "sourceMaterialPreview": "...",
+  "fullSourceLength": 0
+}
+----------------------------------------
+[2026-02-08T05:27:22.885Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "Why specialised AI agents will replace humans",
+  "angle": "None",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": false,
+  "hasSourceContext": false,
+  "outlineSections": 10
+}
+----------------------------------------
+[2026-02-08T05:39:28.308Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "Article for investors",
+  "angle": "Draft created from Command Center",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": true,
+  "hasSourceContext": true,
+  "outlineSections": 9
+}
+----------------------------------------
+[2026-02-08T05:53:00.809Z] [DRAFT]
+Draft Generation Context
+{
+  "hook": "How to use moltbot for productivity",
+  "angle": "None",
+  "format": "thought_leadership",
+  "hasUserContext": false,
+  "hasReferences": true,
+  "hasSourceContext": false,
+  "outlineSections": 12
+}
+----------------------------------------

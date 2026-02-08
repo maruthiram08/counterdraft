@@ -3,28 +3,41 @@ import { auth } from '@clerk/nextjs/server';
 import OpenAI from 'openai';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
+import { UsageService } from '@/lib/billing/usage';
+
 // Initialize OpenAI client
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
+    const start = Date.now();
+    let status = 'success';
+    let errorDetails: string | undefined;
+    let userIdStr = 'anon';
+
     try {
         const { userId } = await auth();
         if (!userId) {
+            status = 'error';
+            errorDetails = 'Unauthorized';
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        userIdStr = userId;
 
         // 1. Rate Limiting
         const ip = getClientIp(req);
         const limitResult = rateLimit(`refine:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 20 });
         if (!limitResult.allowed) {
+            status = 'rate_limited';
             return NextResponse.json({ error: 'Too many requests. Please try again in 15 minutes.' }, { status: 429 });
         }
 
         const { currentContent, instruction, beliefContext, selection, context } = await req.json();
 
         if (!currentContent && !selection) {
+            status = 'error';
+            errorDetails = 'Missing content';
             return NextResponse.json(
                 { error: 'currentContent or selection is required' },
                 { status: 400 }
@@ -120,6 +133,15 @@ ${instruction}
         return NextResponse.json({ refinedContent });
     } catch (error) {
         console.error("Refinement error:", error);
+        status = 'error';
+        errorDetails = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json({ error: "Failed to refine content" }, { status: 500 });
+    } finally {
+        UsageService.logPerformance('api_refine', {
+            duration: Date.now() - start,
+            status,
+            error: errorDetails,
+            userId: userIdStr
+        });
     }
 }
