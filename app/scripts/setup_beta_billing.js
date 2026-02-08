@@ -1,7 +1,13 @@
-require('dotenv').config({ path: '.env.local' });
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+dotenv.config({ path: '.env.local' });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -18,6 +24,7 @@ async function runMigration() {
 
     const sqlPath = path.join(__dirname, '../migrations/014_beta_billing_schema.sql');
     const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+    console.log(`Loaded SQL (${sqlContent.length} chars).`);
 
     // We can't run raw SQL with JS client easily unless we have an RPC function or direct DB access.
     // BUT: Many Supabase setups allow psql or have an RPC `exec_sql`.

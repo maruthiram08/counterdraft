@@ -56,8 +56,6 @@ export default clerkMiddleware(async (auth, req) => {
     // 3. Onboarding Gating
     const { userId } = await auth();
     const isWorkspace = req.nextUrl.pathname.startsWith('/workspace');
-    const isOnboarding = req.nextUrl.pathname.startsWith('/onboarding');
-
     // If logged in and trying to access workspace, check onboarding status.
     // NOTE: In middleware, we can't easily query Supabase without potentially leaking edge config or complexity.
     // A simpler way is to check a public metadata field on the Clerk user object if we synced it.

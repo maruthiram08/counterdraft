@@ -210,8 +210,10 @@ export type DevStep =
   | 'deep_dive_in_progress'
   | 'deep_dive_complete'
   | 'outline_in_progress'
+  | 'outline_review'
   | 'outline_complete'
   | 'draft_in_progress'
+  | 'complete'
   | null; // null = wizard not started
 
 // Brain: Audience targeting
@@ -241,7 +243,7 @@ export interface BrainMetadata {
   references?: ContentReference[]; // V1: Store references directly in metadata
   repurpose?: {
     platform: string;
-    generatedAssets: any[];
+    generatedAssets: unknown[];
     parentId?: string;
   };
 }
@@ -299,13 +301,28 @@ export type BrainAction =
   | 'confidence_calculation'
   | 'bootstrap_genealogy';
 
+export interface Artifact {
+  id: string;
+  userId: string;
+  source_url?: string;
+  ocr_text?: string;
+  user_note?: string;
+  ai_metadata?: {
+    tags?: string[];
+    entities?: string[];
+    summary?: string;
+  };
+  urls?: string[];
+  createdAt: Date;
+}
+
 export interface BrainTraceLog {
   id: string;
   contentItemId?: string;
   action: BrainAction;
-  inputContext: any; // Flexible JSON
-  outputResult: any; // Flexible JSON
-  toolCalls?: any; // Flexible JSON for tool usage
+  inputContext: unknown; // Flexible JSON
+  outputResult: unknown; // Flexible JSON
+  toolCalls?: unknown; // Flexible JSON for tool usage
   modelConfig: {
     model: string;
     temperature?: number;
@@ -323,3 +340,65 @@ export interface ConfidenceResult {
   conflictingBeliefIds?: string[];
 }
 
+
+// ===========================================
+// BRAIN GENERATION TYPES
+// ===========================================
+
+export type ResearchItem = string | { text: string; notes?: string[] };
+export type InsightItem = string | { text: string; notes?: string[] };
+export type OutlineItem = string | { text: string; notes?: string[] };
+
+export interface DeepDiveData {
+  research: ResearchItem[];
+  insights: InsightItem[];
+}
+
+export interface InstagramSlide {
+  header: string;
+  body: string;
+  visualDescription: string;
+}
+
+export interface RepurposeOptions {
+  length?: 'short' | 'medium' | 'long'; // For Medium
+  format?: 'single' | 'carousel';      // For Instagram
+  generateCover?: boolean;
+  generateInfographic?: boolean;
+}
+
+export interface RepurposedExtraData {
+  slides?: InstagramSlide[];
+  hashtags?: string[] | string;
+  caption?: string;
+}
+
+export interface RepurposedContent {
+  title: string;
+  content: string;
+  extraData?: RepurposedExtraData;
+}
+
+export interface Draft {
+  id: string;
+  belief_text: string;
+  content: string;
+  status: 'draft' | 'published' | 'archived';
+  created_at: string;
+  updated_at: string;
+  platform?: string;
+  platform_metadata?: Record<string, unknown>;
+  published_posts?: {
+    id: string;
+    platform: string;
+    platform_post_id: string;
+    published_at: string;
+    url?: string;
+  }[];
+  labels?: {
+    platform?: string;
+    length?: string;
+    parentId?: string;
+  };
+  brain_metadata?: BrainMetadata;
+}

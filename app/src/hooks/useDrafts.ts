@@ -1,28 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-
-export interface Draft {
-    id: string;
-    belief_text: string;
-    content: string;
-    status: 'draft' | 'published' | 'archived';
-    created_at: string;
-    updated_at: string;
-    platform?: string;
-    platform_metadata?: any;
-    published_posts?: {
-        id: string;
-        platform: string;
-        platform_post_id: string;
-        published_at: string;
-        url?: string;
-    }[];
-    labels?: {
-        platform?: string;
-        length?: string;
-        parentId?: string;
-    };
-    brain_metadata?: any;
-}
+import { Draft } from '@/types';
 
 export function useDrafts() {
     const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -40,8 +17,9 @@ export function useDrafts() {
             if (!res.ok) throw new Error(data.error);
 
             setDrafts(data.drafts || []);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to fetch drafts';
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -61,7 +39,7 @@ export function useDrafts() {
             // Add new draft to local state
             setDrafts(prev => [data.draft, ...prev]);
             return data.draft;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error saving draft:', err);
             return null;
         }
@@ -77,7 +55,7 @@ export function useDrafts() {
             // Remove from local state
             setDrafts(prev => prev.filter(d => d.id !== id));
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error deleting draft:', err);
             return false;
         }
@@ -97,7 +75,7 @@ export function useDrafts() {
             // Update local state
             setDrafts(prev => prev.map(d => d.id === id ? data.draft : d));
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error updating draft:', err);
             return false;
         }

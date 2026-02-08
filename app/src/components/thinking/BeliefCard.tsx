@@ -81,6 +81,14 @@ export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback, on
                 >
                     {evidenceCount} {evidenceCount === 1 ? 'Evidence' : 'Evidence'}
                 </button>
+                {sourceCount > 0 && (
+                    <>
+                        <span className="w-1 h-1 rounded-full bg-gray-200" />
+                        <span className="text-[10px] uppercase tracking-widest font-medium text-gray-400">
+                            {sourceCount} Source{sourceCount === 1 ? '' : 's'}
+                        </span>
+                    </>
+                )}
                 {addedToPipeline && (
                     <>
                         <span className="w-1 h-1 rounded-full bg-gray-200" />

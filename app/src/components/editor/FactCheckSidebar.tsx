@@ -189,7 +189,7 @@ export function VerificationSidebar({
                                                 }`}>{res.status}</span>
                                             <span className="ml-auto text-xs text-gray-400">{Math.round(res.confidence * 100)}%</span>
                                         </div>
-                                        <p className="font-serif text-gray-900 mb-1">"{res.claim}"</p>
+                                        <p className="font-serif text-gray-900 mb-1">&quot;{res.claim}&quot;</p>
                                         <p className="text-gray-500 text-xs mb-2">{res.analysis}</p>
                                         {res.source && (
                                             <a href={res.source.url} target="_blank" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1">
@@ -289,7 +289,7 @@ export function VerificationSidebar({
                                                     </a>
                                                 </div>
                                                 <p className="text-xs text-gray-500 line-clamp-2 italic">
-                                                    "{source.snippet}"
+                                                    &quot;{source.snippet}&quot;
                                                 </p>
                                                 <p className="text-[10px] text-gray-400 mt-2 truncate">
                                                     {source.url}
@@ -361,7 +361,7 @@ export function VerificationSidebar({
                                         <div key={i} className="p-3 bg-white border border-gray-100 rounded-xl hover:border-orange-200 transition-all">
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="font-mono text-sm font-bold text-gray-900 bg-gray-100 px-1.5 rounded">
-                                                    "{match.word}"
+                                                    &quot;{match.word}&quot;
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 font-medium">Position: {match.startIndex}</span>
                                             </div>
@@ -432,7 +432,7 @@ export function VerificationSidebar({
                             <div className="space-y-6 animate-fade-in">
                                 <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                                     <p className="text-sm text-emerald-800 italic leading-relaxed">
-                                        "{competitorResult.summary}"
+                                        &quot;{competitorResult.summary}&quot;
                                     </p>
                                 </div>
 

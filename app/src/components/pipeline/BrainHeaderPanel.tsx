@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { BrainMetadata } from "@/types";
+import { BrainMetadata, Draft } from "@/types";
 import { StrategyBar } from "@/components/editor/StrategyBar";
 
 // Accept a generic item with either snake_case or camelCase brain metadata
@@ -21,13 +20,18 @@ export function BrainHeaderPanel({ item, onUpdate }: BrainHeaderPanelProps) {
     const metadata = item.brain_metadata || item.brainMetadata || {};
 
     // Mock Draft object for StrategyBar compatibility
-    const mockDraft: any = {
+    const mockDraft: Draft & { title?: string; hook?: string } = {
         id: item.id || 'temp',
-        title: (item as any).hook || (item as any).title || 'Untitled',
+        belief_text: '',
+        content: '',
+        status: 'draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        title: item.hook || item.title || 'Untitled',
         brain_metadata: metadata,
     };
 
-    const handleUpdate = async (updates: any) => {
+    const handleUpdate = async (updates: Partial<Pick<Draft, 'brain_metadata'>>) => {
         if (onUpdate && updates.brain_metadata) {
             onUpdate(updates.brain_metadata);
         }
@@ -42,4 +46,3 @@ export function BrainHeaderPanel({ item, onUpdate }: BrainHeaderPanelProps) {
         </div>
     );
 }
-

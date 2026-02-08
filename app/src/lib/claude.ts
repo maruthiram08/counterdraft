@@ -1,5 +1,6 @@
 // Anthropic Claude client configuration
 import Anthropic from '@anthropic-ai/sdk';
+import type { IdeaGenerationResult } from '@/types';
 
 const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -8,7 +9,14 @@ const anthropic = new Anthropic({
 export { anthropic };
 
 // Helper for belief extraction
-export async function extractBeliefs(posts: string[]): Promise<any> {
+type ClaudeBeliefExtraction = {
+    coreBeliefs: string[];
+    overusedAngles: string[];
+    emergingThesis: string;
+    detectedTensions: { beliefA: string; beliefB: string; summary: string }[];
+};
+
+export async function extractBeliefs(posts: string[]): Promise<ClaudeBeliefExtraction> {
     const content = posts.join('\n\n---\n\n');
 
     const response = await anthropic.messages.create({
@@ -52,14 +60,14 @@ Output as JSON matching this schema:
         throw new Error('Could not parse JSON from Claude response');
     }
 
-    return JSON.parse(jsonMatch[0]);
+    return JSON.parse(jsonMatch[0]) as ClaudeBeliefExtraction;
 }
 
 // Helper for idea generation
 export async function generateIdeas(
     beliefs: { statement: string; type: string }[],
     tensions: { summary: string; beliefA: string; beliefB: string }[]
-): Promise<any> {
+): Promise<IdeaGenerationResult> {
     const beliefContext = beliefs.map(b => `[${b.type}] ${b.statement}`).join('\n');
     const tensionContext = tensions.map(t =>
         `TENSION: "${t.beliefA}" vs "${t.beliefB}" - ${t.summary}`
@@ -108,5 +116,5 @@ Output as JSON:
         throw new Error('Could not parse JSON from Claude response');
     }
 
-    return JSON.parse(jsonMatch[0]);
+    return JSON.parse(jsonMatch[0]) as IdeaGenerationResult;
 }

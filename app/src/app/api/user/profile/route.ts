@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest) {
         const { role, context, voice_tone, onboarding_completed } = body;
 
         // Update object
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
             onboarding_completed: onboarding_completed ?? true,
             updated_at: new Date().toISOString()
         };
@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Profile update failed:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

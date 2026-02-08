@@ -1,6 +1,7 @@
-import { inferOutcomeWithLLM, analyzeConfidenceWithLLM, analyzeGenealogyWithLLM, bootstrapGenealogyWithLLM } from '@/lib/openai';
+import { analyzeConfidenceWithLLM, analyzeGenealogyWithLLM, bootstrapGenealogyWithLLM } from '@/lib/brain/analysis';
+import { inferOutcomeWithLLM } from '@/lib/brain/ideation';
 import { logBrainAction } from './logger';
-import { BrainAction, Outcome, Audience, ConfidenceResult, Belief } from '@/types';
+import { Outcome, Audience, ConfidenceResult, Belief } from '@/types';
 
 export class BrainDecisionService {
     /**
@@ -33,14 +34,12 @@ export class BrainDecisionService {
         }
 
         // 2. LLM Fallback
-        let llmResult: any = null;
         if (!outcome) {
             method = 'llm';
             try {
                 const result = await inferOutcomeWithLLM(topic, audience);
                 outcome = result.outcome as Outcome;
                 reasoning = result.reasoning;
-                llmResult = result;
             } catch (error) {
                 console.error('Brain Inference Failed:', error);
                 // Default fallback
@@ -84,9 +83,16 @@ export class BrainDecisionService {
         let result: ConfidenceResult;
 
         try {
+            // Map beliefs to the structure expected by analysis (id, statement, type)
+            const mappedBeliefs = beliefs.map(b => ({
+                id: b.id,
+                statement: b.statement,
+                type: b.beliefType
+            }));
+
             // We pass all beliefs for now (v1). 
             // In v2 we would use vector search to find only relevant ones.
-            const analysis = await analyzeConfidenceWithLLM(topic, beliefs as any);
+            const analysis = await analyzeConfidenceWithLLM(topic, mappedBeliefs);
 
             result = {
                 level: analysis.level,
@@ -125,7 +131,6 @@ export class BrainDecisionService {
         topic: string,
         rootBeliefs: { id: string; statement: string; type: string }[]
     ): Promise<{ rootId: string | null; reasoning: string }> {
-        const startTime = Date.now();
         let result = { rootId: null as string | null, reasoning: 'No roots provided' };
 
         if (rootBeliefs.length > 0) {

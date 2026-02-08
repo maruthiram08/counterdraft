@@ -1,12 +1,12 @@
 
-import { useState, useEffect, useRef } from "react";
-import { Target, LayoutTemplate, Scale, Users, Info, X, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
-import { Draft } from "@/hooks/useDrafts";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Target, LayoutTemplate, Scale, Users, Info, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
+import { Draft } from "@/types";
 import { toast } from "sonner";
 
 interface StrategyBarProps {
     draft: Draft & { title?: string; hook?: string };
-    onUpdate: (metadataUpdates: any) => Promise<void>;
+    onUpdate: (metadataUpdates: Partial<Draft>) => Promise<void>;
     enableCoach?: boolean;
 }
 
@@ -37,45 +37,8 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
         setMetadata(draft.brain_metadata || {});
     }, [draft.brain_metadata]);
 
-    // Auto-Strategy Trigger
-    const hasAutoRun = useRef(false);
-
-    useEffect(() => {
-        const hasContent = draft.title || (draft as any).hook;
-        // Trigger if:
-        // 1. Coach enabled
-        // 2. Strategy is NOT complete
-        // 3. We have a title/hook to base it on
-        // 4. We haven't run it yet this session (component mount)
-        // 5. Specifically, if the GOAL is missing (proxy for "totally empty" or "needs setup")
-        if (enableCoach && !isComplete && hasContent && !hasAutoRun.current && !metadata.outcome) {
-            hasAutoRun.current = true;
-            // Small delay to ensure smooth UI enter
-            const timer = setTimeout(() => {
-                handleAutofill();
-            }, 800);
-            return () => clearTimeout(timer);
-        }
-    }, [enableCoach, isComplete, draft.title, metadata.outcome]);
-
-    const handleUpdate = async (key: string, value: string) => {
-        const newMetadata = { ...metadata };
-
-        if (key === 'audience') {
-            const existingPain = typeof metadata.audience === 'object' ? metadata.audience.pain : '';
-            newMetadata.audience = { role: value, pain: existingPain };
-        } else if (key === 'goal') {
-            newMetadata.outcome = value;
-        } else {
-            newMetadata[key] = value;
-        }
-
-        setMetadata(newMetadata);
-        await onUpdate({ brain_metadata: newMetadata });
-    };
-
-    const handleAutofill = async () => {
-        if (!draft.title && !(draft as any).hook) {
+    const handleAutofill = useCallback(async () => {
+        if (!draft.title && !draft.hook) {
             toast.error("Please enter a topic/hook first.");
             return;
         }
@@ -87,7 +50,7 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'autofill_strategy',
-                    hook: (draft as any).hook || draft.title
+                    hook: draft.hook || draft.title
                 })
             });
 
@@ -109,6 +72,43 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
         } finally {
             setIsAutofilling(false);
         }
+    }, [draft.hook, draft.title, metadata, onUpdate]);
+
+    // Auto-Strategy Trigger
+    const hasAutoRun = useRef(false);
+
+    useEffect(() => {
+        const hasContent = draft.title || draft.hook;
+        // Trigger if:
+        // 1. Coach enabled
+        // 2. Strategy is NOT complete
+        // 3. We have a title/hook to base it on
+        // 4. We haven't run it yet this session (component mount)
+        // 5. Specifically, if the GOAL is missing (proxy for "totally empty" or "needs setup")
+        if (enableCoach && !isComplete && hasContent && !hasAutoRun.current && !metadata.outcome) {
+            hasAutoRun.current = true;
+            // Small delay to ensure smooth UI enter
+            const timer = setTimeout(() => {
+                handleAutofill();
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [enableCoach, isComplete, draft.title, draft.hook, metadata.outcome, handleAutofill]);
+
+    const handleUpdate = async (key: string, value: string) => {
+        const newMetadata = { ...metadata };
+
+        if (key === 'audience') {
+            const existingPain = typeof metadata.audience === 'object' ? metadata.audience.pain : '';
+            newMetadata.audience = { role: value, pain: existingPain };
+        } else if (key === 'goal') {
+            newMetadata.outcome = value;
+        } else {
+            newMetadata[key] = value;
+        }
+
+        setMetadata(newMetadata);
+        await onUpdate({ brain_metadata: newMetadata });
     };
 
     return (

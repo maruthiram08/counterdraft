@@ -146,7 +146,7 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
                         <div className="space-y-3">
                             <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                 <Scale size={16} className="text-green-500" />
-                                What's your stance?
+                                What&apos;s your stance?
                             </label>
                             <div className="space-y-2">
                                 {(['supportive', 'contrarian', 'exploratory'] as Stance[]).map((s) => (

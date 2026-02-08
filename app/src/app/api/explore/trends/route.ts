@@ -74,8 +74,13 @@ export async function POST(req: Request) {
                     })
                 });
 
-                const searchData = await searchRes.json();
-                const context = searchData.answer || searchData.results?.map((r: any) => r.title).join('\n') || "";
+                type TavilySearchResult = { title?: string };
+                type TavilySearchResponse = { answer?: string; results?: TavilySearchResult[] };
+
+                const searchData = await searchRes.json() as TavilySearchResponse;
+                const context = searchData.answer
+                    || searchData.results?.map((r) => r.title).filter(Boolean).join('\n')
+                    || "";
 
                 // Use LLM to extract 3 specific, punchy trends
                 const completion = await openai.chat.completions.create({
@@ -124,7 +129,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ groups: results });
 
-    } catch (e) {
+    } catch (e: unknown) {
         console.error('Trends API Error:', e);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

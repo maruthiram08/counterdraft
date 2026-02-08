@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
 import { ArrowRight, Clock, Plus, Wand2 } from "lucide-react";
 import { BrainMetadata } from "@/types";
+
+const RENDERED_AT = Date.now();
 
 interface ContentItem {
     id: string;
@@ -31,7 +32,7 @@ export function DashboardView({ items, onAction, onNewDraft, userFirstName = "Wr
         .slice(0, 5); // Show top 5 recent
 
     const getTimeAgo = (dateStr: string) => {
-        const diff = Date.now() - new Date(dateStr).getTime();
+        const diff = RENDERED_AT - new Date(dateStr).getTime();
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         if (days === 0) return "Today";
         if (days === 1) return "Yesterday";
@@ -47,7 +48,7 @@ export function DashboardView({ items, onAction, onNewDraft, userFirstName = "Wr
                         Hey, {userFirstName}.
                     </h1>
                     <p className="text-xl text-gray-500 font-serif opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
-                        It looks like you've already started writing a story, keep up the good work.
+                        It looks like you&apos;ve already started writing a story, keep up the good work.
                     </p>
                 </div>
 

@@ -33,7 +33,7 @@ export class PlagiarismService {
 
         await Promise.all(chunks.map(async (chunk) => {
             const results = await this.searchTavily(chunk);
-            results.forEach((res: any) => {
+            results.forEach((res: { url: string; content: string }) => {
                 const existing = sourcesMap.get(res.url);
                 if (existing) {
                     existing.overlap_score += 1; // Increment match count
@@ -151,7 +151,8 @@ export class PlagiarismService {
             if (!res.ok) return [];
             const data = await res.json();
             return data.results || [];
-        } catch (e) {
+        } catch (error) {
+            console.error("PlagiarismCheck: Tavily search failed", error);
             return [];
         }
     }

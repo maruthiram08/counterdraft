@@ -27,19 +27,27 @@ export class UsageService {
         resourceName: string
     ) {
         const supabase = supabaseAdmin;
+        type UsageRow = {
+            users?: {
+                subscription_status?: string | null;
+                subscription_plan?: string | null;
+            };
+            [key: string]: unknown;
+        };
 
         // 1. Get Usage & Tier
         // We do a joined query to get the User's Subscription status efficiently
-        let { data: usage, error } = await supabase
+        const { data: initialUsage, error } = await supabase
             .from('user_usage')
             .select('*, users!inner(subscription_status, subscription_plan)')
             .eq('user_id', userId)
             .single();
+        let usage = initialUsage as UsageRow | null;
 
         if (error || !usage) {
             // Lazy Init if missing
             const { data: newUsage } = await supabase.from('user_usage').insert({ user_id: userId }).select('*, users!inner(subscription_status, subscription_plan)').single();
-            usage = newUsage!;
+            usage = (newUsage || null) as UsageRow | null;
         }
 
         if (!usage) return { allowed: false, reason: "System error loading usage." };
@@ -55,7 +63,7 @@ export class UsageService {
         }
         // V1 Fallback
         else {
-            const userMeta = (usage as any).users;
+            const userMeta = usage.users;
             if (userMeta?.subscription_status === 'active' && userMeta?.subscription_plan?.includes('pro')) {
                 effectiveTier = PRICING_CONFIG.TIERS.PRO;
             }
@@ -85,7 +93,8 @@ export class UsageService {
         // Try simple read-update since RPCs might be missing
         const { data } = await supabase.from('user_usage').select(column).eq('user_id', userId).single();
         if (data) {
-            const current = (data as any)[column] || 0;
+            const row = data as Record<string, unknown>;
+            const current = typeof row[column] === 'number' ? (row[column] as number) : 0;
             await supabase.from('user_usage').update({ [column]: current + 1 }).eq('user_id', userId);
         }
     }
@@ -109,4 +118,3 @@ export class UsageService {
         return PRICING_CONFIG.LIMITS[check.tier as Tier];
     }
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from 'next/link';
 import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
@@ -106,7 +106,7 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-green-600/5 blur-[120px] rounded-full pointer-events-none"></div>
 
           <div className="relative z-10 max-w-4xl mx-auto px-4">
-            <h2 className="text-5xl md:text-7xl font-bold mb-10 tracking-tighter text-zinc-900">Ready to write something you're proud of?</h2>
+            <h2 className="text-5xl md:text-7xl font-bold mb-10 tracking-tighter text-zinc-900">Ready to write something you&apos;re proud of?</h2>
             <p className="text-zinc-500 text-xl md:text-2xl max-w-2xl mx-auto mb-12 font-light">
               Thousands of creators use Counterdraft for LinkedIn, Medium, Substack, and more.
             </p>

@@ -138,9 +138,9 @@ export class FactCheckService {
             this.cache.set(cacheKey, { value: result, expiresAt: Date.now() + this.CACHE_TTL_MS });
             return result;
 
-        } catch (e: any) {
-            console.error("FactCheck: verification failed for claim", claim, e);
-            const errorMessage = e.message || JSON.stringify(e);
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : JSON.stringify(e);
+            console.error("FactCheck: verification failed for claim", claim, errorMessage);
             return {
                 claim,
                 status: 'unverified',

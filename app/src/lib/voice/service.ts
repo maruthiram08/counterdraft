@@ -1,5 +1,4 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { TraceLogger } from "@/lib/trace";
 import { openai } from "@/lib/openai";
 
 export interface VoiceProfile {
@@ -16,6 +15,13 @@ export interface VoiceProfile {
     is_active: boolean;
 }
 
+interface VoiceAnalysisResult {
+    voice_tone: string;
+    rules: string[];
+    anti_patterns: string[];
+    analysis_summary: string;
+}
+
 export class VoiceService {
     /**
      * Get the active voice profile for a user.
@@ -29,6 +35,7 @@ export class VoiceService {
             .eq('is_active', true)
             .single();
 
+        if (error && error.code !== 'PGRST116') throw error;
         if (data) return data;
 
         // Fallback: Check if ANY profile exists, make the last created one active
@@ -179,7 +186,7 @@ export class VoiceService {
             temperature: 0.2
         });
 
-        const result = JSON.parse(completion.choices[0].message.content || '{}');
+        const result = JSON.parse(completion.choices[0].message.content || '{}') as VoiceAnalysisResult;
 
         // Save the analysis (optional, or return to UI for confirmation)
         // For now, we just return it so the UI can populate the form

@@ -42,6 +42,7 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
                 toast.error(data.error || "Failed to submit request.");
             }
         } catch (error) {
+            console.error("Request access failed:", error);
             toast.error("Network error. Please try again.");
         } finally {
             setLoading(false);
@@ -81,7 +82,7 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
                             <h3 className="text-lg font-bold text-gray-900">Request Sent!</h3>
                             <p className="text-gray-600 leading-relaxed">
                                 Thanks for your interest, {formData.name.split(' ')[0]}.<br />
-                                We'll review your LinkedIn profile and email you an invite code if you're a good fit for this beta batch.
+                                We&apos;ll review your LinkedIn profile and email you an invite code if you&apos;re a good fit for this beta batch.
                             </p>
                             <button
                                 onClick={onClose}

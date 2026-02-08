@@ -1,18 +1,10 @@
 
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config({ path: '.env.local' });
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Error: Missing Supabase credentials in .env.local');
-    process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function runMigration() {
     const sqlPath = path.join(__dirname, '../migrations/005_brain_genealogy.sql');
@@ -36,7 +28,8 @@ async function runMigration() {
     // checking 'migrate_feedback.js' would have been a smart move. 
     // Let's try to assume the 'pg' library pattern if I can't see it.
 
-    // Let's pause and READ migrate_feedback.js first to ensure I copy the pattern EXACTLY.
+    console.log(`Loaded SQL (${sql.length} chars).`);
+    console.log('Please run this SQL in your Supabase SQL Editor.');
 }
 
-// Placeholder - I will read the file in the next step to be sure.
+runMigration();

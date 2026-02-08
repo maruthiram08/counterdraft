@@ -1,7 +1,11 @@
 
-const { createClient } = require('@supabase/supabase-js');
-const path = require('path');
-const fs = require('fs');
+import { createClient } from '@supabase/supabase-js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Simple dotenv parser since we can't reliably rely on packages
 function loadEnv() {
@@ -14,7 +18,7 @@ function loadEnv() {
                 process.env[key.trim()] = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
             }
         });
-    } catch (e) {
+    } catch {
         console.error("Could not load .env.local");
     }
 }

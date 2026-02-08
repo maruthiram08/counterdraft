@@ -22,32 +22,32 @@ export default function PhilosophyPage() {
 
                 <div className="prose prose-lg prose-zinc mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                     <p>
-                        The internet used to be a library of human thought. Now, it's becoming a landfill of generated approximations.
+                        The internet used to be a library of human thought. Now, it&apos;s becoming a landfill of generated approximations.
                         Large Language Models are brilliant engines of average—they calculate the most probable next word based on
                         everything that has already been said.
                     </p>
                     <p>
-                        But <strong>thought leadership</strong> isn't about what's probable. It's about what's <em>missing</em>.
+                        But <strong>thought leadership</strong> isn&apos;t about what&apos;s probable. It&apos;s about what&apos;s <em>missing</em>.
                     </p>
 
                     <h3 className="font-display font-bold mt-12 mb-6 text-2xl">The Counterdraft Belief</h3>
                     <ul className="space-y-4 list-none pl-0">
                         <li className="flex gap-4">
                             <span className="text-green-600 font-bold">01.</span>
-                            <span><strong>Strategy before Syntax.</strong> Don't write a word until you know exactly who you are fighting for and what you are fighting against.</span>
+                            <span><strong>Strategy before Syntax.</strong> Don&apos;t write a word until you know exactly who you are fighting for and what you are fighting against.</span>
                         </li>
                         <li className="flex gap-4">
                             <span className="text-green-600 font-bold">02.</span>
-                            <span><strong>Friction is Quality.</strong> If it was easy to write, it's probably easy to forget. We build tools that add the <em>right kind</em> of friction—forcing you to clarify your stance.</span>
+                            <span><strong>Friction is Quality.</strong> If it was easy to write, it&apos;s probably easy to forget. We build tools that add the <em>right kind</em> of friction—forcing you to clarify your stance.</span>
                         </li>
                         <li className="flex gap-4">
                             <span className="text-green-600 font-bold">03.</span>
-                            <span><strong>Own your Inputs.</strong> Your "earned secrets"—the lessons you paid for in experience—are the only asset AI cannot clone. Leverage them.</span>
+                            <span><strong>Own your Inputs.</strong> Your &quot;earned secrets&quot;—the lessons you paid for in experience—are the only asset AI cannot clone. Leverage them.</span>
                         </li>
                     </ul>
 
                     <div className="my-16 p-8 bg-zinc-50 border border-zinc-100 rounded-2xl border-l-4 border-l-green-600 italic text-xl text-zinc-700">
-                        "Write like a human who has actually lived through the problem."
+                        &quot;Write like a human who has actually lived through the problem.&quot;
                     </div>
 
                     <p>

@@ -1,11 +1,8 @@
 'use client';
 
 import { ArrowRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function InviteClient({ code }: { code: string }) {
-    const router = useRouter();
-
     const handleAccept = () => {
         // 1. Store code for post-signup claiming
         localStorage.setItem('pending_coupon', code);

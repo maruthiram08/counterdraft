@@ -1,7 +1,7 @@
 
 import PptxGenJS from "pptxgenjs";
 
-interface SlideContent {
+export interface SlideContent {
     title: string;
     body: string;
     type: 'cover' | 'content';

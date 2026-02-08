@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { extractBeliefs } from "@/lib/openai";
+import { extractBeliefs } from "@/lib/brain/analysis";
 import { getOrCreateUser } from "@/lib/user-sync";
 import { storeAnalysisResults } from "@/lib/belief-storage";
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Content is required" }, { status: 400 });
         }
 
-        const isMockMode = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
+        const isMockMode = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
         let userId: string | null = null;
 
         if (!isMockMode) {
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
                 debug: analysis
             });
 
-        } catch (aiError: any) {
+        } catch (aiError: unknown) {
             console.error("AI Extraction failed:", aiError);
 
             // Fallback for verification if AI is out of credits or fails
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "AI Processing Failed", details: errorMessage }, { status: 500 });
         }
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Ingestion API Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }

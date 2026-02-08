@@ -176,7 +176,12 @@ export async function GET(request: NextRequest) {
         }
 
         console.log('[LinkedIn Callback] Connection successful!');
-        return NextResponse.redirect(new URL('/settings?success=linkedin_connected', process.env.NEXT_PUBLIC_APP_URL!));
+        const response = NextResponse.redirect(new URL('/settings?success=linkedin_connected', process.env.NEXT_PUBLIC_APP_URL!));
+
+        // Clear the state cookie to prevent reuse
+        response.cookies.delete('linkedin_oauth_state');
+
+        return response;
 
     } catch (error) {
         console.error('[LinkedIn Callback] Unexpected error:', error);

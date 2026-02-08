@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import OpenAI from 'openai';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -12,6 +13,13 @@ export async function POST(req: NextRequest) {
         const { userId } = await auth();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 1. Rate Limiting
+        const ip = getClientIp(req);
+        const limitResult = rateLimit(`refine:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 20 });
+        if (!limitResult.allowed) {
+            return NextResponse.json({ error: 'Too many requests. Please try again in 15 minutes.' }, { status: 429 });
         }
 
         const { currentContent, instruction, beliefContext, selection, context } = await req.json();
@@ -60,7 +68,11 @@ SELECTED TEXT TO REWRITE: "${selection}"
 
 CONTEXT AFTER: "${context?.after || ''}"
 
-INSTRUCTION: ${instruction}`;
+INSTRUCTION: 
+<USER_INSTRUCTION_START>
+${instruction}
+<USER_INSTRUCTION_END>
+`;
 
         } else {
             // GLOBAL MODE: Holistic refinement
@@ -88,7 +100,11 @@ Think like a trusted editor making a piece publication-ready.`;
             userPrompt = `${beliefContext ? `BELIEF/THEMATIC CONTEXT: "${beliefContext}"\n\n` : ''}CURRENT CONTENT:
 ${currentContent}
 
-INSTRUCTION: ${instruction}`;
+INSTRUCTION:
+<USER_INSTRUCTION_START>
+${instruction}
+<USER_INSTRUCTION_END>
+`;
         }
 
         const completion = await openai.chat.completions.create({

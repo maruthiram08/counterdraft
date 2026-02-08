@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Brain, Compass, Book, Plus, Import, Settings, Zap, Network, Menu, X, PenTool } from "lucide-react";
+import { Home, Brain, Compass, Book, Settings, PenTool } from "lucide-react";
+import Image from "next/image";
 import { SignOutButton } from "@clerk/nextjs";
 
 interface GlobalSidebarProps {
@@ -11,9 +12,8 @@ interface GlobalSidebarProps {
     onImport: () => void;
 }
 
-export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport }: GlobalSidebarProps) {
+export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps) {
     const [isCollapsed, setIsCollapsed] = useState(true);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
     const navItems = [
@@ -64,10 +64,10 @@ export function GlobalSidebar({ activeSection, onNavigate, onNewDraft, onImport 
                 <div className={`transition-all duration-300 ${isCollapsed ? 'p-4 pb-4' : 'p-6 pb-8'}`}>
                     <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
                         <div className="w-8 h-8 flex items-center justify-center shrink-0 transition-transform duration-300">
-                            <img src="/brand/logo-icon.png" alt="Icon" className="w-full h-full object-contain" />
+                            <Image src="/brand/logo-icon.png" alt="Icon" width={32} height={32} className="w-full h-full object-contain" />
                         </div>
                         <div className={`transition-opacity duration-300 delay-100 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
-                            <img src="/brand/logo-text.png" alt="CounterDraft" className="h-10 w-auto opacity-90" />
+                            <Image src="/brand/logo-text.png" alt="CounterDraft" width={200} height={40} className="h-10 w-auto opacity-90" />
                         </div>
                     </div>
                 </div>

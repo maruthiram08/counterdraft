@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { HeroInterface } from './HeroInterface';
 import { LiveAuditWidget } from './LiveAuditWidget';
 import { usePostHog } from 'posthog-js/react';

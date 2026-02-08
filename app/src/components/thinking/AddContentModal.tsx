@@ -45,8 +45,8 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
                 onClose();
             }, 1500);
 
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "An error occurred");
             setStatus("");
         } finally {
             setLoading(false);
@@ -72,7 +72,7 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
                 {/* Content */}
                 <div className="p-4">
                     <p className="text-sm text-[var(--text-muted)] mb-4">
-                        Paste additional posts, essays, or notes. We'll extract new beliefs and tensions.
+                        Paste additional posts, essays, or notes. We&apos;ll extract new beliefs and tensions.
                     </p>
 
                     <textarea

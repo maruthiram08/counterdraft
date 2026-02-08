@@ -6,8 +6,15 @@ import { UsageService } from '@/lib/billing/usage';
 import { brainService } from '@/lib/brain/service';
 import { Belief } from '@/types';
 import { TraceLogger } from '@/lib/trace';
-import { extractBeliefs } from '@/lib/openai';
-import { storeAnalysisResults } from '@/lib/belief-storage';
+
+type ContentReferenceInput = {
+    referenceType?: string;
+    type?: string;
+    title?: string;
+    content?: string;
+    url?: string;
+    filePath?: string;
+};
 
 // GET /api/content - List content items with optional stage filter
 export async function GET(req: Request) {
@@ -37,9 +44,10 @@ export async function GET(req: Request) {
         if (error) throw error;
 
         return NextResponse.json({ items: data });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Content API GET Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -136,7 +144,7 @@ export async function POST(req: Request) {
 
                     const [genealogy, confidence] = await Promise.all([
                         brainService.analyzeGenealogy(hook, roots),
-                        brainService.calculateConfidence(hook, (beliefs || []) as any as Belief[])
+                        brainService.calculateConfidence(hook, (beliefs || []) as Belief[])
                     ]);
 
                     // Update item with genealogy and update metadata with confidence
@@ -165,7 +173,7 @@ export async function POST(req: Request) {
 
         // 2. Create References (if any)
         if (references && references.length > 0) {
-            const formattedRefs = references.map((ref: any) => ({
+            const formattedRefs = references.map((ref: ContentReferenceInput) => ({
                 content_item_id: item.id,
                 reference_type: ref.referenceType || ref.type || 'text', // Support both naming conventions
                 title: ref.title || 'Untitled Reference',
@@ -197,9 +205,10 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ item }, { status: 201 });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Content API POST Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -234,7 +243,6 @@ export async function PATCH(req: Request) {
             // AND ensure we aren't just updating an existing draft.
             // If current stage is null (shouldn't happen), assume idea.
             const currentStage = current?.stage || 'idea';
-            const wasNotDraft = currentStage !== 'draft' && currentStage !== 'developing';
             // Wait, if I am in 'developing' (Wizard), and I save... it patches with stage='developing'.
             // If I then 'Finish' -> stage='draft'.
             // Do we count 'developing' items as drafts? Yes, usually.
@@ -306,9 +314,10 @@ export async function PATCH(req: Request) {
 
 
         return NextResponse.json({ item: data });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Content API PATCH Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -338,8 +347,9 @@ export async function DELETE(req: Request) {
         // Note: We do not decrement usage on delete, to prevent abuse (create -> delete -> create)
 
         return NextResponse.json({ success: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Content API DELETE Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

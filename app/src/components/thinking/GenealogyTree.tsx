@@ -1,20 +1,22 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import { Belief } from '@/types';
+import { Belief, Draft } from '@/types';
 import { GitBranch, FileText, ChevronRight, Target, Sparkles, Loader2, ChevronDown } from 'lucide-react';
 
 interface GenealogyTreeProps {
     beliefs: Belief[];
-    drafts: any[];
+    drafts: Draft[];
     onSelectDraft?: (id: string) => void;
 }
 
 interface TreeNode {
     belief: Belief;
     children: TreeNode[];
-    drafts: any[];
+    drafts: Draft[];
 }
+
+type DraftWithRoot = Draft & { rootBeliefId?: string; root_belief_id?: string };
 
 export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeProps) {
     const [isBootstrapping, setIsBootstrapping] = useState(false);
@@ -48,7 +50,7 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
         });
 
         // Link drafts
-        drafts.forEach((d: any) => {
+        drafts.forEach((d: DraftWithRoot) => {
             const rootId = d.rootBeliefId || d.root_belief_id;
             if (rootId && nodeMap.has(rootId)) {
                 nodeMap.get(rootId)!.drafts.push(d);
@@ -72,7 +74,7 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
         }
     };
 
-    const renderNode = (node: TreeNode, depth = 0, isLast = false) => {
+    const renderNode = (node: TreeNode, depth = 0) => {
         const isCollapsed = collapsedNodes.has(node.belief.id);
         const hasChildren = node.children.length > 0 || node.drafts.length > 0;
 
@@ -133,7 +135,7 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
                                     <FileText size={14} className="text-blue-500" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-medium text-blue-900 truncate">
-                                            {draft.hook || draft.belief_text || 'Untitled Draft'}
+                                            {draft.belief_text || 'Untitled Draft'}
                                         </p>
                                     </div>
                                     <ChevronRight size={12} className="text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -141,7 +143,7 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
                             ))}
 
                             {/* Recursive children */}
-                            {node.children.map((child, i) => renderNode(child, depth + 1, i === node.children.length - 1))}
+                            {node.children.map((child) => renderNode(child, depth + 1))}
                         </div>
                     )}
                 </div>
@@ -177,7 +179,7 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
 
             <div className="space-y-6 pt-4">
                 {tree.length > 0 ? (
-                    tree.map((root, i) => renderNode(root, 0, i === tree.length - 1))
+                    tree.map((root) => renderNode(root, 0))
                 ) : (
                     <div className="text-center py-20 bg-gray-50/50 border border-dashed border-gray-200 rounded-3xl">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">

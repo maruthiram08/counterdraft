@@ -62,7 +62,7 @@ export function RazorpayButton({ planId, buttonText = 'Subscribe Now', className
                 name: "CounterDraft",
                 description: "Pro Subscription",
                 order_id: orderData.orderId,
-                handler: async function (response: any) {
+                handler: async function (response: RazorpayResponse) {
                     // 4. Verify Payment on Server
                     try {
                         const verifyRes = await fetch('/api/billing/razorpay/verify', {
@@ -96,15 +96,16 @@ export function RazorpayButton({ planId, buttonText = 'Subscribe Now', className
                 }
             };
 
-            const rzp = new (window as any).Razorpay(options);
-            rzp.on('payment.failed', function (response: any) {
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response: RazorpayErrorResponse) {
                 toast.error(response.error.description || 'Payment Failed');
             });
             rzp.open();
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Payment Flow Error:', error);
-            toast.error(error.message || 'Something went wrong');
+            const message = error instanceof Error ? error.message : 'Something went wrong';
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }
@@ -122,9 +123,49 @@ export function RazorpayButton({ planId, buttonText = 'Subscribe Now', className
     );
 }
 
+interface RazorpayResponse {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+}
+
+interface RazorpayErrorResponse {
+    error: {
+        code: string;
+        description: string;
+        source: string;
+        step: string;
+        reason: string;
+        metadata: Record<string, unknown>;
+    };
+}
+
+interface RazorpayOptions {
+    key: string;
+    amount: number;
+    currency: string;
+    name: string;
+    description: string;
+    order_id: string;
+    handler: (response: RazorpayResponse) => void;
+    prefill?: {
+        email?: string;
+        contact?: string;
+        name?: string;
+    };
+    theme?: {
+        color?: string;
+    };
+}
+
+interface RazorpayInstance {
+    open: () => void;
+    on: (event: 'payment.failed', handler: (response: RazorpayErrorResponse) => void) => void;
+}
+
 // Add global type for Razorpay
 declare global {
     interface Window {
-        Razorpay: any;
+        Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
     }
 }

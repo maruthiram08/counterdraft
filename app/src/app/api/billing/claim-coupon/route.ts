@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 // Initialize Supabase Admin strictly for this transaction
 const supabase = createClient(
@@ -12,6 +13,13 @@ export async function POST(req: NextRequest) {
     try {
         const userId = await getOrCreateUser();
         console.log('[ClaimCoupon] Auth Check:', { userId, hasHeaders: !!req.headers.get('cookie') });
+
+        // 0. Rate Limiting (Brute force protection)
+        const ip = getClientIp(req);
+        const limitResult = rateLimit(`coupon:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 5 });
+        if (!limitResult.allowed) {
+            return NextResponse.json({ error: 'Too many attempts. Please try again in 15 minutes.' }, { status: 429 });
+        }
 
         if (!userId) {
             console.error('[ClaimCoupon] Unauthorized: No userId found.');
@@ -90,8 +98,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, plan: plan });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Claim error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

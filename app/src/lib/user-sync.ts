@@ -20,6 +20,11 @@ export async function getOrCreateUser(): Promise<string | null> {
         .eq('clerk_id', userId)
         .single();
 
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('getOrCreateUser: Failed to fetch user:', fetchError);
+        return null;
+    }
+
     if (existingUser) {
         // Return INTERNAL ID - all foreign keys reference users.id
         return existingUser.id;

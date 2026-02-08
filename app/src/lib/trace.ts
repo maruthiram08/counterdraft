@@ -4,7 +4,7 @@ import path from 'path';
 const LOG_FILE = path.join(process.cwd(), 'trace.log');
 
 export const TraceLogger = {
-    log: (category: string, message: string, data?: any) => {
+    log: (category: string, message: string, data?: unknown) => {
         const timestamp = new Date().toISOString();
         let payload = "";
 
@@ -12,7 +12,7 @@ export const TraceLogger = {
             try {
                 // Formatting optimization: if data is a string, log as is. If object, prettify.
                 payload = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-            } catch (e) {
+            } catch {
                 payload = "[Unserializable Data]";
             }
         }

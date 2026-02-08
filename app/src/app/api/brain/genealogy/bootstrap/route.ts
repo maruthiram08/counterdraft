@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { brainService } from '@/lib/brain/service';
 import { getOrCreateUser } from '@/lib/user-sync';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
     try {
         const userId = await getOrCreateUser();
         if (!userId) {
@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
                     // If it's linked to root, indicate that too for faster querying in v1
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', link.childId);
+                .eq('id', link.childId)
+                .eq('user_id', userId);
         }
 
         // Mark roots explicitly (set parent_id to null)
@@ -55,7 +56,8 @@ export async function POST(req: NextRequest) {
                     parent_id: null,
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', rootId);
+                .eq('id', rootId)
+                .eq('user_id', userId);
         }
 
         return NextResponse.json({
@@ -65,8 +67,9 @@ export async function POST(req: NextRequest) {
             linksCreated: result.links.length
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('GENEALOGY_BOOTSTRAP_ERROR', error);
-        return new NextResponse(error.message || 'Internal Error', { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return new NextResponse(message, { status: 500 });
     }
 }

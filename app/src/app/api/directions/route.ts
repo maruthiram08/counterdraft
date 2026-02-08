@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { generateIdeas } from "@/lib/openai";
+import { generateIdeas } from "@/lib/brain/ideation";
 import { getOrCreateUser } from "@/lib/user-sync";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
     try {
         const userId = await getOrCreateUser();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 0. Rate Limiting
+        const ip = getClientIp(req);
+        const limitResult = rateLimit(`directions:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 20 });
+        if (!limitResult.allowed) {
+            return NextResponse.json({ error: 'Too many requests. Please try again in 15 minutes.' }, { status: 429 });
         }
 
         // 1. Fetch existing beliefs
@@ -37,7 +45,7 @@ export async function POST(req: Request) {
         }
 
         // 4. Persist ideas to Pipeline (content_items)
-        const itemsToInsert = result.ideas.map((idea: any) => ({
+        const itemsToInsert = result.ideas.map((idea: { topic: string; theme?: string; rationale?: string }) => ({
             user_id: userId,
             hook: idea.topic || idea.theme,
             angle: idea.rationale,
@@ -67,10 +75,11 @@ export async function POST(req: Request) {
             persisted: true
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Directions API Error:", error);
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
         return NextResponse.json(
-            { error: error.message, ideas: [] },
+            { error: message, ideas: [] },
             { status: 500 }
         );
     }

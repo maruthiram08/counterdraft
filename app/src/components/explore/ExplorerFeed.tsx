@@ -39,6 +39,7 @@ export function ExplorerFeed({ onRefocus }: ExplorerFeedProps) {
                 setFeed(data.feed || []);
             }
         } catch (err) {
+            console.error("Failed to load feed:", err);
             setError('Failed to load feed');
         } finally {
             setLoading(false);

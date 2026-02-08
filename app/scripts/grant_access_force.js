@@ -1,6 +1,8 @@
 
-require('dotenv').config({ path: '.env.local' });
-const { createClient } = require('@supabase/supabase-js');
+import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
+
+dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -36,6 +38,9 @@ async function grantAccessToId(clerkId) {
         .select('*')
         .eq('user_id', userId)
         .single();
+    if (usageCheckError) {
+        console.error("Error checking usage:", usageCheckError);
+    }
 
     if (!usage) {
         console.log("Creating new usage record...");

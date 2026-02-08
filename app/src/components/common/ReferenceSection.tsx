@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { Link, FileText, X, Plus, Trash2, Upload } from 'lucide-react';
-import { ContentReference, ReferenceType } from '@/types';
+import { Link, FileText, Plus, Trash2, Upload } from 'lucide-react';
+import { ContentReference } from '@/types';
 
 interface ReferenceSectionProps {
     references: ContentReference[];
@@ -52,8 +52,6 @@ export function ReferenceSection({ references, onAdd, onRemove }: ReferenceSecti
         if (!file) return;
 
         const fileName = file.name;
-        const fileExt = fileName.split('.').pop()?.toLowerCase();
-
         // Read file content
         const text = await file.text();
 

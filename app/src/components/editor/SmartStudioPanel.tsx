@@ -4,6 +4,7 @@ import { Sparkles, RefreshCw, Download, Palette, ChevronLeft, ChevronRight, Laye
 import { calculateCarousel } from "@/lib/smart-engine/carousel";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import Image from "next/image";
 
 interface SmartStudioPanelProps {
     content: string;
@@ -13,7 +14,6 @@ interface SmartStudioPanelProps {
 export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps) {
     const [theme, setTheme] = useState("cosmic");
     const [mode, setMode] = useState<'single' | 'carousel'>('single');
-    const [previewUrl, setPreviewUrl] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     // Extract a "Hook" from content automatically (First 20 words)
@@ -50,12 +50,7 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
         }
     }, [content]);
 
-    useEffect(() => {
-        generatePreview();
-    }, [text, theme, mode, currentSlideIndex]);
-
-    const generatePreview = async () => {
-        setIsLoading(true);
+    const previewUrl = useMemo(() => {
         let textToRender = text;
 
         if (mode === 'carousel') {
@@ -69,10 +64,8 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
             if (slide.type === 'cover') textToRender = textToRender;
         }
 
-        const url = `/api/generate-image?text=${encodeURIComponent(textToRender)}&theme=${theme}&t=${Date.now()}`;
-        setPreviewUrl(url);
-        setIsLoading(false);
-    };
+        return `/api/generate-image?text=${encodeURIComponent(textToRender)}&theme=${theme}`;
+    }, [text, theme, mode, currentSlideIndex, slides]);
 
     const handleDownload = async () => {
         if (mode === 'single') {
@@ -85,6 +78,7 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
                 a.download = `smart-post-${Date.now()}.png`;
                 document.body.appendChild(a);
                 a.click();
+                onDownload(previewUrl);
             } catch (e) {
                 console.error("Download failed", e);
             }
@@ -110,6 +104,7 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
             const content = await zip.generateAsync({ type: "blob" });
             saveAs(content, `smart-carousel-${Date.now()}.zip`);
             setIsLoading(false);
+            onDownload("carousel");
         }
     };
 
@@ -158,9 +153,12 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
                 )}
 
                 {previewUrl && (
-                    <img
+                    <Image
                         src={previewUrl}
                         alt="Smart Preview"
+                        width={600}
+                        height={300}
+                        unoptimized
                         className="max-h-[300px] w-auto shadow-2xl rounded-sm transition-transform duration-500"
                     />
                 )}

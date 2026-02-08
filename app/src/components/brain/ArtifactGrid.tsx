@@ -1,31 +1,32 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getArtifacts, deleteArtifact } from '@/app/brain/actions';
 import { ArtifactCard } from './ArtifactCard';
-import { Loader2, Search, Filter, MousePointerClick } from 'lucide-react';
+import { Loader2, Search, MousePointerClick } from 'lucide-react';
+
+import { Artifact } from '@/types';
 
 interface ArtifactGridProps {
-    onDraft: (artifact: any) => void;
+    onDraft: (artifact: Artifact) => void;
 }
 
 export function ArtifactGrid({ onDraft }: ArtifactGridProps) {
-    const [artifacts, setArtifacts] = useState<any[]>([]);
+    const [artifacts, setArtifacts] = useState<Artifact[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<string | null>(null);
     const [search, setSearch] = useState("");
 
-    const fetchArtifacts = async () => {
+    const fetchArtifacts = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await getArtifacts({ intent: filter || undefined, search: search || undefined });
+            const data = await getArtifacts({ search: search || undefined });
             setArtifacts(data || []);
         } catch (e) {
             console.error(e);
         } finally {
             setLoading(false);
         }
-    };
+    }, [search]);
 
     useEffect(() => {
         // Debounce search
@@ -33,7 +34,7 @@ export function ArtifactGrid({ onDraft }: ArtifactGridProps) {
             fetchArtifacts();
         }, 300);
         return () => clearTimeout(timer);
-    }, [filter, search]);
+    }, [fetchArtifacts]);
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isSelectMode, setIsSelectMode] = useState(false);
@@ -55,8 +56,10 @@ export function ArtifactGrid({ onDraft }: ArtifactGridProps) {
             id: 'synthesis', // Mock ID
             user_note: `Synthesis of ${selectedIds.size} artifacts`,
             ocr_text: combinedText,
-            urls: selectedArtifacts.map(a => a.source_url).filter(Boolean), // Collect URLs
-            ai_metadata: { tags: Array.from(new Set(allTags)) } // Dedupe tags
+            urls: selectedArtifacts.map(a => a.source_url).filter((url): url is string => !!url), // Collect URLs
+            ai_metadata: { tags: Array.from(new Set(allTags)) }, // Dedupe tags
+            userId: 'user', // Mock for synthesis
+            createdAt: new Date()
         });
 
         setIsSelectMode(false);

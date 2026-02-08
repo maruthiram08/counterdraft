@@ -1,4 +1,6 @@
 
+import Image from 'next/image';
+
 interface HeroDashboardProps {
     className?: string;
 }
@@ -9,8 +11,8 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
             {/* SIDEBAR - Minimized for focus */}
             <div className="hidden md:flex w-16 md:w-64 bg-white border-r border-zinc-200 flex-col flex-shrink-0 transition-all duration-300">
                 <div className="p-4 md:p-6 border-b border-zinc-100 flex items-center justify-center md:justify-start gap-3">
-                    <img src="/brand/logo-icon.png" alt="Icon" className="w-6 h-6 flex-shrink-0" />
-                    <img src="/brand/logo-text.png" alt="Counterdraft" className="h-4 w-auto hidden md:block" />
+                    <Image src="/brand/logo-icon.png" alt="Icon" width={24} height={24} className="w-6 h-6 flex-shrink-0" />
+                    <Image src="/brand/logo-text.png" alt="Counterdraft" width={120} height={16} className="h-4 w-auto hidden md:block" />
                 </div>
                 <div className="p-4 space-y-2">
                     {['Dashboard', 'My Drafts', 'Ideas', 'Settings'].map((item, i) => (
@@ -53,7 +55,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                                 <div className="w-8 h-8 rounded-full border-2 border-white bg-zinc-100 flex items-center justify-center text-[9px] font-black text-zinc-400">AI</div>
                                 <div className="w-8 h-8 rounded-full border-2 border-white bg-zinc-200 flex items-center justify-center text-[9px] font-black text-zinc-500">ME</div>
                             </div>
-                            <span className="text-xs text-zinc-400 font-bold ml-2">AI assists, you're in control</span>
+                            <span className="text-xs text-zinc-400 font-bold ml-2">AI assists, you&apos;re in control</span>
                         </div>
                     </div>
 
@@ -87,7 +89,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                             <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
                             <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">Writing Tip</div>
                             <p className="text-sm font-medium leading-relaxed opacity-90">
-                                "Your intro hook is strong. Consider adding a specific example in paragraph 2 to make it more relatable."
+                                &quot;Your intro hook is strong. Consider adding a specific example in paragraph 2 to make it more relatable.&quot;
                             </p>
                         </div>
                     </div>

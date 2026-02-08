@@ -40,7 +40,7 @@ export function useTensions() {
                 if (tensionsError) throw tensionsError;
 
                 // 3. Map to UI format
-                const mapped: Tension[] = (data || []).map((t: any) => ({
+                const mapped: Tension[] = (data || []).map((t) => ({
                     id: t.id,
                     beliefA: t.belief_a_text || 'Belief A',
                     beliefB: t.belief_b_text || 'Belief B',
@@ -50,9 +50,9 @@ export function useTensions() {
 
                 setTensions(mapped);
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error fetching tensions:", err);
-                setError(err.message);
+                setError(err instanceof Error ? err.message : "Unknown error");
             } finally {
                 setLoading(false);
             }
@@ -76,7 +76,7 @@ export function useTensions() {
             ));
 
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error classifying tension:", err);
             return false;
         }

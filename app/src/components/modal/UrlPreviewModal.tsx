@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ExternalLink, FileText, ArrowRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { X, ExternalLink, ArrowRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
 
 interface UrlPreviewModalProps {
     isOpen: boolean;
@@ -33,7 +33,7 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
             setFetchedTitle('');
             setError(null);
         }
-    }, [isOpen, artifact?.id]);
+    }, [isOpen, artifact]);
 
     const fetchUrlContent = async () => {
         if (!artifact?.source_url) return;

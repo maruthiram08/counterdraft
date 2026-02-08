@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { X, Loader2, User, Briefcase, PenTool, Wand2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { StyleAnalysisModal } from "./StyleAnalysisModal";
 
 interface ProfileSetupModalProps {

@@ -3,6 +3,7 @@ import { brainService } from '@/lib/brain/service';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { Belief } from '@/types';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 // POST /api/brain/analyze
 // Body: { topic: string, audience?: { role: string, pain: string } }
@@ -11,6 +12,13 @@ export async function POST(req: Request) {
         const userId = await getOrCreateUser();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 0. Rate Limiting
+        const ip = getClientIp(req);
+        const limitResult = rateLimit(`analyze:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 20 });
+        if (!limitResult.allowed) {
+            return NextResponse.json({ error: 'Too many requests. Please try again in 15 minutes.' }, { status: 429 });
         }
 
         const body = await req.json();
@@ -43,8 +51,9 @@ export async function POST(req: Request) {
             outcome
         });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Brain Analyze API Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

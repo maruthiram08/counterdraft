@@ -1,14 +1,16 @@
 "use strict";
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Trash2, PenTool, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import type { Artifact } from '@/types';
 
 interface ArtifactCardProps {
-    artifact: any;
+    artifact: Artifact;
     onDelete: (id: string) => void;
-    onCreateDraft: (artifact: any) => void;
+    onCreateDraft: (artifact: Artifact) => void;
 }
 
 export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCardProps) {
@@ -39,11 +41,16 @@ export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCard
                     {/* Favicon fallback */}
                     <div className="w-6 h-6 rounded-full bg-gray-200 shrink-0 flex items-center justify-center overflow-hidden">
                         {artifact.source_domain ? (
-                            <img
+                            <Image
                                 src={`https://www.google.com/s2/favicons?domain=${artifact.source_domain}&sz=32`}
                                 alt=""
+                                width={16}
+                                height={16}
                                 className="w-4 h-4"
-                                onError={(e) => (e.currentTarget.style.display = 'none')}
+                                onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                }}
+                                unoptimized
                             />
                         ) : (
                             <div className="w-2 h-2 bg-gray-400 rounded-full" />
@@ -69,7 +76,7 @@ export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCard
             {/* Note (if exists) */}
             {artifact.user_note && (
                 <div className="px-4 pt-4 pb-2">
-                    <p className="text-sm font-medium text-gray-800 italic">"{artifact.user_note}"</p>
+                    <p className="text-sm font-medium text-gray-800 italic">&quot;{artifact.user_note}&quot;</p>
                 </div>
             )}
 

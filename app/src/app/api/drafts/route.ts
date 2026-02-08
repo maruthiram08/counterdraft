@@ -3,9 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
-import { extractBeliefs } from '@/lib/openai';
-import { storeAnalysisResults } from '@/lib/belief-storage';
-
 import { UsageService } from '@/lib/billing/usage';
 
 export const dynamic = 'force-dynamic';
@@ -91,9 +88,10 @@ export async function GET() {
         );
 
         return NextResponse.json({ drafts: allDrafts });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[GET /api/drafts] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -135,6 +133,7 @@ export async function POST(req: NextRequest) {
                 .from('drafts')
                 .select('id')
                 .eq('id', id)
+                .eq('user_id', userId)
                 .single();
 
             if (!existing) {
@@ -181,8 +180,9 @@ export async function POST(req: NextRequest) {
 
 
         return NextResponse.json({ draft, success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[POST /api/drafts] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

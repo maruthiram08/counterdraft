@@ -9,7 +9,7 @@ const Testimonial = ({ quote, author, role }: { quote: string, author: string, r
         </svg>
       ))}
     </div>
-    <p className="text-zinc-900 text-2xl font-bold leading-snug mb-12 group-hover:text-black transition-colors tracking-tight">"{quote}"</p>
+    <p className="text-zinc-900 text-2xl font-bold leading-snug mb-12 group-hover:text-black transition-colors tracking-tight">&quot;{quote}&quot;</p>
     <div className="mt-auto flex items-center gap-6">
       <div className="w-14 h-14 rounded-2xl bg-zinc-50 border border-zinc-200 flex items-center justify-center text-zinc-400 font-black text-xs group-hover:border-green-600 group-hover:bg-green-50 group-hover:text-green-600 transition-all duration-500">
         {author.split(' ').map(n => n[0]).join('')}

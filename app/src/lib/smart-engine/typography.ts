@@ -10,7 +10,7 @@ export interface TypographyConfig {
  * Replicates a designer's decision to "scale down" text as it gets longer.
  */
 export function calculateSmartTypography(text: string, maxChars: number = 300): TypographyConfig {
-    const len = text.length;
+    const len = Math.min(text.length, maxChars);
 
     if (len < 20) {
         return { fontSize: 80, lineHeight: 1.1, fontWeight: 800 }; // Massive (Hook)

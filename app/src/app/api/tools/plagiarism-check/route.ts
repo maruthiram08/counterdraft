@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { PlagiarismService } from '@/lib/tools/plagiarism';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const maxDuration = 120; // Allow 2 minutes for multiple Tavily + LLM calls
 
@@ -50,6 +51,13 @@ export async function POST(req: NextRequest) {
         const userId = await getOrCreateUser();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 0. Rate Limiting
+        const ip = getClientIp(req);
+        const limitResult = rateLimit(`plagiarism:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 10 });
+        if (!limitResult.allowed) {
+            return NextResponse.json({ error: 'Too many requests. Please try again in 15 minutes.' }, { status: 429 });
         }
 
         const { text, draftId } = await req.json();

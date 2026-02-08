@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { productId, billingCycle, country } = await req.json(); // e.g., 'prod_gl_monthly'
+        const { productId, country } = await req.json(); // e.g., 'prod_gl_monthly'
 
         if (!productId) {
             return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
@@ -34,6 +34,11 @@ export async function POST(req: NextRequest) {
         console.log(`[Checkout] Creating session for ${user.email} | Plan: ${productId} | Country: ${country || 'US'}`);
 
         // We pass metadata so the webhook knows who paid
+        type DodoCheckoutResult = {
+            checkout_url?: string;
+            payment_link?: string;
+        };
+
         const payment = await dodo.subscriptions.create({
             product_id: productId,
             quantity: 1,
@@ -62,12 +67,16 @@ export async function POST(req: NextRequest) {
 
         // FALLBACK for Safety: If SDK method is different, we'll try to use the most generic creation method
         // For now preventing typescript errors with 'any' until SDK types are verified in workspace
-        const checkoutUrl = (payment as any).checkout_url || (payment as any).payment_link;
+        const checkoutUrl = (payment as DodoCheckoutResult).checkout_url || (payment as DodoCheckoutResult).payment_link;
+        if (!checkoutUrl) {
+            return NextResponse.json({ error: 'Checkout URL not returned by provider' }, { status: 502 });
+        }
 
         return NextResponse.json({ checkoutUrl });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Checkout creation failed:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

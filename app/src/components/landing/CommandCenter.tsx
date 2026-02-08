@@ -1,10 +1,17 @@
 import React from 'react';
 
+interface KanbanCard {
+  title: string;
+  category: string;
+  tagColor: string;
+  date: string;
+}
+
 interface KanbanColumnProps {
   title: string;
   count: number;
   color: string;
-  cards: any[];
+  cards: KanbanCard[];
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, count, color, cards }) => (

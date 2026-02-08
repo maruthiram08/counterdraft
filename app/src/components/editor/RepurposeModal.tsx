@@ -1,9 +1,10 @@
 "use client";
 
-
 import { useState } from "react";
+import type { ComponentType, SVGProps } from "react";
 import { X, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette } from "lucide-react";
 import { SmartStudioPanel } from "./SmartStudioPanel";
+import type { SlideContent } from "@/lib/pptx-generator";
 
 interface OptionChoice {
     value: string;
@@ -17,14 +18,14 @@ interface PlatformOption {
     type: 'select' | 'radio' | 'text' | 'checkbox';
     choices?: OptionChoice[] | string[];
     placeholder?: string;
-    defaultValue?: any;
+    defaultValue?: string | boolean;
     allowAutoGenerate?: boolean;
 }
 
 interface PlatformConfig {
     id: string;
     label: string;
-    icon: any;
+    icon: ComponentType<SVGProps<SVGSVGElement>>;
     colorClass: string;
     bgClass: string;
     textClass: string;
@@ -122,29 +123,47 @@ const PLATFORM_GROUPS = [
 interface RepurposeModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onRepurpose: (platform: string, options: any) => Promise<any>;
+    onRepurpose: (platform: string, options: Record<string, string | boolean>) => Promise<RepurposeResult>;
     isProcessing: boolean;
-    onDesign?: (platform: string, content: any) => void;
+    onDesign?: (platform: string, content: string) => void;
     sourceContent?: string;
 }
 
+type InstagramSlideData = {
+    header?: string;
+    body?: string;
+    visualDescription?: string;
+};
+
+type RepurposeAsset = {
+    role?: string;
+    url?: string;
+};
+
+type RepurposeResult = {
+    id: string;
+    content: string;
+    platform_metadata?: { slides?: InstagramSlideData[] };
+    assets?: RepurposeAsset[];
+};
+
 export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onDesign, sourceContent }: RepurposeModalProps) {
     const [selectedPlatformId, setSelectedPlatformId] = useState<string>('medium');
-    const [optionsValues, setOptionsValues] = useState<Record<string, any>>({
+    const [optionsValues, setOptionsValues] = useState<Record<string, Record<string, string | boolean>>>({
         medium: { length: 'medium', generateCover: true },
         instagram: { format: 'carousel', labels: '', generateInfographic: true }
     });
 
     const [generatingField, setGeneratingField] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
-    const [resultData, setResultData] = useState<{ id: string; content: string; platform_metadata?: any; assets?: any[] } | null>(null);
+    const [resultData, setResultData] = useState<RepurposeResult | null>(null);
 
     if (!isOpen) return null;
 
     const currentPlatform = PLATFORMS.find(p => p.id === selectedPlatformId)!;
     const currentValues = optionsValues[selectedPlatformId] || {};
 
-    const updateOption = (key: string, value: any) => {
+    const updateOption = (key: string, value: string | boolean) => {
         setOptionsValues(prev => ({
             ...prev,
             [selectedPlatformId]: {
@@ -191,16 +210,17 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
         if (selectedPlatformId === 'instagram' && resultData) {
             import('@/lib/pptx-generator').then(({ PptxGenerator }) => {
                 const gen = new PptxGenerator();
-                let slides: any[] = [];
-                const metadata = (resultData as any).platform_metadata;
+                const slides: SlideContent[] = [];
+                const metadata = resultData.platform_metadata;
 
                 if (metadata && Array.isArray(metadata.slides)) {
-                    slides = metadata.slides.map((s: any) => ({
+                    const mapped = metadata.slides.map((s) => ({
                         title: s.header || "Slide",
                         body: s.body || "",
                         type: 'content',
                         visualNotes: s.visualDescription
                     }));
+                    slides.push(...mapped);
                 } else {
                     const content = resultData.content;
                     if (content) {
@@ -218,8 +238,8 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                     }
                 }
 
-                const assets = (resultData as any).assets || [];
-                const coverImage = assets.find((a: any) => a.role === 'infographic' || a.role === 'cover');
+                const assets = resultData.assets || [];
+                const coverImage = assets.find((a) => a.role === 'infographic' || a.role === 'cover');
                 if (coverImage && slides.length > 0) slides[0].imageUrl = coverImage.url;
                 if (slides.length === 0) slides.push({ title: "Draft", body: "No content generated.", type: 'cover' });
 

@@ -1,50 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-    Check, ChevronRight, Download, Edit2, Layout, Loader2, Maximize2, MessageSquare,
-    Minimize2, Plus, RefreshCw, Save, Sparkles, Trash2, X, AlertTriangle, Play,
-    Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, ArrowLeft, ArrowRight, Target
-} from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Check, X, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { BrainHeaderPanel } from "./BrainHeaderPanel";
 import { BrainMetadata } from "@/types";
-import { ResearchItem } from "./ResearchItem";
 import { LimitModal } from "../modal/LimitModal";
-import { StrategyFeedbackPanel } from "./StrategyFeedbackPanel";
 
-interface ResearchPoint {
-    text: string;
-    notes: string[];
-    isNew?: boolean;
-}
+import { KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
-interface DeepDiveData {
-    research: ResearchPoint[];
-    insights: ResearchPoint[];
-}
-
-interface ContentItem {
-    id: string;
-    hook: string;
-    angle?: string;
-    format?: string;
-    deep_dive?: {
-        research: (string | ResearchPoint)[];
-        insights: (string | ResearchPoint)[];
-    };
-    outline?: {
-        sections: string[];
-    };
-    brain_metadata?: BrainMetadata;
-    dev_step?: string;
-    draft_content?: string;
-}
-
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { DeepDiveData, ResearchPoint, ContentItem, WizardStep } from "./wizard/types";
+import { DeepDiveStep } from "./wizard/DeepDiveStep";
+import { OutlineStep } from "./wizard/OutlineStep";
+import { DraftStep } from "./wizard/DraftStep";
+import { RefineContextPanel } from "./wizard/RefineContextPanel";
+import { ThinkingLoader } from "./wizard/ThinkingLoader";
 
 interface DevelopmentWizardProps {
     item: ContentItem;
@@ -52,70 +23,9 @@ interface DevelopmentWizardProps {
     onComplete: (draftContent: string) => void;
 }
 
-// Helper Sortable Component
-function SortableOutlineItem({
-    id,
-    index,
-    section,
-    onUpdate,
-    onAddNote,
-    onDeleteNote,
-    onDelete
-}: {
-    id: string;
-    index: number;
-    section: ResearchPoint;
-    onUpdate: (val: string) => void;
-    onAddNote: (note: string) => void;
-    onDeleteNote: (idx: number) => void;
-    onDelete: () => void;
-}) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging
-    } = useSortable({ id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 50 : 'auto',
-        position: isDragging ? 'relative' as const : 'static' as const,
-    };
-
-    return (
-        <div ref={setNodeRef} style={style} className={`flex items-start gap-2 group ${isDragging ? 'opacity-50' : ''}`}>
-            <div
-                {...attributes}
-                {...listeners}
-                className="mt-2.5 p-1 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded"
-            >
-                <GripVertical size={14} />
-            </div>
-
-            <span className="w-8 h-8 bg-[var(--accent)] text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0 shadow-sm mt-1">
-                {index + 1}
-            </span>
-            <div className="flex-1">
-                <ResearchItem
-                    showBullet={false}
-                    text={section.text}
-                    notes={section.notes}
-                    isNew={section.isNew}
-                    onUpdate={onUpdate}
-                    onAddNote={onAddNote}
-                    onDeleteNote={onDeleteNote}
-                    onDelete={onDelete}
-                />
-            </div>
-        </div>
-    );
-}
-
-type WizardStep = 'deep_dive' | 'outline' | 'generate';
+type DeepDiveListItem = string | ResearchPoint | { text: string; notes?: string[] };
+type DeepDivePayload = { research?: DeepDiveListItem[]; insights?: DeepDiveListItem[] };
+type OutlineSection = string | ResearchPoint | { text: string; notes?: string[] };
 
 export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWizardProps) {
     const [step, setStep] = useState<WizardStep>('deep_dive');
@@ -132,8 +42,24 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const [draftContent, setDraftContent] = useState('');
 
     // Strategy Verification State
-    const [strategyAnalysis, setStrategyAnalysis] = useState<any>(null);
+    const [strategyAnalysis, setStrategyAnalysis] = useState<{ analysis: string; score: number; suggestions: string[] } | null>(null);
     const [verifyingStrategy, setVerifyingStrategy] = useState(false);
+
+    // Global Context
+    const [globalContext, setGlobalContext] = useState("");
+    const [showContextPanel, setShowContextPanel] = useState(false);
+    const [localBrainMetadata, setLocalBrainMetadata] = useState<BrainMetadata | undefined>(() => {
+        const legacyMetadata = (item as { brainMetadata?: BrainMetadata }).brainMetadata;
+        let meta = item.brain_metadata || legacyMetadata;
+        if (typeof meta === 'string') {
+            try {
+                meta = JSON.parse(meta);
+            } catch (e) {
+                console.error("Failed to parse brain_metadata", e);
+            }
+        }
+        return meta;
+    });
 
     const handleVerifyStrategy = async (contentOverride?: string) => {
         const textToVerify = contentOverride || draftContent;
@@ -162,6 +88,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 toast.error(data.error || 'Failed to verify strategy');
             }
         } catch (error) {
+            console.error("Strategy verification failed:", error);
             toast.error('Verification failed');
         } finally {
             setVerifyingStrategy(false);
@@ -169,39 +96,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     };
 
     const [fixingStrategy, setFixingStrategy] = useState(false);
-
-    // Fact Check State
-    const [factResults, setFactResults] = useState<any[]>([]);
-    const [verifyingFacts, setVerifyingFacts] = useState(false);
-
-    const handleVerifyFacts = async () => {
-        if (!draftContent) return;
-        setVerifyingFacts(true);
-        try {
-            const res = await fetch('/api/content/develop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'verify_facts', // Backend must support this
-                    draft: draftContent,
-                    brainMetadata: item.brain_metadata
-                })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setFactResults(data.facts || []);
-                if (data.facts?.length === 0) toast.info("No claims found to verify.");
-                else toast.success(`Verified ${data.facts.length} claims.`);
-            } else {
-                toast.error("Fact check failed");
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Fact check failed");
-        } finally {
-            setVerifyingFacts(false);
-        }
-    };
 
     const handleAutoFix = async (instruction: string) => {
         if (!draftContent) return;
@@ -224,26 +118,15 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 toast.success('Auto-fix applied! Re-verifying...');
                 // Automatically re-run verification on the NEW content
                 await handleVerifyStrategy(data.draft);
-                // Also clear old facts as they might be stale
-                setFactResults([]);
             } else {
                 toast.error('Failed to apply fix');
             }
         } catch (error) {
+            console.error("Auto-fix failed:", error);
             toast.error('Auto-fix failed');
         } finally {
             setFixingStrategy(false);
         }
-    };
-
-    const handleFactFix = (claim: string, analysis: string, sourceSnippet?: string, status?: string) => {
-        let instruction = "";
-        if (status === 'unverified') {
-            instruction = `The claim "${claim}" could not be verified by sources. Review the analysis: "${analysis}". If this claim is important, rewrite it to be more precise or explicitly hypothetical. If it's unsupported fluff, DELETE it completely.`;
-        } else {
-            instruction = `The claim "${claim}" is factually DISPUTED. Correct it immediately using this verified evidence: "${analysis}". ${sourceSnippet ? `Source context: ${sourceSnippet}` : ''} Keep the rest of the text unchanged.`;
-        }
-        handleAutoFix(instruction);
     };
 
     // Limit State
@@ -266,26 +149,11 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             return true; // Allowed
         } catch (e) {
             console.error("Limit check failed", e);
-            return true; // Fail open or closed? Open for now to avoid blocking on network error.
+            return true;
         }
     };
 
-    // Global Context
-    const [globalContext, setGlobalContext] = useState("");
-    const [showContextPanel, setShowContextPanel] = useState(false);
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
-
-    const [localBrainMetadata, setLocalBrainMetadata] = useState<BrainMetadata | undefined>(() => {
-        let meta = item.brain_metadata || (item as any).brainMetadata;
-        if (typeof meta === 'string') {
-            try {
-                meta = JSON.parse(meta);
-            } catch (e) {
-                console.error("Failed to parse brain_metadata", e);
-            }
-        }
-        return meta;
-    });
     const [showStrategyWarning, setShowStrategyWarning] = useState(false);
 
     const handleUpdateBrainMetadata = (metadata: BrainMetadata) => {
@@ -294,7 +162,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     };
 
     // Persistence helper
-    const saveProgress = async (updates: any) => {
+    const saveProgress = useCallback(async (updates: Partial<ContentItem>) => {
         try {
             await fetch('/api/content', {
                 method: 'PATCH',
@@ -308,41 +176,43 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         } catch (e) {
             console.error("Failed to save progress", e);
         }
-    };
+    }, [item.id]);
 
-    const normalizeDeepDive = (data: any): DeepDiveData | null => {
-        if (!data) return null;
+    const normalizeDeepDive = (data: unknown): DeepDiveData | null => {
+        const typedData = data as DeepDivePayload | null;
+        if (!typedData) return null;
 
-        const normalizeList = (list: any[]): ResearchPoint[] => {
+        const normalizeList = (list?: DeepDiveListItem[]): ResearchPoint[] => {
             if (!list) return [];
-            return list.map(item => {
+            return list.map((item) => {
                 if (typeof item === 'string') {
                     return { text: item, notes: [] };
                 }
-                return item as ResearchPoint;
+                const notes = Array.isArray(item.notes) ? item.notes : [];
+                return { text: item.text, notes };
             });
         };
 
         return {
-            research: normalizeList(data.research),
-            insights: normalizeList(data.insights)
+            research: normalizeList(typedData.research),
+            insights: normalizeList(typedData.insights)
         };
     };
 
-    const normalizeOutline = (data: any): ResearchPoint[] => {
-        if (!data || !data.sections) return [];
-        return data.sections.map((s: any) => {
+    const normalizeOutline = (data: unknown): ResearchPoint[] => {
+        const typedData = data as { sections?: OutlineSection[] } | null;
+        if (!typedData || !typedData.sections) return [];
+        return typedData.sections.map((s) => {
             let text = typeof s === 'string' ? s : s.text;
-
-            // CLEAN PREFIXES (Section 1:, 1., etc) so they don't conflict with UI numbering
+            // CLEAN PREFIXES
             text = text.replace(/^(Section\s+\d+[:.]?\s*|\d+[.:]\s*)/i, '').trim();
-
             if (typeof s === 'string') return { text, notes: [] };
-            return { ...s, text } as ResearchPoint;
+            const notes = Array.isArray(s.notes) ? s.notes : [];
+            return { text, notes };
         });
     };
 
-    const runDeepDive = async (mode: 'initial' | 'reset' | 'append' = 'initial') => {
+    const runDeepDive = useCallback(async (mode: 'initial' | 'reset' | 'append' = 'initial') => {
         if (mode === 'reset') {
             if (!confirm("This will clear current findings and regenerate from scratch. Continue?")) return;
         }
@@ -364,8 +234,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             });
             if (!res.ok) {
                 const errData = await res.json();
-
-                // NEW: Handle Limit Blocking Gracefully
                 if (res.status === 403) {
                     setLimitState({
                         tier: errData.usage?.tier || 'free',
@@ -374,40 +242,29 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     });
                     setLimitModalOpen(true);
                     setLoading(false);
-                    return; // Stop execution
+                    return;
                 }
-
                 throw new Error(errData.error || `Server Error ${res.status}`);
             }
 
             const data = await res.json();
-
-            // Convert strings to objects
             const richData = normalizeDeepDive(data.deep_dive);
 
             if (richData) {
                 if (mode === 'append' && deepDive) {
-                    // Append new items, marking them as new
                     const newResearch = richData.research.map(r => ({ ...r, isNew: true }));
                     const newInsights = richData.insights.map(i => ({ ...i, isNew: true }));
-
                     const mergedData = {
                         research: [...deepDive.research, ...newResearch],
                         insights: [...deepDive.insights, ...newInsights]
                     };
                     setDeepDive(mergedData);
-
-                    // Clear context panel on success
                     setGlobalContext("");
                     setShowContextPanel(false);
-
                     saveProgress({ deep_dive: mergedData });
                 } else {
-                    // Replace
                     setDeepDive(richData);
-                    if (mode === 'reset') {
-                        setGlobalContext(""); // Clear context on full reset too? Maybe keep it if user wants to retry with it. Actually clear is safer to avoid stale context.
-                    }
+                    if (mode === 'reset') setGlobalContext("");
                     saveProgress({
                         deep_dive: richData,
                         dev_step: 'deep_dive_complete'
@@ -416,25 +273,24 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             } else {
                 throw new Error("No research data returned.");
             }
-        } catch (e: any) {
-            console.error("Deep dive failed", e);
-            alert(`Research Agent failed: ${e.message}. Please try again.`); // User visibility
+        } catch (error: unknown) {
+            console.error("Deep dive failed", error);
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Research Agent failed: ${message}. Please try again.`);
         } finally {
             setLoading(false);
         }
-    };
+    }, [deepDive, globalContext, item.angle, item.hook, localBrainMetadata, saveProgress]);
 
     const handleRefinePoint = async (type: 'research' | 'insights', index: number, manualNote?: string) => {
         if (!deepDive) return;
         const currentItem = deepDive[type][index];
 
-        // Combine system context, item notes, and the new manual note
         const itemNotesContext = currentItem.notes?.length
             ? `\n\nExisting notes for this point:\n${currentItem.notes.map(n => `- ${n}`).join('\n')}`
             : '';
         const combinedContext = `${globalContext}${itemNotesContext}${manualNote ? `\n\nNew user instruction: ${manualNote}` : ''}`;
 
-        // Set loading state for this item
         setRefiningItems(prev => [...prev, { type, index }]);
 
         try {
@@ -450,7 +306,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             });
 
             const data = await res.json();
-
             if (data.refined) {
                 handleUpdateItem(type, index, { text: data.refined });
             }
@@ -532,7 +387,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                         limit: errData.usage?.limit || 20
                     });
                     setLimitModalOpen(true);
-                    // Don't throw, just stop
                     setLoading(false);
                     return;
                 }
@@ -553,7 +407,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             setStep('outline');
             generateOutline();
         } else if (step === 'outline' && outlineApproved) {
-            // Strategic Gate Check
             const isVague = !localBrainMetadata?.outcome || !localBrainMetadata?.audience?.role;
 
             if (isVague && !showStrategyWarning) {
@@ -561,11 +414,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 return;
             }
 
-            // CHECK LIMIT BEFORE DRAFT GENERATION
-            // User Requirement: "Post outline only throw this popup. The draft generation should not happen"
             checkLimit().then(allowed => {
                 if (!allowed) return;
-
                 setShowStrategyWarning(false);
                 setStep('generate');
                 generateDraft();
@@ -585,28 +435,16 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
     };
 
-    const confirmProceedVague = async () => {
-        const allowed = await checkLimit();
-        if (!allowed) return;
-
-        setShowStrategyWarning(false);
-        setStep('generate');
-        generateDraft();
-    };
-
     const handleExportResearch = () => {
         if (!deepDive) return;
-
         let content = `# Research: ${item.hook}\n\n`;
-
         content += `## Research Findings\n`;
-        deepDive.research.forEach((r, i) => {
+        deepDive.research.forEach(r => {
             content += `- ${r.text}\n`;
             r.notes.forEach(note => content += `  > Note: ${note}\n`);
         });
-
         content += `\n## Key Insights\n`;
-        deepDive.insights.forEach((r, i) => {
+        deepDive.insights.forEach(r => {
             content += `- ${r.text}\n`;
             r.notes.forEach(note => content += `  > Note: ${note}\n`);
         });
@@ -624,10 +462,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     const handleUpdateItem = (type: 'research' | 'insights', index: number, updates: Partial<ResearchPoint>) => {
         if (!deepDive) return;
-
         const newList = [...deepDive[type]];
         newList[index] = { ...newList[index], ...updates };
-
         const newData = { ...deepDive, [type]: newList };
         setDeepDive(newData);
         saveProgress({ deep_dive: newData });
@@ -674,23 +510,25 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
     };
 
+    const initializedItemIdRef = useRef<string | null>(null);
+
     // Restoration logic
     useEffect(() => {
-        // Hydrate data from item if available
+        if (initializedItemIdRef.current === item.id) return;
+        initializedItemIdRef.current = item.id;
+
         if (item.deep_dive && !deepDive) {
             setDeepDive(normalizeDeepDive(item.deep_dive));
         }
         if (item.outline && item.outline.sections && outline.length === 0) {
             setOutline(normalizeOutline(item.outline));
-            setOutlineApproved(true); // Assume approved if persisted
+            setOutlineApproved(true);
         }
         if (item.draft_content && !draftContent) {
             setDraftContent(item.draft_content);
         }
 
-        // Restore step based on saved progress
         if (!deepDive && !item.deep_dive && !loading) {
-            // First time or empty
             runDeepDive();
         } else if (item.dev_step) {
             if (item.dev_step.includes('draft') || item.dev_step === 'complete') {
@@ -701,35 +539,27 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 setStep('deep_dive');
             }
         } else {
-            // Fallback inference
             if (item.draft_content) setStep('generate');
             else if (item.outline) setStep('outline');
             else setStep('deep_dive');
         }
-    }, [item.id]); // Run once on mount/id change, or when item updates externally if we want live sync
-
+    }, [item.id, item.deep_dive, item.outline, item.draft_content, item.dev_step, deepDive, draftContent, outline.length, loading, runDeepDive]);
 
     const steps = [
         { key: 'deep_dive', label: 'Research' },
         { key: 'outline', label: 'Outline' },
         { key: 'generate', label: 'Draft' },
     ];
-
     const currentStepIndex = steps.findIndex(s => s.key === step);
 
-    // Smart Visibility Logic
-    const hasStrategy = !!(localBrainMetadata && (localBrainMetadata.outcome || localBrainMetadata.audience?.role));
-    const hasOutline = outline.length > 0;
-    const hasResearch = !!(deepDive && deepDive.research.length > 0);
-    const hasContext = hasStrategy || hasOutline || hasResearch;
+    const headerItem: ContentItem = { ...item, brain_metadata: localBrainMetadata };
 
     return (
         <div className="fixed top-0 right-0 bottom-0 left-0 md:left-16 z-40 flex flex-col bg-white animate-in fade-in duration-200 border-l border-gray-200">
             <div className="w-full h-full flex flex-col bg-white">
-                {/* Header Row: Title & Actions */}
+                {/* Header Row */}
                 <div className="px-6 h-16 border-b flex items-center justify-between bg-white shrink-0 z-50">
                     <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
-
                         <h2 className="font-serif text-lg font-medium text-gray-900 truncate" title={item.hook}>
                             {item.hook}
                         </h2>
@@ -747,7 +577,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     </div>
                 </div>
 
-                {/* Steps Row: Progress Indicator */}
+                {/* Steps Row */}
                 <div className="px-6 py-2 bg-white border-b shrink-0 flex justify-center shadow-[0_1px_2px_rgba(0,0,0,0.02)] z-40">
                     <div className="flex items-center gap-4">
                         {steps.map((s, i) => {
@@ -781,380 +611,85 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-gray-50/30">
                     <div className="max-w-6xl mx-auto p-6 md:p-8 min-h-full flex flex-col">
-                        {/* Brain Context Panel */}
                         <BrainHeaderPanel
-                            item={{ ...item, brain_metadata: localBrainMetadata } as any}
+                            item={headerItem}
                             onUpdate={handleUpdateBrainMetadata}
                         />
 
-                        {/* Deep Dive Step */}
                         {step === 'deep_dive' && (
-                            <div className="space-y-6">
-
-
-                                {/* Content or Loader */}
-                                {loading ? (
-                                    <div className="flex flex-col items-center py-12 text-gray-400 bg-white/50 rounded-lg border-2 border-dashed border-gray-100">
-                                        <Loader2 size={32} className="animate-spin mb-4 text-[var(--accent)]" />
-                                        <p className="animate-pulse">Analyzing context & generating insights...</p>
-                                    </div>
-                                ) : deepDive ? (
-                                    <>
-                                        <div className="flex justify-between items-center px-2">
-                                            <p className="text-xs text-gray-500 italic">
-                                                Tip: You can also refresh individual cards below to apply this context granularly.
-                                            </p>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => runDeepDive('reset')}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded text-xs transition-colors"
-                                                    title="Clear and restart research"
-                                                >
-                                                    <RefreshCw size={14} /> Reset
-                                                </button>
-                                                <button
-                                                    onClick={handleExportResearch}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded text-xs transition-colors"
-                                                >
-                                                    <Download size={14} /> Export
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                                    Research Findings
-                                                    <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Facts</span>
-                                                </h3>
-                                                <div className="space-y-3">
-                                                    {deepDive.research.map((r, i) => (
-                                                        <ResearchItem
-                                                            key={`res-${i}`}
-                                                            text={r.text}
-                                                            notes={r.notes}
-                                                            isNew={r.isNew}
-                                                            loading={refiningItems.some(item => item.type === 'research' && item.index === i)}
-                                                            onRefine={() => handleRefinePoint('research', i)}
-                                                            onUpdate={(txt) => handleUpdateItem('research', i, { text: txt })}
-                                                            onAddNote={(note) => {
-                                                                handleUpdateItem('research', i, { notes: [...r.notes, note] });
-                                                                handleRefinePoint('research', i, note);
-                                                            }}
-                                                            onDeleteNote={(nIdx) => handleUpdateItem('research', i, { notes: r.notes.filter((_, idx) => idx !== nIdx) })}
-                                                            onDelete={() => {
-                                                                const newData = { ...deepDive, research: deepDive.research.filter((_, idx) => idx !== i) };
-                                                                setDeepDive(newData);
-                                                                saveProgress({ deep_dive: newData });
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                                                    Key Insights
-                                                    <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Angles</span>
-                                                </h3>
-                                                <div className="space-y-3">
-                                                    {deepDive.insights.map((r, i) => (
-                                                        <ResearchItem
-                                                            key={`ins-${i}`}
-                                                            text={r.text}
-                                                            notes={r.notes}
-                                                            isNew={r.isNew}
-                                                            loading={refiningItems.some(item => item.type === 'insights' && item.index === i)}
-                                                            onRefine={() => handleRefinePoint('insights', i)}
-                                                            onUpdate={(txt) => handleUpdateItem('insights', i, { text: txt })}
-                                                            onAddNote={(note) => {
-                                                                handleUpdateItem('insights', i, { notes: [...r.notes, note] });
-                                                                handleRefinePoint('insights', i, note);
-                                                            }}
-                                                            onDeleteNote={(nIdx) => handleUpdateItem('insights', i, { notes: r.notes.filter((_, idx) => idx !== nIdx) })}
-                                                            onDelete={() => {
-                                                                const newData = { ...deepDive, insights: deepDive.insights.filter((_, idx) => idx !== i) };
-                                                                setDeepDive(newData);
-                                                                saveProgress({ deep_dive: newData });
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className="text-gray-500 text-center py-12">Starting research...</p>
-                                )}
-                            </div>
+                            loading ? (
+                                <ThinkingLoader message="Analyzing context & generating insights..." />
+                            ) : (
+                                <DeepDiveStep
+                                    deepDive={deepDive}
+                                    loading={loading} // Effectively redundant here as checked above, but kept for interface
+                                    refiningItems={refiningItems}
+                                    onRunDeepDive={runDeepDive}
+                                    onExport={handleExportResearch}
+                                    onRefinePoint={handleRefinePoint}
+                                    onUpdateItem={handleUpdateItem}
+                                    onAddNote={(type, index, note) => {
+                                        const current = deepDive![type][index];
+                                        handleUpdateItem(type, index, { notes: [...current.notes, note] });
+                                        handleRefinePoint(type, index, note);
+                                    }}
+                                    onDeleteNote={(type, index, noteIndex) => {
+                                        const current = deepDive![type][index];
+                                        handleUpdateItem(type, index, { notes: current.notes.filter((_, idx) => idx !== noteIndex) });
+                                    }}
+                                    onDelete={(type, index) => {
+                                        const newData = { ...deepDive!, [type]: deepDive![type].filter((_, idx) => idx !== index) };
+                                        setDeepDive(newData);
+                                        saveProgress({ deep_dive: newData });
+                                    }}
+                                />
+                            )
                         )}
 
-                        {/* Outline Step */}
                         {step === 'outline' && (
-                            <div className="space-y-4">
-                                {loading ? (
-                                    <div className="flex flex-col items-center py-12 text-gray-400">
-                                        <Loader2 size={32} className="animate-spin mb-4" />
-                                        <p>Generating outline...</p>
-                                    </div>
-                                ) : outline.length > 0 ? (
-                                    <>
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="font-medium text-gray-900">Proposed Outline</h3>
-                                            <button
-                                                onClick={handleAddOutlinePoint}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-100 shadow-sm"
-                                            >
-                                                <Plus size={14} />
-                                                Add Section
-                                            </button>
-                                        </div>
-                                        <DndContext
-                                            sensors={sensors}
-                                            collisionDetection={closestCenter}
-                                            onDragEnd={handleDragEnd}
-                                        >
-                                            <SortableContext
-                                                items={outline.map((_, i) => `item-${i}`)}
-                                                strategy={verticalListSortingStrategy}
-                                            >
-                                                <div className="space-y-3">
-                                                    {outline.map((section, i) => (
-                                                        <SortableOutlineItem
-                                                            key={`item-${i}`} // Stable key issue: using index temporarily, but ideally needs semantic ID. 
-                                                            // Since outline items don't have IDs, we'll map by index for now but be careful.
-                                                            // Actually, using index as ID for sortable is tricky if items change. 
-                                                            // Let's use a stable ID strategy if possible, or just index for reorder.
-                                                            // For this implementation, we will use a simple wrapper.
-                                                            id={`item-${i}`}
-                                                            index={i}
-                                                            section={section}
-                                                            onUpdate={(txt) => handleUpdateOutlinePoint(i, { text: txt })}
-                                                            onAddNote={(note) => handleUpdateOutlinePoint(i, { notes: [...section.notes, note] })}
-                                                            onDeleteNote={(nIdx) => handleUpdateOutlinePoint(i, { notes: section.notes.filter((_, idx) => idx !== nIdx) })}
-                                                            onDelete={() => handleDeleteOutlinePoint(i)}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </SortableContext>
-                                        </DndContext>
-                                        <label className="flex items-center gap-2 mt-4 p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100/50 transition-colors">
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${outlineApproved ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-300'}`}>
-                                                {outlineApproved && <Check size={14} />}
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                className="hidden"
-                                                checked={outlineApproved}
-                                                onChange={(e) => setOutlineApproved(e.target.checked)}
-                                            />
-                                            <span className="text-sm text-green-900 select-none">I approve this outline structure</span>
-                                        </label>
-                                    </>
-                                ) : (
-                                    <p className="text-gray-500">No outline generated.</p>
-                                )}
-                            </div>
+                            <OutlineStep
+                                outline={outline}
+                                loading={loading}
+                                outlineApproved={outlineApproved}
+                                sensors={sensors}
+                                onAddOutlinePoint={handleAddOutlinePoint}
+                                onUpdateOutlinePoint={handleUpdateOutlinePoint}
+                                onDeleteOutlinePoint={handleDeleteOutlinePoint}
+                                onSetOutlineApproved={setOutlineApproved}
+                                onDragEnd={handleDragEnd}
+                            />
                         )}
 
-                        {/* Draft Step */}
                         {step === 'generate' && (
-                            <div className="flex-1 flex flex-col min-h-[600px] h-full">
-                                {loading ? (
-                                    <div className="flex flex-col items-center py-12 text-gray-400">
-                                        <Loader2 size={32} className="animate-spin mb-4" />
-                                        <p>Writing your draft...</p>
-                                    </div>
-                                ) : draftContent ? (
-                                    <div className="flex flex-1 gap-6">
-                                        {/* Editor Pane (Left) */}
-                                        <div className={`flex-1 flex flex-col transition-all duration-300 ${showContextPanel ? 'md:mr-0' : 'mx-auto max-w-3xl'}`}>
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h3 className="font-medium text-gray-900">Draft Content</h3>
-                                                <div className="flex gap-2">
-                                                    {hasContext && (
-                                                        <button
-                                                            onClick={() => setShowContextPanel(!showContextPanel)}
-                                                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${showContextPanel
-                                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                                                }`}
-                                                        >
-                                                            {showContextPanel ? 'Hide Context' : 'Show Context'}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
-                                                {/* Mock Toolbar */}
-                                                <div className="flex items-center gap-1 p-2 border-b border-gray-100 bg-gray-50/50">
-                                                    <div className="flex gap-0.5">
-                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><Bold size={14} /></button>
-                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><Italic size={14} /></button>
-                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><Underline size={14} /></button>
-                                                    </div>
-                                                    <div className="w-px h-4 bg-gray-200 mx-1" />
-                                                    <div className="flex gap-0.5">
-                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><AlignLeft size={14} /></button>
-                                                        <button className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded"><AlignCenter size={14} /></button>
-                                                    </div>
-                                                    <div className="w-px h-4 bg-gray-200 mx-1" />
-                                                    <button
-                                                        onClick={() => handleVerifyStrategy()}
-                                                        disabled={verifyingStrategy}
-                                                        className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-[var(--accent)] bg-blue-50 border border-blue-100 hover:bg-blue-100 rounded transition-colors"
-                                                    >
-                                                        {verifyingStrategy ? <Loader2 size={12} className="animate-spin" /> : <Target size={12} />}
-                                                        Check Strategy
-                                                    </button>
-                                                    <div className="flex-1" />
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(draftContent);
-                                                            toast.success('Copied to clipboard');
-                                                        }}
-                                                        className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded"
-                                                    >
-                                                        <Copy size={12} /> Copy
-                                                    </button>
-                                                </div>
-                                                <div className="flex-1 relative">
-                                                    <textarea
-                                                        value={draftContent}
-                                                        onChange={(e) => setDraftContent(e.target.value)}
-                                                        className="absolute inset-0 w-full h-full resize-none outline-none font-serif text-lg leading-relaxed text-gray-800 placeholder-gray-300 p-8"
-                                                        placeholder="Start writing..."
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Context Pane (Right) */}
-                                        {showContextPanel && hasContext && (
-                                            <div className="w-80 shrink-0 hidden md:flex flex-col border-l border-gray-100 pl-6 animate-in slide-in-from-right-4 duration-300">
-                                                <div className="flex flex-col h-full bg-white/50 rounded-xl border border-gray-200/50 backdrop-blur-sm overflow-hidden">
-                                                    <div className="p-3 border-b border-gray-100 bg-gray-50/50">
-                                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Strategic Context</h4>
-                                                    </div>
-                                                    <div className="flex-1 overflow-y-auto p-4 space-y-6">
-
-                                                        {/* Strategy */}
-                                                        {/* Strategy */}
-                                                        {hasStrategy && (
-                                                            <div className="space-y-2">
-                                                                <h5 className="text-sm font-medium text-gray-900 border-b border-gray-100 pb-1">Strategic Coach</h5>
-                                                                {/* Dynamic Analysis Panel */}
-                                                                <StrategyFeedbackPanel
-                                                                    analysis={strategyAnalysis}
-                                                                    loading={verifyingStrategy}
-                                                                    isFixing={fixingStrategy}
-                                                                    onVerify={handleVerifyStrategy}
-                                                                    onAutoFix={handleAutoFix}
-                                                                />
-
-                                                                {/* Fallback Static Info (only if no analysis yet) */}
-                                                                {!strategyAnalysis && !verifyingStrategy && (
-                                                                    <div className="text-xs text-gray-600 bg-blue-50/50 p-3 rounded-lg border border-blue-100 space-y-2 mt-2">
-                                                                        {localBrainMetadata?.audience?.role && (
-                                                                            <p><span className="font-semibold text-blue-800">Audience:</span> {localBrainMetadata.audience.role}</p>
-                                                                        )}
-                                                                        {localBrainMetadata?.outcome && (
-                                                                            <p><span className="font-semibold text-blue-800">Goal:</span> {localBrainMetadata.outcome}</p>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        {/* Outline */}
-                                                        {hasOutline && (
-                                                            <div className="space-y-2">
-                                                                <h5 className="text-sm font-medium text-gray-900 border-b border-gray-100 pb-1">Outline</h5>
-                                                                <ul className="space-y-2">
-                                                                    {outline.map((sect, i) => (
-                                                                        <li key={i} className="text-xs text-gray-600 pl-3 border-l-2 border-gray-200">
-                                                                            {sect.text}
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Key Stats/Research */}
-                                                        {hasResearch && (
-                                                            <div className="space-y-2">
-                                                                <h5 className="text-sm font-medium text-gray-900 border-b border-gray-100 pb-1">Key Findings</h5>
-                                                                <ul className="space-y-2">
-                                                                    {deepDive?.research.slice(0, 5).map((r, i) => (
-                                                                        <li key={i} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                                                            {r.text}
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-gray-400">Ready to draft.</div>
-                                )}
-                            </div>
+                            <DraftStep
+                                draftContent={draftContent}
+                                loading={loading}
+                                showContextPanel={showContextPanel}
+                                verifyingStrategy={verifyingStrategy}
+                                fixingStrategy={fixingStrategy}
+                                strategyAnalysis={strategyAnalysis}
+                                brainMetadata={localBrainMetadata}
+                                outline={outline}
+                                deepDive={deepDive}
+                                onUpdateDraft={setDraftContent}
+                                onToggleContextPanel={() => setShowContextPanel(!showContextPanel)}
+                                onVerifyStrategy={handleVerifyStrategy}
+                                onAutoFix={handleAutoFix}
+                            />
                         )}
 
-
-                        {/* Bottom Sheet Context Panel */}
-                        {showContextPanel && step !== 'generate' && (
-                            <div className="absolute bottom-[72px] left-0 right-0 z-40 bg-white border-t border-[var(--accent)] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] p-6 animate-in slide-in-from-bottom-4 duration-300">
-                                <div className="max-w-4xl mx-auto w-full">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <label className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
-                                            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-                                            Refine Research
-                                        </label>
-                                        <button
-                                            onClick={() => setShowContextPanel(false)}
-                                            className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex gap-4">
-                                        <textarea
-                                            value={globalContext}
-                                            onChange={(e) => setGlobalContext(e.target.value)}
-                                            disabled={loading}
-                                            autoFocus
-                                            placeholder="Paste a URL or describe missing angles (e.g., 'Include statistics about Gen Z usage')..."
-                                            className="flex-1 text-sm p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 min-h-[80px] bg-gray-50 resize-none"
-                                        />
-                                        <div className="flex flex-col justify-end">
-                                            <button
-                                                onClick={() => runDeepDive('append')}
-                                                disabled={loading || !globalContext.trim()}
-                                                className="flex items-center justify-center gap-2 px-6 py-3 bg-[var(--accent)] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all shadow-sm disabled:opacity-50 h-[80px]"
-                                            >
-                                                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                                                {loading ? "Updating..." : "Update"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <p className="mt-2 text-xs text-gray-500">
-                                        Findings will be appended. Existing notes preserved.
-                                    </p>
-                                </div>
-                            </div>
+                        {step !== 'generate' && (
+                            <RefineContextPanel
+                                isOpen={showContextPanel}
+                                loading={loading}
+                                globalContext={globalContext}
+                                onClose={() => setShowContextPanel(false)}
+                                onChangeContext={setGlobalContext}
+                                onUpdate={() => runDeepDive('append')}
+                            />
                         )}
-
-
 
                     </div>
-
-
-
                     <LimitModal
                         isOpen={limitModalOpen}
                         onClose={() => setLimitModalOpen(false)}
@@ -1164,7 +699,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     />
                 </div>
 
-                {/* Footer Actions (Sticky Bottom) */}
+                {/* Footer Actions */}
                 <div className="p-4 border-t bg-gray-50 flex justify-between items-center z-50 shrink-0">
                     <button
                         onClick={handleBack}
@@ -1179,7 +714,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             <button
                                 onClick={() => {
                                     setShowContextPanel(true);
-                                    // Optional: scroll to top
                                     document.querySelector('.overflow-y-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                                 disabled={loading || !deepDive}
@@ -1195,7 +729,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 disabled={!draftContent || loading}
                                 className="px-6 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-sm"
                             >
-                                <Check size={16} /> Complete & Save
+                                <CheckCircle2 size={16} /> Complete & Save
                             </button>
                         ) : (
                             <button
@@ -1204,7 +738,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 className="px-6 py-2 bg-[var(--foreground)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-sm"
                             >
                                 <ArrowRight size={16} /> Next Step
-                                {/* <ArrowRight size={16} /> */}
                             </button>
                         )}
                     </div>

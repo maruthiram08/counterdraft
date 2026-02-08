@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Draft } from "@/hooks/useDrafts";
 import { useState, useEffect, useRef } from "react";
 
@@ -17,7 +17,6 @@ export function DraftsSidebar({
     drafts,
     selectedDraftId,
     onSelect,
-    onNew,
     placeholder = "Search drafts...",
     emptyMessage = "No drafts"
 }: DraftsSidebarProps) {

@@ -48,7 +48,7 @@ export default async function InvitePage({ params }: Props) {
                     </>
                 ) : (
                     <>
-                        <h1 className="text-2xl font-bold text-neutral-900 mb-2">You're Invited!</h1>
+                        <h1 className="text-2xl font-bold text-neutral-900 mb-2">You&apos;re Invited!</h1>
                         <p className="text-neutral-500 mb-8">
                             Accept this invite to unlock <strong className="text-blue-600">{planName}</strong> access (1 Month Free).
                         </p>

@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { PRICING_CONFIG, Tier } from '@/lib/constants/pricing';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const userId = await getOrCreateUser();
 

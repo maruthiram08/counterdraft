@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle, Target, ArrowRight, Lightbulb, Sparkles, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Target, Lightbulb, Sparkles, Loader2 } from 'lucide-react';
 
 interface StrategyFeedbackPanelProps {
     analysis: {
@@ -74,9 +74,9 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
 
             {/* Critique */}
             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-tight mb-2">Coach's Critique</h4>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-tight mb-2">Coach&apos;s Critique</h4>
                 <p className="text-sm text-gray-800 leading-relaxed">
-                    "{analysis.critique}"
+                    &quot;{analysis.critique}&quot;
                 </p>
             </div>
 
@@ -139,7 +139,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                                             {fact.verdict}
                                         </span>
                                     </div>
-                                    <p className="text-xs font-medium text-gray-900 mb-1">"{fact.claim}"</p>
+                                    <p className="text-xs font-medium text-gray-900 mb-1">&quot;{fact.claim}&quot;</p>
                                     <p className="text-xs text-gray-600">{fact.analysis}</p>
                                     {fact.verdict === 'Disputed' && onFixClaim && (
                                         <button

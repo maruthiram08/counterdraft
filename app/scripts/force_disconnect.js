@@ -1,7 +1,7 @@
 
-const fs = require('fs');
-const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
+import fs from 'fs';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 // Manually parse .env.local
 const envPath = path.resolve(process.cwd(), '.env.local');

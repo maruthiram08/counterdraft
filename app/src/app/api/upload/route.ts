@@ -11,6 +11,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // 0. Pre-parsing checks (DoS protection)
+        const contentLength = parseInt(req.headers.get('content-length') || '0');
+        if (contentLength > 15 * 1024 * 1024) { // 15MB buffer for form overhead
+            return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+        }
+
         const formData = await req.formData();
         const file = formData.get('file') as File;
 
@@ -63,8 +69,9 @@ export async function POST(req: Request) {
             name: file.name
         });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Upload API Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

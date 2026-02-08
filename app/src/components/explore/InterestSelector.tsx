@@ -85,7 +85,7 @@ export function InterestSelector({ onComplete, initialCategories = [], initialSu
         <div className="max-w-2xl mx-auto p-8">
             <h1 className="text-2xl font-serif text-gray-900 mb-2">Focus Your Exploration</h1>
             <p className="text-gray-500 mb-8">
-                Select the domains you're thinking about. We'll curate a feed that matches your worldview.
+                Select the domains you&apos;re thinking about. We&apos;ll curate a feed that matches your worldview.
             </p>
 
             {/* Categories */}

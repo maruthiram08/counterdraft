@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Sparkles, Users, Scale, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Sparkles, Users, Scale } from 'lucide-react';
 import type { Outcome, Stance, Audience, ContentReference, ConfidenceResult } from '@/types';
 import { ReferenceSection } from '@/components/common/ReferenceSection'; // Ensure this path is correct
 import { ConfidenceIndicator } from '@/components/brain/ConfidenceIndicator';
@@ -57,6 +57,25 @@ export default function NewDraftModal({
     const [isWhyDrawerOpen, setIsWhyDrawerOpen] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+    const handleClose = useCallback(() => {
+        // Confirm if fields are filled
+        if (hook || outcome || audience || stance) {
+            if (!confirm('You have unsaved changes. Discard draft?')) {
+                return;
+            }
+        }
+        onClose();
+        // Reset form
+        setHook('');
+        setOutcome(null);
+        setAudience('');
+        setStance(null);
+        setReferences([]);
+        setErrors([]);
+        setConfidence(null);
+        setIsWhyDrawerOpen(false);
+    }, [hook, outcome, audience, stance, onClose]);
+
     // AI Analysis (Debounced)
     useEffect(() => {
         const analyze = async () => {
@@ -81,22 +100,15 @@ export default function NewDraftModal({
         };
 
         analyze();
-    }, [debouncedHook, audience]);
+    }, [debouncedHook, audience, outcome]);
 
     // Pre-fill form if triggered from belief/tension/artifact
     useEffect(() => {
-        console.log('[NewDraftModal] prefill changed:', {
-            prefill,
-            hasReferences: !!prefill?.references,
-            refCount: prefill?.references?.length,
-            refContentLength: prefill?.references?.[0]?.content?.length
-        });
         if (prefill) {
             if (prefill.hook) setHook(prefill.hook);
             if (prefill.outcome) setOutcome(prefill.outcome);
             if (prefill.stance) setStance(prefill.stance);
             if (prefill.references && prefill.references.length > 0) {
-                console.log('[NewDraftModal] Setting references:', prefill.references);
                 setReferences(prefill.references);
             }
         }
@@ -111,26 +123,7 @@ export default function NewDraftModal({
             document.addEventListener('keydown', handleEsc);
             return () => document.removeEventListener('keydown', handleEsc);
         }
-    }, [isOpen]);
-
-    const handleClose = () => {
-        // Confirm if fields are filled
-        if (hook || outcome || audience || stance) {
-            if (!confirm('You have unsaved changes. Discard draft?')) {
-                return;
-            }
-        }
-        onClose();
-        // Reset form
-        setHook('');
-        setOutcome(null);
-        setAudience('');
-        setStance(null);
-        setReferences([]);
-        setErrors([]);
-        setConfidence(null);
-        setIsWhyDrawerOpen(false);
-    };
+    }, [isOpen, handleClose]);
 
     const validate = (): boolean => {
         const newErrors: string[] = [];
@@ -345,7 +338,7 @@ export default function NewDraftModal({
                             {/* Section 4: Stance Toggle */}
                             <div className="space-y-3">
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                    <Scale size={16} className="text-green-500" /> What's your stance?
+                                    <Scale size={16} className="text-green-500" /> What&apos;s your stance?
                                 </label>
                                 <div className="flex flex-col gap-2">
                                     {(['supportive', 'contrarian', 'exploratory'] as Stance[]).map((opt) => (

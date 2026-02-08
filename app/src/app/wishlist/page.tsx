@@ -17,7 +17,7 @@ type Feature = {
 };
 
 export default function WishlistPage() {
-    const { user, isLoaded } = useUser();
+    const { user } = useUser();
     const [features, setFeatures] = useState<Feature[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);

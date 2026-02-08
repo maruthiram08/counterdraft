@@ -51,7 +51,7 @@ export function CouponClaimer() {
         };
 
         claimCoupon();
-    }, [isLoaded, isSignedIn, claimed]);
+    }, [isLoaded, isSignedIn, claimed, getToken]);
 
     return null; // Invisible component
 }

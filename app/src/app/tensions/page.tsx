@@ -2,7 +2,7 @@
 
 import { useTensions } from "@/hooks/useTensions";
 import { useState } from "react";
-import { Loader2, Check, Filter, Archive, AlertCircle } from "lucide-react";
+import { Loader2, Filter, Archive } from "lucide-react";
 
 type FilterType = 'pending' | 'resolved' | 'all';
 

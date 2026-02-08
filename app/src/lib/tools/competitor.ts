@@ -63,7 +63,7 @@ export class CompetitorService {
 
         if (!res.ok) return [];
         const data = await res.json();
-        return (data.results || []).map((r: any) => ({ url: r.url, content: r.content }));
+        return (data.results || []).map((r: { url: string; content: string }) => ({ url: r.url, content: r.content }));
     }
 
     private static async fetchUrlContent(url: string) {

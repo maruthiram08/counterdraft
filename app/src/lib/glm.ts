@@ -25,7 +25,14 @@ function generateToken(): string {
     return jwt.sign(payload, secret, { header });
 }
 
-async function callGLM(messages: any[], systemPrompt?: string) {
+import { BeliefExtractionResult, IdeaGenerationResult } from '@/types';
+
+interface GLMMessage {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+}
+
+async function callGLM(messages: GLMMessage[], systemPrompt?: string) {
     const token = generateToken();
 
     const finalMessages = [];
@@ -62,7 +69,7 @@ async function callGLM(messages: any[], systemPrompt?: string) {
 // REPLACEMENT FUNCTIONS (Matching claude.ts signature)
 // ---------------------------------------------------------
 
-export async function extractBeliefs(posts: string[]): Promise<any> {
+export async function extractBeliefs(posts: string[]): Promise<BeliefExtractionResult> {
     const content = posts.join('\n\n---\n\n');
 
     const systemPrompt = `You are an intellectual analyst helping creators understand their beliefs.
@@ -93,7 +100,7 @@ You MUST output ONLY valid JSON matching this schema (no markdown, no backticks)
 
     try {
         return JSON.parse(cleanJson);
-    } catch (e) {
+    } catch {
         console.error("Failed to parse GLM JSON", rawResponse);
         throw new Error("GLM response was not valid JSON");
     }
@@ -102,7 +109,7 @@ You MUST output ONLY valid JSON matching this schema (no markdown, no backticks)
 export async function generateIdeas(
     beliefs: { statement: string; type: string }[],
     tensions: { summary: string; beliefA: string; beliefB: string }[]
-): Promise<any> {
+): Promise<IdeaGenerationResult> {
     const beliefContext = beliefs.map(b => `[${b.type}] ${b.statement}`).join('\n');
     const tensionContext = tensions.map(t =>
         `TENSION: "${t.beliefA}" vs "${t.beliefB}" - ${t.summary}`
@@ -139,7 +146,7 @@ You MUST output ONLY valid JSON matching this schema (no markdown, no backticks)
 
     try {
         return JSON.parse(cleanJson);
-    } catch (e) {
+    } catch {
         console.error("Failed to parse GLM JSON", rawResponse);
         throw new Error("GLM response was not valid JSON");
     }

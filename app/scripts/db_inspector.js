@@ -1,6 +1,10 @@
-const { createClient } = require('@supabase/supabase-js');
-const path = require('path');
-const fs = require('fs');
+import { createClient } from '@supabase/supabase-js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load Env
 const envPath = path.resolve(__dirname, '../.env.local');
@@ -45,7 +49,13 @@ async function inspectForeignKeys() {
     // Fallback: Let's list all tables and check our knowledge base.
     // Actually, asking the user to run a query is safer and 100% accurate.
 
-    console.log('⚠️ Cannot run introspection via Client directly without raw SQL support.');
+    if (error) {
+        console.warn('⚠️ Introspection query failed:', error.message || error);
+    } else {
+        console.log(`Found ${data?.length || 0} foreign key constraints (partial view).`);
+    }
+
+    console.log('⚠️ Cannot run full introspection via Client directly without raw SQL support.');
 }
 
 inspectForeignKeys();

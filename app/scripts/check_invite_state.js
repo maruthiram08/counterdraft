@@ -1,6 +1,10 @@
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load Env
 const envPath = path.resolve(__dirname, '../.env.local');
@@ -27,6 +31,7 @@ async function diagnose() {
     // 2. Check Coupons
     const { data: coupons, error: couponError } = await supabase.from('coupons').select('*');
     console.log("2. Coupons Found:", coupons?.length || 0);
+    if (couponError) console.error("   Error:", couponError);
     coupons?.forEach(c => {
         console.log(`   - Code: ${c.code} | Used: ${c.redemptions_count}/${c.max_redemptions} | Plan: ${c.plan_id}`);
     });

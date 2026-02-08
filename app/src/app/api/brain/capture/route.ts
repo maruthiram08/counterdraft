@@ -137,7 +137,7 @@ Think like a careful analyst preparing material for long-term thinking, not a co
             if (sourceUrl) {
                 domain = new URL(sourceUrl).hostname;
             }
-        } catch (e) {
+        } catch {
             console.warn("Invalid Source URL:", sourceUrl);
         }
 
@@ -162,8 +162,9 @@ Think like a careful analyst preparing material for long-term thinking, not a co
 
         return NextResponse.json({ success: true, artifact });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[POST /api/brain/capture] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

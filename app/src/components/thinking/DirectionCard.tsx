@@ -27,7 +27,7 @@ export function DirectionCard({ title, reason, relatedBelief, onDraft }: Directi
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                             <span className="w-1 h-1 rounded-full bg-gray-300" />
                             <span className="font-serif italic truncate max-w-md opacity-70">
-                                from "{relatedBelief}"
+                                from &quot;{relatedBelief}&quot;
                             </span>
                         </div>
                     )}

@@ -59,6 +59,11 @@ const DEFAULT_CATEGORIES = [
     },
 ];
 
+interface TrendGroup {
+    category: string;
+    trends: { label: string; query: string }[];
+}
+
 export function ExplorerChat() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
@@ -88,7 +93,7 @@ export function ExplorerChat() {
                 if (data.groups && Array.isArray(data.groups)) {
                     // Merge fetched trends with existing structure
                     setTrendCategories(prev => prev.map(cat => {
-                        const newGroup = data.groups.find((g: any) => g.category === cat.label);
+                        const newGroup = data.groups.find((g: TrendGroup) => g.category === cat.label);
                         return newGroup && newGroup.trends.length > 0
                             ? { ...cat, trends: newGroup.trends }
                             : cat;
@@ -423,7 +428,7 @@ export function ExplorerChat() {
                                                                     </button>
                                                                 )}
                                                             </div>
-                                                            <p className="text-gray-900 font-medium mb-1">"{idea.hook}"</p>
+                                                            <p className="text-gray-900 font-medium mb-1">&quot;{idea.hook}&quot;</p>
                                                             <p className="text-sm text-gray-600">{idea.angle}</p>
                                                         </div>
                                                     ))}

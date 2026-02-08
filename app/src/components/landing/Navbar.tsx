@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { usePostHog } from 'posthog-js/react';
 
@@ -16,8 +17,8 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-zinc-100 py-3 shadow-sm' : 'bg-transparent py-8'}`}>
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-1.5 md:gap-3 group cursor-pointer">
-          <img src="/brand/logo-icon.png" alt="Counterdraft Icon" className="h-9 w-9 group-hover:scale-105 transition-transform" />
-          <img src="/brand/logo-text.png" alt="Counterdraft" className="h-[44px] w-auto mt-0.5" />
+          <Image src="/brand/logo-icon.png" alt="Counterdraft Icon" width={36} height={36} className="h-9 w-9 group-hover:scale-105 transition-transform" />
+          <Image src="/brand/logo-text.png" alt="Counterdraft" width={200} height={44} className="h-[44px] w-auto mt-0.5" />
         </Link>
 
         {/* ... (Middle Text Links omitted for brevity if unchanged, but need to be careful with replace) ... */}

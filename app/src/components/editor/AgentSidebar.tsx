@@ -48,10 +48,8 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
         try {
             const res = await fetch('/api/user/status');
             const data = await res.json();
-            console.log("Agent Sidebar Limit Check:", data); // DEBUG
 
             if (data.usage && !data.usage.is_allowed) {
-                console.log("BLOCKED - Triggering Modal"); // DEBUG
                 setLimitState({
                     tier: data.usage.tier,
                     usage: data.usage.count,

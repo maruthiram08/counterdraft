@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { BeliefExtractionResult } from "@/types";
 
-export async function storeAnalysisResults(userId: string, analysis: any) {
+export async function storeAnalysisResults(userId: string, analysis: BeliefExtractionResult) {
     // Helper to map confidence
     const mapConfidence = (c: string) => {
         if (c?.toLowerCase() === 'high') return 0.9;
@@ -9,7 +10,7 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
     };
 
     const beliefsToInsert = [
-        ...(analysis.coreBeliefs || []).map((b: any) => ({
+        ...(analysis.coreBeliefs || []).map((b) => ({
             user_id: userId,
             statement: b.statement,
             belief_type: 'core',
@@ -18,7 +19,7 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
             confidence_level: b.confidence?.toLowerCase() || 'medium',
             tags: b.tags || []
         })),
-        ...(analysis.overusedAngles || []).map((b: any) => ({
+        ...(analysis.overusedAngles || []).map((b) => ({
             user_id: userId,
             statement: b.statement,
             belief_type: 'overused',
@@ -27,7 +28,7 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
             confidence_level: b.confidence?.toLowerCase() || 'medium',
             tags: b.tags || []
         })),
-        ...(analysis.emergingThesis || []).map((b: any) => ({
+        ...(analysis.emergingThesis || []).map((b) => ({
             user_id: userId,
             statement: b.statement,
             belief_type: 'emerging',
@@ -38,7 +39,7 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
         }))
     ];
 
-    let insertedBeliefIds: Map<string, string> = new Map();
+    const insertedBeliefIds: Map<string, string> = new Map();
 
     if (beliefsToInsert.length > 0) {
         const { data: insertedBeliefs, error: beliefError } = await supabaseAdmin
@@ -58,7 +59,7 @@ export async function storeAnalysisResults(userId: string, analysis: any) {
 
     // Store Tensions
     if (analysis.detectedTensions && analysis.detectedTensions.length > 0) {
-        const tensionsToInsert = analysis.detectedTensions.map((t: { beliefA: string; beliefB: string; summary: string }) => {
+        const tensionsToInsert = analysis.detectedTensions.map((t) => {
             // Try to find matching belief IDs (partial match)
             let beliefAId = null;
             let beliefBId = null;

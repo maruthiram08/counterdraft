@@ -46,7 +46,7 @@ export function getCaretCoordinates(
         'MozTabSize',
     ];
 
-    const isFirefox = (window as any).mozInnerScreenX != null;
+    const isFirefox = 'mozInnerScreenX' in window;
 
     const div = document.createElement('div');
     div.id = 'input-textarea-caret-position-mirror-div';
@@ -64,8 +64,10 @@ export function getCaretCoordinates(
     style.visibility = 'hidden';
 
     // Transfer properties
+    const styleAny = style as CSSStyleDeclaration & Record<string, string>;
+    const computedAny = computed as CSSStyleDeclaration & Record<string, string>;
     properties.forEach(prop => {
-        style[prop as any] = computed[prop as any];
+        styleAny[prop] = computedAny[prop];
     });
 
     if (isFirefox) {

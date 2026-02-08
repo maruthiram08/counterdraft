@@ -1,6 +1,6 @@
 
 import { Belief } from "@/types";
-import { ArrowRight, ChevronRight, CornerDownRight, Leaf, GitCommit, Database } from "lucide-react";
+import { CornerDownRight, GitCommit, Database } from "lucide-react";
 
 interface BeliefTreeProps {
     roots: Belief[];
@@ -19,7 +19,7 @@ export function BeliefTree({ roots, pillars, leafs }: BeliefTreeProps) {
                 <GitCommit className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Belief Hierarchy Yet</h3>
                 <p className="text-gray-500 max-w-md mx-auto">
-                    Your beliefs are currently flat lists. To build authority, start linking them into a "Tree of Truth" (Root &rarr; Pillar &rarr; Leaf).
+                    Your beliefs are currently flat lists. To build authority, start linking them into a &quot;Tree of Truth&quot; (Root &rarr; Pillar &rarr; Leaf).
                 </p>
                 <button className="mt-4 text-sm font-medium text-blue-600 hover:underline">
                     Run Genealogy Analysis

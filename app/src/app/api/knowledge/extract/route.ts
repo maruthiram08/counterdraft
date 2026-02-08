@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getOrCreateUser } from '@/lib/user-sync';
-import { extractBeliefs } from '@/lib/openai';
+import { extractBeliefs } from '@/lib/brain/analysis';
 import { storeAnalysisResults } from '@/lib/belief-storage';
 
 export const maxDuration = 60; // Allow longer timeout for analysis
@@ -42,8 +42,9 @@ export async function POST(req: NextRequest) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Knowledge Extract] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

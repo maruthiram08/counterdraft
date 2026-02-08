@@ -12,7 +12,7 @@ interface LimitModalProps {
     limit: number;
 }
 
-export function LimitModal({ isOpen, onClose, tier, usage, limit }: LimitModalProps) {
+export function LimitModal({ isOpen, onClose }: LimitModalProps) {
     const [isRequestModalOpen, setIsRequestModalOpen] = React.useState(false);
 
     if (!isOpen && !isRequestModalOpen) return null;

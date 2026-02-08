@@ -1,67 +1,51 @@
-Got it — this is a solid, ambitious product, and it was fun digging into how the pipeline, AI, and billing pieces fit together.
+# Consolidated Code Review & Technical Audit
 
-**Project Snapshot**
-Next.js App Router app with Clerk auth, Supabase (service role for server routes), AI tools (OpenAI/Claude), and a content pipeline (Ideas → Drafts → Published). The API surface is broad (content creation, ingestion, LinkedIn, billing, tools), so correctness and security in route handlers are the highest-risk area.
+This document combines findings from the initial manual audit, the CodeRabbit AI review, and the security best practices report.
 
-**Findings (ordered by severity)**
+---
 
-1. [P0] Dodo webhook accepts unsigned payloads; anyone can spoof subscription events and flip tiers. `app/src/app/api/webhooks/dodo/route.ts:23`.  
-::code-comment{title="[P0] Webhook signature not verified" body="The handler only checks for signature headers but never validates them. Any client can POST fake events and update `user_subscriptions`/`user_usage`. This is a critical auth bypass. Please verify the signature using Dodo’s webhook secret or SDK verification before trusting payloads." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/webhooks/dodo/route.ts" start=23 end=35 priority=3 confidence=0.63}
+## 🟢 Remediated & Verified (Fixed)
 
-2. [P0] LinkedIn OAuth state is decoded but never verified against a stored value; CSRF risk lets an attacker attach their LinkedIn account to another user. `app/src/app/api/linkedin/callback/route.ts:46`.  
-::code-comment{title="[P0] OAuth state not validated" body="`storedState` is read but never compared, and the `state` value itself is just base64 JSON without a MAC/signature. That allows CSRF/session fixation and linking a LinkedIn account to another user ID. Store state in a cookie/session and compare, or sign it with an HMAC and verify it here." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/linkedin/callback/route.ts" start=46 end=68 priority=3 confidence=0.61}
+| Finding | Severity | Source | Status |
+| :--- | :--- | :--- | :--- |
+| **Committed Secrets** | Critical | Manual | ✅ `.gitignore` updated. |
+| **Unauthenticated SSRF** | High | Manual | ✅ Secured `/api/utils/extract`. |
+| **Editor XSS** | High | Manual | ✅ `DOMPurify` integrated. |
+| **CSRF/CORS** | High/Med | Manual | ✅ Baseline middleware checks added. |
+| **Public Wishlist Leak** | Medium | Manual | ✅ Filtered by user ownership. |
+| **Sensitive Logs** | Low | Manual | ✅ Pro-only tracing disabled. |
+| **Webhook Signature (Dodo)** | P0 | CodeRabbit | ✅ Implementation verified in `/api/webhooks/dodo`. |
+| **OAuth State CSRF (LinkedIn)** | P0 | CodeRabbit | ✅ Implementation verified in `/api/linkedin/callback`. |
+| **SSRF in Brain Read-URL** | P1 | CodeRabbit | ✅ IP/Protocol validation implemented. |
 
-3. [P1] Repurpose endpoint has no auth/ownership check and pulls content by `sourceId` with service role. A guessed ID can repurpose someone else’s draft and burn their usage. `app/src/app/api/content/repurpose/route.ts:7`.  
-::code-comment{title="[P1] Missing auth/ownership check" body="This route never validates the caller’s identity and fetches drafts/content_items by `sourceId` using the admin client. That allows unauthorized access to content and billing/usage abuse. Require auth and verify `user_id` ownership before reading or writing." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/content/repurpose/route.ts" start=7 end=38 priority=2 confidence=0.62}
+---
 
-4. [P1] Razorpay verification binds payment to the *current session* but never confirms the order belongs to that user. A valid signature could upgrade the wrong account. `app/src/app/api/billing/razorpay/verify/route.ts:40`.  
-::code-comment{title="[P1] Payment verification not bound to order/user" body="After signature check, the handler updates the logged-in user without verifying the order’s `notes.userId` or fetching the order to confirm ownership and amount/plan. This allows payment replay or cross-account upgrades. Persist order->user mapping or fetch/verify order details before updating." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/billing/razorpay/verify/route.ts" start=40 end=74 priority=2 confidence=0.55}
+## 🟠 Open Priorities (Needs Action/Refinement)
 
-5. [P1] `read-url` allows arbitrary URL fetches; no protocol or private-network blocking (SSRF). `app/src/app/api/brain/read-url/route.ts:15`.  
-::code-comment{title="[P1] SSRF risk in URL fetch" body="The API fetches any user-provided URL without allowlist or private IP blocking. This can access internal metadata or services. Restrict to http/https, block private ranges, and consider an allowlist or proxy." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/brain/read-url/route.ts" start=15 end=25 priority=2 confidence=0.58}
+### 1. [P1] Missing Ownership Checks (Cross-Tenant Risks)
+- **Review Finding**: `repurpose`, `fact-check`, `plagiarism-check`, and `embeddings` endpoints lack strict `user_id` scoping in some paths.
+- **Action**: Audit these handlers to ensure `getOrCreateUser()` is coupled with `.eq('user_id', userId)` on all Supabase queries.
 
-6. [P2] Ingest route silently falls back to a hardcoded test user if auth fails, even in non-mock mode. `app/src/app/api/ingest/route.ts:19`.  
-::code-comment{title="[P2] Unauthenticated ingest falls back to test user" body="If `getOrCreateUser()` fails, the route writes to (or creates) `test@counterdraft.com`. In production this allows unauthenticated use and data contamination. Replace with a strict 401 outside mock mode." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/ingest/route.ts" start=19 end=46 priority=1 confidence=0.53}
+### 2. [P1] Razorpay Payment Binding
+- **Review Finding**: Razorpay verification might not be strictly bound to the order's `userId` metadata, potentially allowing payment replays or cross-account upgrades.
+- **Action**: Update `/api/billing/razorpay/verify` to confirm the order belongs to the authenticated user.
 
-7. [P2] Content PATCH reads `content_items` by `id` without filtering `user_id`, leaking cross-tenant existence/stage via service role. `app/src/app/api/content/route.ts:221`.  
-::code-comment{title="[P2] Cross-tenant read in content PATCH" body="The stage lookup uses admin client and filters only by `id`. This reveals stage/existence of other users’ content and can skew usage logic. Add `.eq('user_id', userId)` and treat missing rows as 404." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/content/route.ts" start=221 end=227 priority=1 confidence=0.44}
+### 3. [P2] Ingest Route Test-User Fallback
+- **Review Finding**: Unauthenticated ingest falls back to `test@counterdraft.com` in production.
+- **Action**: Restrict this fallback logic to `process.env.NODE_ENV === 'development'`.
 
-8. [P2] Upload endpoint has no size/type limits and uses `Math.random` for IDs; potential abuse and storage DoS. `app/src/app/api/upload/route.ts:13`.  
-::code-comment{title="[P2] Upload lacks size/type limits" body="Uploads accept any file size/type and buffer the full payload in memory, which is a DoS vector. Add size limits (Content-Length or streaming), MIME allowlist, and use crypto-random IDs." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/upload/route.ts" start=13 end=27 priority=1 confidence=0.47}
+### 4. [P2] Upload Resource Limits
+- **Review Finding**: Missing size/type limits on the upload endpoint.
+- **Action**: Implement `Content-Length` checks and MIME type allowlisting.
 
-**Open Questions / Assumptions**
-1. Do you already validate Dodo signatures elsewhere (e.g., edge middleware)? If yes, I can note the linkage and relax the severity.
-2. Are Supabase RLS policies enabled for the `drafts` and `content_items` tables? If RLS is off, admin-client routes become critical to lock down.
-3. Is `/api/ingest` meant to be public for marketing experiments, or strictly authenticated?
+---
 
-**Test Gaps / Residual Risks**
-- I didn’t see automated tests around webhook verification, OAuth state validation, or API auth/ownership checks. Those are the most fragile areas given the large route surface.
-- I didn’t run any tests locally.
+## 🏗️ Architectural Technical Debt (Pending Refactor)
 
-Totally fair to ask for another pass — I took a deeper look and found a few more things worth flagging.
+1. **Mega-Component Bloat**: `MainEditor.tsx` (>1,100 lines) needs decomposition into hooks (e.g., `useFactChecker`) and sub-components.
+2. **Type Safety Gap**: Over 300 lint errors and widespread use of `any` for core data models.
+3. **State Sync**: Prop-drilling for workspace-level state should be replaced with a lightweight store (e.g., Zustand).
 
-**Findings**
-1. [P1] Embeddings API allows cross-tenant read/write because it uses the service-role client without filtering by `user_id`. Any authenticated user can create/update embeddings for someone else’s `content_id`, and similarity search can return other users’ data. `app/src/app/api/embeddings/route.ts:41` and `app/src/app/api/embeddings/route.ts:105`.
-2. [P1] Fact-check results are readable and overwriteable by `draftId` with no auth or ownership check. Anyone can fetch or wipe verifications for another user’s draft. `app/src/app/api/tools/fact-check/route.ts:8` and `app/src/app/api/tools/fact-check/route.ts:58`.
-3. [P1] Plagiarism results are readable and writeable by `draftId` with no auth or ownership check. Same cross-tenant exposure as fact-check. `app/src/app/api/tools/plagiarism-check/route.ts:8` and `app/src/app/api/tools/plagiarism-check/route.ts:50`.
-4. [P2] Public test endpoint executes LLM + external fetches and uses the admin client without auth. This is a cost/abuse vector and should be gated or removed in production. `app/src/app/api/test/e2e-simulation/route.ts:13`.
-5. [P2] Explore ideas endpoint is unauthenticated but calls OpenAI, enabling anonymous cost abuse. Consider auth + usage limits or rate limiting. `app/src/app/api/explore/ideas/route.ts:28`.
-6. [P2] Explore trends endpoint is unauthenticated but calls Tavily + OpenAI, also open to cost abuse. `app/src/app/api/explore/trends/route.ts:15`.
+---
 
-::code-comment{title="[P1] Embeddings cross-tenant access" body="This route uses the service-role client and never scopes queries by `user_id`. Any authenticated user can update embeddings for arbitrary `content_id`s, and similarity search can return other users’ data. Add `user_id` to `content_embeddings`, enforce it on read/write, and scope the RPC to the current user." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/embeddings/route.ts" start=41 end=111 priority=2 confidence=0.56}
-::code-comment{title="[P1] Fact-check results lack auth/ownership" body="GET is unauthenticated and returns results by `draftId` alone; POST writes/verifies without checking draft ownership. This allows cross-tenant read/overwrite. Require auth and validate the draft belongs to the user." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/tools/fact-check/route.ts" start=8 end=75 priority=2 confidence=0.55}
-::code-comment{title="[P1] Plagiarism results lack auth/ownership" body="GET is unauthenticated and returns a result by `draftId` alone; POST writes results without verifying the draft’s owner. This exposes other users’ plagiarism checks. Require auth and enforce draft ownership." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/tools/plagiarism-check/route.ts" start=8 end=56 priority=2 confidence=0.53}
-::code-comment{title="[P2] Public test endpoint uses paid APIs" body="`/api/test/e2e-simulation` runs LLM calls and external fetches without auth. This is a cost/abuse vector and should be gated to admin/test environments or removed from production builds." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/test/e2e-simulation/route.ts" start=13 end=52 priority=1 confidence=0.45}
-::code-comment{title="[P2] Explore ideas is unauthenticated" body="This endpoint calls OpenAI without auth or rate limits, so anonymous requests can burn API credits. Consider auth + usage limits or rate limiting." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/explore/ideas/route.ts" start=28 end=118 priority=1 confidence=0.43}
-::code-comment{title="[P2] Explore trends is unauthenticated" body="This endpoint calls Tavily and OpenAI without auth or rate limits, enabling anonymous cost abuse. Gate behind auth or add rate limits." file="/Users/maruthi/Desktop/counterdraft/counterdraft/app/src/app/api/explore/trends/route.ts" start=15 end=77 priority=1 confidence=0.41}
-
-**Open Questions**
-1. Are `/api/explore/ideas`, `/api/explore/trends`, and `/api/test/e2e-simulation` intended to be public, or should they be behind auth in production?
-2. Does `content_embeddings` have a `user_id` column already, or should we add it as part of scoping?
-
-**Test Gaps / Residual Risks**
-- No automated tests around API auth/ownership for tools and embedding search.
-- No rate limiting on public endpoints that use paid APIs.
-
-If you want, I can implement the fixes for these endpoints (auth + ownership checks + user scoping) and add a lightweight test plan.
-
+*Note: For detailed implementation steps, refer to the [consolidated_security_audit.md](file:///Users/maruthi/.gemini/antigravity/brain/9910e586-e17e-48ec-9dae-b99d520acec4/consolidated_security_audit.md).*

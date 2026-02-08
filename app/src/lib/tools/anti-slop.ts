@@ -31,8 +31,6 @@ export class AntiSlopService {
      */
     static scan(text: string): SlopMatch[] {
         const matches: SlopMatch[] = [];
-        const lowerText = text.toLowerCase();
-
         Object.entries(this.dictionary).forEach(([slop, meta]) => {
             const regex = new RegExp(`\\b${slop}\\b`, 'gi');
             let match;

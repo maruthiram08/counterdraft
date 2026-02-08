@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { repurposeContent, generateImage } from '@/lib/openai';
+import { repurposeContent } from '@/lib/content/repurposing';
+import { generateImage } from '@/lib/brain/generation';
+import { RepurposeOptions } from '@/types';
 
 import { UsageService } from '@/lib/billing/usage';
 import { getOrCreateUser } from '@/lib/user-sync';
 
 export async function POST(req: Request) {
     try {
-        const { sourceId, platform, options } = await req.json();
+        const { sourceId, platform, options } = await req.json() as { sourceId: string; platform: string; options: RepurposeOptions };
 
         // 0. Strict Auth
         const authUserId = await getOrCreateUser();
@@ -112,7 +114,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Generate Assets (if requested)
-        const assets: any[] = [];
+        const assets: { type: string; role: string; url: string; prompt: string }[] = [];
         let imagePrompt = "";
         const titleForPrompt = newTitle || sourceHook;
 
@@ -202,8 +204,9 @@ export async function POST(req: Request) {
             assets: assets || []
         });
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Repurpose failed:", e);
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        const message = e instanceof Error ? e.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

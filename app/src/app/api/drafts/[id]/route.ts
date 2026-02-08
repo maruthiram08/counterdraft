@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabase } from '@/lib/supabase';
 import { getOrCreateUser } from '@/lib/user-sync';
-import { extractBeliefs } from '@/lib/openai';
-import { storeAnalysisResults } from '@/lib/belief-storage';
 
 
 // DELETE /api/drafts/[id] - Delete a draft
@@ -48,9 +46,10 @@ export async function DELETE(
         if (error) throw error;
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[DELETE /api/drafts/[id]] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -76,7 +75,7 @@ export async function PATCH(
         const draftId = id;
         const { content, status } = await req.json();
 
-        const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+        const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
         if (content !== undefined) updateData.content = content;
         if (status !== undefined) updateData.status = status;
 
@@ -93,8 +92,9 @@ export async function PATCH(
 
 
         return NextResponse.json({ draft, success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[PATCH /api/drafts/[id]] Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

@@ -107,7 +107,7 @@ export async function moderateContent(input: string): Promise<ModerationResult> 
         if (result.flagged) {
             // Get all flagged categories
             const flaggedCategories = Object.entries(result.categories)
-                .filter(([_, value]) => value === true)
+                .filter(([, value]) => value === true)
                 .map(([key]) => CATEGORY_LABELS[key] || key);
 
             // Check for false positive: If content is about prevention/awareness, allow it
@@ -136,10 +136,11 @@ export async function moderateContent(input: string): Promise<ModerationResult> 
 
         return { flagged: false, categories: [] };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // If moderation fails, log and allow (fail-open for availability)
-        console.error('Moderation API error:', error.message);
-        TraceLogger.log('moderation', 'API Error (Fail-Open)', { error: error.message });
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Moderation API error:', message);
+        TraceLogger.log('moderation', 'API Error (Fail-Open)', { error: message });
         return { flagged: false, categories: [] };
     }
 }

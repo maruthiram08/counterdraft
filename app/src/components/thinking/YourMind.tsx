@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Layers, Zap, Network, Loader2 } from 'lucide-react';
+import { Layers, Zap, Loader2 } from 'lucide-react';
 import { BeliefCard } from '@/components/thinking/BeliefCard';
 import { TensionCard } from '@/components/thinking/TensionCard';
 import { AddContentModal } from '@/components/thinking/AddContentModal';
 import { UrlPreviewModal } from '@/components/modal/UrlPreviewModal';
 import { useBeliefs } from '@/hooks/useBeliefs';
-import { useTensions } from '@/hooks/useTensions';
+import { useTensions, type Tension } from '@/hooks/useTensions';
 import { useDrafts } from '@/hooks/useDrafts';
 import { GenealogyTree } from '@/components/thinking/GenealogyTree';
 import { ArtifactGrid } from '@/components/brain/ArtifactGrid';
@@ -16,12 +16,14 @@ import { BookMarked } from 'lucide-react';
 import { toast } from 'sonner';
 import { LimitModal } from '@/components/modal/LimitModal';
 
+import { Artifact, ContentReference } from '@/types';
+
 interface YourMindProps {
     onDraftRequest?: (data: {
         id?: string;
         hook: string;
         type: string;
-        references?: any[];
+        references?: ContentReference[];
     }) => void;
 }
 
@@ -76,11 +78,11 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
     const [activeTab, setActiveTab] = useState<'beliefs' | 'tensions' | 'artifacts'>(initialTab);
     const [beliefView, setBeliefView] = useState<'list' | 'tree'>(initialView);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
-    const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+    const [isFetchingUrl] = useState(false);
 
     // NEW: URL Preview Modal state
     const [urlPreviewModalOpen, setUrlPreviewModalOpen] = useState(false);
-    const [selectedArtifact, setSelectedArtifact] = useState<any>(null);
+    const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
 
     // Sync helpers
     const updateUrl = (key: string, value: string) => {
@@ -119,7 +121,7 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
         setReviewedBeliefIds(prev => new Set([...prev, beliefId]));
     };
 
-    const handleWriteAbout = async (beliefData: { id: string; text: string; type: string; tags?: string[]; entities?: string[]; context?: string }) => {
+    const handleWriteAbout = async (beliefData: { id: string; text: string; type: string; tags?: string[]; entities?: string[]; context?: string; urls?: string[] }) => {
         try {
             const res = await fetch('/api/content/create', {
                 method: 'POST',
@@ -133,13 +135,12 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                     tags: beliefData.tags,
                     entities: beliefData.entities,
                     context: beliefData.context, // Content
-                    urls: (beliefData as any).urls, // Pass URLs for scraping
+                    urls: beliefData.urls, // Pass URLs for scraping
                     stage: 'idea' // As requested: Goes to Ideas pile
                 }),
             });
 
             if (res.ok) {
-                const data = await res.json();
                 // Redirect to pipeline (Command Center) where Ideas live
                 window.location.href = `/workspace?tab=pipeline`;
             } else if (res.status === 403) {
@@ -181,22 +182,6 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
             setClassifiedTensionIds(prev => new Set([...prev, tensionData.id]));
         } catch (error) {
             console.error('Error creating draft from tension:', error);
-        }
-    };
-
-    // Helper to fetch content if missing
-    const fetchUrlContent = async (url: string) => {
-        try {
-            const res = await fetch('/api/brain/read-url', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-            if (!res.ok) throw new Error("Failed to fetch");
-            return await res.json();
-        } catch (e) {
-            console.error(e);
-            return null;
         }
     };
 
@@ -383,13 +368,13 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                                 <SkeletonTensionCard />
                             </>
                         ) : unclassifiedTensions.length > 0 ? (
-                            unclassifiedTensions.map((t: any) => (
+                            unclassifiedTensions.map((t: Tension) => (
                                 <TensionCard
                                     key={t.id}
                                     tensionId={t.id}
-                                    tension={t.tensionSummary || "Tension detected"}
-                                    sideA={t.beliefA?.statement || "Perspective A"}
-                                    sideB={t.beliefB?.statement || "Perspective B"}
+                                    tension={t.summary || "Tension detected"}
+                                    sideA={t.beliefA || "Perspective A"}
+                                    sideB={t.beliefB || "Perspective B"}
                                     onClassify={handleTensionClassified}
                                     onTurnIntoIdea={handleTurnTensionIntoIdea}
                                 />
@@ -477,7 +462,7 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
             <LimitModal
                 isOpen={limitModalOpen}
                 onClose={() => setLimitModalOpen(false)}
-                tier={limitState.tier as any}
+                tier={limitState.tier}
                 usage={limitState.usage}
                 limit={limitState.limit}
             />

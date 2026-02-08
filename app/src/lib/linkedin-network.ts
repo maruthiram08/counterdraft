@@ -21,7 +21,7 @@ const customAgent = new Agent({
  * @param retries Number of retries (default: 5)
  * @param timeout Request timeout in ms (default: 120000)
  */
-export const linkedinFetch = async (url: string, options: any, retries = 5, timeout = 120000) => {
+export const linkedinFetch = async (url: string, options: Parameters<typeof undiciFetch>[1], retries = 5, timeout = 120000) => {
     for (let i = 0; i < retries; i++) {
         try {
             // Use undiciFetch with custom dispatcher

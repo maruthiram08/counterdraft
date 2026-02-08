@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { PRICING_CONFIG } from '@/lib/constants/pricing';
+import { razorpay } from '@/lib/billing/razorpay';
 
 export async function POST(req: NextRequest) {
     try {
@@ -31,7 +32,6 @@ export async function POST(req: NextRequest) {
         // 1.5. Verify Order Ownership (Prevent Replay/Injection)
         // We must ensure this order was actually created for THIS user.
         // We need to fetch the order from Razorpay to check the notes.
-        const { razorpay } = require('@/lib/billing/razorpay');
         const order = await razorpay.orders.fetch(razorpay_order_id);
 
         if (!order) {
@@ -52,15 +52,23 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Determine Plan Details
-        let status = 'active';
-        let plan_id = planId;
+        // SECURITY: Use the planId from order notes rather than trusting the request body
+        const verifiedPlanId = order.notes?.planId || planId;
+
+        if (verifiedPlanId !== planId) {
+            console.warn('[Razorpay] Plan ID mismatch, using verified ID from order notes', {
+                requestPlanId: planId,
+                verifiedPlanId: verifiedPlanId
+            });
+        }
+
+        const planIdToStore = verifiedPlanId;
 
         // Calculate End Date
-        const now = new Date();
-        let endDate = new Date();
-        if (planId === PRICING_CONFIG.PLANS.INDIA.MONTHLY) {
+        const endDate = new Date();
+        if (verifiedPlanId === PRICING_CONFIG.PLANS.INDIA.MONTHLY) {
             endDate.setMonth(endDate.getMonth() + 1);
-        } else if (planId === PRICING_CONFIG.PLANS.INDIA.YEARLY) {
+        } else if (verifiedPlanId === PRICING_CONFIG.PLANS.INDIA.YEARLY) {
             endDate.setFullYear(endDate.getFullYear() + 1);
         }
 
@@ -78,7 +86,7 @@ export async function POST(req: NextRequest) {
                 .from('subscriptions')
                 .update({
                     status: 'active',
-                    plan_id: plan_id,
+                    plan_id: planIdToStore,
                     current_period_end: endDate.toISOString(),
                     cancel_at_period_end: false,
                     provider: 'razorpay',
@@ -92,7 +100,7 @@ export async function POST(req: NextRequest) {
                 .insert({
                     user_id: userId,
                     status: 'active',
-                    plan_id: plan_id,
+                    plan_id: planIdToStore,
                     current_period_end: endDate.toISOString(),
                     provider: 'razorpay',
                     subscription_id: razorpay_order_id
@@ -104,8 +112,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, redirectUrl: '/workspace?upgraded=true' });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('[Razorpay] Verification Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

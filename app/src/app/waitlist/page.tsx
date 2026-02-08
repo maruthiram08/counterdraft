@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Check, Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 
@@ -43,7 +44,8 @@ export default function WaitlistPage() {
                 setStatus('error');
                 setMessage(data.error || 'Something went wrong.');
             }
-        } catch (err) {
+        } catch (error) {
+            console.error("Waitlist submit failed:", error);
             setStatus('error');
             setMessage('Network error.');
         }
@@ -56,8 +58,8 @@ export default function WaitlistPage() {
             <div className="flex-1 flex flex-col items-center justify-center w-full max-w-[480px] p-6 pb-20 mx-auto">
                 {/* Logo Section - Moved inside for better proximity */}
                 <div className="flex items-center justify-center gap-4 mb-8">
-                    <img src="/brand/logo-icon.png" alt="Icon" className="h-16 w-16 object-contain" />
-                    <img src="/brand/logo-text.png" alt="CounterDraft" className="h-12 w-auto opacity-90" />
+                    <Image src="/brand/logo-icon.png" alt="Icon" width={64} height={64} className="h-16 w-16 object-contain" />
+                    <Image src="/brand/logo-text.png" alt="CounterDraft" width={200} height={48} className="h-12 w-auto opacity-90" />
                 </div>
 
                 <h1 className="text-3xl font-bold text-center mb-3 text-zinc-900 leading-tight">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
 import { linkedinFetch } from '@/lib/linkedin-network';
-import { extractBeliefs } from "@/lib/openai";
+import { extractBeliefs } from "@/lib/brain/analysis";
 import { storeAnalysisResults } from "@/lib/belief-storage";
 
 const supabase = createClient(
@@ -145,8 +145,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to publish to LinkedIn' }, { status: 500 });
         }
 
-        const publishData = await publishResponse.json() as any;
+        type LinkedInPublishResponse = { id?: string };
+        const publishData = await publishResponse.json() as LinkedInPublishResponse;
         const linkedInPostId = publishData.id;
+        if (!linkedInPostId) {
+            return NextResponse.json({ error: 'LinkedIn did not return a post ID' }, { status: 502 });
+        }
 
         // Update draft with LinkedIn post URN
         // Update draft with LinkedIn post URN AND content_items stage

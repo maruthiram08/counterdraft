@@ -1,15 +1,38 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Belief, ConfidenceLevel } from '@/types';
+import { Tension } from './useTensions';
 
 export type FeedbackType = 'accurate' | 'misses' | 'clarify';
+
+type BeliefRow = {
+    id: string;
+    user_id: string;
+    statement: string;
+    belief_type: string;
+    confidence?: number;
+    first_seen?: string;
+    last_seen?: string;
+    user_confirmed?: boolean;
+    user_edited?: boolean;
+    created_at: string;
+    updated_at?: string;
+    confidence_level?: ConfidenceLevel;
+    recency_weight?: number;
+    is_stable?: boolean;
+    evidence_count?: number;
+    original_statement?: string | null;
+    parent_id?: string | null;
+    root_id?: string | null;
+    tags?: string[];
+};
 
 export function useBeliefs() {
     const [beliefs, setBeliefs] = useState<{
         core: Belief[];
         overused: Belief[];
         emerging: Belief[];
-        tensions: any[];
+        tensions: Tension[];
         confirmed: Belief[];
     }>({
         core: [],
@@ -49,7 +72,7 @@ export function useBeliefs() {
                 if (beliefsError) throw beliefsError;
 
                 // 3. Categorize & Map
-                const mapBelief = (b: any): Belief & { confidenceLevel: ConfidenceLevel; recencyWeight: number; isStable: boolean; evidenceCount: number; context?: string | null } => ({
+                const mapBelief = (b: BeliefRow): Belief & { confidenceLevel: ConfidenceLevel; recencyWeight: number; isStable: boolean; evidenceCount: number; context?: string | null } => ({
                     id: b.id,
                     userId: b.user_id,
                     statement: b.statement,
@@ -74,16 +97,17 @@ export function useBeliefs() {
                 });
 
                 // Separate confirmed (accepted) from unreviewed
-                const unconfirmed = data?.filter((b: any) => !b.user_confirmed) || [];
-                const confirmedData = data?.filter((b: any) => b.user_confirmed) || [];
+                const rows = (data || []) as BeliefRow[];
+                const unconfirmed = rows.filter((b) => !b.user_confirmed);
+                const confirmedData = rows.filter((b) => b.user_confirmed);
 
-                const core = unconfirmed.filter((b: any) => b.belief_type === 'core').map(mapBelief) || [];
-                const overused = unconfirmed.filter((b: any) => b.belief_type === 'overused').map(mapBelief) || [];
-                const emerging = unconfirmed.filter((b: any) => b.belief_type === 'emerging').map(mapBelief) || [];
+                const core = unconfirmed.filter((b) => b.belief_type === 'core').map(mapBelief) || [];
+                const overused = unconfirmed.filter((b) => b.belief_type === 'overused').map(mapBelief) || [];
+                const emerging = unconfirmed.filter((b) => b.belief_type === 'emerging').map(mapBelief) || [];
 
                 // New types (fallbacks to core if UI doesn't support yet, but here we separate)
-                const roots = unconfirmed.filter((b: any) => b.belief_type === 'root').map(mapBelief) || [];
-                const pillars = unconfirmed.filter((b: any) => b.belief_type === 'pillar').map(mapBelief) || [];
+                const roots = unconfirmed.filter((b) => b.belief_type === 'root').map(mapBelief) || [];
+                const pillars = unconfirmed.filter((b) => b.belief_type === 'pillar').map(mapBelief) || [];
 
                 const confirmed = confirmedData.map(mapBelief) || [];
 
@@ -95,15 +119,16 @@ export function useBeliefs() {
                     confirmed: confirmed as Belief[]
                 });
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error fetching beliefs:", err);
+                let message = "Unknown error";
                 if (err && typeof err === 'object') {
-                    console.error("Error details:", JSON.stringify(err, null, 2));
                     // Check for common issues
-                    if (err.message) console.error("Error message:", err.message);
-                    if (err.hint) console.error("Error hint:", err.hint);
+                    const errObj = err as Record<string, unknown>;
+                    if (typeof errObj.message === 'string') message = errObj.message;
+                    if (typeof errObj.hint === 'string') console.error("Error hint:", errObj.hint);
                 }
-                setError(err.message || "Unknown error");
+                setError(message);
             } finally {
                 setLoading(false);
             }
@@ -158,7 +183,7 @@ export function useBeliefs() {
             console.log(`[Feedback] Persisted: ${beliefId} → ${feedback}`);
             return true;
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error submitting feedback:", err);
             return false;
         }

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
-import { refineSearchQuery } from '@/lib/openai';
+import { refineSearchQuery } from '@/lib/brain/ideation';
 import { TraceLogger } from '@/lib/trace';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 // Mapping from our categories to Google News search terms
 const CATEGORY_TO_QUERY: Record<string, string> = {
@@ -68,6 +69,13 @@ export async function GET(req: Request) {
         const userId = await getOrCreateUser();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 0. Rate Limiting
+        const ip = getClientIp(req);
+        const limitResult = rateLimit(`explore-feed:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 20 });
+        if (!limitResult.allowed) {
+            return NextResponse.json({ error: 'Too many requests. Please try again in 15 minutes.' }, { status: 429 });
         }
 
         // Check for direct query param

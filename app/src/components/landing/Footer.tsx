@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 export const Footer: React.FC = () => {
   return (
@@ -7,8 +8,8 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-16 mb-24">
           <div className="col-span-2">
             <div className="flex items-center gap-3 mb-8">
-              <img src="/brand/logo-icon.png" alt="Counterdraft Icon" className="h-10 w-10 shadow-lg shadow-green-600/20 rounded-xl" />
-              <img src="/brand/logo-text.png" alt="Counterdraft" className="h-7 w-auto mt-1" />
+              <Image src="/brand/logo-icon.png" alt="Counterdraft Icon" width={40} height={40} className="h-10 w-10 shadow-lg shadow-green-600/20 rounded-xl" />
+              <Image src="/brand/logo-text.png" alt="Counterdraft" width={160} height={28} className="h-7 w-auto mt-1" />
             </div>
             <p className="text-zinc-500 text-lg max-w-sm leading-relaxed font-medium">
               The writing tool for creators who want to stand out. Built for LinkedIn, blogs, newsletters, and beyond.

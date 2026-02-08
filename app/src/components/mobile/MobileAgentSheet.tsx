@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Sparkles, X, ChevronUp, GripHorizontal } from "lucide-react";
+import { useState, useRef } from "react";
+import { Sparkles, X, ChevronUp } from "lucide-react";
 
 interface MobileAgentSheetProps {
     children: React.ReactNode;

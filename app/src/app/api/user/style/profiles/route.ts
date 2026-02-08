@@ -5,7 +5,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const userId = await getOrCreateUser();
         if (!userId) {
@@ -14,8 +14,9 @@ export async function GET(req: NextRequest) {
 
         const profiles = await voiceService.getProfiles(userId);
         return NextResponse.json({ profiles });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -33,7 +34,8 @@ export async function POST(req: NextRequest) {
 
         const profile = await voiceService.createProfile(userId, name);
         return NextResponse.json({ profile });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

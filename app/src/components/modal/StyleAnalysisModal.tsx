@@ -3,17 +3,22 @@
 import { useState, useRef } from "react";
 import { X, Loader2, PenTool, ArrowRight, Wand2, CheckCircle, AlertCircle, Link as LinkIcon, Upload, FileText } from "lucide-react";
 
+interface StyleAnalysisResult {
+    voice_tone: string;
+    rules: string[];
+    anti_patterns: string[];
+}
+
 interface StyleAnalysisModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onComplete: (analysis: any) => void;
+    onComplete: (analysis: StyleAnalysisResult) => void;
 }
 
 export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysisModalProps) {
     const [step, setStep] = useState<'input' | 'analyzing' | 'result'>('input');
     const [samples, setSamples] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<StyleAnalysisResult | null>(null);
     const [importMethod, setImportMethod] = useState<'text' | 'url' | 'file'>('text');
     const [urlInput, setUrlInput] = useState("");
     const [importLoading, setImportLoading] = useState(false);
@@ -90,9 +95,9 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                 throw new Error("No text found in any URL. Content might be blocked or client-side rendered.");
             }
 
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error(e);
-            alert(`Failed: ${e.message}`);
+            alert(`Failed: ${e instanceof Error ? e.message : "Unknown error"}`);
         } finally {
             setImportLoading(false);
         }
@@ -160,8 +165,10 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
     };
 
     const handleSave = () => {
-        onComplete(result);
-        onClose();
+        if (result) {
+            onComplete(result);
+            onClose();
+        }
     };
 
     if (!isOpen) return null;
@@ -323,7 +330,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                                     <CheckCircle size={16} className="text-green-600" />
-                                    Do's (Your Patterns)
+                                    Do&apos;s (Your Patterns)
                                 </h3>
                                 <div className="space-y-2">
                                     {result.rules?.map((rule: string, i: number) => (
@@ -339,7 +346,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                                     <AlertCircle size={16} className="text-red-600" />
-                                    Don'ts (Things you avoid)
+                                    Don&apos;ts (Things you avoid)
                                 </h3>
                                 <div className="space-y-2">
                                     {result.anti_patterns?.map((rule: string, i: number) => (

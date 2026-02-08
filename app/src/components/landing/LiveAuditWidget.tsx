@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 
 type AuditState = 'idle' | 'analyzing' | 'gated' | 'complete';
+type AuditCritique = {
+    type: string;
+    message: string;
+    match?: string;
+};
 
 export const LiveAuditWidget: React.FC = () => {
     const [text, setText] = useState('');
     const [state, setState] = useState<AuditState>('idle');
     const [score, setScore] = useState(0);
-    const [primaryCritique, setPrimaryCritique] = useState<any>(null);
-    const [hiddenCount, setHiddenCount] = useState(0);
+    const [primaryCritique, setPrimaryCritique] = useState<AuditCritique | null>(null);
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -26,7 +30,6 @@ export const LiveAuditWidget: React.FC = () => {
 
             setScore(data.score);
             setPrimaryCritique(data.primary_critique);
-            setHiddenCount(data.hidden_issues_count);
             setState('gated');
         } catch (e) {
             console.error("Audit failed", e);
@@ -120,7 +123,7 @@ export const LiveAuditWidget: React.FC = () => {
                             <div className="bg-zinc-50 border border-zinc-100 p-4 rounded-xl flex items-start gap-4">
                                 <div className="flex-1">
                                     <div className="text-[10px] font-bold text-zinc-400 uppercase mb-1">Detected Pattern</div>
-                                    <div className="text-sm font-medium text-zinc-900">"{primaryCritique?.match || 'Generic Phrasing'}"</div>
+                                    <div className="text-sm font-medium text-zinc-900">&quot;{primaryCritique?.match || 'Generic Phrasing'}&quot;</div>
                                     <p className="text-xs text-zinc-500 mt-1">{primaryCritique?.message || "Sentence structure lacks rhythmic variation."}</p>
                                 </div>
                                 <div className="text-right">
@@ -159,7 +162,7 @@ export const LiveAuditWidget: React.FC = () => {
                                 </div>
 
                                 <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                                    <h3 className="font-bold text-lg mb-1">See what's really holding your writing back.</h3>
+                                    <h3 className="font-bold text-lg mb-1">See what&apos;s really holding your writing back.</h3>
                                     <p className="text-zinc-400 text-xs mb-4">Get the full breakdown—free.</p>
 
                                     <div className="flex gap-2">

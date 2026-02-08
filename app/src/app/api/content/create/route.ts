@@ -90,6 +90,8 @@ export async function POST(req: NextRequest) {
         };
 
         // 3. AI Title Generation for Synthesis
+        let finalHook = hook.trim();
+
         if (sourceType === 'synthesis' && body.context && body.context.length > 10) {
             try {
                 console.log("Generating title for synthesis context:", body.context.slice(0, 50));
@@ -106,15 +108,12 @@ export async function POST(req: NextRequest) {
                 if (aiTitle) {
                     // Update hook with AI title
                     // Note: We need to re-validate length if we were strict, but AI titles are usually fine.
-                    // We modify the hook variable.
-                    (body as any).hook = aiTitle;
+                    finalHook = aiTitle;
                 }
             } catch (e) {
                 console.error("AI Title Gen Failed", e);
             }
         }
-
-        const finalHook = (body as any).hook || hook.trim();
 
         // Create content_item
         const { data: contentItem, error: insertError } = await supabaseAdmin

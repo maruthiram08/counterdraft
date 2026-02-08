@@ -80,13 +80,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: 'Embedding created', id: data.id });
         }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Embedding API Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
 // GET: Find similar content
+type MatchRow = {
+    user_id?: string;
+    id?: string;
+    content_id?: string;
+    [key: string]: unknown;
+};
+
 export async function GET(req: Request) {
     try {
         const userId = await getOrCreateUser();
@@ -124,33 +132,33 @@ export async function GET(req: Request) {
             });
         }
 
-        let filtered = Array.isArray(data) ? data : [];
+        let filtered: MatchRow[] = Array.isArray(data) ? data : [];
         if (filtered.length > 0) {
             if ('user_id' in filtered[0]) {
-                filtered = filtered.filter((row: any) => row.user_id === userId);
+                filtered = filtered.filter((row) => row.user_id === userId);
             } else if ('id' in filtered[0]) {
-                const ids = filtered.map((row: any) => row.id).filter(Boolean);
+                const ids = filtered.map((row) => row.id).filter(Boolean) as string[];
                 if (ids.length > 0) {
                     const { data: allowed } = await supabase
                         .from('content_embeddings')
                         .select('id')
                         .eq('user_id', userId)
                         .in('id', ids);
-                    const allowedIds = new Set((allowed || []).map((row: any) => row.id));
-                    filtered = filtered.filter((row: any) => allowedIds.has(row.id));
+                    const allowedIds = new Set((allowed || []).map((row: { id: string }) => row.id));
+                    filtered = filtered.filter((row: { id: string }) => allowedIds.has(row.id));
                 } else {
                     filtered = [];
                 }
             } else if ('content_id' in filtered[0]) {
-                const contentIds = filtered.map((row: any) => row.content_id).filter(Boolean);
+                const contentIds = filtered.map((row) => row.content_id).filter(Boolean) as string[];
                 if (contentIds.length > 0) {
                     const { data: allowed } = await supabase
                         .from('content_embeddings')
                         .select('content_id')
                         .eq('user_id', userId)
                         .in('content_id', contentIds);
-                    const allowedIds = new Set((allowed || []).map((row: any) => row.content_id));
-                    filtered = filtered.filter((row: any) => allowedIds.has(row.content_id));
+                    const allowedIds = new Set((allowed || []).map((row: { content_id: string }) => row.content_id));
+                    filtered = filtered.filter((row: { content_id: string }) => allowedIds.has(row.content_id));
                 } else {
                     filtered = [];
                 }
@@ -159,8 +167,9 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ similar: filtered });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Similarity Search Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

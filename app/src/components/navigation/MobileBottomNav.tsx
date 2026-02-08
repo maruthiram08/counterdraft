@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Compass, Book, Brain, MoreHorizontal, Zap, Network, Settings, X, PenTool } from "lucide-react";
+import { Home, Compass, Book, Brain, MoreHorizontal, Zap, Settings, X, PenTool } from "lucide-react";
 
 interface MobileBottomNavProps {
     activeSection: string;

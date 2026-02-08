@@ -1,4 +1,4 @@
-import { BrainMetadata, ContentItem, Outcome, Stance } from '@/types';
+import { ContentItem } from '@/types';
 
 export interface BrainResult {
     confidence: number; // 0-100
@@ -35,8 +35,6 @@ export function evaluateContent(item: ContentItem): BrainResult {
 
     // 1. Scoring Logic
     let score = 0;
-    const maxScore = 100;
-
     // A. Outcome (Crucial: 30 pts)
     if (meta.outcome) {
         score += 30;

@@ -14,7 +14,7 @@ interface QualityScoreFooterProps {
         uniqueness: MetricState;
         style: MetricState;
     };
-    onRunMetric: (type: 'fact' | 'uniqueness' | 'style') => void;
+    onRunMetric: (type: 'fact' | 'uniqueness' | 'style' | 'run-all') => void;
     onOpenSidebar: () => void;
     isVisible: boolean;
 }
@@ -121,7 +121,7 @@ export function QualityScoreFooter({
                 <button
                     onClick={() => {
                         const anyMissing = !metrics.fact.hasRun || !metrics.uniqueness.hasRun || !metrics.style.hasRun;
-                        if (anyMissing) onRunMetric('run-all' as any);
+                        if (anyMissing) onRunMetric('run-all');
                         else onOpenSidebar();
                     }}
                     className={`ml-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 group/audit ${(!metrics.fact.hasRun || !metrics.uniqueness.hasRun || !metrics.style.hasRun)

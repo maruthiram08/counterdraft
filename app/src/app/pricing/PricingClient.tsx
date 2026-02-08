@@ -3,12 +3,30 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import Link from 'next/link';
 
 interface PricingClientProps {
     initialCountry: string; // 'IN' or 'US', expected
 }
+
+type RazorpayResponse = {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+};
+
+type RazorpayOptions = {
+    key: string;
+    amount: number;
+    currency: string;
+    name: string;
+    description: string;
+    order_id: string;
+    handler: (response: RazorpayResponse) => void;
+    theme?: { color?: string };
+};
+
+type RazorpayConstructor = new (options: RazorpayOptions) => { open: () => void };
+type RazorpayWindow = Window & { Razorpay: RazorpayConstructor };
 
 export default function PricingClient({ initialCountry }: PricingClientProps) {
     const [isIndia, setIsIndia] = useState(initialCountry === 'IN');
@@ -63,7 +81,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 name: "CounterDraft",
                 description: "Pro Subscription",
                 order_id: data.orderId,
-                handler: async function (response: any) {
+                handler: async function (response: RazorpayResponse) {
                     // 3. Verify Payment
                     try {
                         const verifyRes = await fetch('/api/billing/razorpay/verify', {
@@ -88,12 +106,14 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 theme: { color: "#16a34a" }
             };
 
-            const rzp = new (window as any).Razorpay(options);
+            const RazorpayCtor = (window as RazorpayWindow).Razorpay;
+            const rzp = new RazorpayCtor(options);
             rzp.open();
 
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error("Razorpay Error:", e);
-            alert("Payment failed: " + e.message);
+            const message = e instanceof Error ? e.message : "Unknown error";
+            alert("Payment failed: " + message);
         }
     };
 
@@ -277,7 +297,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                                 </div>
                                 <div>
                                     <span className="text-zinc-200 font-bold text-sm block">Unlimited Drafts & Revisions</span>
-                                    <span className="text-zinc-500 text-xs mt-0.5 block">Iterate until it's perfect.</span>
+                                    <span className="text-zinc-500 text-xs mt-0.5 block">Iterate until it&apos;s perfect.</span>
                                 </div>
                             </div>
 
@@ -321,7 +341,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 <div className="mt-24 text-center max-w-2xl mx-auto border-t border-zinc-100 pt-16">
                     <h4 className="text-sm font-bold text-zinc-900 uppercase tracking-widest mb-4">Why is this not just another AI Writer?</h4>
                     <p className="text-zinc-500 leading-relaxed font-medium">
-                        AI writers generate text. <span className="text-zinc-900 font-bold bg-green-50 px-1 rounded">Counterdraft interrogates your thinking</span> before text exists. If your goal is SEO spam or engagement bait, this isn't for you. If your goal is credibility, influence, and long-term trust, you're home.
+                        AI writers generate text. <span className="text-zinc-900 font-bold bg-green-50 px-1 rounded">Counterdraft interrogates your thinking</span> before text exists. If your goal is SEO spam or engagement bait, this isn&apos;t for you. If your goal is credibility, influence, and long-term trust, you&apos;re home.
                     </p>
                 </div>
 

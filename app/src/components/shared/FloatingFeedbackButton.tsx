@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
@@ -47,7 +47,8 @@ export const FloatingFeedbackButton = () => {
             } else {
                 setStatus('error');
             }
-        } catch (err) {
+        } catch (error) {
+            console.error("Feedback submit failed:", error);
             setStatus('error');
         }
     };

@@ -74,13 +74,13 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
                 <div>
                     <span className="block text-[10px] uppercase tracking-widest text-gray-400 mb-2">Statement A</span>
                     <p className="text-base font-serif italic text-gray-600 leading-relaxed">
-                        "{sideA}"
+                        &quot;{sideA}&quot;
                     </p>
                 </div>
                 <div>
                     <span className="block text-[10px] uppercase tracking-widest text-gray-400 mb-2">Statement B</span>
                     <p className="text-base font-serif italic text-gray-600 leading-relaxed">
-                        "{sideB}"
+                        &quot;{sideB}&quot;
                     </p>
                 </div>
             </div>

@@ -58,7 +58,7 @@ export function DraftCard({ draft, onDelete, onEdit }: DraftCardProps) {
             <div className="mb-3">
                 <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">Based on belief</span>
                 <p className="text-sm font-medium text-[var(--text-secondary)] line-clamp-2 mt-0.5">
-                    "{draft.belief_text}"
+                    &quot;{draft.belief_text}&quot;
                 </p>
             </div>
 

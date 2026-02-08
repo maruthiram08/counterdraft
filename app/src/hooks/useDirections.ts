@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface Direction {
     theme: string;
@@ -28,8 +28,8 @@ export function useDirections() {
                 setDirections(data.ideas);
                 setGenerated(true);
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to generate directions");
         } finally {
             setLoading(false);
         }

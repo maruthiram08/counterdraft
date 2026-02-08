@@ -4,9 +4,9 @@ import type { BrainAction } from '@/types';
 interface LogEntry {
     contentItemId?: string;
     action: BrainAction;
-    inputContext: any;
-    outputResult: any;
-    toolCalls?: any;
+    inputContext: unknown;
+    outputResult: unknown;
+    toolCalls?: unknown;
     modelConfig: {
         model: string;
         temperature?: number;
@@ -38,7 +38,7 @@ export async function logBrainAction(entry: LogEntry): Promise<void> {
         if (error) {
             console.error('Failed to log brain action (Supabase Error):', error);
         }
-    } catch (err) {
+    } catch (err: unknown) {
         console.error('Failed to log brain action (Unexpected Error):', err);
     }
 }

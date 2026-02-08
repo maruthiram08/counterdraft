@@ -5,6 +5,7 @@ import { moderateContent, getModerationErrorMessage } from '@/lib/moderation';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -32,6 +33,13 @@ export async function POST(req: Request) {
         const userId = await getOrCreateUser();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 0. Rate Limiting
+        const ip = getClientIp(req);
+        const limitResult = rateLimit(`explore-ideas:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 20 });
+        if (!limitResult.allowed) {
+            return NextResponse.json({ error: 'Too many requests. Please try again in 15 minutes.' }, { status: 429 });
         }
 
         const body = await req.json();
@@ -150,8 +158,9 @@ Think like an editor helping a creator stand out during a noisy moment — not a
             ideas: parsed.ideas || [],
             config: { platform, tone, count } // Return config for transparency
         });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error('Post Ideas API Error:', err);
-        return NextResponse.json({ error: 'Failed to generate ideas', details: err.message }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
+        return NextResponse.json({ error: 'Failed to generate ideas', details: message }, { status: 500 });
     }
 }

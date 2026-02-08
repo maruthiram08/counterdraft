@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { StyleAnalysisModal } from "@/components/modal/StyleAnalysisModal";
@@ -31,17 +31,7 @@ export default function StylePage() {
     const [isCreating, setIsCreating] = useState(false);
     const [newProfileName, setNewProfileName] = useState("");
 
-    useEffect(() => {
-        refreshAll();
-    }, []);
-
-    const refreshAll = async () => {
-        setLoading(true);
-        await Promise.all([fetchActiveProfile(), fetchProfiles()]);
-        setLoading(false);
-    }
-
-    const fetchActiveProfile = async () => {
+    const fetchActiveProfile = useCallback(async () => {
         try {
             const res = await fetch('/api/user/style');
             if (res.ok) {
@@ -53,9 +43,9 @@ export default function StylePage() {
         } catch (error) {
             console.error("Failed to fetch active profile", error);
         }
-    };
+    }, []);
 
-    const fetchProfiles = async () => {
+    const fetchProfiles = useCallback(async () => {
         try {
             const res = await fetch('/api/user/style/profiles');
             if (res.ok) {
@@ -65,7 +55,17 @@ export default function StylePage() {
         } catch (error) {
             console.error("Failed to fetch profiles", error);
         }
-    };
+    }, []);
+
+    const refreshAll = useCallback(async () => {
+        setLoading(true);
+        await Promise.all([fetchActiveProfile(), fetchProfiles()]);
+        setLoading(false);
+    }, [fetchActiveProfile, fetchProfiles]);
+
+    useEffect(() => {
+        refreshAll();
+    }, [refreshAll]);
 
     const handleSwitchProfile = async (profileId: string) => {
         try {
@@ -100,7 +100,13 @@ export default function StylePage() {
         }
     };
 
-    const handleAnalysisComplete = async (analysis: any) => {
+    type StyleAnalysis = {
+        voice_tone?: string;
+        rules?: string[];
+        anti_patterns?: string[];
+    };
+
+    const handleAnalysisComplete = async (analysis: StyleAnalysis) => {
         if (!analysis) return;
 
         try {
@@ -384,7 +390,7 @@ export default function StylePage() {
                                     <div className="p-2 bg-green-50 text-green-600 rounded-lg">
                                         <CheckCircle size={20} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-zinc-900">Do's (Rules)</h3>
+                                    <h3 className="text-lg font-bold text-zinc-900">Do&apos;s (Rules)</h3>
                                 </div>
                                 <div className="space-y-4 flex-1">
                                     {isEditing && editedProfile ? (
@@ -429,7 +435,7 @@ export default function StylePage() {
                                     <div className="p-2 bg-red-50 text-red-600 rounded-lg">
                                         <XCircle size={20} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-zinc-900">Don'ts (Anti-Patterns)</h3>
+                                    <h3 className="text-lg font-bold text-zinc-900">Don&apos;ts (Anti-Patterns)</h3>
                                 </div>
                                 <div className="space-y-4 flex-1">
                                     {isEditing && editedProfile ? (

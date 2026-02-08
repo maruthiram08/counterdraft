@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
         let query = supabaseAdmin
             .from('feature_requests')
-            .select('*')
+            .select('id, title, description, status, upvotes, created_at')
             .order('upvotes', { ascending: false });
 
         if (status) {
@@ -35,7 +35,8 @@ export async function GET(req: NextRequest) {
         }
 
         return NextResponse.json({ features: data }, { status: 200 });
-    } catch (e) {
+    } catch (error: unknown) {
+        console.error('[Wishlist GET] Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
@@ -70,7 +71,8 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ feature: data }, { status: 200 });
-    } catch (e) {
+    } catch (error: unknown) {
+        console.error('[Wishlist POST] Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

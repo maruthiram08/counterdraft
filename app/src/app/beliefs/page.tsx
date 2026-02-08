@@ -47,11 +47,6 @@ export default function BeliefsPage() {
 
     const filteredList = getFilteredBeliefs();
 
-    // V1 Hierarchy Grouping
-    const roots = beliefs.core.filter(b => b.beliefType === 'root' || b.beliefType === 'core'); // Treat 'core' as root candidates for now
-    const pillars = beliefs.core.filter(b => b.beliefType === 'pillar' || b.beliefType === 'overused'); // Treat 'overused' as pillars
-    const leafs = [...beliefs.emerging, ...beliefs.confirmed.filter(b => b.beliefType === 'leaf')];
-
     return (
         <main className="min-h-screen bg-[var(--background)]">
             {/* Header */}
@@ -85,7 +80,7 @@ export default function BeliefsPage() {
                                 List
                             </button>
                             <button
-                                onClick={() => setActiveFilter('tree' as any)} // Cast for quick hack or update Type
+                                onClick={() => setActiveFilter('tree')}
                                 className={`px-4 py-1.5 rounded-md transition-all ${activeFilter === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
                             >
                                 Mind Map
@@ -96,7 +91,7 @@ export default function BeliefsPage() {
                     {activeFilter === 'tree' ? (
                         <GenealogyTree
                             beliefs={[...beliefs.core, ...beliefs.emerging, ...beliefs.overused, ...beliefs.confirmed]}
-                            drafts={drafts as any}
+                            drafts={drafts}
                             onSelectDraft={(id) => router.push(`/workspace?draftId=${id}`)}
                         />
                     ) : (

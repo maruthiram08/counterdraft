@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Upload, FileText, Zap, Check, Loader2, Play } from "lucide-react";
+import type { BeliefExtractionResult } from "@/types";
+import { ArrowRight, Upload, FileText, Zap, Check, Loader2 } from "lucide-react";
 
 type Step = 'screening' | 'ingest' | 'analyzing' | 'complete';
 
@@ -17,7 +18,7 @@ export default function OnboardingPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Analysis State
-    const [analysisResult, setAnalysisResult] = useState<any>(null);
+    const [analysisResult, setAnalysisResult] = useState<BeliefExtractionResult | null>(null);
 
     // --- Actions ---
 
@@ -214,9 +215,9 @@ export default function OnboardingPage() {
                         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Check size={32} />
                         </div>
-                        <h2 className="text-3xl font-bold mb-4">You're ready.</h2>
+                        <h2 className="text-3xl font-bold mb-4">You&apos;re ready.</h2>
                         <p className="text-zinc-500 mb-8 max-w-md mx-auto">
-                            We've extracted {analysisResult?.coreBeliefs?.length || 'several'} potential beliefs from your work.
+                            We&apos;ve extracted {analysisResult?.coreBeliefs?.length || 'several'} potential beliefs from your work.
                             Review them in your workspace.
                         </p>
 

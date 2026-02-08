@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
     try {
         const userId = await getOrCreateUser();
         if (!userId) {

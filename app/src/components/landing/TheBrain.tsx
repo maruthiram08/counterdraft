@@ -99,7 +99,7 @@ export const TheBrain: React.FC = () => {
               <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-6">
                 <label className="text-[9px] uppercase text-zinc-400 mb-3 block font-black tracking-[0.2em]">Locked Stance</label>
                 <div className="p-8 bg-zinc-50 border border-zinc-100 rounded-2xl text-zinc-900 text-xl font-medium leading-relaxed italic border-l-4 border-l-green-600">
-                  "Technical debt isn't a bug; it's a feature of velocity. Most leaders fail by fixing the wrong debt at the wrong time."
+                  &quot;Technical debt isn&apos;t a bug; it&apos;s a feature of velocity. Most leaders fail by fixing the wrong debt at the wrong time.&quot;
                 </div>
                 <div className="flex gap-3 pt-2">
                   <span className="px-3 py-1 bg-green-50 border border-green-100 rounded-lg text-[9px] text-green-700 font-black uppercase tracking-widest">LOCKED</span>
@@ -114,21 +114,21 @@ export const TheBrain: React.FC = () => {
                   <div className="p-4 bg-green-50/30 border border-green-100 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-sm text-zinc-800 font-bold">"Strategic Velocity Framework"</span>
+                      <span className="text-sm text-zinc-800 font-bold">&quot;Strategic Velocity Framework&quot;</span>
                     </div>
                     <span className="text-[9px] text-green-600 font-black uppercase tracking-widest">CORE</span>
                   </div>
                   <div className="p-4 bg-blue-50/30 border border-blue-100 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <span className="text-sm text-zinc-700">"Post-AI Refactoring Crisis"</span>
+                      <span className="text-sm text-zinc-700">&quot;Post-AI Refactoring Crisis&quot;</span>
                     </div>
                     <span className="text-[9px] text-blue-600 font-black uppercase tracking-widest">EMERGING</span>
                   </div>
                   <div className="p-4 bg-amber-50/30 border border-amber-100 rounded-xl opacity-60 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-sm text-zinc-500 line-through">"Innovative agile"</span>
+                      <span className="text-sm text-zinc-500 line-through">&quot;Innovative agile&quot;</span>
                     </div>
                     <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest">SLOP</span>
                   </div>
