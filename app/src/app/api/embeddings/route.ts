@@ -38,47 +38,22 @@ export async function POST(req: Request) {
         // Generate embedding
         const embedding = await generateEmbedding(content_text);
 
-        // Check if embedding already exists
-        const { data: existing } = await supabase
+        // Upsert embedding (scoped to user)
+        const { data, error } = await supabase
             .from('content_embeddings')
+            .upsert({
+                content_id,
+                content_type,
+                content_text,
+                embedding: JSON.stringify(embedding),
+                user_id: userId,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'content_id,content_type,user_id' })
             .select('id')
-            .eq('content_id', content_id)
-            .eq('content_type', content_type)
-            .eq('user_id', userId)
             .single();
 
-        if (existing) {
-            // Update existing embedding
-            const { error } = await supabase
-                .from('content_embeddings')
-                .update({
-                    content_text,
-                    embedding: JSON.stringify(embedding),
-                    updated_at: new Date().toISOString(),
-                    user_id: userId // Ensure ownership
-                })
-                .eq('id', existing.id)
-                .eq('user_id', userId); // Extra safety
-
-            if (error) throw error;
-            return NextResponse.json({ message: 'Embedding updated', id: existing.id });
-        } else {
-            // Insert new embedding
-            const { data, error } = await supabase
-                .from('content_embeddings')
-                .insert({
-                    content_id,
-                    content_type,
-                    content_text,
-                    embedding: JSON.stringify(embedding),
-                    user_id: userId // Scope to user
-                })
-                .select('id')
-                .single();
-
-            if (error) throw error;
-            return NextResponse.json({ message: 'Embedding created', id: data.id });
-        }
+        if (error) throw error;
+        return NextResponse.json({ message: 'Embedding saved', id: data.id });
 
     } catch (err: unknown) {
         console.error('Embedding API Error:', err);
@@ -86,14 +61,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
-
-// GET: Find similar content
-type MatchRow = {
-    user_id?: string;
-    id?: string;
-    content_id?: string;
-    [key: string]: unknown;
-};
 
 export async function GET(req: Request) {
     try {
@@ -115,57 +82,17 @@ export async function GET(req: Request) {
         const queryEmbedding = await generateEmbedding(query);
 
         // Search for similar content using pgvector
-        // Note: This uses a raw SQL query for vector similarity
+        // The RPC function now enforces user isolation via filter_user_id
         const { data, error } = await supabase.rpc('match_embeddings', {
             query_embedding: queryEmbedding,
             match_count: limit,
             filter_type: contentType || null,
-            filter_user_id: userId // Critical Security Filter
+            filter_user_id: userId
         });
 
-        if (error) {
-            // If the function doesn't exist, fall back to basic query
-            console.error('RPC Error (may need to create function):', error);
-            return NextResponse.json({
-                similar: [],
-                note: 'Similarity search requires pgvector RPC function'
-            });
-        }
+        if (error) throw error;
 
-        let filtered: MatchRow[] = Array.isArray(data) ? data : [];
-        if (filtered.length > 0) {
-            if ('user_id' in filtered[0]) {
-                filtered = filtered.filter((row) => row.user_id === userId);
-            } else if ('id' in filtered[0]) {
-                const ids = filtered.map((row) => row.id).filter(Boolean) as string[];
-                if (ids.length > 0) {
-                    const { data: allowed } = await supabase
-                        .from('content_embeddings')
-                        .select('id')
-                        .eq('user_id', userId)
-                        .in('id', ids);
-                    const allowedIds = new Set((allowed || []).map((row: { id: string }) => row.id));
-                    filtered = filtered.filter((row) => row.id && allowedIds.has(row.id));
-                } else {
-                    filtered = [];
-                }
-            } else if ('content_id' in filtered[0]) {
-                const contentIds = filtered.map((row) => row.content_id).filter(Boolean) as string[];
-                if (contentIds.length > 0) {
-                    const { data: allowed } = await supabase
-                        .from('content_embeddings')
-                        .select('content_id')
-                        .eq('user_id', userId)
-                        .in('content_id', contentIds);
-                    const allowedIds = new Set((allowed || []).map((row: { content_id: string }) => row.content_id));
-                    filtered = filtered.filter((row) => row.content_id && allowedIds.has(row.content_id));
-                } else {
-                    filtered = [];
-                }
-            }
-        }
-
-        return NextResponse.json({ similar: filtered });
+        return NextResponse.json({ similar: data || [] });
 
     } catch (err: unknown) {
         console.error('Similarity Search Error:', err);
