@@ -423,10 +423,6 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                         }}
                         onSynthesize={(selectedArtifacts) => {
                             if (onDraftRequest) {
-                                const combinedText = selectedArtifacts
-                                    .map(a => `--- Source: ${a.source_title || 'Untitled'} ---\n${a.ocr_text || a.user_note}`)
-                                    .join("\n\n");
-
                                 onDraftRequest({
                                     hook: `Synthesis of ${selectedArtifacts.length} sources`,
                                     type: 'synthesis',

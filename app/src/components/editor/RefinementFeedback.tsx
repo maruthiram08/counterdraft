@@ -23,7 +23,7 @@ export function RefinementFeedback({ instruction, onFeedback, onDismiss }: Refin
     if (submitted) {
         return (
             <div className="bg-green-50 border border-green-100 p-3 rounded-lg flex items-center justify-between animate-fade-in mb-4">
-                <span className="text-sm text-green-700 font-medium">Thanks for the feedback! I'll learn from this.</span>
+                <span className="text-sm text-green-700 font-medium">Thanks for the feedback! I&apos;ll learn from this.</span>
                 <button onClick={onDismiss} className="text-green-400 hover:text-green-600">
                     <X size={16} />
                 </button>
@@ -44,7 +44,7 @@ export function RefinementFeedback({ instruction, onFeedback, onDismiss }: Refin
             </div>
 
             <p className="text-xs text-amber-700 mb-4 bg-amber-100/50 p-2 rounded italic">
-                "{instruction}"
+                &quot;{instruction}&quot;
             </p>
 
             <p className="text-xs font-medium text-amber-900 mb-2">What went wrong?</p>

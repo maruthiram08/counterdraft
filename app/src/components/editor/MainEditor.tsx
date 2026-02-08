@@ -110,7 +110,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
 
         // If content matches original but NOT current refinement (i.e. User Undid)
         if (content === lastRefinement.originalContent && content !== lastRefinement.refinedContent) {
-            setShowFeedback(true);
+            setShowFeedback(true); // eslint-disable-line react-hooks/set-state-in-effect
         }
     }, [content, lastRefinement, showFeedback]);
 

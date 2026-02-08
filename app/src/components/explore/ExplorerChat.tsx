@@ -502,7 +502,7 @@ export function ExplorerChat() {
                                 onClick={() => setLens('beginner')}
                                 className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${lens === 'beginner' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                Beginner's Lens
+                                Beginner&apos;s Lens
                             </button>
                         </div>
                     </div>
