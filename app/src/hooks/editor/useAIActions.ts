@@ -32,6 +32,12 @@ export function useAIActions({
     const [learning, setLearning] = useState(false);
     const [extracting, setExtracting] = useState(false);
     const [refining, setRefining] = useState(false);
+    const [lastRefinement, setLastRefinement] = useState<{
+        originalContent: string;
+        refinedContent: string;
+        instruction: string;
+        timestamp: number;
+    } | null>(null);
 
     const handleExtractKnowledge = async (text: string) => {
         if (!draft || text.length < 200) return;
@@ -149,15 +155,20 @@ export function useAIActions({
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.refinedContent !== undefined && data.refinedContent !== null) {
-                    const newContent = content.substring(0, selectionRange.start)
-                        + data.refinedContent
-                        + content.substring(selectionRange.end);
+                const newContent = content.substring(0, selectionRange.start)
+                    + data.refinedContent
+                    + content.substring(selectionRange.end);
 
-                    setContent(newContent);
-                    if (setToolbarPosition) setToolbarPosition(null);
-                    if (setSelectionRange) setSelectionRange(null);
-                }
+                setLastRefinement({
+                    originalContent: content,
+                    refinedContent: newContent,
+                    instruction,
+                    timestamp: Date.now()
+                });
+
+                setContent(newContent);
+                if (setToolbarPosition) setToolbarPosition(null);
+                if (setSelectionRange) setSelectionRange(null);
             }
         } catch (err) {
             console.error(err);
@@ -233,6 +244,8 @@ export function useAIActions({
         learning,
         extracting,
         refining,
+        lastRefinement,
+        setLastRefinement,
         handleExtractKnowledge,
         handleFinalize,
         handleExecuteRefinement,

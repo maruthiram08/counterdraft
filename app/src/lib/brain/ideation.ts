@@ -123,8 +123,8 @@ Output as JSON: { "tags": ["#tag1", "#tag2", ...] }`;
 /**
  * Refines a user's natural language search request into optimized Google News queries.
  */
-export async function refineSearchQuery(userInput: string): Promise<string[]> {
-    const cacheKey = userInput.trim().toLowerCase();
+export async function refineSearchQuery(userInput: string, lens?: string): Promise<string[]> {
+    const cacheKey = `${userInput.trim().toLowerCase()}:${lens || 'default'}`;
     const cached = refineQueryCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
         return cached.value;
@@ -133,29 +133,35 @@ export async function refineSearchQuery(userInput: string): Promise<string[]> {
     const systemPrompt = `
 You are an intellectual query designer for a research-driven content exploration tool.
 
+Current Lens: ${lens === 'beginner' ? 'BEGINNER (Focus on basic questions, "how-tos", and forum-style curiosity)' : 'PROFESSIONAL (Focus on emerging debates and unresolved questions)'}
+
 The user will input a natural-language request describing a topic they want to explore.
-Your job is to generate 1–3 high-quality Google News search queries that surface:
+Your job is to generate 1–3 high-quality Google News search queries.
+
+${lens === 'beginner'
+            ? `For the BEGINNER lens, prioritize surfacing:
+- "How to" and "Why is X" questions
+- Common confusion points or beginner hurdles
+- Reddit, Quora, or forum-style inquiries
+- Explainer-style content`
+            : `For the PROFESSIONAL lens, prioritize surfacing:
 - emerging debates
 - unresolved questions
 - conflicting viewpoints
-- second-order implications
-
-These queries are used to help users form original opinions — not to summarize news.
+- second-order implications`}
 
 Rules:
 - Return ONLY a JSON object with a "queries" array of strings.
 - Each query must be 2–5 words.
-- Queries must be specific, opinion-relevant, and intellectually generative.
-- Prefer angles that reveal tension, disagreement, or change.
-- If the topic is broad, generate queries from clearly different angles.
+- Queries must be specific and intellectually generative.
+${lens === 'beginner'
+            ? '- Use phrasing that triggers forum/QA results (e.g., "is X worth it reddit")'
+            : '- Prefer angles that reveal tension, disagreement, or change.'}
 
 Hard constraints:
 - Do NOT include words like: "latest", "breaking", "today", "top", "update".
 - Do NOT include conversational filler (e.g., "show me", "I want to know").
 - Do NOT generate near-duplicate queries.
-- Do NOT optimize for popularity or virality.
-
-Think like an editor seeking intellectual friction, not a news aggregator.
   `;
 
     try {

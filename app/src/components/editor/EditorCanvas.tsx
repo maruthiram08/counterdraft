@@ -1,35 +1,57 @@
-import { RefObject } from "react";
+import { RefObject, useEffect, useRef } from "react";
 
 interface EditorCanvasProps {
     content: string;
     setContent: (v: string) => void;
+    beliefText: string;
+    setBeliefText: (v: string) => void;
     isPreview: boolean;
     parseMarkdown: (t: string) => string;
     renderHighlights: () => string | null;
     textareaRef: RefObject<HTMLTextAreaElement | null>;
     draftStatus: string;
-    beliefText: string;
 }
 
 export function EditorCanvas({
     content,
     setContent,
+    beliefText,
+    setBeliefText,
     isPreview,
     parseMarkdown,
     renderHighlights,
     textareaRef,
-    draftStatus,
-    beliefText
+    draftStatus
 }: EditorCanvasProps) {
+    const titleRef = useRef<HTMLTextAreaElement>(null);
+
+    // Auto-resize title on mount and change
+    useEffect(() => {
+        if (titleRef.current) {
+            titleRef.current.style.height = 'auto';
+            titleRef.current.style.height = titleRef.current.scrollHeight + 'px';
+        }
+    }, [beliefText]);
+
     return (
-        <div className="max-w-4xl mx-auto py-8 md:py-20 px-4 md:px-16 min-h-full relative">
+        <>
             {/* Title / Context */}
-            <div className="mb-6 md:mb-12 select-none">
-                <h2 className={`text-xl md:text-3xl font-serif font-medium leading-tight mb-4 md:mb-6 break-words ${draftStatus === 'published' ? 'text-gray-500' : 'text-gray-800'}`}>
-                    {beliefText}
-                </h2>
+            <div className={`mb-6 md:mb-12 group/title ${draftStatus === 'published' ? 'select-none' : ''}`}>
+                <textarea
+                    ref={titleRef}
+                    value={beliefText}
+                    readOnly={draftStatus === 'published'}
+                    onChange={(e) => {
+                        if (draftStatus === 'published') return;
+                        setBeliefText(e.target.value);
+                    }}
+                    placeholder="Draft Title..."
+                    rows={1}
+                    className={`w-full resize-none text-xl md:text-3xl font-serif font-medium leading-tight mb-4 md:mb-6 break-words bg-transparent border-none outline-none overflow-hidden placeholder:text-gray-300 transition-colors ${draftStatus === 'published' ? 'text-gray-500' : 'text-gray-800 focus:text-black'}`}
+                    style={{ height: 'auto' }}
+                />
                 <div className="flex justify-center">
-                    <div className="w-8 h-1 bg-[var(--accent)]/10 rounded-full mb-4 md:mb-8"></div>
+                    <div className="w-8 h-1 bg-[var(--accent)]/10 rounded-full mb-4 md:mb-8 group-focus-within/title:bg-[var(--accent)]/30 transition-colors"></div>
                 </div>
             </div>
 
@@ -76,6 +98,6 @@ export function EditorCanvas({
                     />
                 </div>
             )}
-        </div>
+        </>
     );
 }

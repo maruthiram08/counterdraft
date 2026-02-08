@@ -61,7 +61,7 @@ export function useDrafts() {
         }
     };
 
-    const updateDraft = async (id: string, updates: Partial<Pick<Draft, 'content' | 'status' | 'platform_metadata' | 'brain_metadata'>>): Promise<boolean> => {
+    const updateDraft = async (id: string, updates: Partial<Pick<Draft, 'content' | 'status' | 'platform_metadata' | 'brain_metadata' | 'belief_text'>>): Promise<boolean> => {
         try {
             const res = await fetch(`/api/drafts/${id}`, {
                 method: 'PATCH',

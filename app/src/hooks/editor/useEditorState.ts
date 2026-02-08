@@ -2,8 +2,9 @@
 import { useState, useEffect } from "react";
 import type { Draft } from "@/types";
 
-export function useEditorState(draft: Draft | null, onSave: (id: string, content: string) => Promise<boolean>) {
+export function useEditorState(draft: Draft | null, onSave: (id: string, content: string, title?: string) => Promise<boolean>) {
     const [content, setContent] = useState("");
+    const [beliefText, setBeliefText] = useState("");
     const [coverImage, setCoverImage] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -13,9 +14,12 @@ export function useEditorState(draft: Draft | null, onSave: (id: string, content
     useEffect(() => {
         if (!draft) {
             setContent("");
+            setBeliefText("");
             setCoverImage(null);
             return;
         }
+
+        setBeliefText(draft.belief_text || "");
 
         const coverMatch = draft.content.match(/^!\[(.*?)\]\((.*?)\)(\n\n)?/);
         if (coverMatch) {
@@ -39,7 +43,7 @@ export function useEditorState(draft: Draft | null, onSave: (id: string, content
         setSaving(true);
         try {
             const fullContent = getFullContent();
-            await onSave(draft.id, fullContent);
+            await onSave(draft.id, fullContent, beliefText);
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         } finally {
@@ -56,6 +60,8 @@ export function useEditorState(draft: Draft | null, onSave: (id: string, content
     return {
         content,
         setContent,
+        beliefText,
+        setBeliefText,
         coverImage,
         setCoverImage,
         saving,

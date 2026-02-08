@@ -17,6 +17,7 @@ interface FeedItem {
     sourceUrl: string;
     source: string;
     category: string;
+    type?: 'article' | 'question';
 }
 
 interface PostIdea {
@@ -71,6 +72,7 @@ export function ExplorerChat() {
     const [generatingIdeas, setGeneratingIdeas] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedTopics, setSelectedTopics] = useState<FeedItem[]>([]);
+    const [lens, setLens] = useState<'default' | 'beginner'>('default');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const [trendCategories, setTrendCategories] = useState(DEFAULT_CATEGORIES);
@@ -124,7 +126,7 @@ export function ExplorerChat() {
         setSelectedTopics([]); // Clear selection on new search
 
         try {
-            const res = await fetch(`/api/explore/feed?q=${encodeURIComponent(query)}`);
+            const res = await fetch(`/api/explore/feed?q=${encodeURIComponent(query)}&lens=${lens}`);
             const data = await res.json();
 
             const assistantMessage: ChatMessage = {
@@ -357,9 +359,16 @@ export function ExplorerChat() {
                                                                 </button>
 
                                                                 <div className="flex-1">
-                                                                    <h4 className="text-sm font-medium text-gray-900 mb-1">
-                                                                        {topic.title}
-                                                                    </h4>
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        {topic.type === 'question' && (
+                                                                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded flex items-center gap-1 uppercase tracking-wider">
+                                                                                <Lightbulb size={10} /> Question
+                                                                            </span>
+                                                                        )}
+                                                                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                                                                            {topic.title}
+                                                                        </h4>
+                                                                    </div>
                                                                     <span className="text-xs text-gray-400 block mb-3">{topic.source}</span>
 
                                                                     {/* CTAs */}
@@ -479,6 +488,28 @@ export function ExplorerChat() {
 
             {/* Sticky Input at Bottom */}
             <div className="border-t bg-white p-4 shrink-0">
+                <div className="max-w-3xl mx-auto mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Active Lens:</span>
+                        <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                            <button
+                                onClick={() => setLens('default')}
+                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${lens === 'default' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Professional
+                            </button>
+                            <button
+                                onClick={() => setLens('beginner')}
+                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${lens === 'beginner' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Beginner's Lens
+                            </button>
+                        </div>
+                    </div>
+                    {lens === 'beginner' && (
+                        <span className="text-[10px] text-amber-600 font-medium italic animate-pulse">Surfacing common confusion points...</span>
+                    )}
+                </div>
                 <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
                     <input
                         type="text"

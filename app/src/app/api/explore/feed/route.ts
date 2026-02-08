@@ -81,6 +81,7 @@ export async function GET(req: Request) {
         // Check for direct query param
         const { searchParams } = new URL(req.url);
         const directQuery = searchParams.get('q');
+        const lens = searchParams.get('lens') || 'default';
 
         let queries: string[] = [];
 
@@ -90,10 +91,10 @@ export async function GET(req: Request) {
             // Otherwise, just do simple formatting.
             const wordCount = directQuery.split(' ').length;
 
-            if (wordCount > 3) {
-                console.log(`[Explore] Refine complex query: "${directQuery}"`);
+            if (wordCount > 3 || lens === 'beginner') {
+                console.log(`[Explore] Refine query with lens ${lens}: "${directQuery}"`);
                 try {
-                    queries = await refineSearchQuery(directQuery);
+                    queries = await refineSearchQuery(directQuery, lens);
                 } catch (e) {
                     console.error("Refine failed, fallback to raw query", e);
                     queries = [directQuery];
@@ -159,6 +160,10 @@ export async function GET(req: Request) {
             let relatedBeliefId: string | null = null;
             let relatabilityScore = 0;
 
+            // Simple type detection
+            const isQuestion = /^(how|why|what|is|should|does|where|can|reddit|quora|forum)/i.test(item.title) || item.title.includes('?');
+            const type = isQuestion ? 'question' : 'article';
+
             // Simple keyword match
             for (const belief of beliefs || []) {
                 const beliefWords = belief.statement.toLowerCase().split(' ');
@@ -172,6 +177,11 @@ export async function GET(req: Request) {
                 }
             }
 
+            // Lens-based boosting
+            if (lens === 'beginner' && isQuestion) {
+                relatabilityScore += 0.3;
+            }
+
             return {
                 title: item.title,
                 sourceUrl: item.link,
@@ -180,6 +190,7 @@ export async function GET(req: Request) {
                 publishedAt: item.pubDate,
                 relatabilityScore: Math.min(relatabilityScore, 1),
                 relatedBeliefId,
+                type
             };
         });
 

@@ -10,6 +10,7 @@ import { RepurposeModal } from "./RepurposeModal";
 import { VerificationSidebar } from "./FactCheckSidebar";
 import { EditorHeader } from "./EditorHeader";
 import { EditorCanvas } from "./EditorCanvas";
+import { RefinementFeedback } from "./RefinementFeedback";
 
 // Refactored Hooks & Utils
 import { useVerification } from "@/hooks/editor/useVerification";
@@ -21,7 +22,7 @@ import { parseMarkdown, generateHighlights } from "@/lib/editor/markdown";
 
 interface MainEditorProps {
     draft: Draft | null;
-    onSave: (id: string, content: string) => Promise<boolean>;
+    onSave: (id: string, content: string, title?: string) => Promise<boolean>;
     onUpdateMetadata?: (id: string, metadata: BrainMetadata) => Promise<boolean>;
     onPublish?: (id: string, stage: string) => Promise<void>;
 }
@@ -31,6 +32,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
     // 1. Core State
     const {
         content, setContent,
+        beliefText, setBeliefText,
         coverImage, setCoverImage,
         saving, saved, copied,
         handleSave, handleCopy, getFullContent
@@ -72,6 +74,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
     // 5. AI Actions
     const {
         learning, extracting, refining,
+        lastRefinement, setLastRefinement,
         handleFinalize, handleExecuteRefinement,
         handleFactFix, handleApplySlopSuggestion
     } = useAIActions({
@@ -98,6 +101,38 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
         onSave,
         getFullContent
     });
+
+    // 7. Feedback Loop (Detect Undo/Revert)
+    const [showFeedback, setShowFeedback] = useState(false);
+
+    useEffect(() => {
+        if (!lastRefinement || showFeedback) return;
+
+        // If content matches original but NOT current refinement (i.e. User Undid)
+        if (content === lastRefinement.originalContent && content !== lastRefinement.refinedContent) {
+            setShowFeedback(true);
+        }
+    }, [content, lastRefinement, showFeedback]);
+
+    const handleFeedback = async (reason: string) => {
+        if (!lastRefinement || !draft) return;
+
+        try {
+            await fetch('/api/voice/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    draftId: draft.id,
+                    instruction: lastRefinement.instruction,
+                    reason,
+                    originalText: lastRefinement.originalContent,
+                    refinedText: lastRefinement.refinedContent
+                })
+            });
+        } catch (e) {
+            console.error("Failed to send feedback", e);
+        }
+    };
 
     // Constant auto-resize to prevent scrolling issues
     useEffect(() => {
@@ -219,13 +254,27 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                     <EditorCanvas
                         content={content}
                         setContent={setContent}
+                        beliefText={beliefText}
+                        setBeliefText={setBeliefText}
                         isPreview={isPreview}
                         parseMarkdown={parseMarkdown}
                         renderHighlights={() => generateHighlights(content, selectionRange, verifications)}
                         textareaRef={textareaRef}
                         draftStatus={draft.status}
-                        beliefText={draft.belief_text}
                     />
+
+                    {showFeedback && lastRefinement && (
+                        <div className="mt-8 max-w-2xl mx-auto">
+                            <RefinementFeedback
+                                instruction={lastRefinement.instruction}
+                                onFeedback={handleFeedback}
+                                onDismiss={() => {
+                                    setShowFeedback(false);
+                                    setLastRefinement(null);
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 

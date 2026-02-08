@@ -9,9 +9,10 @@ import { Artifact } from '@/types';
 
 interface ArtifactGridProps {
     onDraft: (artifact: Artifact) => void;
+    onSynthesize?: (artifacts: Artifact[]) => void;
 }
 
-export function ArtifactGrid({ onDraft }: ArtifactGridProps) {
+export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -48,19 +49,24 @@ export function ArtifactGrid({ onDraft }: ArtifactGridProps) {
 
     const handleSynthesize = () => {
         const selectedArtifacts = artifacts.filter(a => selectedIds.has(a.id));
-        // Synthesize logic: combine text
-        const combinedText = selectedArtifacts.map(a => a.ocr_text || a.user_note).join("\n\n---\n\n");
-        const allTags = selectedArtifacts.flatMap(a => a.ai_metadata?.tags || []);
 
-        onDraft({
-            id: 'synthesis', // Mock ID
-            user_note: `Synthesis of ${selectedIds.size} artifacts`,
-            ocr_text: combinedText,
-            urls: selectedArtifacts.map(a => a.source_url).filter((url): url is string => !!url), // Collect URLs
-            ai_metadata: { tags: Array.from(new Set(allTags)) }, // Dedupe tags
-            userId: 'user', // Mock for synthesis
-            createdAt: new Date()
-        });
+        if (onSynthesize) {
+            onSynthesize(selectedArtifacts);
+        } else {
+            // Fallback: Synthesis logic (combine text)
+            const combinedText = selectedArtifacts.map(a => a.ocr_text || a.user_note).join("\n\n---\n\n");
+            const allTags = selectedArtifacts.flatMap(a => a.ai_metadata?.tags || []);
+
+            onDraft({
+                id: 'synthesis', // Mock ID
+                user_note: `Synthesis of ${selectedIds.size} artifacts`,
+                ocr_text: combinedText,
+                urls: selectedArtifacts.map(a => a.source_url).filter((url): url is string => !!url), // Collect URLs
+                ai_metadata: { tags: Array.from(new Set(allTags)) }, // Dedupe tags
+                userId: 'user', // Mock for synthesis
+                createdAt: new Date()
+            });
+        }
 
         setIsSelectMode(false);
         setSelectedIds(new Set());

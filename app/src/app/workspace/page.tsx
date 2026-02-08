@@ -533,8 +533,11 @@ function WorkspaceContent() {
                                                 <div className="flex-1 overflow-y-auto pb-32">
                                                     <MainEditor
                                                         draft={selectedDraft}
-                                                        onSave={async (id, content) => {
-                                                            const success = await updateDraft(id, { content });
+                                                        onSave={async (id, content, title) => {
+                                                            const success = await updateDraft(id, {
+                                                                content,
+                                                                ...(title ? { belief_text: title } : {})
+                                                            });
                                                             return success;
                                                         }}
                                                         onUpdateMetadata={async (id, metadata) => {
@@ -586,8 +589,11 @@ function WorkspaceContent() {
                                         middlePane={
                                             <MainEditor
                                                 draft={selectedDraft}
-                                                onSave={async (id, content) => {
-                                                    const success = await updateDraft(id, { content });
+                                                onSave={async (id, content, title) => {
+                                                    const success = await updateDraft(id, {
+                                                        content,
+                                                        ...(title ? { belief_text: title } : {})
+                                                    });
                                                     return success;
                                                 }}
                                                 onUpdateMetadata={async (id, metadata) => {
