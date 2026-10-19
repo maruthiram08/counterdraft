@@ -57,11 +57,13 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html
+        lang="en"
+        className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable}`}
+        suppressHydrationWarning
+      >
         <CSPostHogProvider>
-          <body
-            className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable}`}
-          >
+          <body>
             <PostHogPageView />
             <FloatingFeedbackButton />
             <CouponClaimer />
