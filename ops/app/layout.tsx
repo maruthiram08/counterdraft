@@ -27,10 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${plexSans.variable} ${plexMono.variable} antialiased`}
-      >
+    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
+      <body className="antialiased">
         {children}
       </body>
     </html>
