@@ -3,6 +3,7 @@ import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2 
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
+import { hasStrategy } from "@/lib/brain/strategy";
 import { ResearchPoint, DeepDiveData } from "./types";
 
 interface DraftStepProps {
@@ -38,10 +39,10 @@ export function DraftStep({
 }: DraftStepProps) {
 
     // Helper to check if context exists
-    const hasStrategy = !!(brainMetadata && (brainMetadata.outcome || brainMetadata.audience?.role));
+    const strategySet = hasStrategy(brainMetadata);
     const hasOutline = outline.length > 0;
     const hasResearch = !!(deepDive && deepDive.research.length > 0);
-    const hasContext = hasStrategy || hasOutline || hasResearch;
+    const hasContext = strategySet || hasOutline || hasResearch;
 
     if (loading) {
         return (
@@ -131,7 +132,7 @@ export function DraftStep({
                             <div className="flex-1 overflow-y-auto p-4 space-y-6">
 
                                 {/* Strategy */}
-                                {hasStrategy && (
+                                {strategySet && (
                                     <div className="space-y-2">
                                         <h5 className="text-sm font-medium text-gray-900 border-b border-gray-100 pb-1">Strategic Coach</h5>
                                         {/* Dynamic Analysis Panel */}

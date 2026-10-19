@@ -159,7 +159,6 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     };
 
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
-    const [showStrategyWarning, setShowStrategyWarning] = useState(false);
 
     const handleUpdateBrainMetadata = (metadata: BrainMetadata) => {
         setLocalBrainMetadata(metadata);
@@ -412,16 +411,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             setStep('outline');
             generateOutline();
         } else if (step === 'outline' && outlineApproved) {
-            const isVague = !localBrainMetadata?.outcome || !localBrainMetadata?.audience?.role;
-
-            if (isVague && !showStrategyWarning) {
-                setShowStrategyWarning(true);
-                return;
-            }
-
             checkLimit().then(allowed => {
                 if (!allowed) return;
-                setShowStrategyWarning(false);
                 setStep('generate');
                 generateDraft();
             });

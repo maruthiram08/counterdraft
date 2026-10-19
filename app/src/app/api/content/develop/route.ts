@@ -23,11 +23,11 @@ export async function POST(req: Request) {
         userIdStr = userId;
 
         const body = await req.json();
-        const { action, hook, angle, deep_dive, outline, references, userContext, currentText, type, brainMetadata, draft, fix_instruction } = body;
+        const { action, hook, angle, deep_dive, outline, references, userContext, currentText, type, brainMetadata, draft, fix_instruction, brief, draftText } = body;
         actionType = action || 'unknown';
 
         // 🛡️ CONTENT MODERATION CHECK (on user-provided text fields)
-        const inputToModerate = [hook, angle, userContext, currentText].filter(Boolean).join(' ');
+        const inputToModerate = [hook, angle, userContext, currentText, brief].filter(Boolean).join(' ');
         if (inputToModerate) {
             const modResult = await moderateContent(inputToModerate);
             if (modResult.flagged) {
@@ -166,8 +166,8 @@ export async function POST(req: Request) {
             const result = await brainGenerationService.verifyFacts(textToVerify);
             return NextResponse.json(result);
 
-        } else if (action === 'autofill_strategy') {
-            const result = await brainGenerationService.autofillStrategy(userId, hook);
+        } else if (action === 'parse_brief' || action === 'autofill_strategy') {
+            const result = await brainGenerationService.parseBrief(userId, { brief, hook, draftText, current: brainMetadata });
             return NextResponse.json(result);
 
         } else {

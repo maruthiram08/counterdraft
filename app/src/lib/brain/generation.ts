@@ -3,6 +3,7 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
+import { formatStrategyContext, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
 
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
@@ -77,9 +78,7 @@ export class BrainGenerationService {
             ? `\n\nSOURCE MATERIAL (Use this as the primary ground truth):\n${brainMetadata.sourceContext}`
             : '';
 
-        const brainContext = brainMetadata
-            ? `\n\nStrategic Context (To be applied ONLY to Key Insights):\n- Goal: ${brainMetadata.outcome || 'General'}\n- Stance: ${brainMetadata.stance || 'Balanced'}\n- Audience: ${brainMetadata.audience?.role || 'General Professional'} (Pain Point: ${brainMetadata.audience?.pain || 'General challenges'})`
-            : '';
+        const brainContext = formatStrategyContext(brainMetadata, 'Strategic Context (To be applied ONLY to Key Insights)');
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
             hook,
@@ -171,9 +170,7 @@ Example: { "text": "Updated research point..." }`
 
     // --- 3. Outline ---
     async generateOutline({ hook, angle, deep_dive, references, brainMetadata }: OutlineParams): Promise<string[]> {
-        const brainContext = brainMetadata
-            ? `\n\nStrategic Context:\n- Goal: ${brainMetadata.outcome}\n- Audience: ${brainMetadata.audience?.role} (Pain: ${brainMetadata.audience?.pain})\n- Stance: ${brainMetadata.stance}\n- Format: ${brainMetadata.format || 'Thought Leadership'}`
-            : '';
+        const brainContext = formatStrategyContext(brainMetadata);
 
         const referencesContext = this.formatReferences(references);
         const sourceContext = brainMetadata?.sourceContext
@@ -266,7 +263,8 @@ IMPORTANT: Return a JSON object with a "sections" key containing an array of str
 
     // --- 4. Draft ---
     async generateDraft({ userId, hook, angle, outline, references, userContext, brainMetadata }: DraftParams): Promise<string> {
-        const format = brainMetadata?.format || 'thought_leadership';
+        const format = normalizeFormat(brainMetadata?.format) || 'thought_leadership';
+        const brainContext = formatStrategyContext(brainMetadata);
 
         // Voice Injection
         let voiceContext = '';
@@ -308,7 +306,7 @@ Keep it concise but dense. This is for the writer, not the reader.`
                     role: 'user',
                     content: `Topic: ${hook}
 Angle: ${angle}
-Stance: ${brainMetadata?.stance || 'Opinionated'}
+Stance: ${brainMetadata?.stance || 'Opinionated'}${brainContext}
 
 Outline:
 ${outlineContext}
@@ -345,11 +343,14 @@ Expand this into a drafting brief.`
 - Vary rhythm: mix punchy one-liners with slightly developed points
 - Avoid padding; if an item is weak, cut it
 - The list should feel curated, not exhaustive`;
+        } else {
+            styleInstruction = `Format: ${format}
+- Follow the structure this format implies, as the creator described it`;
         }
 
-        const brainContext = brainMetadata
-            ? `\n\nStrategic Context:\n- Goal: ${brainMetadata.outcome}\n- Audience: ${brainMetadata.audience?.role} (Pain: ${brainMetadata.audience?.pain})\n- Stance: ${brainMetadata.stance}`
-            : '';
+        const closingInstruction = brainMetadata?.cta
+            ? `End by steering the reader toward this call to action, in the creator's voice and without engagement bait: ${brainMetadata.cta}`
+            : 'End with a reflective question or light CTA that invites discussion, not engagement bait.';
 
         const referencesContext = this.formatReferences(references);
         const userContextString = userContext ? `\n\nUser's Special Instructions:\n${userContext}` : '';
@@ -411,7 +412,7 @@ Structure:
 - Progress logically through the brief so the argument or narrative builds.
 - Use bold text sparingly for emphasis or visual breaks where it aids scannability.
 - Use line spacing intentionally to guide the reader through complex ideas.
-- End with a reflective question or light CTA that invites discussion, not engagement bait.
+- ${closingInstruction}
 
 Constraints:
 - This is a LinkedIn post — keep formatting native to the platform.
@@ -441,13 +442,8 @@ ${referencesContext}${sourceContext}${userContextString}`
 
     // --- 5. Verify Strategy ---
     async verifyStrategy({ draft, brainMetadata }: { draft: string, brainMetadata: BrainMetadata }): Promise<StrategyVerificationResult> {
-        const strategyContext = `
-Strategic Goals:
-- Outcome: ${brainMetadata.outcome || 'General Engagement'}
-- Audience: ${brainMetadata.audience?.role || 'General Audience'} (Pain: ${brainMetadata.audience?.pain || 'Unknown'})
-- Stance: ${brainMetadata.stance || 'Neutral'}
-- Format: ${brainMetadata.format || 'Post'}
-        `;
+        const strategyContext = formatStrategyContext(brainMetadata, 'Strategic Goals').trim()
+            || 'No explicit strategy was given. Infer the most likely intent from the draft and judge against that.';
 
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
@@ -459,13 +455,14 @@ Your specific job is to measure the "Strategic Alignment" of a piece of content.
 
 You are given:
 1. A Draft Post
-2. The Strategic Intent (Goal, Audience, Stance)
+2. The Strategic Intent (Goal, Audience, Stance, and the creator's own brief when given)
 
 Your task:
 Analyze strictly whether the draft achieves the specific intent.
 - Does it actually speak to the defined Audience (using their language, addressing their specific pain)?
 - Does it maintain the promised Stance (e.g. if "Contrarian", is it actually bold? If "Empathetic", is it warm?)?
 - Does it drive toward the Goal?
+- Does it respect any call to action, must-include points and things to avoid?
 
 Output JSON:
 {
@@ -502,7 +499,7 @@ Output JSON:
    
    STRATEGIC CONTEXT:
    - Audience: ${brainMetadata?.audience?.role || 'Professionals'}
-   - Goal: ${brainMetadata?.outcome || 'Engagement'}
+   - Goal: ${brainMetadata?.outcome || 'Engagement'}${formatStrategyContext(brainMetadata, 'Full strategy').replace(/\n/g, '\n   ')}
    
    CRITICAL RULES:
    1. **Identify the Weakness:** Locate the specific 1-2 paragraphs or sentences that violate the critique.
@@ -558,14 +555,16 @@ Output JSON:
         return JSON.parse(completion.choices[0].message.content || '{}');
     }
 
-    // --- 8. Autofill Strategy ---
-    async autofillStrategy(userId: string, hook: string): Promise<Record<string, unknown>> {
+    // --- 8. Parse Strategy Brief ---
+    // Turns the user's own description of the post into strategy fields. With an empty brief it
+    // infers everything from the topic, draft and voice profile (this is what Auto-Strategy runs).
+    async parseBrief(userId: string, { brief, hook, draftText, current }: { brief?: string; hook?: string; draftText?: string; current?: Partial<BrainMetadata> }): Promise<ParsedStrategy> {
         const profile = await voiceService.getProfile(userId);
+        const voiceContext = profile && profile.is_active
+            ? `USER VOICE TONE: ${profile.voice_tone}\nRULES: ${profile.rules?.join(', ')}`
+            : 'No voice profile found.';
 
-        let voiceContext = "No specific voice profile found. Suggest a generic high-performing strategy.";
-        if (profile && profile.is_active) {
-            voiceContext = `USER VOICE TONE: ${profile.voice_tone}\nRULES: ${profile.rules?.join(', ')}`;
-        }
+        const currentStrategy = formatStrategyContext({ ...current, brief: undefined }, 'CURRENT STRATEGY (the user may have set these by hand; keep them unless the brief says otherwise)');
 
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
@@ -573,39 +572,45 @@ Output JSON:
                 {
                     role: 'system',
                     content: `You are a Strategic Editorial Advisor.
-Your job is to suggest the optimal "Content Strategy" for a specific topic, aligned with the user's natural voice.
+The creator describes, in their own words, what a post should do. Turn that into a content strategy.
 
-INPUTS:
-- Topic: ${hook}
-- User Voice: ${voiceContext}
+RULES:
+- The creator's words win. Keep their phrasing and nuance; do not flatten it into generic labels.
+- If the brief is empty or silent on a field, infer a sensible value from the topic, draft and voice.
+- Leave out "cta", "include", "avoid", "toneNotes" and "length" unless the brief (or draft) actually implies them.
+- "outcome": use one of authority | engagement | conversion | connection if it fits, otherwise a short phrase.
+- "format": use one of thought_leadership | tactical_guide | personal_story | listicle if it fits, otherwise a short phrase.
+- "stance": a short phrase in the creator's terms (e.g. "contrarian", "gently sceptical", "excited but practical").
+- "clarifyingQuestion": ask ONE short question only if something that would materially change the post is ambiguous. Otherwise null.
 
-TASK:
-Determine the best fit for:
-1. Audience (Who cares most about this? What is their specific pain?)
-2. Goal (Engagement, Authority, Conversion?)
-3. Stance (Contrarian, Analytical, Visionary, Supportive?)
-4. Format (Listicle, Story, Guide, Thought Leadership?)
-
-LOGIC:
-- If Voice is "Cynical/Direct", Stance should likely be "Contrarian".
-- If Voice is "Empathic/Warm", Stance should be "Supportive".
-- If Topic is technical, Format might be "Tactical Guide".
-- If Topic is personal, Format might be "Personal Story".
+${voiceContext}${currentStrategy}
 
 Output JSON:
 {
-  "audience": { "role": "Specific Role", "pain": "Specific Challenge" },
-  "outcome": "authority" | "engagement" | "conversion" | "connection",
-  "stance": "String",
-  "format": "thought_leadership" | "tactical_guide" | "personal_story" | "listicle"
+  "audience": { "role": "Specific role", "pain": "Their specific challenge", "beliefs": "What they already believe about this, if known" },
+  "outcome": "string",
+  "stance": "string",
+  "format": "string",
+  "cta": "What the reader should do next",
+  "include": ["Specific facts, names or points that must appear"],
+  "avoid": ["Words, topics or habits to stay away from"],
+  "toneNotes": "Tone in the creator's words",
+  "length": "Length or platform preference",
+  "clarifyingQuestion": "string or null"
 }`
                 },
-                { role: 'user', content: `Topic: ${hook}` }
+                {
+                    role: 'user',
+                    content: `Topic: ${hook || 'Not given'}
+
+Creator's brief:
+${brief?.trim() || '(empty: infer the strategy)'}${draftText?.trim() ? `\n\nDraft so far:\n${draftText.slice(0, 3000)}` : ''}`
+                }
             ],
             response_format: { type: 'json_object' }
         });
 
-        return JSON.parse(completion.choices[0].message.content || '{}');
+        return sanitizeParsedStrategy(JSON.parse(completion.choices[0].message.content || '{}'));
     }
 
     // --- 9. Generate Image ---
