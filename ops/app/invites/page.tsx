@@ -1,12 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase'; // NOTE: This is actually server-side client, we shouldn't import in "use client". 
-// Wait, 'ops/lib/supabase.ts' uses process.env.SUPABASE_SERVICE_ROLE_KEY which is not available in client.
-// Correct approach: Fetch plans from an API or just hardcode common ones for now. 
-// For simplicity in this specialized internal tool, let's just hardcode the Plans or creating a server component wrapper.
-// Let's stick to a simple form that POSTs to our API.
-
 import { Loader2, Copy, Check, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 

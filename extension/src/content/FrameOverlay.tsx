@@ -21,16 +21,8 @@ export function FrameOverlay() {
         };
         chrome.runtime.onMessage.addListener(listener);
 
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isActive) {
-                cleanup();
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-
         return () => {
             chrome.runtime.onMessage.removeListener(listener);
-            document.removeEventListener('keydown', handleEscape);
             cleanup();
         };
     }, []);
@@ -67,7 +59,6 @@ export function FrameOverlay() {
 
         // Capture logic
         const captureUrl = window.location.href;
-        console.log("[FrameOverlay] Capturing URL:", captureUrl);
 
         chrome.runtime.sendMessage({
             type: 'SNIP_COMPLETED', // Route through background for consistency
@@ -85,18 +76,19 @@ export function FrameOverlay() {
         cleanup();
     };
 
-    // Attach DOM listeners when active
+    // Attach DOM listeners when active (re-bound on each change so handlers see the current isActive)
     useEffect(() => {
-        if (isActive) {
-            window.addEventListener('mouseover', handleHover, true);
-            window.addEventListener('click', handleClick, true);
-        } else {
-            window.removeEventListener('mouseover', handleHover, true);
-            window.removeEventListener('click', handleClick, true);
-        }
+        if (!isActive) return;
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') cleanup();
+        };
+        window.addEventListener('mouseover', handleHover, true);
+        window.addEventListener('click', handleClick, true);
+        document.addEventListener('keydown', handleEscape);
         return () => {
             window.removeEventListener('mouseover', handleHover, true);
             window.removeEventListener('click', handleClick, true);
+            document.removeEventListener('keydown', handleEscape);
         };
     }, [isActive]);
 

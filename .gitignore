@@ -23,3 +23,11 @@ lerna-debug.log*
 
 # Dependencies
 node_modules/
+
+# Editor / agent leftovers
+*.code-workspace
+
+# Golden-set eval output (regenerate with app/run_golden_set*.sh)
+app/*_hooks*.txt
+app/evaluation_*.txt
+app/clean_*.txt

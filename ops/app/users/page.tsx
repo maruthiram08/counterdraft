@@ -14,14 +14,9 @@ export default async function UsersPage() {
         .select('*')
         .order('created_at', { ascending: false });
 
-    // Fetch all profiles to map User IDs to Emails (Ops privilege)
-    // NOTE: This might be heavy if users > 1000. For now it's fine.
-    // Ideally, we'd join or fetch only needed.
-    // Since 'profiles' table usually exists in public schema in Supabase starters.
-    // Checking if 'profiles' exists or if we rely on Auth.
-
-    // Since we access auth.users via Service Role, we can list users.
-    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+    // Map user IDs to emails via the auth admin API (Ops privilege).
+    // listUsers defaults to 50 per page; fetch up to 1000 so later users aren't shown as raw IDs.
+    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
 
     const userMap = (users || []).reduce((acc: any, user: any) => {
         acc[user.id] = user.email;
