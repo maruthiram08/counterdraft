@@ -232,6 +232,7 @@ export interface BrainMetadata {
   toneNotes?: string; // Tone in the user's own words
   length?: string; // Length or platform preference
   clarifyingQuestion?: string; // One open question from the brief parser, if something important is unclear
+  researchedWith?: string; // Strategy snapshot the current research was generated from
   source?: {
     type: 'belief' | 'tension' | 'idea' | 'manual' | 'artifact' | 'synthesis';
     id?: string;

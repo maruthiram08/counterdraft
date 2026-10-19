@@ -5,6 +5,7 @@ import { Check, X, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2 } from "lucide
 import { toast } from "sonner";
 import { BrainHeaderPanel } from "./BrainHeaderPanel";
 import { BrainMetadata } from "@/types";
+import { formatStrategyContext } from "@/lib/brain/strategy";
 import { LimitModal } from "../modal/LimitModal";
 
 import { KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -158,6 +159,15 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
     };
 
+    // Latest strategy for async callbacks, so a finished research run never overwrites edits made while it ran
+    const latestBrainMetadata = useRef(localBrainMetadata);
+    useEffect(() => {
+        latestBrainMetadata.current = localBrainMetadata;
+    }, [localBrainMetadata]);
+    const researchStrategy = formatStrategyContext(localBrainMetadata);
+    const strategyChangedSinceResearch = !!deepDive && !!researchStrategy
+        && (localBrainMetadata?.researchedWith ?? '') !== researchStrategy;
+
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
 
     const handleUpdateBrainMetadata = (metadata: BrainMetadata) => {
@@ -223,6 +233,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
         setLoading(true);
         saveProgress({ dev_step: 'deep_dive_in_progress' });
+        const researchedWith = formatStrategyContext(localBrainMetadata);
         try {
             const res = await fetch('/api/content/develop', {
                 method: 'POST',
@@ -269,9 +280,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 } else {
                     setDeepDive(richData);
                     if (mode === 'reset') setGlobalContext("");
+                    const brainMetadata = { ...latestBrainMetadata.current, researchedWith } as BrainMetadata;
+                    setLocalBrainMetadata(brainMetadata);
                     saveProgress({
                         deep_dive: richData,
-                        dev_step: 'deep_dive_complete'
+                        dev_step: 'deep_dive_complete',
+                        brain_metadata: brainMetadata
                     });
                 }
             } else {
@@ -526,9 +540,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             setDraftContent(item.draft_content);
         }
 
-        if (!deepDive && !item.deep_dive && !loading) {
-            runDeepDive();
-        } else if (item.dev_step) {
+        // Research waits for the user to start it, so the strategy brief can shape it
+        if (item.dev_step) {
             if (item.dev_step.includes('draft') || item.dev_step === 'complete') {
                 setStep('generate');
             } else if (item.dev_step.includes('outline')) {
@@ -541,7 +554,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             else if (item.outline) setStep('outline');
             else setStep('deep_dive');
         }
-    }, [item.id, item.deep_dive, item.outline, item.draft_content, item.dev_step, deepDive, draftContent, outline.length, loading, runDeepDive]);
+    }, [item.id, item.deep_dive, item.outline, item.draft_content, item.dev_step, deepDive, draftContent, outline.length]);
 
     const steps = [
         { key: 'deep_dive', label: 'Research' },
@@ -623,6 +636,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                     loading={loading} // Effectively redundant here as checked above, but kept for interface
                                     refiningItems={refiningItems}
                                     onRunDeepDive={runDeepDive}
+                                    strategyChanged={strategyChangedSinceResearch}
                                     onExport={handleExportResearch}
                                     onRefinePoint={handleRefinePoint}
                                     onUpdateItem={handleUpdateItem}

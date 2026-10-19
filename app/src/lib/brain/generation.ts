@@ -78,7 +78,7 @@ export class BrainGenerationService {
             ? `\n\nSOURCE MATERIAL (Use this as the primary ground truth):\n${brainMetadata.sourceContext}`
             : '';
 
-        const brainContext = formatStrategyContext(brainMetadata, 'Strategic Context (To be applied ONLY to Key Insights)');
+        const brainContext = formatStrategyContext(brainMetadata, 'Strategic Context (decides what is worth researching; keep the facts themselves objective)');
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
             hook,
@@ -105,7 +105,7 @@ You are given:
 
 Your task is to provide:
 
-1. **Research findings**: A comprehensive, OBJECTIVE list of facts, statistics, historical context, or modern trends. These should be "domain broad" — providing a sturdy foundation of truth regardless of final framing. Cover the topic thoroughly without artificial limits.
+1. **Research findings**: A comprehensive, OBJECTIVE list of facts, statistics, historical context, or modern trends. Keep each fact objective, but choose WHAT to research using the strategic context: the evidence this audience would find credible, data on their pain points, and anything the creator asked to include. Then cover the wider topic thoroughly so the creator has a sturdy foundation.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
 
