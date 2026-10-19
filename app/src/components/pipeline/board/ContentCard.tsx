@@ -1,4 +1,3 @@
-
 import { Archive, ArrowRight, FileText, Trash2, Wand2 } from "lucide-react";
 import { ContentItem } from "./types";
 
@@ -7,117 +6,97 @@ interface ContentCardProps {
     onAction: (id: string, action: string) => void;
 }
 
+const CONFIDENCE_STYLES: Record<string, string> = {
+    high: 'bg-ink text-white',
+    medium: 'bg-ember-100 text-ember-700',
+    low: 'bg-canvas shadow-well text-ink-muted',
+};
+
+const PLATFORM_LABELS: Record<string, string> = { linkedin: 'LinkedIn', twitter: 'X', x: 'X', substack: 'Substack', medium: 'Medium', instagram: 'Instagram' };
+
+const sentenceCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function PrimaryAction({ label, icon, onClick, title }: { label: string; icon: React.ReactNode; onClick: () => void; title?: string }) {
+    return (
+        <button
+            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            className="flex items-center gap-1.5 h-9 pl-3 pr-3.5 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+            title={title}
+        >
+            {icon}
+            {label}
+        </button>
+    );
+}
+
 export function ContentCard({ item, onAction }: ContentCardProps) {
     const stage = item.stage;
+    const confidence = item.brain_metadata?.confidence;
 
     return (
-        <div className="bg-white p-4 rounded-xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3 h-auto min-h-[140px]">
-            <div className="flex items-center justify-between">
-                <div className="flex gap-2">
+        <div className="bg-surface p-5 rounded-tile shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-4 min-h-[160px]">
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap gap-1.5">
                     {item.format && (
-                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-semibold uppercase tracking-wider">
-                            {item.format}
+                        <span className="h-7 px-3 rounded-full bg-canvas shadow-well text-ink-soft text-xs font-medium flex items-center">
+                            {sentenceCase(item.format)}
                         </span>
                     )}
                     {item.platform && (
-                        <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-600 text-[10px] font-semibold uppercase tracking-wider">
-                            {item.platform}
+                        <span className="h-7 px-3 rounded-full bg-canvas shadow-well text-ink-soft text-xs font-medium flex items-center">
+                            {PLATFORM_LABELS[item.platform.toLowerCase()] ?? sentenceCase(item.platform)}
                         </span>
                     )}
-                    {item.brain_metadata?.confidence && (
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${item.brain_metadata.confidence === 'high' ? 'bg-green-50 text-green-700' :
-                            item.brain_metadata.confidence === 'medium' ? 'bg-amber-50 text-amber-700' :
-                                'bg-gray-100 text-gray-500'
-                            }`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${item.brain_metadata.confidence === 'high' ? 'bg-green-500' :
-                                item.brain_metadata.confidence === 'medium' ? 'bg-amber-500' :
-                                    'bg-gray-400'
-                                }`} />
-                            {item.brain_metadata.confidence}
+                    {confidence && (
+                        <span className={`h-7 px-3 rounded-full text-xs font-medium flex items-center ${CONFIDENCE_STYLES[confidence] ?? CONFIDENCE_STYLES.low}`}>
+                            {sentenceCase(confidence)} confidence
                         </span>
                     )}
                 </div>
-                <span className="text-[10px] font-medium text-gray-400">
+                <span className="text-xs text-ink-muted whitespace-nowrap pt-1.5">
                     {new Date(item.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </span>
             </div>
 
-            <div className="space-y-1.5">
-                <h3 className="text-[17px] font-serif font-medium text-gray-900 leading-snug text-balance">
-                    {item.hook || 'Untitled Idea'}
+            <div className="space-y-2">
+                <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink leading-snug text-balance">
+                    {item.hook || 'Untitled idea'}
                 </h3>
-                <p className="text-[13px] text-gray-500 line-clamp-3 leading-relaxed font-sans">
-                    {item.draft_content || item.angle || "No content yet..."}
+                <p className="text-sm text-ink-soft line-clamp-3 leading-relaxed">
+                    {item.draft_content || item.angle || "No content yet."}
                 </p>
             </div>
 
-            <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div className="flex gap-2">
+            <div className="mt-auto pt-1 flex items-center justify-between md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-200">
+                <div className="flex gap-1.5">
                     {stage === 'idea' && (
                         <>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onAction(item.id, 'develop'); }}
-                                className="flex flex-col items-center gap-1 p-2 hover:bg-amber-50 text-gray-400 hover:text-amber-700 rounded-lg transition-colors group/btn min-w-[50px]"
-                                title="Develop"
-                            >
-                                <Wand2 size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
-                                <span className="text-[10px] font-medium leading-none">Develop</span>
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onAction(item.id, 'start_draft'); }}
-                                className="flex flex-col items-center gap-1 p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-700 rounded-lg transition-colors group/btn min-w-[50px]"
-                                title="Quick Draft"
-                            >
-                                <ArrowRight size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
-                                <span className="text-[10px] font-medium leading-none">Draft</span>
-                            </button>
+                            <PrimaryAction label="Develop" icon={<Wand2 size={14} />} onClick={() => onAction(item.id, 'develop')} />
+                            <PrimaryAction label="Draft" icon={<ArrowRight size={14} />} onClick={() => onAction(item.id, 'start_draft')} title="Quick Draft" />
                         </>
                     )}
                     {stage === 'developing' && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onAction(item.id, 'develop'); }}
-                            className="flex flex-col items-center gap-1 p-2 hover:bg-amber-50 text-gray-400 hover:text-amber-700 rounded-lg transition-colors group/btn min-w-[50px]"
-                            title="Continue Development"
-                        >
-                            <Wand2 size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
-                            <span className="text-[10px] font-medium leading-none">Continue</span>
-                        </button>
+                        <PrimaryAction label="Continue" icon={<Wand2 size={14} />} onClick={() => onAction(item.id, 'develop')} title="Continue Development" />
                     )}
-                    {stage === 'draft' && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onAction(item.id, 'edit'); }}
-                            className="flex flex-col items-center gap-1 p-2 hover:bg-blue-50 text-gray-400 hover:text-blue-700 rounded-lg transition-colors group/btn min-w-[50px]"
-                        >
-                            <FileText size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
-                            <span className="text-[10px] font-medium leading-none">Open</span>
-                        </button>
-                    )}
-                    {stage === 'published' && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onAction(item.id, 'edit'); }}
-                            className="flex flex-col items-center gap-1 p-2 hover:bg-green-50 text-gray-400 hover:text-green-700 rounded-lg transition-colors group/btn min-w-[50px]"
-                            title="View/Edit"
-                        >
-                            <FileText size={14} className="group-hover/btn:scale-110 transition-transform mb-0.5" />
-                            <span className="text-[10px] font-medium leading-none">Open</span>
-                        </button>
+                    {(stage === 'draft' || stage === 'published') && (
+                        <PrimaryAction label="Open" icon={<FileText size={14} />} onClick={() => onAction(item.id, 'edit')} title={stage === 'published' ? 'View/Edit' : undefined} />
                     )}
                 </div>
 
                 <div className="flex gap-1 items-center">
                     <button
                         onClick={(e) => { e.stopPropagation(); onAction(item.id, 'archive'); }}
-                        className="p-1.5 hover:bg-gray-100 text-gray-300 hover:text-gray-500 rounded-md transition-colors"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                         title="Archive"
                     >
-                        <Archive size={14} />
+                        <Archive size={15} />
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onAction(item.id, 'delete'); }}
-                        className="p-1.5 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-md transition-colors"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
                         title="Delete"
                     >
-                        <Trash2 size={14} />
+                        <Trash2 size={15} />
                     </button>
                 </div>
             </div>

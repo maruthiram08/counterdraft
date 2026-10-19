@@ -52,11 +52,11 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
     // Desktop/Tablet Sidebar
     return (
         // Spacer Container: Maintains rigid layout width (w-16) so page content never shifts
-        <div className="relative h-full w-16 flex-none z-50">
+        <div className="relative h-full w-[72px] flex-none z-50 bg-canvas">
 
             {/* Actual Sidebar: Positioned absolutely to expand FREELY over adjacent content */}
             <div
-                className={`absolute top-0 left-0 h-full bg-[#dfdfdf] text-gray-900 flex flex-col border-r border-gray-300 shadow-2xl transition-[width] duration-300 ease-in-out font-sans overflow-hidden ${isCollapsed ? 'w-16' : 'w-64'}`}
+                className={`absolute top-0 left-0 h-full bg-canvas text-ink flex flex-col transition-[width,box-shadow] duration-300 ease-in-out font-sans overflow-hidden ${isCollapsed ? 'w-[72px] shadow-[inset_-1px_0_0_rgb(146_152_176/0.18)]' : 'w-64 shadow-float'}`}
                 onMouseEnter={() => !isMobile && setIsCollapsed(false)}
                 onMouseLeave={() => !isMobile && setIsCollapsed(true)}
             >
@@ -73,21 +73,21 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
                 </div>
 
                 {/* Navigation */}
-                <nav className={`flex-1 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'} space-y-1 mt-6`}>
+                <nav className={`flex-1 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'} space-y-3 mt-6`}>
                     {navItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => onNavigate(item.id)}
-                            className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium transition-all overflow-hidden whitespace-nowrap group relative ${isCollapsed
-                                ? 'w-10 h-10 p-0 justify-center mx-auto'
+                            className={`flex items-center gap-3 h-11 rounded-full text-sm font-medium transition-all overflow-hidden whitespace-nowrap group relative ${isCollapsed
+                                ? 'w-11 p-0 justify-center mx-auto'
                                 : 'w-full px-4'
                                 } ${activeSection === item.id
-                                    ? 'bg-black/10 text-black shadow-sm ring-1 ring-black/5'
-                                    : 'text-gray-600 hover:text-black hover:bg-black/5'
+                                    ? 'shadow-pressed text-ink'
+                                    : 'text-ink-soft hover:text-ink hover:shadow-raised'
                                 }`}
                             title={isCollapsed ? item.label : undefined}
                         >
-                            <item.icon size={18} className={`shrink-0 transition-colors duration-200 ${activeSection === item.id ? 'text-black' : 'opacity-70 group-hover:opacity-100'}`} />
+                            <item.icon size={18} className={`shrink-0 transition-colors duration-200 ${activeSection === item.id ? 'text-ember-500' : 'opacity-80 group-hover:opacity-100'}`} />
                             <span className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 hidden' : 'opacity-100 delay-75'}`}>
                                 {item.label}
                             </span>
@@ -96,11 +96,11 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
                 </nav>
 
                 {/* Footer / Settings */}
-                <div className={`border-t border-gray-300 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+                <div className={`transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'}`}>
                     <button
                         onClick={() => onNavigate('settings')}
-                        className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-black hover:bg-black/5 transition-all overflow-hidden whitespace-nowrap ${isCollapsed
-                            ? 'w-10 h-10 p-0 justify-center mx-auto'
+                        className={`flex items-center gap-3 h-11 rounded-full text-sm font-medium text-ink-soft hover:text-ink hover:shadow-raised transition-all overflow-hidden whitespace-nowrap ${isCollapsed
+                            ? 'w-11 p-0 justify-center mx-auto'
                             : 'w-full px-4'
                             }`}
                         title={isCollapsed ? 'Settings' : undefined}
@@ -112,13 +112,13 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
                     </button>
 
                     <SignOutButton>
-                        <button className={`w-full mt-4 pt-4 border-t border-gray-300 flex items-center gap-3 px-2 overflow-hidden whitespace-nowrap transition-all duration-300 hover:bg-black/5 rounded-lg cursor-pointer text-left group ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100 h-auto delay-100'}`}>
-                            <div className="w-8 h-8 rounded-full bg-gray-200 ring-2 ring-white shrink-0 flex items-center justify-center">
-                                <span className="font-bold text-xs text-gray-900">MV</span>
+                        <button className={`w-full mt-4 p-2 flex items-center gap-3 overflow-hidden whitespace-nowrap transition-all duration-300 shadow-raised active:shadow-pressed rounded-full cursor-pointer text-left group ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100 h-auto delay-100'}`}>
+                            <div className="w-9 h-9 rounded-full bg-ember-500 shrink-0 flex items-center justify-center">
+                                <span className="font-semibold text-xs text-white">MV</span>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate group-hover:text-black transition-colors">Sign Out</p>
-                                <p className="text-xs text-gray-500 truncate">Pro Plan</p>
+                                <p className="text-sm font-medium text-ink truncate">Sign Out</p>
+                                <p className="text-xs text-ink-muted truncate">Pro Plan</p>
                             </div>
                         </button>
                     </SignOutButton>
