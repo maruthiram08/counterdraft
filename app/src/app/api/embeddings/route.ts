@@ -1,16 +1,8 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { createClient } from '@supabase/supabase-js';
+import { openai } from '@/lib/openai';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 // Generate embedding for text
 async function generateEmbedding(text: string): Promise<number[]> {

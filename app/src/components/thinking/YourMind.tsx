@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Layers, Zap, Loader2 } from 'lucide-react';
+import { Layers, Zap } from 'lucide-react';
 import { BeliefCard } from '@/components/thinking/BeliefCard';
 import { TensionCard } from '@/components/thinking/TensionCard';
 import { AddContentModal } from '@/components/thinking/AddContentModal';
@@ -78,7 +78,6 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
     const [activeTab, setActiveTab] = useState<'beliefs' | 'tensions' | 'artifacts'>(initialTab);
     const [beliefView, setBeliefView] = useState<'list' | 'tree'>(initialView);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
-    const [isFetchingUrl] = useState(false);
 
     // NEW: URL Preview Modal state
     const [urlPreviewModalOpen, setUrlPreviewModalOpen] = useState(false);
@@ -199,7 +198,6 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-serif text-gray-900 flex items-center gap-3">
                         Your Mind
-                        {isFetchingUrl && <Loader2 className="animate-spin text-blue-500" size={20} />}
                     </h1>
                     <button
                         onClick={() => setAddContentModalOpen(true)}

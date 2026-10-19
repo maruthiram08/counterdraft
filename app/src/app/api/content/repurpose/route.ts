@@ -9,7 +9,8 @@ import { getOrCreateUser } from '@/lib/user-sync';
 
 export async function POST(req: Request) {
     try {
-        const { sourceId, platform, options } = await req.json() as { sourceId: string; platform: string; options: RepurposeOptions };
+        const { sourceId, platform, options: rawOptions } = await req.json() as { sourceId: string; platform: string; options?: RepurposeOptions };
+        const options: RepurposeOptions = rawOptions ?? {};
 
         // 0. Strict Auth
         const authUserId = await getOrCreateUser();
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
             );
         }
 
-        // ... Refetch for content ...
+        // Load source content
         if (draftSource) {
             sourceContent = draftSource.content;
             sourceHook = draftSource.belief_text;
@@ -79,25 +80,6 @@ export async function POST(req: Request) {
             if (itemSource) {
                 sourceContent = itemSource.draft_content || itemSource.hook;
                 sourceHook = itemSource.hook;
-            }
-        }
-
-        if (draftSource) {
-            sourceContent = draftSource.content;
-            sourceHook = draftSource.belief_text;
-            userId = draftSource.user_id;
-        } else {
-            // Fallback to content_items
-            const { data: itemSource } = await supabase
-                .from('content_items')
-                .select('*')
-                .eq('id', sourceId)
-                .single();
-
-            if (itemSource) {
-                sourceContent = itemSource.draft_content || itemSource.hook;
-                sourceHook = itemSource.hook;
-                userId = itemSource.user_id;
             }
         }
 

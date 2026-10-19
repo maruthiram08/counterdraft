@@ -33,6 +33,11 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     // Deep Dive state - Now using rich objects
     const [deepDive, setDeepDive] = useState<DeepDiveData | null>(null);
+    // Latest deep dive for async callbacks (parallel refinements must not overwrite each other)
+    const latestDeepDive = useRef<DeepDiveData | null>(null);
+    useEffect(() => {
+        latestDeepDive.current = deepDive;
+    }, [deepDive]);
 
     // Outline state - Now using rich objects
     const [outline, setOutline] = useState<ResearchPoint[]>([]);
@@ -461,10 +466,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     };
 
     const handleUpdateItem = (type: 'research' | 'insights', index: number, updates: Partial<ResearchPoint>) => {
-        if (!deepDive) return;
-        const newList = [...deepDive[type]];
+        const base = latestDeepDive.current;
+        if (!base) return;
+        const newList = [...base[type]];
         newList[index] = { ...newList[index], ...updates };
-        const newData = { ...deepDive, [type]: newList };
+        const newData = { ...base, [type]: newList };
+        latestDeepDive.current = newData;
         setDeepDive(newData);
         saveProgress({ deep_dive: newData });
     };

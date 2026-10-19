@@ -4,10 +4,6 @@ import { PRICING_CONFIG, Tier } from '@/lib/constants/pricing';
 export class UsageService {
 
     /**
-     * Check if a user can create a new draft.
-     * Uses the optimized 'user_usage' table.
-     */
-    /**
      * Check if user can generate an image.
      */
     static async checkImageLimit(userId: string) {
@@ -111,12 +107,6 @@ export class UsageService {
     // ... increment wrappers ...
     static async incrementDraftCount(userId: string) { return this._incrementGeneric(userId, 'draft_count'); }
     static async incrementSearchCount(userId: string) { return this._incrementGeneric(userId, 'search_count'); }
-
-    // Helper to get features (exposed for UI)
-    static async getTierFeatures(userId: string) {
-        const check = await this.checkDraftLimit(userId);
-        return PRICING_CONFIG.LIMITS[check.tier as Tier];
-    }
 
     /**
      * Log a performance metric to the console (for Vercel/Datadog pickup).

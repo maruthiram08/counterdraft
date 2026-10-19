@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { openai } from '@/lib/openai';
 import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
@@ -56,13 +56,8 @@ export interface FactCheckResult {
 }
 
 export class BrainGenerationService {
-    private openai: OpenAI;
-
-    constructor() {
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (!apiKey) throw new Error('OPENAI_API_KEY is not defined');
-        this.openai = new OpenAI({ apiKey });
-    }
+    // Shared client: a missing key fails at request time, not at import time
+    private openai = openai;
 
     private formatReferences(refs: ContentReference[] | undefined): string {
         if (!refs || refs.length === 0) return '';

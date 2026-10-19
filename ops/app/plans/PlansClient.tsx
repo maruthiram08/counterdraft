@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { updatePlan, createPlan } from './actions';
-import { Pencil, Plus, Trash2, X, Check } from 'lucide-react';
+import { Pencil, Plus, X, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PlansClient({ initialPlans }: { initialPlans: any[] }) {

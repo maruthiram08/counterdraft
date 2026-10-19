@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
-
-// Init Supabase Admin Client (for writing to DB without user auth)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(req: Request) {
     try {
@@ -23,15 +19,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
-        // We use a direct Supabase client here because this is a public endpoint
-        // and the user is NOT authenticated yet.
-        // Ideally, use a SERVICE_ROLE_KEY client if RLS protects this table.
-        // For now, assuming we use the standard client but the table permits insert.
-        // SECURITY NOTE: In prod, ensure RLS allows public INSERT or use Service Key.
-
-        // Using Service Key for reliable ingestion bypassing RLS if needed for leads
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
+        // Public endpoint (no user session): write with the service-role client
         const { error } = await supabase
             .from('marketing_leads')
             .insert([

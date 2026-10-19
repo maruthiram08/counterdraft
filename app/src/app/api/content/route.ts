@@ -1,5 +1,4 @@
-
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
@@ -126,10 +125,9 @@ export async function POST(req: Request) {
 
         if (itemError) throw itemError;
 
-        // 1.5 Deep Logic: Genealogy & Confidence Check
         // 1.5 Deep Logic: Genealogy & Confidence Check (Backgrounded)
-        // 1.5 Deep Logic: Genealogy & Confidence Check (Backgrounded)
-        (async () => {
+        // after() keeps the work alive on serverless once the response is sent
+        after(async () => {
             if (stage === 'developing' || stage === 'idea') {
                 try {
                     // Determine Genealogy (Find Parent/Root)
@@ -177,7 +175,7 @@ export async function POST(req: Request) {
                     console.error('Brain V1 Logic Failed (background):', logicError);
                 }
             }
-        })();
+        });
 
         // 2. Create References (if any)
         if (references && references.length > 0) {
@@ -230,6 +228,8 @@ export async function PATCH(req: Request) {
 
         const body = await req.json();
         const { id, ...updates } = body;
+        // user_id is never client-writable: it would move the row to another account
+        delete updates.user_id;
 
         if (!id) {
             return NextResponse.json({ error: 'ID required' }, { status: 400 });
@@ -247,19 +247,9 @@ export async function PATCH(req: Request) {
                 .eq('user_id', userId) // FIX: Scope to user to prevent leaking existence
                 .single();
 
-            // FIX: Count limit if we are moving TO 'draft' from ANY other stage (idea, developing)
-            // AND ensure we aren't just updating an existing draft.
-            // If current stage is null (shouldn't happen), assume idea.
+            // Count against the draft limit when an idea moves to draft or developing.
+            // Developing -> draft is free because the developing step was already counted.
             const currentStage = current?.stage || 'idea';
-            // Wait, if I am in 'developing' (Wizard), and I save... it patches with stage='developing'.
-            // If I then 'Finish' -> stage='draft'.
-            // Do we count 'developing' items as drafts? Yes, usually.
-            // The Wizard creates an item as 'developing' immediately.
-
-            // LOGIC:
-            // 1. Idea -> Developing: COUNT
-            // 2. Developing -> Draft: FREE (Already counted)
-            // 3. Idea -> Draft: COUNT
 
             // So we count if DESTINATION is (draft OR dev) AND ORIGIN is (idea).
             const isDestinationCountable = updates.stage === 'draft' || updates.stage === 'developing';

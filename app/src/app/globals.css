@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: var(--font-outfit), sans-serif;
-  --font-sans: var(--font-inter), sans-serif;
-  --font-serif: var(--font-newsreader), serif;
-  --font-mono: var(--font-jetbrains), monospace;
+  --font-display: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-plex-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* IBM Plex tops out at 700 */
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
 
   /* Custom Colors */
   --color-paper: #fcfcfc;
@@ -135,7 +139,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-outfit), sans-serif;
+  font-family: var(--font-display);
   color: var(--text-primary);
   font-weight: 500;
   line-height: 1.2;
@@ -236,11 +240,11 @@ h5 {
 
 /* Utilities */
 .text-serif {
-  font-family: var(--font-newsreader), serif;
+  font-family: var(--font-serif);
 }
 
 .text-sans {
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Dashboard Specific Layouts */

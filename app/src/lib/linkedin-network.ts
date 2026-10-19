@@ -32,12 +32,9 @@ export const linkedinFetch = async (url: string, options: Parameters<typeof undi
             });
             return res;
         } catch (err) {
-            console.log(`[LinkedIn Network] Attempt ${i + 1}/${retries} failed:`, err);
-
-            // Should we retry?
+            console.warn(`[LinkedIn Network] Attempt ${i + 1}/${retries} failed:`, err);
             if (i === retries - 1) throw err;
 
-            console.log(`[LinkedIn Network] Retrying fetch (${i + 1}/${retries})...`);
             await new Promise(r => setTimeout(r, 500)); // Short 500ms backoff
         }
     }

@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
-// Initialize Supabase Admin strictly for this transaction
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(req: NextRequest) {
     try {
         const userId = await getOrCreateUser();
-        console.log('[ClaimCoupon] Auth Check:', { userId, hasHeaders: !!req.headers.get('cookie') });
 
         // 0. Rate Limiting (Brute force protection)
         const ip = getClientIp(req);

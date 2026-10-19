@@ -180,7 +180,6 @@ export function useBeliefs() {
                 };
             });
 
-            console.log(`[Feedback] Persisted: ${beliefId} → ${feedback}`);
             return true;
 
         } catch (err: unknown) {

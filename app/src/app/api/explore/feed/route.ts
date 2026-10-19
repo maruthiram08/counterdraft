@@ -35,7 +35,7 @@ interface RSSItem {
 }
 
 // Simple RSS parser (no external deps)
-export async function fetchGoogleNewsRSS(query: string): Promise<RSSItem[]> {
+async function fetchGoogleNewsRSS(query: string): Promise<RSSItem[]> {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
 
     try {

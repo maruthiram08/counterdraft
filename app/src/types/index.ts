@@ -135,12 +135,6 @@ export interface IdeaGenerationResult {
 // UI STATE
 // ===========================================
 
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-}
-
 export type OnboardingStep =
   | 'paste-posts'
   | 'analyzing'

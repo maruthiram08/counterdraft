@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Create Checkout
-        console.log(`[Checkout] Creating session for ${user.email} | Plan: ${productId} | Country: ${country || 'US'}`);
+        console.log(`[Checkout] Creating session | Plan: ${productId} | Country: ${country || 'US'}`);
 
         // We pass metadata so the webhook knows who paid
         type DodoCheckoutResult = {

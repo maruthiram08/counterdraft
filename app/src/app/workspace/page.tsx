@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { BeliefCard } from "@/components/thinking/BeliefCard";
 import { useBeliefs } from "@/hooks/useBeliefs";
 import { TensionCard } from "@/components/thinking/TensionCard";
@@ -64,9 +64,12 @@ function WorkspaceContent() {
     const effectivePostsTab = selectedDraft?.status === 'published' ? 'published' : postsTab;
 
     // Handle Deep Linking
+    const refetchedForDraftId = useRef<string | null>(null);
     useEffect(() => {
-        // 1. Handle Stale Data (Sync Fix)
-        if (urlDraftId && !draftsLoading && drafts.length > 0 && !drafts.find(d => d.id === urlDraftId)) {
+        // 1. Handle Stale Data (Sync Fix): refetch once per linked id so a deleted draft can't loop forever
+        if (urlDraftId && !draftsLoading && drafts.length > 0 && !drafts.find(d => d.id === urlDraftId)
+            && refetchedForDraftId.current !== urlDraftId) {
+            refetchedForDraftId.current = urlDraftId;
             refetch();
         }
 
@@ -82,6 +85,31 @@ function WorkspaceContent() {
             router.replace(`/workspace?${newParams.toString()}`, { scroll: false });
         }
     }, [searchParams, urlDraftId, urlTab, drafts, draftsLoading, refetch, router]);
+
+    // The URL wins over local state (see activeDraftId/effectiveSection), so local
+    // navigation has to update the URL too or it is silently ignored.
+    const selectDraft = (id: string | null) => {
+        setSelectedDraftId(id);
+        setActiveSection('drafts');
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', 'drafts');
+        if (id) {
+            params.set('draftId', id);
+        } else {
+            params.delete('draftId');
+        }
+        router.replace(`/workspace?${params.toString()}`, { scroll: false });
+    };
+
+    const goToSection = (section: Section) => {
+        setActiveSection(section);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', section);
+        if (section !== 'drafts') {
+            params.delete('draftId');
+        }
+        router.replace(`/workspace?${params.toString()}`, { scroll: false });
+    };
 
     // Agent update handler
     const handleAgentApply = (refinedContent: string) => {
@@ -232,10 +260,7 @@ function WorkspaceContent() {
                                         <GenealogyTree
                                             beliefs={[...beliefs.core, ...beliefs.emerging, ...beliefs.overused, ...beliefs.confirmed]}
                                             drafts={drafts}
-                                            onSelectDraft={(id) => {
-                                                setSelectedDraftId(id);
-                                                setActiveSection('drafts');
-                                            }}
+                                            onSelectDraft={(id) => selectDraft(id)}
                                         />
                                     ) : (
                                         <>
@@ -487,7 +512,7 @@ function WorkspaceContent() {
                             <button
                                 onClick={() => {
                                     setPostsTab('drafts');
-                                    setSelectedDraftId(null);
+                                    selectDraft(null);
                                 }}
                                 className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${effectivePostsTab === 'drafts'
                                     ? 'border-[var(--foreground)] text-[var(--foreground)]'
@@ -499,7 +524,7 @@ function WorkspaceContent() {
                             <button
                                 onClick={() => {
                                     setPostsTab('published');
-                                    setSelectedDraftId(null);
+                                    selectDraft(null);
                                 }}
                                 className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${effectivePostsTab === 'published'
                                     ? 'border-[var(--foreground)] text-[var(--foreground)]'
@@ -519,7 +544,7 @@ function WorkspaceContent() {
                                             <div className="flex-1 flex flex-col min-h-0">
                                                 <div className="flex items-center gap-3 px-4 py-3 border-b bg-white shrink-0">
                                                     <button
-                                                        onClick={() => setSelectedDraftId(null)}
+                                                        onClick={() => selectDraft(null)}
                                                         className="p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                                                     >
                                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -562,7 +587,7 @@ function WorkspaceContent() {
                                                     placeholder={effectivePostsTab === 'published' ? "Search published..." : "Search drafts..."}
                                                     emptyMessage={effectivePostsTab === 'published' ? "No published posts" : "No drafts"}
                                                     selectedDraftId={activeDraftId}
-                                                    onSelect={(draft) => setSelectedDraftId(draft.id)}
+                                                    onSelect={(draft) => selectDraft(draft.id)}
                                                     onNew={() => {
                                                         setNewDraftPrefill(undefined);
                                                         setDraftModalOpen(true);
@@ -579,7 +604,7 @@ function WorkspaceContent() {
                                                 placeholder={effectivePostsTab === 'published' ? "Search published..." : "Search drafts..."}
                                                 emptyMessage={effectivePostsTab === 'published' ? "No published posts" : "No drafts"}
                                                 selectedDraftId={activeDraftId}
-                                                onSelect={(draft) => setSelectedDraftId(draft.id)}
+                                                onSelect={(draft) => selectDraft(draft.id)}
                                                 onNew={() => {
                                                     setNewDraftPrefill(undefined);
                                                     setDraftModalOpen(true);
@@ -657,7 +682,7 @@ function WorkspaceContent() {
 
                         if (newItemId) {
                             setAutoNavToWizardId(newItemId);
-                            setActiveSection('pipeline');
+                            goToSection('pipeline');
                         }
                     }
 
@@ -684,13 +709,7 @@ function WorkspaceContent() {
                         return;
                     }
                     if (isSection(section)) {
-                        setActiveSection(section);
-                        const params = new URLSearchParams(searchParams.toString());
-                        params.set('tab', section);
-                        if (section !== 'drafts') {
-                            params.delete('draftId');
-                        }
-                        router.replace(`/workspace?${params.toString()}`, { scroll: false });
+                        goToSection(section);
                     }
                 }}
             />

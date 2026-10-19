@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { approveRequest, rejectRequest, extendSubscription } from './actions';
-import { Check, X, Clock, Plus, User } from 'lucide-react';
+import { Check, X, Clock, User } from 'lucide-react';
 import Link from 'next/link';
 
 export default function UsersClient({ requests, subscriptions, userMap }: { requests: any[], subscriptions: any[], userMap: any }) {

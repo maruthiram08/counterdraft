@@ -49,9 +49,11 @@ export function useVerification({ draft, content, onSave, getFullContent }: UseV
         }
     };
 
-    // Reset state when draft changes
+    // Reset state when the selected draft changes. Keyed on the id, not the object:
+    // saving replaces the draft object and must not wipe an in-flight check.
+    const draftId = draft?.id;
     useEffect(() => {
-        if (!draft) {
+        if (!draftId) {
             setVerifications([]);
             setPlagiarismResult(null);
             setSlopMatches([]);
@@ -64,10 +66,11 @@ export function useVerification({ draft, content, onSave, getFullContent }: UseV
         setPlagiarismResult(null);
         setSlopMatches([]);
         setCompetitorResult(null);
+        setSlopHasRun(false);
         setShowFactCheck(false);
 
-        fetchExistingVerification(draft.id);
-    }, [draft]);
+        fetchExistingVerification(draftId);
+    }, [draftId]);
 
     const handleVerify = async () => {
         if (!draft) return;

@@ -48,7 +48,6 @@ export class PlagiarismService {
         }));
 
         const matchedSources = Array.from(sourcesMap.values())
-            .filter(s => s.overlap_score > 0)
             .sort((a, b) => b.overlap_score - a.overlap_score);
 
         // 3. Final Scoring (LLM judgment)

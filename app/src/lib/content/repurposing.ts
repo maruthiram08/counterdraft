@@ -63,7 +63,7 @@ export async function repurposeContent(content: string, platform: string, option
     ${platform === 'medium' ? mediumPrompt : instagramPrompt}
   `;
 
-    const preferredModel = platform === 'instagram' ? 'gpt-4o-mini' : 'gpt-4o-mini';
+    const preferredModel = 'gpt-4o-mini';
     let result: string | null = null;
 
     const attempt = async (model: string) => {

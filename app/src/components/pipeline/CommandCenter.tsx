@@ -51,7 +51,6 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
         if (autoOpenItemId && items.length > 0 && !loading && !developingItem) {
             const itemToOpen = items.find(i => i.id === autoOpenItemId);
             if (itemToOpen) {
-                console.log('[CommandCenter] Auto-opening wizard for:', itemToOpen.hook);
                 setDevelopingItem(itemToOpen);
                 setActiveStage('developing'); // Switch to developing tab
                 if (onAutoOpenHandled) onAutoOpenHandled();
@@ -132,7 +131,6 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                     console.error("Failed to check limit", e);
                 }
 
-                console.log("Start Draft clicked");
                 await fetch('/api/content', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },

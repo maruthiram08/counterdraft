@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Newsreader, JetBrains_Mono, Outfit } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { CSPostHogProvider } from "./providers";
@@ -8,26 +8,29 @@ import { FloatingFeedbackButton } from "@/components/shared/FloatingFeedbackButt
 import { Toaster } from 'sonner';
 import { CouponClaimer } from "@/components/auth/CouponClaimer";
 
-const inter = Inter({
-  variable: "--font-inter",
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin"],
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["500", "700", "900"],
-});
-
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
+  display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
+const plexSerif = IBM_Plex_Serif({
+  variable: "--font-plex-serif",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+  preload: false,
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -57,7 +60,7 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <CSPostHogProvider>
           <body
-            className={`${inter.variable} ${newsreader.variable} ${jetbrainsMono.variable} ${outfit.variable}`}
+            className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable}`}
           >
             <PostHogPageView />
             <FloatingFeedbackButton />

@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server';
-import { OpenAI } from 'openai';
+import { openai } from '@/lib/openai';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 export const maxDuration = 60; // Allow 1 minute for search + LLM
 

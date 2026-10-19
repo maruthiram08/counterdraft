@@ -11,8 +11,7 @@ export function CSPostHogProvider({ children }: { children: React.ReactNode }) {
                 api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
                 person_profiles: 'identified_only', // Use 'always' to track anonymous users too
                 capture_pageview: false, // Disable automatic pageview capture, as we capture manually
-                loaded: (ph) => { console.log('PostHog loaded:', ph) },
-                debug: true, // Enable debug mode for visibility in console
+                debug: process.env.NODE_ENV === 'development',
             })
         }
     }, [])
