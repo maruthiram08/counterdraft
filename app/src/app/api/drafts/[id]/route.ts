@@ -147,8 +147,7 @@ export async function PATCH(
         return NextResponse.json({ draft, success: true });
     } catch (error: unknown) {
         console.error('[PATCH /api/drafts/[id]] Error:', error);
-        // Return more detail if possible
         const message = error instanceof Error ? error.message : 'Internal Server Error';
-        return NextResponse.json({ error: message, details: error }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

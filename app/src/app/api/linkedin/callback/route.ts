@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { linkedinFetch } from '@/lib/linkedin-network';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 interface LinkedInTokenResponse {
     access_token: string;
@@ -77,7 +73,8 @@ export async function GET(request: NextRequest) {
         const params = new URLSearchParams({
             grant_type: 'authorization_code',
             code,
-            redirect_uri: process.env.LINKEDIN_REDIRECT_URI!,
+            redirect_uri: process.env.LINKEDIN_REDIRECT_URI ||
+                `${process.env.NEXT_PUBLIC_APP_URL}/api/linkedin/callback`,
             client_id: process.env.LINKEDIN_CLIENT_ID!,
             client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
         });

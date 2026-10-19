@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { linkedinFetch } from '@/lib/linkedin-network';
 import { extractBeliefs } from "@/lib/brain/analysis";
 import { storeAnalysisResults } from "@/lib/belief-storage";
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 interface PublishRequest {
     draftId: string;
@@ -113,7 +109,7 @@ export async function POST(request: NextRequest) {
         };
 
         // Publish to LinkedIn
-        // Using custom fetch to avoid connection timeouts
+        // Single attempt: a timed-out POST may already have created the post, so retrying could publish twice
         const publishResponse = await linkedinFetch('https://api.linkedin.com/v2/ugcPosts', {
             method: 'POST',
             headers: {
@@ -122,7 +118,7 @@ export async function POST(request: NextRequest) {
                 'X-Restli-Protocol-Version': '2.0.0',
             },
             body: JSON.stringify(postBody),
-        }, 3, 120000);
+        }, 1, 120000);
 
         if (!publishResponse.ok) {
             const errorText = await publishResponse.text();

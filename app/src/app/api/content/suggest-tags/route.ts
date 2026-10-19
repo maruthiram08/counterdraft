@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { suggestTags } from '@/lib/brain/ideation';
+import { getOrCreateUser } from '@/lib/user-sync';
 
 export async function POST(req: Request) {
     try {
+        const userId = await getOrCreateUser();
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { content } = await req.json();
 
         if (!content) {

@@ -22,13 +22,9 @@ export class FactCheckService {
      * Orchestrates the full verification flow.
      */
     static async verifyDraft(text: string): Promise<VerificationResult[]> {
-        console.log("FactCheck: process started for text length", text.length);
-
         // 1. Extract Claims
         const claims = await this.extractClaims(text);
         if (claims.length === 0) return [];
-
-        console.log("FactCheck: extracted claims", claims.length);
 
         // 2. Verify each item (Parallel)
         const limitedClaims = claims.slice(0, this.MAX_CLAIMS);
@@ -50,11 +46,13 @@ export class FactCheckService {
             2. **Verbatim-ish:** The "claim" should be a standalone summary, but "original_sentence" MUST be the exact quote from the text.
             3. **Completeness:** Ensure the extracted claim contains enough context to be verified (e.g. "It increased by 50%" -> "Q3 Revenue increased by 50%").
             
-            Return ONLY a raw JSON array of objects:
-            [
-              { "claim": "Precise verifiable statement", "original_sentence": "Exact sentence from text" },
-              ...
-            ]
+            Return ONLY a JSON object with a "claims" array:
+            {
+              "claims": [
+                { "claim": "Precise verifiable statement", "original_sentence": "Exact sentence from text" },
+                ...
+              ]
+            }
 
             Text:
             ${text.substring(0, 4000)}
@@ -86,7 +84,8 @@ export class FactCheckService {
             const cacheKey = claim.trim().toLowerCase();
             const cached = this.cache.get(cacheKey);
             if (cached && cached.expiresAt > Date.now()) {
-                return cached.value;
+                // The cache is keyed by claim; the sentence belongs to this caller's draft
+                return { ...cached.value, original_sentence };
             }
 
             // 1. Search Tavily
@@ -96,7 +95,8 @@ export class FactCheckService {
                     claim,
                     status: 'unverified',
                     confidence: 0,
-                    analysis: "No relevant web sources found."
+                    analysis: "No relevant web sources found.",
+                    original_sentence
                 };
                 this.cache.set(cacheKey, { value: result, expiresAt: Date.now() + this.CACHE_TTL_MS });
                 return result;
@@ -158,28 +158,24 @@ export class FactCheckService {
         const apiKey = process.env.TAVILY_API_KEY;
         if (!apiKey) throw new Error("Missing TAVILY_API_KEY env var");
 
-        try {
-            const res = await fetch('https://api.tavily.com/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    api_key: apiKey,
-                    query: query,
-                    search_depth: "basic",
-                    include_answer: false,
-                    max_results: 1
-                })
-            });
+        const res = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                api_key: apiKey,
+                query: query,
+                search_depth: "basic",
+                include_answer: false,
+                max_results: 1
+            })
+        });
 
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`Tavily API ${res.status}: ${text}`);
-            }
-
-            const data = await res.json();
-            return data.results || [];
-        } catch (e) {
-            throw e; // Propagate to verifyClaim catch block
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Tavily API ${res.status}: ${text}`);
         }
+
+        const data = await res.json();
+        return data.results || [];
     }
 }

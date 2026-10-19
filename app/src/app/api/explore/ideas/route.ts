@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
 import { TraceLogger } from '@/lib/trace';
 import { moderateContent, getModerationErrorMessage } from '@/lib/moderation';
-import { SAFETY_PREAMBLE } from '@/lib/openai';
+import { openai, SAFETY_PREAMBLE } from '@/lib/openai';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Platform-specific guidance
 const PLATFORM_GUIDANCE: Record<string, string> = {

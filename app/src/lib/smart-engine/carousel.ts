@@ -14,7 +14,7 @@ export function calculateCarousel(text: string, maxCharsPerSlide: number = 150):
     // 1. Cover Slide (First sentence or Title)
     // Heuristic: If there is a newline, take the first line. Else take first 10 words.
     const lines = text.split('\n').filter(l => l.trim().length > 0);
-    let title = lines[0];
+    let title = lines[0] ?? ""; // empty editor still yields a cover + outro
     let body = lines.slice(1).join('\n');
 
     if (title.length > 80) {
@@ -27,7 +27,7 @@ export function calculateCarousel(text: string, maxCharsPerSlide: number = 150):
 
     // 2. Body Slides
     // Split remaining text by sentences to avoid cutting mid-thought.
-    const sentences = body.match(/[^.!?]+[.!?]+|\s*$/g) || [body];
+    const sentences = body.match(/[^.!?]+(?:[.!?]+|$)/g) || [body];
 
     let currentSlideText = "";
 

@@ -1,15 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { Outfit } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import InviteClient from './InviteClient';
 
 const outfit = Outfit({ subsets: ['latin'] });
 
-// Init Server Client for Validation
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! // Safe in Server Component
-);
 
 interface Props {
     params: Promise<{ code: string }>

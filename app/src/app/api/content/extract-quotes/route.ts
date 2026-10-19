@@ -1,9 +1,15 @@
 
 import { NextResponse } from 'next/server';
 import { getOpenAI } from '@/lib/openai';
+import { getOrCreateUser } from '@/lib/user-sync';
 
 export async function POST(req: Request) {
     try {
+        const userId = await getOrCreateUser();
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { content } = await req.json();
 
         if (!content) {

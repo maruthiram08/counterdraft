@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import OpenAI from 'openai';
+import { openai } from '@/lib/openai';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 import { UsageService } from '@/lib/billing/usage';
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function POST(req: NextRequest) {
     const start = Date.now();

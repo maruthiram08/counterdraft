@@ -47,7 +47,6 @@ export async function POST(req: Request) {
         try {
             console.log("Starting analysis with content length:", content.length);
             const analysis = await extractBeliefs([content]);
-            console.log("Analysis Complete:", JSON.stringify(analysis, null, 2));
 
             if (!isMockMode && userId) {
                 // 4. Store Beliefs & Tensions via shared service
@@ -63,31 +62,21 @@ export async function POST(req: Request) {
         } catch (aiError: unknown) {
             console.error("AI Extraction failed:", aiError);
 
-            // Fallback for verification if AI is out of credits or fails
-            // This ensures the UI flow can be tested even with invalid keys
+            // Fallback for local verification if AI is out of credits or fails.
+            // Only used in mock DB mode so real accounts never receive placeholder beliefs.
             const errorMessage = String(aiError);
-            if (errorMessage.includes("429") || errorMessage.includes("1113") || errorMessage.includes("insufficient")) {
+            const isQuotaError = errorMessage.includes("429") || errorMessage.includes("1113") || errorMessage.includes("insufficient");
+            if (isMockMode && isQuotaError) {
                 console.warn("⚠️ AI Account Insufficient Balance. Using Mock Analysis.");
 
                 const mockAnalysis = {
-                    coreBeliefs: ["Simplicity reveals truth", "Complexity hides bugs", "Minimum viable strategy", "Subtract to add vlaue"],
+                    coreBeliefs: ["Simplicity reveals truth", "Complexity hides bugs", "Minimum viable strategy", "Subtract to add value"],
                     overusedAngles: ["More features is better", "Scale at all costs"],
                     emergingThesis: "Radical subtraction as a growth strategy",
                     detectedTensions: [
                         { beliefA: "Simplicity", beliefB: "Nuance", summary: "Simple isn't always true" }
                     ]
                 };
-
-                // Insert mock beliefs if in real DB mode (unlikely if we are here, but handled for completeness)
-                if (!isMockMode) {
-                    const beliefsToInsert = [
-                        ...(mockAnalysis.coreBeliefs || []).map((b: string) => ({ user_id: userId, statement: b, belief_type: 'core' })),
-                        ...(mockAnalysis.overusedAngles || []).map((b: string) => ({ user_id: userId, statement: b, belief_type: 'overused' })),
-                        ...(mockAnalysis.emergingThesis ? [{ user_id: userId, statement: mockAnalysis.emergingThesis, belief_type: 'emerging' }] : [])
-                    ];
-                    const { error: beliefError } = await supabaseAdmin.from("beliefs").insert(beliefsToInsert);
-                    if (beliefError) console.error("Error storing mock beliefs:", beliefError);
-                }
 
                 return NextResponse.json({
                     success: true,

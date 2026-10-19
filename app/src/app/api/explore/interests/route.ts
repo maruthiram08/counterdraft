@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 
 // Interest categories and subcategories
-export const INTEREST_TREE = {
+const INTEREST_TREE = {
     tech: {
         label: 'Technology & AI',
         subcategories: ['ai_ethics', 'generative_models', 'startups', 'hardware'],

@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Default: Scan
-        const matches = AntiSlopService.scan(text);
+        const matches = AntiSlopService.scan(text ?? selection);
         return NextResponse.json({ matches });
 
     } catch (error) {
