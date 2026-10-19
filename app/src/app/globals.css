@@ -39,7 +39,11 @@
   --color-sage-500: #5f9470;
   --color-sage-700: #3f6b4d;
 
-  --color-paper: #fcfcfc; /* legacy, used by screens not yet moved to canvas */
+  --color-rose-100: #f7e1de;      /* errors, destructive */
+  --color-rose-500: #b9473a;
+  --color-rose-700: #8c3227;
+
+  --color-paper: #ecedf1; /* legacy alias of canvas */
   --color-accent: #d4592a;
 
   --radius-card: 28px;
@@ -57,7 +61,7 @@
 
 :root {
   /* Fallback for raw CSS usage if needed, though Tailwind utils are preferred */
-  --background: #ffffff;
+  --background: #ecedf1;
   --foreground: #161c2d;
 
   --surface-elevated: #ffffff;
@@ -72,8 +76,7 @@
   --text-primary: #161c2d;
   --text-secondary: #4b5164;
   --text-muted: #8b90a0;
-  --text-subtle: #d1d5db;
-  /* Gray 300 */
+  --text-subtle: #c9ccd6;
 
   /* Borders - Very subtle */
   --border: #e3e4ea;
@@ -81,15 +84,15 @@
   --border-focus: #161c2d;
 
   /* Belief/Tention Colors (Preserved) */
-  --belief-core: #16a34a;
-  --belief-overused: #f59e0b;
-  --belief-emerging: #3b82f6;
-  --belief-rejected: #ef4444;
+  --belief-core: #d4592a;
+  --belief-overused: #c49a62;
+  --belief-emerging: #7b93c4;
+  --belief-rejected: #b9473a;
 
-  --tension-inconsistency: #ef4444;
-  --tension-nuance: #16a34a;
-  --tension-explore: #3b82f6;
-  --tension-pending: #9ca3af;
+  --tension-inconsistency: #b9473a;
+  --tension-nuance: #5f9470;
+  --tension-explore: #7b93c4;
+  --tension-pending: #8b90a0;
 
   /* Spacing & Radius */
   --radius-sm: 4px;
@@ -108,29 +111,28 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Homepage Specific */
-  --paper: #fcfcfc;
+  --paper: #ecedf1;
   --charcoal: #09090b;
 }
 
 /* Homepage Custom Utilities */
 .paper-card {
-  background: white;
-  border: 1px solid #e4e4e7;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.02), 0 1px 2px -1px rgb(0 0 0 / 0.02);
+  background: var(--color-surface);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-card);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .paper-card:hover {
-  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.05);
-  border-color: #d4d4d8;
+  box-shadow: var(--shadow-float);
 }
 
 .hero-gradient {
-  background: radial-gradient(circle at 50% 0%, rgba(22, 163, 74, 0.04) 0%, rgba(252, 252, 252, 1) 100%);
+  background: radial-gradient(circle at 50% 0%, rgba(212, 89, 42, 0.06) 0%, var(--color-canvas) 70%);
 }
 
 .editorial-shadow {
-  box-shadow: 0 40px 100px -30px rgba(0, 0, 0, 0.08), 0 20px 40px -20px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-float);
 }
 
 /* Animations */
@@ -151,8 +153,8 @@
 }
 
 .selection-green::selection {
-  background-color: rgba(22, 163, 74, 0.2);
-  color: #16a34a;
+  background-color: rgba(212, 89, 42, 0.2);
+  color: var(--color-ember-700);
 }
 
 /* Base Reset */
@@ -194,80 +196,77 @@ h5 {
   padding: 0 24px;
 }
 
-/* Button Base - Minimalist */
+/* Buttons: pills on the neumorphic canvas */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  height: 44px;
+  padding: 0 20px;
   font-size: 14px;
   font-weight: 500;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   transition: all var(--transition-fast);
   cursor: pointer;
-  border: 1px solid transparent;
+  border: none;
   text-decoration: none;
 }
 
 .btn:active {
-  transform: scale(0.99);
+  box-shadow: var(--shadow-pressed);
 }
 
-/* Primary - Green, Solid */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-primary {
-  background: var(--accent);
+  background: var(--color-ember-500);
   color: white;
-  border-color: var(--accent);
+  box-shadow: var(--shadow-ember);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background: var(--color-ember-600);
 }
 
-/* Secondary - Outline */
 .btn-secondary {
-  background: white;
-  color: var(--foreground);
-  border-color: var(--border);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-raised);
 }
 
 .btn-secondary:hover {
-  border-color: var(--border-hover);
-  background: #f9fafb;
+  color: var(--color-ember-600);
 }
 
-/* Ghost - Text only */
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
 }
 
 .btn-ghost:hover {
-  background: #f3f4f6;
-  color: var(--foreground);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-raised);
 }
 
-/* Cards - Ultrathink Style */
+/* Cards: white, large radius, soft neumorphic lift */
 .card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-card);
   padding: 24px;
   transition: all var(--transition-fast);
 }
 
-/* The "Journal" active card style */
 .card-active {
-  border: 2px solid var(--accent);
-  /* Prominent green border */
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-float), inset 0 0 0 2px var(--color-ember-500);
 }
 
 .card:hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-float);
 }
 
 /* Utilities */
@@ -292,21 +291,22 @@ h5 {
   }
 }
 
-/* Inputs - Clean */
+/* Inputs: inset wells */
 .input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 15px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--shadow-well);
   color: var(--foreground);
-  transition: border-color var(--transition-fast);
+  transition: box-shadow var(--transition-fast);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--foreground);
+  box-shadow: var(--shadow-well), 0 0 0 2px var(--color-ember-200);
 }
 
 .input::placeholder {
