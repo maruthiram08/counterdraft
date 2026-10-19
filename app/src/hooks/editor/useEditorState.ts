@@ -43,9 +43,11 @@ export function useEditorState(draft: Draft | null, onSave: (id: string, content
         setSaving(true);
         try {
             const fullContent = getFullContent();
-            await onSave(draft.id, fullContent, beliefText);
-            setSaved(true);
-            setTimeout(() => setSaved(false), 2000);
+            const ok = await onSave(draft.id, fullContent, beliefText);
+            if (ok) {
+                setSaved(true);
+                setTimeout(() => setSaved(false), 2000);
+            }
         } finally {
             setSaving(false);
         }

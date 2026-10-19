@@ -25,7 +25,6 @@ export default function IdeasPage() {
             }
 
             // Success
-            console.log("Search Recorded. Usage:", data.usage);
             alert(`Exploring... (Usage: ${data.usage}/${data.limit})`);
 
         } catch (e) {

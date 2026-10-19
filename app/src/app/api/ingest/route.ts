@@ -45,7 +45,6 @@ export async function POST(req: Request) {
 
         // 3. Trigger Analysis using GLM
         try {
-            console.log("Starting analysis with content length:", content.length);
             const analysis = await extractBeliefs([content]);
 
             if (!isMockMode && userId) {
