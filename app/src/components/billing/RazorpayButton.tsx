@@ -92,7 +92,7 @@ export function RazorpayButton({ planId, buttonText = 'Subscribe Now', className
                     // email: user.email 
                 },
                 theme: {
-                    color: "#2563EB" // Blue-600 to match brand
+                    color: "#D4592A" // ember-500 (Razorpay checkout needs a raw hex)
                 }
             };
 
@@ -115,7 +115,7 @@ export function RazorpayButton({ planId, buttonText = 'Subscribe Now', className
         <button
             onClick={handlePayment}
             disabled={isLoading}
-            className={className || "px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"}
+            className={className || "h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center justify-center gap-2"}
         >
             {isLoading ? <Loader2 size={18} className="animate-spin" /> : null}
             {buttonText}

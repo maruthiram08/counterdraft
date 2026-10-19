@@ -204,7 +204,7 @@ export default function StylePage() {
     };
 
     return (
-        <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+        <div className="flex h-screen bg-canvas overflow-hidden">
             <GlobalSidebar
                 activeSection="style"
                 onNavigate={(section) => {
@@ -219,25 +219,25 @@ export default function StylePage() {
                 onImport={() => { }}
             />
 
-            <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-y-auto bg-zinc-50/50">
-                <div className="max-w-5xl mx-auto w-full p-6 md:p-12">
+            <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-y-auto bg-canvas">
+                <div className="max-w-5xl mx-auto w-full px-4 md:px-10 pt-8 md:pt-12 pb-28 md:pb-12">
 
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                         <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-purple-100 text-purple-700 rounded-lg">
-                                    <PenTool size={24} />
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 shrink-0 rounded-full bg-canvas shadow-raised text-ember-500 flex items-center justify-center">
+                                    <PenTool size={22} />
                                 </div>
-                                <h1 className="text-3xl font-serif text-zinc-900">Your Voice</h1>
+                                <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">Your Voice</h1>
                             </div>
-                            <p className="text-zinc-500 max-w-2xl">
+                            <p className="mt-3 text-base text-ink-soft max-w-2xl">
                                 Manage the writing style Counterdraft uses to generate your content.
                             </p>
                         </div>
 
                         {/* Profile Selector */}
-                        <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-zinc-200 shadow-sm">
+                        <div className="flex items-center gap-3 bg-canvas shadow-well rounded-full h-12 px-4">
                             <select
                                 value={profile?.id || ""}
                                 onChange={(e) => {
@@ -247,7 +247,7 @@ export default function StylePage() {
                                         handleSwitchProfile(e.target.value);
                                     }
                                 }}
-                                className="bg-transparent font-medium text-zinc-700 outline-none cursor-pointer min-w-[150px]"
+                                className="bg-transparent text-sm font-medium text-ink outline-none cursor-pointer min-w-[150px]"
                             >
                                 <option value="" disabled>Select Profile</option>
                                 {profiles.map(p => (
@@ -262,26 +262,26 @@ export default function StylePage() {
 
                     {/* Create New Modal/Input Area (Inline for now) */}
                     {isCreating && (
-                        <div className="mb-8 p-6 bg-white rounded-xl border border-purple-100 shadow-lg animate-in fade-in slide-in-from-top-4">
-                            <h3 className="text-lg font-bold mb-4">Create New Voice Profile</h3>
-                            <div className="flex gap-4">
+                        <div className="mb-8 bg-surface rounded-card shadow-card p-6 md:p-8 animate-in fade-in slide-in-from-top-4">
+                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Create New Voice Profile</h3>
+                            <div className="flex flex-col md:flex-row gap-3">
                                 <input
                                     value={newProfileName}
                                     onChange={(e) => setNewProfileName(e.target.value)}
                                     placeholder="e.g. LinkedIn Professional, Casual Blog..."
-                                    className="flex-1 p-3 border border-zinc-200 rounded-lg focus:border-purple-500 outline-none"
+                                    className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                                     autoFocus
                                 />
                                 <button
                                     onClick={handleCreateProfile}
                                     disabled={!newProfileName.trim()}
-                                    className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 disabled:opacity-50"
+                                    className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                                 >
                                     Create Profile
                                 </button>
                                 <button
                                     onClick={() => setIsCreating(false)}
-                                    className="px-6 py-3 text-zinc-500 hover:text-zinc-700 font-medium"
+                                    className="h-12 px-5 rounded-full text-sm font-medium text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                                 >
                                     Cancel
                                 </button>
@@ -290,20 +290,20 @@ export default function StylePage() {
                     )}
 
                     {/* Action Bar */}
-                    <div className="flex justify-end gap-2 mb-8">
+                    <div className="flex flex-wrap justify-end gap-2.5 mb-8">
                         {isEditing ? (
                             <>
                                 <button
                                     onClick={handleCancelEdit}
                                     disabled={saving}
-                                    className="px-4 py-2 text-zinc-600 hover:text-zinc-900 font-medium disabled:opacity-50"
+                                    className="h-12 px-5 rounded-full text-sm font-medium text-ink-soft hover:text-ink active:shadow-pressed transition-all disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSave}
                                     disabled={saving}
-                                    className="flex items-center gap-2 px-5 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 disabled:opacity-50"
+                                    className="flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                                 >
                                     {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
                                     Save Changes
@@ -315,26 +315,26 @@ export default function StylePage() {
                                     <>
                                         <button
                                             onClick={handleDelete}
-                                            className="flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-all"
+                                            className="w-12 h-12 rounded-full flex items-center justify-center bg-canvas shadow-raised text-rose-500 hover:text-rose-700 active:shadow-pressed transition-all"
                                             title="Delete this profile"
                                         >
                                             <Trash2 size={18} />
                                         </button>
-                                        <div className="w-px bg-zinc-200 mx-2"></div>
+                                        <div className="w-px bg-line mx-1"></div>
                                         <button
                                             onClick={handleStartEdit}
-                                            className="flex items-center gap-2 px-5 py-3 bg-white border border-zinc-200 text-zinc-700 rounded-xl font-bold hover:bg-zinc-50 transition-all"
+                                            className="flex items-center gap-2 h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                         >
-                                            <Edit2 size={18} />
+                                            <Edit2 size={16} className="text-ember-500" />
                                             Manual Edit
                                         </button>
                                     </>
                                 )}
                                 <button
                                     onClick={() => setIsAnalysisOpen(true)}
-                                    className="flex items-center gap-2 px-5 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg shadow-zinc-900/10"
+                                    className="flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                 >
-                                    <Wand2 size={18} />
+                                    <Wand2 size={16} />
                                     {profile ? 'Re-analyze Samples' : 'Analyze My Style'}
                                 </button>
                             </>
@@ -343,20 +343,20 @@ export default function StylePage() {
 
                     {/* Content Area */}
                     {loading ? (
-                        <div className="flex items-center justify-center py-20 text-zinc-400">
+                        <div className="flex items-center justify-center py-20 text-ink-muted">
                             <RefreshCw size={24} className="animate-spin mr-3" />
                             Loading profile...
                         </div>
                     ) : !profile ? (
-                        <div className="text-center py-20 border-2 border-dashed border-zinc-200 rounded-2xl bg-white">
-                            <PenTool size={48} className="mx-auto text-zinc-200 mb-6" />
-                            <h2 className="text-xl font-bold text-zinc-900 mb-2">No Voice Profile Selected</h2>
-                            <p className="text-zinc-500 mb-8 max-w-md mx-auto">
+                        <div className="text-center py-20 px-6 bg-surface rounded-card shadow-card">
+                            <PenTool size={48} className="mx-auto text-ember-200 mb-6" />
+                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">No Voice Profile Selected</h2>
+                            <p className="text-ink-soft mb-8 max-w-md mx-auto">
                                 Create a new profile or select one from the list to get started.
                             </p>
                             <button
                                 onClick={() => setIsCreating(true)}
-                                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition-colors"
+                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                             >
                                 Create New Profile
                             </button>
@@ -364,33 +364,33 @@ export default function StylePage() {
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up">
                             {/* Tone Card */}
-                            <div className="col-span-1 lg:col-span-3 bg-white p-8 rounded-2xl border border-zinc-200 shadow-sm relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <div className="col-span-1 lg:col-span-3 bg-surface rounded-card shadow-card p-6 md:p-8 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-3 text-ember-500 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <PenTool size={120} />
                                 </div>
-                                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Voice Tone</h3>
+                                <h3 className="text-sm text-ink-muted mb-4">Voice Tone</h3>
                                 {isEditing && editedProfile ? (
                                     <input
                                         type="text"
                                         value={editedProfile.voice_tone}
                                         onChange={(e) => setEditedProfile({ ...editedProfile, voice_tone: e.target.value })}
-                                        className="text-4xl md:text-5xl font-serif text-zinc-900 w-full border-b-2 border-zinc-200 focus:border-purple-500 outline-none bg-transparent placeholder-zinc-300"
+                                        className="text-4xl md:text-5xl font-medium tracking-[-0.03em] w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                                         placeholder="e.g. Direct, Cynical, Warm"
                                     />
                                 ) : (
-                                    <div className="text-4xl md:text-5xl font-serif text-zinc-900 leading-tight">
+                                    <div className="text-4xl md:text-5xl font-medium tracking-[-0.03em] text-ink leading-tight">
                                         {profile.voice_tone || "Neutral"}
                                     </div>
                                 )}
                             </div>
 
                             {/* Rules Card */}
-                            <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex flex-col">
+                            <div className="bg-surface rounded-card shadow-card p-6 md:p-8 flex flex-col">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                                    <div className="w-10 h-10 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center">
                                         <CheckCircle size={20} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-zinc-900">Do&apos;s (Rules)</h3>
+                                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Do&apos;s (Rules)</h3>
                                 </div>
                                 <div className="space-y-4 flex-1">
                                     {isEditing && editedProfile ? (
@@ -400,15 +400,15 @@ export default function StylePage() {
                                                     <input
                                                         value={rule}
                                                         onChange={(e) => updateList('rules', i, e.target.value)}
-                                                        className="flex-1 p-2 border border-zinc-200 rounded-lg text-sm focus:border-green-500 outline-none"
+                                                        className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-2.5 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm"
                                                         placeholder="Add a rule..."
                                                     />
-                                                    <button onClick={() => removeListItem('rules', i)} className="text-zinc-400 hover:text-red-500">
+                                                    <button onClick={() => removeListItem('rules', i)} className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-500 active:shadow-pressed">
                                                         <X size={16} />
                                                     </button>
                                                 </div>
                                             ))}
-                                            <button onClick={() => addListItem('rules')} className="flex items-center gap-2 text-sm font-bold text-green-600 hover:text-green-700 mt-2">
+                                            <button onClick={() => addListItem('rules')} className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas shadow-raised text-sm font-medium text-ink hover:text-ember-600 active:shadow-pressed transition-all mt-2">
                                                 <Plus size={14} /> Add Rule
                                             </button>
                                         </>
@@ -416,13 +416,13 @@ export default function StylePage() {
                                         <ul className="space-y-4">
                                             {profile.rules && profile.rules.length > 0 ? (
                                                 profile.rules.map((rule, i) => (
-                                                    <li key={i} className="flex gap-3 text-zinc-600 text-sm leading-relaxed">
-                                                        <span className="text-green-500 font-bold">•</span>
+                                                    <li key={i} className="flex gap-3 text-ink-soft text-sm leading-relaxed">
+                                                        <span className="text-sage-500 font-medium">•</span>
                                                         {rule}
                                                     </li>
                                                 ))
                                             ) : (
-                                                <li className="text-zinc-400 italic text-sm">No specific rules defined.</li>
+                                                <li className="text-ink-muted italic text-sm">No specific rules defined.</li>
                                             )}
                                         </ul>
                                     )}
@@ -430,12 +430,12 @@ export default function StylePage() {
                             </div>
 
                             {/* Anti-Patterns Card */}
-                            <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex flex-col">
+                            <div className="bg-surface rounded-card shadow-card p-6 md:p-8 flex flex-col">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-red-50 text-red-600 rounded-lg">
+                                    <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center">
                                         <XCircle size={20} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-zinc-900">Don&apos;ts (Anti-Patterns)</h3>
+                                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Don&apos;ts (Anti-Patterns)</h3>
                                 </div>
                                 <div className="space-y-4 flex-1">
                                     {isEditing && editedProfile ? (
@@ -445,15 +445,15 @@ export default function StylePage() {
                                                     <input
                                                         value={pattern}
                                                         onChange={(e) => updateList('anti_patterns', i, e.target.value)}
-                                                        className="flex-1 p-2 border border-zinc-200 rounded-lg text-sm focus:border-red-500 outline-none"
+                                                        className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-2.5 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm"
                                                         placeholder="Add an anti-pattern..."
                                                     />
-                                                    <button onClick={() => removeListItem('anti_patterns', i)} className="text-zinc-400 hover:text-red-500">
+                                                    <button onClick={() => removeListItem('anti_patterns', i)} className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-500 active:shadow-pressed">
                                                         <X size={16} />
                                                     </button>
                                                 </div>
                                             ))}
-                                            <button onClick={() => addListItem('anti_patterns')} className="flex items-center gap-2 text-sm font-bold text-red-600 hover:text-red-700 mt-2">
+                                            <button onClick={() => addListItem('anti_patterns')} className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas shadow-raised text-sm font-medium text-ink hover:text-rose-700 active:shadow-pressed transition-all mt-2">
                                                 <Plus size={14} /> Add Anti-Pattern
                                             </button>
                                         </>
@@ -461,13 +461,13 @@ export default function StylePage() {
                                         <ul className="space-y-4">
                                             {profile.anti_patterns && profile.anti_patterns.length > 0 ? (
                                                 profile.anti_patterns.map((pattern, i) => (
-                                                    <li key={i} className="flex gap-3 text-zinc-600 text-sm leading-relaxed">
-                                                        <span className="text-red-500 font-bold">×</span>
+                                                    <li key={i} className="flex gap-3 text-ink-soft text-sm leading-relaxed">
+                                                        <span className="text-rose-500 font-medium">×</span>
                                                         {pattern}
                                                     </li>
                                                 ))
                                             ) : (
-                                                <li className="text-zinc-400 italic text-sm">No anti-patterns defined.</li>
+                                                <li className="text-ink-muted italic text-sm">No anti-patterns defined.</li>
                                             )}
                                         </ul>
                                     )}

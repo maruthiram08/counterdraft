@@ -4,23 +4,23 @@ import { Footer } from '@/components/landing/Footer';
 
 export default function PhilosophyPage() {
     return (
-        <div className="min-h-screen bg-[#fcfcfc]">
+        <div className="min-h-screen bg-canvas">
             <Navbar />
 
             <main className="pt-32 pb-24 md:pt-48 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
                 <div className="text-center mb-20 animate-fade-in-up">
-                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-zinc-900 text-[10px] font-bold text-white mb-8 tracking-widest uppercase">
+                    <div className="inline-flex items-center h-7 px-3 rounded-full bg-ink text-xs font-medium text-white mb-8">
                         THE MANIFESTO
                     </div>
-                    <h1 className="font-display text-5xl md:text-7xl font-black tracking-tighter text-zinc-900 mb-8 leading-[1.1]">
-                        The Age of <span className="text-green-600">Generated Noise</span> requires a new kind of signal.
+                    <h1 className="text-5xl md:text-7xl font-medium tracking-[-0.03em] text-ink mb-8 leading-[1.05]">
+                        The Age of <span className="text-ember-500">Generated Noise</span> requires a new kind of signal.
                     </h1>
-                    <p className="text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-xl text-ink-soft max-w-2xl mx-auto leading-relaxed">
                         We are drowning in average. The next era of thought leadership belongs to those who refuse to outsource their conviction.
                     </p>
                 </div>
 
-                <div className="prose prose-lg prose-zinc mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                <div className="prose prose-lg mx-auto bg-surface rounded-card shadow-card p-6 md:p-12 text-ink-soft prose-headings:text-ink prose-strong:text-ink animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                     <p>
                         The internet used to be a library of human thought. Now, it&apos;s becoming a landfill of generated approximations.
                         Large Language Models are brilliant engines of average—they calculate the most probable next word based on
@@ -30,23 +30,23 @@ export default function PhilosophyPage() {
                         But <strong>thought leadership</strong> isn&apos;t about what&apos;s probable. It&apos;s about what&apos;s <em>missing</em>.
                     </p>
 
-                    <h3 className="font-display font-bold mt-12 mb-6 text-2xl">The Counterdraft Belief</h3>
+                    <h3 className="font-medium tracking-[-0.02em] text-ink mt-12 mb-6 text-2xl">The Counterdraft Belief</h3>
                     <ul className="space-y-4 list-none pl-0">
                         <li className="flex gap-4">
-                            <span className="text-green-600 font-bold">01.</span>
+                            <span className="text-ember-500 font-medium">01.</span>
                             <span><strong>Strategy before Syntax.</strong> Don&apos;t write a word until you know exactly who you are fighting for and what you are fighting against.</span>
                         </li>
                         <li className="flex gap-4">
-                            <span className="text-green-600 font-bold">02.</span>
+                            <span className="text-ember-500 font-medium">02.</span>
                             <span><strong>Friction is Quality.</strong> If it was easy to write, it&apos;s probably easy to forget. We build tools that add the <em>right kind</em> of friction—forcing you to clarify your stance.</span>
                         </li>
                         <li className="flex gap-4">
-                            <span className="text-green-600 font-bold">03.</span>
+                            <span className="text-ember-500 font-medium">03.</span>
                             <span><strong>Own your Inputs.</strong> Your &quot;earned secrets&quot;—the lessons you paid for in experience—are the only asset AI cannot clone. Leverage them.</span>
                         </li>
                     </ul>
 
-                    <div className="my-16 p-8 bg-zinc-50 border border-zinc-100 rounded-2xl border-l-4 border-l-green-600 italic text-xl text-zinc-700">
+                    <div className="my-16 p-8 bg-canvas shadow-well rounded-tile border-l-4 border-l-ember-500 italic text-xl text-ink">
                         &quot;Write like a human who has actually lived through the problem.&quot;
                     </div>
 

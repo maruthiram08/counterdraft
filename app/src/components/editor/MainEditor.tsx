@@ -146,14 +146,14 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
 
     if (!draft) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] p-8 bg-paper">
-                <p className="font-serif italic text-lg opacity-50">Select a draft to start writing...</p>
+            <div className="h-full flex flex-col items-center justify-center text-ink-muted p-8 bg-canvas">
+                <p className="text-base">Select a draft to start writing...</p>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full relative group bg-paper">
+        <div className="flex flex-col h-full relative group bg-canvas">
 
             {/* Contextual Toolbar */}
             {toolbarPosition && (
@@ -164,7 +164,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
 
             {/* Document Surface */}
             <div className="flex-1 overflow-y-auto relative">
-                <div className="max-w-4xl mx-auto py-8 md:py-20 px-4 md:px-16 min-h-full relative">
+                <div className="max-w-4xl mx-auto pt-16 pb-8 md:pt-8 md:pb-12 px-4 md:px-10 min-h-full relative">
 
                     {/* Sticky Header Actions */}
                     <EditorHeader
@@ -198,7 +198,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                     {/* Cover Art Preview */}
                     {coverImage && (
                         <div className="relative mb-8 group/image">
-                            <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                            <div className="rounded-tile overflow-hidden shadow-card">
                                 <Image
                                     src={coverImage}
                                     alt="Cover Art"
@@ -211,7 +211,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                             </div>
                             <button
                                 onClick={() => setCoverImage(null)}
-                                className="absolute top-4 right-4 bg-white/90 hover:bg-red-50 text-gray-500 hover:text-red-500 p-2 rounded-lg opacity-0 group-hover/image:opacity-100 transition-all shadow-sm border border-gray-200"
+                                className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-rose-700 active:shadow-pressed opacity-0 group-hover/image:opacity-100 transition-all"
                                 title="Remove Cover Art"
                             >
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
@@ -221,14 +221,14 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
 
                     {/* Published Banner */}
                     {draft.status === 'published' && (
-                        <div className="mb-8 p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex items-center justify-between group/banner animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="mb-6 p-4 bg-dusk-100 rounded-tile shadow-raised flex flex-wrap gap-3 items-center justify-between group/banner animate-in fade-in slide-in-from-top-2 duration-500">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-surface text-dusk-700">
                                     <Sparkles size={18} />
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-semibold text-blue-900">This post is published</h4>
-                                    <p className="text-xs text-blue-700/70">
+                                    <h4 className="text-sm font-medium text-ink">This post is published</h4>
+                                    <p className="text-xs text-ink-soft">
                                         Published on {draft.published_posts?.[0]?.published_at ? new Date(draft.published_posts[0].published_at).toLocaleDateString() : new Date(draft.updated_at).toLocaleDateString()}
                                     </p>
                                 </div>
@@ -236,13 +236,13 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={handleCopy}
-                                    className="px-3 py-1.5 text-xs font-medium bg-white text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+                                    className="h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                 >
                                     Copy Content
                                 </button>
                                 <button
                                     onClick={() => setShowRepurposeModal(true)}
-                                    className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                                    className="h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                 >
                                     Repurpose
                                 </button>
@@ -250,7 +250,8 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                         </div>
                     )}
 
-                    {/* Document Surface - Canvas */}
+                    {/* Document Surface - Canvas (white writing card on the grey canvas) */}
+                    <div className="bg-surface rounded-card shadow-card px-5 py-8 md:px-14 md:py-14">
                     <EditorCanvas
                         content={content}
                         setContent={setContent}
@@ -262,6 +263,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                         textareaRef={textareaRef}
                         draftStatus={draft.status}
                     />
+                    </div>
 
                     {showFeedback && lastRefinement && (
                         <div className="mt-8 max-w-2xl mx-auto">

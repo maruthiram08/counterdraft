@@ -65,71 +65,73 @@ export default function IdeasPage() {
     ];
 
     return (
-        <main className="min-h-screen bg-[var(--background)]">
+        <main className="min-h-screen bg-canvas">
             {/* Header */}
-            <header className="border-b border-[var(--border)] bg-[var(--surface)]">
-                <div className="container py-4 flex items-center justify-between">
-                    <h1 className="text-xl font-medium tracking-tight">counterdraft</h1>
-                    <nav className="flex items-center gap-6">
-                        <a href="/beliefs" className="text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]">Beliefs</a>
-                        <a href="/tensions" className="text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]">Tensions</a>
-                        <a href="/ideas" className="text-sm font-medium">Ideas</a>
+            <header className="bg-canvas">
+                <div className="max-w-[1440px] mx-auto px-4 md:px-10 py-4 flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-medium tracking-[-0.02em] text-ink">counterdraft</h1>
+                    <nav className="flex items-center gap-2 md:gap-3">
+                        <a href="/beliefs" className="h-10 px-4 inline-flex items-center rounded-full bg-canvas shadow-raised text-sm font-medium text-ink-soft hover:text-ink transition-all">Beliefs</a>
+                        <a href="/tensions" className="h-10 px-4 inline-flex items-center rounded-full bg-canvas shadow-raised text-sm font-medium text-ink-soft hover:text-ink transition-all">Tensions</a>
+                        <a href="/ideas" className="h-10 px-4 inline-flex items-center rounded-full bg-canvas shadow-pressed text-sm font-medium text-ember-600">Ideas</a>
                     </nav>
                 </div>
             </header>
 
-            <div className="container py-12">
-                <div className="max-w-2xl">
-                    <h2 className="text-3xl font-serif mb-2">Idea Directions</h2>
-                    <p className="text-[var(--text-muted)] mb-8">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-8 md:pt-12 pb-28 md:pb-12">
+                <div className="flex flex-col gap-8">
+                    <div>
+                    <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">Idea Directions</h2>
+                    <p className="mt-3 text-base text-ink-soft">
                         Based on your belief graph, here&apos;s what might be worth exploring next.
                     </p>
+                    </div>
 
-                    <div className="space-y-6">
+                    <div className="grid gap-5 lg:grid-cols-2">
                         {ideas.map((idea, index) => (
-                            <div key={idea.id} className="card animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+                            <div key={idea.id} className="bg-surface rounded-tile shadow-card p-5 md:p-6 hover:shadow-float hover:-translate-y-0.5 transition-all animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                                 {/* Theme & Topic */}
                                 <div className="mb-4">
-                                    <p className="text-xs text-[var(--accent-secondary)] uppercase tracking-wider mb-1">
+                                    <p className="text-sm text-ember-600 font-medium mb-1">
                                         {idea.theme}
                                     </p>
-                                    <h3 className="text-xl font-serif">{idea.topic}</h3>
+                                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">{idea.topic}</h3>
                                 </div>
 
                                 {/* Belief connections */}
                                 <div className="space-y-2 mb-4 text-sm">
                                     <div className="flex items-start gap-2">
                                         <span className="text-[var(--belief-core)]">↑</span>
-                                        <span className="text-[var(--text-muted)]">
-                                            Strengthens: <span className="text-[var(--foreground)]">{idea.strengthensBelief}</span>
+                                        <span className="text-ink-muted">
+                                            Strengthens: <span className="text-ink">{idea.strengthensBelief}</span>
                                         </span>
                                     </div>
                                     {idea.exploresTension && (
                                         <div className="flex items-start gap-2">
                                             <span className="text-[var(--tension-explore)]">◐</span>
-                                            <span className="text-[var(--text-muted)]">
-                                                Explores: <span className="text-[var(--foreground)]">{idea.exploresTension}</span>
+                                            <span className="text-ink-muted">
+                                                Explores: <span className="text-ink">{idea.exploresTension}</span>
                                             </span>
                                         </div>
                                     )}
                                     {idea.risksWeakening && (
                                         <div className="flex items-start gap-2">
                                             <span className="text-[var(--tension-inconsistency)]">↓</span>
-                                            <span className="text-[var(--text-muted)]">
-                                                Risks: <span className="text-[var(--foreground)]">{idea.risksWeakening}</span>
+                                            <span className="text-ink-muted">
+                                                Risks: <span className="text-ink">{idea.risksWeakening}</span>
                                             </span>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Opening line */}
-                                <div className="bg-[var(--background)] rounded-lg p-4 mb-4 border border-[var(--border)]">
-                                    <p className="text-sm text-[var(--text-subtle)] mb-1">Opening line</p>
-                                    <p className="font-serif italic">&quot;{idea.openingLine}&quot;</p>
+                                <div className="bg-canvas shadow-well rounded-2xl p-4 mb-4">
+                                    <p className="text-sm text-ink-muted mb-1">Opening line</p>
+                                    <p className="italic text-ink">&quot;{idea.openingLine}&quot;</p>
                                 </div>
 
                                 {/* Rationale */}
-                                <p className="text-sm text-[var(--text-muted)] mb-4">
+                                <p className="text-sm text-ink-soft mb-5">
                                     {idea.rationale}
                                 </p>
 
@@ -137,11 +139,11 @@ export default function IdeasPage() {
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={handleExplore}
-                                        className="btn btn-primary"
+                                        className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                     >
                                         Explore This
                                     </button>
-                                    <button className="btn btn-secondary">Dismiss</button>
+                                    <button className="h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all">Dismiss</button>
                                 </div>
                             </div>
                         ))}

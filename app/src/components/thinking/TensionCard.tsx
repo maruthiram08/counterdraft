@@ -47,17 +47,16 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
     if (dismissed) return null;
 
     return (
-        <div className="group relative bg-white border-b border-gray-100 py-10 px-4 hover:bg-gray-50/30 transition-colors">
+        <div className="group relative bg-surface rounded-tile shadow-card p-5 md:p-6 hover:shadow-float hover:-translate-y-0.5 transition-all">
 
             {/* Classification Badge - Only if Classified */}
             {classification !== 'pending' && (
                 <div className="mb-4 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-                    <span className="text-[10px] uppercase tracking-widest font-medium text-gray-500">
+                    <span className="inline-block h-7 leading-7 px-3 rounded-full bg-ink text-white text-xs font-medium lowercase first-letter:uppercase">
                         {classification.replace('_', ' ')}
                     </span>
                     {converted && (
-                        <span className="text-[10px] uppercase tracking-widest font-medium text-green-600 ml-2">
+                        <span className="inline-flex items-center h-7 px-3 rounded-full bg-sage-100 text-sage-700 text-xs font-medium">
                             → Added to Pipeline
                         </span>
                     )}
@@ -65,21 +64,21 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
             )}
 
             {/* Main Tension Statement */}
-            <h3 className="text-xl font-medium text-gray-900 mb-8 leading-snug whitespace-pre-wrap">
+            <h3 className="text-[17px] md:text-xl font-medium tracking-[-0.01em] text-ink mb-6 leading-snug whitespace-pre-wrap">
                 {tension}
             </h3>
 
             {/* The Conflict - Minimal Text Stack */}
-            <div className="space-y-6 pl-6 border-l border-gray-200">
-                <div>
-                    <span className="block text-[10px] uppercase tracking-widest text-gray-400 mb-2">Statement A</span>
-                    <p className="text-base font-serif italic text-gray-600 leading-relaxed">
+            <div className="grid gap-3 md:grid-cols-2">
+                <div className="bg-canvas shadow-well rounded-tile p-4">
+                    <span className="block text-sm text-ink-muted mb-2">Statement A</span>
+                    <p className="text-base italic text-ink-soft leading-relaxed">
                         &quot;{sideA}&quot;
                     </p>
                 </div>
-                <div>
-                    <span className="block text-[10px] uppercase tracking-widest text-gray-400 mb-2">Statement B</span>
-                    <p className="text-base font-serif italic text-gray-600 leading-relaxed">
+                <div className="bg-canvas shadow-well rounded-tile p-4">
+                    <span className="block text-sm text-ink-muted mb-2">Statement B</span>
+                    <p className="text-base italic text-ink-soft leading-relaxed">
                         &quot;{sideB}&quot;
                     </p>
                 </div>
@@ -87,26 +86,26 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
 
             {/* Actions - Subtle Row */}
             {classification === 'pending' && (
-                <div className="mt-8 flex items-center gap-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-[10px] uppercase tracking-widest text-gray-300 font-medium">Classify:</span>
+                <div className="mt-6 flex flex-wrap items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-sm text-ink-muted mr-1">Classify:</span>
 
                     <button
                         onClick={() => handleClassify('inconsistency')}
-                        className="text-xs font-medium text-gray-400 hover:text-red-600 transition-colors flex items-center gap-2"
+                        className="h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-rose-700 hover:bg-rose-100 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <X size={14} /> Inconsistency
                     </button>
 
                     <button
                         onClick={() => handleClassify('intentional_nuance')}
-                        className="text-xs font-medium text-gray-400 hover:text-green-600 transition-colors flex items-center gap-2"
+                        className="h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-sage-700 hover:bg-sage-100 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <Check size={14} /> Nuance
                     </button>
 
                     <button
                         onClick={() => handleClassify('explore')}
-                        className="text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors flex items-center gap-2"
+                        className="h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-dusk-700 hover:bg-dusk-100 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <Lightbulb size={14} /> Explore
                     </button>
@@ -115,14 +114,14 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
 
             {/* Turn into Post Idea - Show after "Explore" classification */}
             {classification === 'explore' && !converted && onTurnIntoIdea && (
-                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800 mb-3">
+                <div className="mt-6 p-4 bg-ember-50 rounded-tile">
+                    <p className="text-sm text-ember-700 mb-3">
                         This tension could make a great post! Explore the nuance between these perspectives.
                     </p>
                     <button
                         onClick={handleTurnIntoIdea}
                         disabled={converting}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                     >
                         {converting ? (
                             <><Loader2 size={16} className="animate-spin" /> Converting...</>

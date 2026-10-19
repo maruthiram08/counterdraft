@@ -98,25 +98,25 @@ export default function WishlistPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#fcfcfc]">
+        <div className="min-h-screen bg-canvas">
             <Navbar />
 
-            <div className="pt-32 pb-20 max-w-5xl mx-auto px-6">
+            <div className="pt-32 pb-20 max-w-5xl mx-auto px-4 md:px-10">
 
                 {/* Header */}
-                <div className="flex items-end justify-between mb-12">
+                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between mb-12">
                     <div>
-                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-[10px] font-bold text-blue-700 mb-4 tracking-widest uppercase">
+                        <div className="inline-flex items-center h-7 px-3 rounded-full bg-dusk-100 text-xs font-medium text-dusk-700 mb-4">
                             Community Roadmap
                         </div>
-                        <h1 className="text-4xl font-bold text-zinc-900 mb-4">Feature Wishlist</h1>
-                        <p className="text-zinc-500 text-lg max-w-2xl">
+                        <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink mb-3">Feature Wishlist</h1>
+                        <p className="text-ink-soft text-base max-w-2xl">
                             Help us build the Professional OS. Upvote the features you need most.
                         </p>
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-zinc-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center gap-2 shadow-lg"
+                        className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center gap-2 self-start md:self-auto"
                     >
                         <Plus size={18} /> Request Feature
                     </button>
@@ -127,38 +127,38 @@ export default function WishlistPage() {
                     {/* List Column */}
                     <div className="flex-1">
                         {loading ? (
-                            <div className="flex justify-center py-20"><Loader2 className="animate-spin text-zinc-300" /></div>
+                            <div className="flex justify-center py-20"><Loader2 className="animate-spin text-ink-muted" /></div>
                         ) : features.length === 0 ? (
-                            <div className="text-center py-20 bg-zinc-50 rounded-2xl border border-zinc-100">
-                                <p className="text-zinc-400 font-medium">No active features yet. Be the first!</p>
+                            <div className="text-center py-20 bg-canvas shadow-pressed rounded-card">
+                                <p className="text-ink-muted font-medium">No active features yet. Be the first!</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {features.map(feature => (
-                                    <div key={feature.id} className="bg-white border border-zinc-200 rounded-xl p-6 flex gap-6 hover:shadow-md transition-shadow group">
+                                    <div key={feature.id} className="bg-surface rounded-tile shadow-card p-5 flex gap-5 hover:shadow-float hover:-translate-y-0.5 transition-all group">
                                         {/* Vote Box */}
                                         <div className="flex flex-col items-center gap-1">
                                             <button
                                                 onClick={() => handleVote(feature.id)}
-                                                className="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-200 flex items-center justify-center text-zinc-400 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all"
+                                                className="w-10 h-10 rounded-full bg-canvas shadow-raised flex items-center justify-center text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
                                             >
                                                 <ArrowUp size={20} className="stroke-[3]" />
                                             </button>
-                                            <span className="text-sm font-bold text-zinc-900">{feature.upvotes}</span>
+                                            <span className="text-sm font-medium text-ink">{feature.upvotes}</span>
                                         </div>
 
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-1">
-                                                <h3 className="text-lg font-bold text-zinc-900">{feature.title}</h3>
+                                                <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink">{feature.title}</h3>
                                                 {feature.status === 'in_progress' && (
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded">In Progress</span>
+                                                    <span className="text-xs font-medium bg-sand-100 text-sand-700 px-2.5 py-0.5 rounded-full">In Progress</span>
                                                 )}
                                                 {feature.status === 'done' && (
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 px-2 py-0.5 rounded">Live</span>
+                                                    <span className="text-xs font-medium bg-sage-100 text-sage-700 px-2.5 py-0.5 rounded-full">Live</span>
                                                 )}
                                             </div>
-                                            <p className="text-zinc-500 text-sm leading-relaxed mb-3">{feature.description}</p>
-                                            <div className="flex items-center gap-4 text-xs text-zinc-400">
+                                            <p className="text-ink-soft text-sm leading-relaxed mb-3">{feature.description}</p>
+                                            <div className="flex items-center gap-4 text-xs text-ink-muted">
                                                 <span className="flex items-center gap-1"><Clock size={12} /> {formatDistanceToNow(new Date(feature.created_at))} ago</span>
                                                 {/* <span>by User {feature.user_id.slice(0,4)}...</span> */}
                                             </div>
@@ -171,26 +171,26 @@ export default function WishlistPage() {
 
                     {/* Sidebar Stats */}
                     <div className="w-80 hidden lg:block">
-                        <div className="bg-zinc-50 rounded-2xl p-6 border border-zinc-100 sticky top-32">
-                            <h3 className="font-bold text-zinc-900 mb-4">Roadmap Status</h3>
+                        <div className="bg-surface rounded-card shadow-card p-6 sticky top-32">
+                            <h3 className="text-lg font-medium tracking-[-0.02em] text-ink mb-4">Roadmap Status</h3>
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="flex items-center gap-2 text-zinc-600">
-                                        <div className="w-2 h-2 rounded-full bg-amber-400"></div> In Progress
+                                    <span className="flex items-center gap-2 text-ink-soft">
+                                        <div className="w-2 h-2 rounded-full bg-sand-500"></div> In Progress
                                     </span>
-                                    <span className="font-mono text-zinc-900 font-bold">{features.filter(f => f.status === 'in_progress').length}</span>
+                                    <span className="font-mono text-ink font-medium">{features.filter(f => f.status === 'in_progress').length}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="flex items-center gap-2 text-zinc-600">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div> Completed
+                                    <span className="flex items-center gap-2 text-ink-soft">
+                                        <div className="w-2 h-2 rounded-full bg-sage-500"></div> Completed
                                     </span>
-                                    <span className="font-mono text-zinc-900 font-bold">{features.filter(f => f.status === 'done').length}</span>
+                                    <span className="font-mono text-ink font-medium">{features.filter(f => f.status === 'done').length}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="flex items-center gap-2 text-zinc-600">
-                                        <div className="w-2 h-2 rounded-full bg-zinc-300"></div> Planned
+                                    <span className="flex items-center gap-2 text-ink-soft">
+                                        <div className="w-2 h-2 rounded-full bg-ink-muted"></div> Planned
                                     </span>
-                                    <span className="font-mono text-zinc-900 font-bold">{features.filter(f => f.status === 'approved').length}</span>
+                                    <span className="font-mono text-ink font-medium">{features.filter(f => f.status === 'approved').length}</span>
                                 </div>
                             </div>
                         </div>
@@ -202,16 +202,16 @@ export default function WishlistPage() {
             {/* Request Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-                    <div className="relative bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                        <h2 className="text-xl font-bold mb-1">Request a Feature</h2>
-                        <p className="text-sm text-zinc-500 mb-6">What functionality is missing for you?</p>
+                    <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+                    <div className="relative bg-surface rounded-card w-full max-w-md p-6 md:p-8 shadow-float animate-in fade-in zoom-in-95 duration-200">
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1">Request a Feature</h2>
+                        <p className="text-sm text-ink-soft mb-6">What functionality is missing for you?</p>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Feature Title</label>
+                                <label className="block text-sm text-ink-muted mb-2">Feature Title</label>
                                 <input
-                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
+                                    className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm transition-all"
                                     placeholder="e.g. Export to PDF"
                                     value={newTitle}
                                     onChange={e => setNewTitle(e.target.value)}
@@ -219,9 +219,9 @@ export default function WishlistPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Description</label>
+                                <label className="block text-sm text-ink-muted mb-2">Description</label>
                                 <textarea
-                                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all h-32 resize-none"
+                                    className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm transition-all h-32 resize-none"
                                     placeholder="Why do you need this?"
                                     value={newDesc}
                                     onChange={e => setNewDesc(e.target.value)}
@@ -232,14 +232,14 @@ export default function WishlistPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-3 rounded-xl border border-zinc-200 font-bold text-sm text-zinc-600 hover:bg-zinc-50 transition-colors"
+                                    className="flex-1 h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitStatus === 'loading' || submitStatus === 'success'}
-                                    className="flex-[2] py-3 rounded-xl bg-zinc-900 text-white font-bold text-sm hover:bg-black transition-colors flex items-center justify-center gap-2"
+                                    className="flex-[2] h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center justify-center gap-2"
                                 >
                                     {submitStatus === 'loading' ? <Loader2 className="animate-spin" size={18} /> :
                                         submitStatus === 'success' ? <CheckCircle2 size={18} /> : 'Submit Request'}

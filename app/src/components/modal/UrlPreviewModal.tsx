@@ -83,23 +83,23 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
         <>
             {/* Overlay */}
             <div
-                className="fixed inset-0 bg-black/50 z-40"
+                className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-40"
                 onClick={onClose}
             />
 
             {/* Modal */}
             <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                <div className="bg-canvas rounded-card shadow-float w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
 
                     {/* Header */}
-                    <div className="flex items-center justify-between p-5 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+                    <div className="flex items-center justify-between px-6 pt-6 pb-3">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <ExternalLink className="text-blue-600" size={20} />
+                            <div className="w-10 h-10 bg-canvas shadow-raised rounded-full flex items-center justify-center">
+                                <ExternalLink className="text-ember-500" size={18} />
                             </div>
                             <div>
-                                <h2 className="text-lg font-semibold text-gray-900">URL Artifact</h2>
-                                <p className="text-sm text-gray-500">
+                                <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">URL Artifact</h2>
+                                <p className="text-sm text-ink-soft">
                                     {step === 'preview' && 'Review before fetching'}
                                     {step === 'content' && 'Content extracted'}
                                     {step === 'ready' && 'Ready to create draft'}
@@ -108,51 +108,51 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-white/50 rounded-lg transition"
+                            className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
                         >
-                            <X size={20} className="text-gray-500" />
+                            <X size={20} />
                         </button>
                     </div>
 
                     {/* Step Indicator */}
-                    <div className="flex items-center gap-2 px-5 py-3 bg-gray-50 border-b">
-                        <div className={`flex items-center gap-2 text-sm ${step === 'preview' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>1</span>
+                    <div className="flex items-center gap-2 mx-6 my-2 px-2 py-1.5 bg-canvas shadow-well rounded-full w-fit">
+                        <div className={`flex items-center gap-2 text-sm font-medium pr-2 ${step === 'preview' ? 'text-ink' : 'text-ink-muted'}`}>
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === 'preview' ? 'bg-ember-500 text-white' : 'bg-canvas shadow-raised'}`}>1</span>
                             Preview
                         </div>
-                        <ArrowRight size={16} className="text-gray-300" />
-                        <div className={`flex items-center gap-2 text-sm ${step === 'content' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === 'content' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>2</span>
+                        <ArrowRight size={16} className="text-ink-muted/60" />
+                        <div className={`flex items-center gap-2 text-sm font-medium pr-2 ${step === 'content' ? 'text-ink' : 'text-ink-muted'}`}>
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === 'content' ? 'bg-ember-500 text-white' : 'bg-canvas shadow-raised'}`}>2</span>
                             Content
                         </div>
-                        <ArrowRight size={16} className="text-gray-300" />
-                        <div className={`flex items-center gap-2 text-sm ${step === 'ready' ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === 'ready' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>3</span>
+                        <ArrowRight size={16} className="text-ink-muted/60" />
+                        <div className={`flex items-center gap-2 text-sm font-medium pr-2 ${step === 'ready' ? 'text-ink' : 'text-ink-muted'}`}>
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === 'ready' ? 'bg-ember-500 text-white' : 'bg-canvas shadow-raised'}`}>3</span>
                             Draft
                         </div>
                     </div>
 
                     {/* Body */}
-                    <div className="flex-1 overflow-y-auto p-5">
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
 
                         {/* Step 1: Preview */}
                         {step === 'preview' && (
                             <div className="space-y-4">
                                 {/* URL Card */}
-                                <div className="border rounded-xl p-4 bg-gray-50">
+                                <div className="bg-surface rounded-tile shadow-card p-5">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 bg-white rounded-lg border flex items-center justify-center text-gray-400">
+                                        <div className="w-10 h-10 bg-canvas shadow-well rounded-full flex items-center justify-center text-ember-500">
                                             <ExternalLink size={18} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-900 truncate">
+                                            <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink truncate">
                                                 {artifact.source_title || 'Saved URL'}
                                             </h3>
                                             <a
                                                 href={artifact.source_url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-sm text-blue-500 hover:underline truncate block"
+                                                className="text-sm text-ember-600 hover:underline truncate block"
                                             >
                                                 {getDomainFromUrl(artifact.source_url || '')}
                                             </a>
@@ -162,23 +162,23 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
 
                                 {/* User Note */}
                                 {artifact.user_note && (
-                                    <div className="border rounded-xl p-4">
-                                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Your Note</p>
-                                        <p className="text-gray-700">{artifact.user_note}</p>
+                                    <div className="bg-surface rounded-tile shadow-card p-5">
+                                        <p className="text-sm text-ink-muted mb-2">Your Note</p>
+                                        <p className="text-ink-soft">{artifact.user_note}</p>
                                     </div>
                                 )}
 
                                 {/* Existing OCR Text Preview */}
                                 {artifact.ocr_text && (
-                                    <div className="border rounded-xl p-4">
-                                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Saved Content</p>
-                                        <p className="text-gray-600 text-sm line-clamp-4">{artifact.ocr_text}</p>
+                                    <div className="bg-surface rounded-tile shadow-card p-5">
+                                        <p className="text-sm text-ink-muted mb-2">Saved Content</p>
+                                        <p className="text-ink-soft text-sm line-clamp-4">{artifact.ocr_text}</p>
                                     </div>
                                 )}
 
                                 {/* Error State */}
                                 {error && (
-                                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+                                    <div className="bg-rose-100 rounded-tile p-4 text-rose-700 text-sm">
                                         {error}
                                     </div>
                                 )}
@@ -189,23 +189,23 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
                         {step === 'content' && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-gray-900">{fetchedTitle}</h3>
+                                    <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink">{fetchedTitle}</h3>
                                     <button
                                         onClick={fetchUrlContent}
-                                        className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                        className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink hover:text-ember-600 active:shadow-pressed transition-all flex items-center gap-1 shrink-0"
                                     >
                                         <RefreshCw size={14} />
                                         Refetch
                                     </button>
                                 </div>
 
-                                <div className="bg-gray-50 border rounded-xl p-4 max-h-[400px] overflow-y-auto">
-                                    <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">
+                                <div className="bg-surface rounded-tile shadow-card p-5 max-h-[400px] overflow-y-auto">
+                                    <p className="text-ink-soft text-sm whitespace-pre-wrap leading-relaxed">
                                         {fetchedContent || 'No content could be extracted.'}
                                     </p>
                                 </div>
 
-                                <div className="text-xs text-gray-400 text-right">
+                                <div className="text-xs text-ink-muted text-right">
                                     {fetchedContent.length.toLocaleString()} characters extracted
                                 </div>
                             </div>
@@ -213,10 +213,10 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between p-5 border-t bg-gray-50">
+                    <div className="flex items-center justify-between px-6 pb-6 pt-3">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition"
+                            className="h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                         >
                             Cancel
                         </button>
@@ -225,7 +225,7 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
                             <button
                                 onClick={fetchUrlContent}
                                 disabled={isLoading || !artifact.source_url}
-                                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+                                className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -244,7 +244,7 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
                         {step === 'content' && (
                             <button
                                 onClick={handleCreateDraft}
-                                className="px-5 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition flex items-center gap-2 font-medium"
+                                className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center gap-2"
                             >
                                 <Sparkles size={16} />
                                 Create Draft from This

@@ -47,18 +47,18 @@ export function EditorCanvas({
                     }}
                     placeholder="Draft Title..."
                     rows={1}
-                    className={`w-full resize-none text-xl md:text-3xl font-serif font-medium leading-tight mb-4 md:mb-6 break-words bg-transparent border-none outline-none overflow-hidden placeholder:text-gray-300 transition-colors ${draftStatus === 'published' ? 'text-gray-500' : 'text-gray-800 focus:text-black'}`}
+                    className={`w-full resize-none text-2xl md:text-4xl font-medium tracking-[-0.03em] leading-tight mb-4 md:mb-6 break-words bg-transparent border-none outline-none overflow-hidden placeholder:text-ink-muted/60 transition-colors ${draftStatus === 'published' ? 'text-ink-soft' : 'text-ink'}`}
                     style={{ height: 'auto' }}
                 />
                 <div className="flex justify-center">
-                    <div className="w-8 h-1 bg-[var(--accent)]/10 rounded-full mb-4 md:mb-8 group-focus-within/title:bg-[var(--accent)]/30 transition-colors"></div>
+                    <div className="w-8 h-1 bg-ember-100 rounded-full mb-4 md:mb-8 group-focus-within/title:bg-ember-200 transition-colors"></div>
                 </div>
             </div>
 
             {/* Editor / Preview Switch */}
             {isPreview ? (
                 <div
-                    className="w-full min-h-[40vh] md:min-h-[60vh] text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans focus:outline-none animate-in fade-in duration-200"
+                    className="w-full min-h-[40vh] md:min-h-[60vh] text-base md:text-lg leading-relaxed md:leading-loose text-ink-soft font-sans focus:outline-none animate-in fade-in duration-200"
                     dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }}
                 />
             ) : (
@@ -84,7 +84,7 @@ export function EditorCanvas({
                             e.target.style.height = 'auto';
                             e.target.style.height = e.target.scrollHeight + 'px';
                         }}
-                        className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-gray-700 font-sans placeholder:text-gray-300 bg-transparent selection:bg-[var(--accent)]/30 overflow-hidden break-words relative z-10"
+                        className="w-full min-h-[40vh] md:min-h-[60vh] resize-none text-base md:text-lg leading-relaxed md:leading-loose text-ink-soft font-sans placeholder:text-ink-muted/60 bg-transparent selection:bg-ember-100 overflow-hidden break-words relative z-10"
                         spellCheck={false}
                         style={{
                             outline: 'none',

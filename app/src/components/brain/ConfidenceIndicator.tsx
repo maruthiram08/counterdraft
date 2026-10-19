@@ -10,15 +10,15 @@ interface ConfidenceIndicatorProps {
 export function ConfidenceIndicator({ level, loading, onClick }: ConfidenceIndicatorProps) {
     if (loading) {
         return (
-            <div className="animate-pulse w-6 h-6 rounded-full bg-gray-200" />
+            <div className="animate-pulse w-6 h-6 rounded-full bg-canvas shadow-well" />
         );
     }
 
     const getColor = () => {
         switch (level) {
-            case 'high': return 'text-green-500 hover:text-green-600 bg-green-50 hover:bg-green-100';
-            case 'medium': return 'text-yellow-500 hover:text-yellow-600 bg-yellow-50 hover:bg-yellow-100';
-            case 'low': return 'text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100';
+            case 'high': return 'text-sage-500 hover:text-sage-700 bg-sage-100';
+            case 'medium': return 'text-sand-500 hover:text-sand-700 bg-sand-100';
+            case 'low': return 'text-rose-500 hover:text-rose-700 bg-rose-100';
         }
     };
 
@@ -33,7 +33,7 @@ export function ConfidenceIndicator({ level, loading, onClick }: ConfidenceIndic
     return (
         <button
             onClick={onClick}
-            className={`p-1.5 rounded-md transition-colors ${getColor()} border border-transparent hover:border-current`}
+            className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${getColor()} hover:shadow-raised active:shadow-pressed`}
             title="Click to see why"
         >
             {getIcon()}

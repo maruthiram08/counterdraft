@@ -174,7 +174,8 @@ h4,
 h5,
 h6 {
   font-family: var(--font-display);
-  color: var(--text-primary);
+  /* No colour here: unlayered rules beat Tailwind utilities, so a colour would
+     stop text-white and friends working on headings. Body colour (ink) inherits. */
   font-weight: 500;
   line-height: 1.2;
 }

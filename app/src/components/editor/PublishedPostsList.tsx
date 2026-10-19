@@ -30,34 +30,34 @@ export function PublishedPostsList({ drafts }: PublishedPostsListProps) {
 
     if (publishedItems.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)]">
-                <Layers size={48} className="mb-4 text-gray-200" />
+            <div className="flex flex-col items-center justify-center h-full text-ink-soft">
+                <Layers size={48} className="mb-4 text-ink-muted/40" />
                 <p>No published posts yet.</p>
-                <p className="text-sm mt-2">Drafts you publish will appear here.</p>
+                <p className="text-sm mt-2 text-ink-muted">Drafts you publish will appear here.</p>
             </div>
         );
     }
 
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8 w-full">
-            <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">Published History</h2>
+            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4 md:mb-6">Published History</h2>
 
-            <div className="bg-white rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
+            <div className="bg-surface rounded-card shadow-card overflow-hidden">
                 {/* Desktop Table Header - Hidden on mobile */}
-                <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 p-4 border-b bg-gray-50/50 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+                <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-6 py-4 border-b border-line text-sm text-ink-muted">
                     <div>Content</div>
                     <div>Platforms</div>
                     <div>Date</div>
                     <div>Link</div>
                 </div>
 
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-line">
                     {publishedItems.map((item) => (
-                        <div key={item.id} className="flex flex-col md:grid md:grid-cols-[2fr_1fr_1fr_auto] gap-3 md:gap-4 p-4 md:items-center hover:bg-gray-50/30 transition-colors overflow-hidden">
+                        <div key={item.id} className="flex flex-col md:grid md:grid-cols-[2fr_1fr_1fr_auto] gap-3 md:gap-4 p-4 md:px-6 md:items-center hover:bg-surface-muted transition-colors overflow-hidden">
                             {/* Content Preview */}
                             <div className="overflow-hidden min-w-0">
-                                <h3 className="font-medium text-[var(--foreground)] mb-1 truncate text-sm md:text-base">{item.belief_text}</h3>
-                                <p className="text-xs md:text-sm text-[var(--text-muted)] line-clamp-2 leading-relaxed font-sans break-words">
+                                <h3 className="font-medium tracking-[-0.01em] text-ink mb-1 truncate text-sm md:text-base">{item.belief_text}</h3>
+                                <p className="text-xs md:text-sm text-ink-soft line-clamp-2 leading-relaxed font-sans break-words">
                                     {item.content}
                                 </p>
                             </div>
@@ -65,17 +65,17 @@ export function PublishedPostsList({ drafts }: PublishedPostsListProps) {
                             {/* Platforms + Date Row on Mobile */}
                             <div className="flex flex-wrap gap-2 md:block">
                                 {item.published_posts?.map((p) => (
-                                    <span key={p.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                    <span key={p.id} className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium bg-dusk-100 text-dusk-700">
                                         {p.platform === 'linkedin' ? 'LinkedIn' : p.platform}
                                     </span>
                                 ))}
                                 {(!item.published_posts || item.published_posts.length === 0) && (
-                                    <span className="text-xs text-gray-400 italic">Unknown platform</span>
+                                    <span className="text-xs text-ink-muted italic">Unknown platform</span>
                                 )}
                             </div>
 
                             {/* Date */}
-                            <div className="text-sm text-[var(--text-muted)] flex items-center gap-1.5">
+                            <div className="text-sm text-ink-muted flex items-center gap-1.5">
                                 <Calendar size={14} className="opacity-50" />
                                 {item.published_posts && item.published_posts[0]
                                     ? formatDate(item.published_posts[0].published_at)
@@ -98,7 +98,7 @@ export function PublishedPostsList({ drafts }: PublishedPostsListProps) {
                                             href={url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="p-2 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-gray-100 rounded-md transition-all inline-block"
+                                            className="w-10 h-10 rounded-full inline-flex items-center justify-center text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
                                             title={`View on ${p.platform}`}
                                         >
                                             <ExternalLink size={18} />

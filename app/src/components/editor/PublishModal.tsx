@@ -68,35 +68,35 @@ export function PublishModal({
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col border border-gray-200">
+            <div className="relative bg-surface rounded-card shadow-float max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-                    <h2 className="text-lg font-medium">
+                <div className="flex items-center justify-between px-6 pt-6 pb-4 md:px-8 md:pt-8">
+                    <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">
                         {published ? 'Published!' : 'Publish to LinkedIn'}
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-1 hover:bg-gray-100 rounded"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-4">
                     {published ? (
                         // Success State
                         <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Check size={32} className="text-green-600" />
+                            <div className="w-16 h-16 bg-sage-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Check size={32} className="text-sage-700" />
                             </div>
-                            <h3 className="text-xl font-medium mb-2">Successfully Published</h3>
-                            <p className="text-[var(--text-muted)] mb-6">
+                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Successfully Published</h3>
+                            <p className="text-ink-soft mb-6">
                                 Your draft is now live on LinkedIn.
                             </p>
                             {postUrl && (
@@ -104,7 +104,7 @@ export function PublishModal({
                                     href={postUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                                    className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                 >
                                     <ExternalLink size={16} />
                                     View on LinkedIn
@@ -115,21 +115,21 @@ export function PublishModal({
                         // Preview State
                         <>
                             {/* Belief context */}
-                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                                <div className="text-xs text-[var(--text-muted)] mb-1">Based on your belief:</div>
-                                <div className="text-sm font-medium">{beliefText}</div>
+                            <div className="mb-4 p-4 bg-canvas shadow-well rounded-2xl">
+                                <div className="text-sm text-ink-muted mb-1">Based on your belief:</div>
+                                <div className="text-sm font-medium text-ink">{beliefText}</div>
                             </div>
 
                             {/* Preview (Read-Only) */}
                             <div className="mb-4 flex-1 flex flex-col min-h-0">
                                 <div className="flex justify-between items-center mb-2">
-                                    <div className="text-sm text-[var(--text-muted)]">Post Preview:</div>
-                                    <div className={`text-xs ${content.length > 5000 ? 'text-red-600 font-bold' : 'text-[var(--text-muted)]'}`}>
+                                    <div className="text-sm text-ink-muted">Post Preview:</div>
+                                    <div className={`text-xs ${content.length > 5000 ? 'text-rose-700 font-medium' : 'text-ink-muted'}`}>
                                         {content.length.toLocaleString()} / 5,000
                                     </div>
                                 </div>
                                 <textarea
-                                    className="w-full p-4 border border-[var(--border)] rounded-lg bg-gray-50 text-gray-900 font-sans text-sm leading-relaxed resize-none focus:outline-none cursor-default"
+                                    className="w-full px-4 py-3 border-0 rounded-2xl bg-canvas shadow-well text-ink font-sans text-sm leading-relaxed resize-none focus:outline-none cursor-default"
                                     value={content}
                                     readOnly
                                     rows={12}
@@ -140,7 +140,7 @@ export function PublishModal({
 
                             {/* Error */}
                             {error && (
-                                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-red-700">
+                                <div className="mt-4 p-4 bg-rose-100 rounded-tile flex items-start gap-2 text-rose-700">
                                     <AlertCircle size={18} className="shrink-0 mt-0.5" />
                                     <span className="text-sm">{error}</span>
                                 </div>
@@ -150,11 +150,11 @@ export function PublishModal({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-[var(--border)] flex justify-end gap-3">
+                <div className="px-6 pb-6 pt-4 md:px-8 md:pb-8 flex flex-wrap justify-end gap-3">
                     {published ? (
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium bg-[var(--surface)] border border-[var(--border)] rounded-md hover:bg-gray-50"
+                            className="h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                         >
                             Close
                         </button>
@@ -162,20 +162,20 @@ export function PublishModal({
                         <>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]"
+                                className="h-10 px-4 rounded-full text-sm font-medium text-ink-muted hover:text-ink transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-md transition-colors"
+                                className="h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                             >
                                 Edit Draft
                             </button>
                             <button
                                 onClick={handlePublish}
                                 disabled={publishing || isOverLimit}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {publishing ? (
                                     <>

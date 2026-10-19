@@ -29,17 +29,17 @@ interface YourMindProps {
 
 function SkeletonBeliefCard() {
     return ( // ... unchanged ...
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm animate-pulse">
+        <div className="bg-surface p-5 rounded-tile shadow-card animate-pulse">
             <div className="flex items-center gap-2 mb-4">
-                <div className="h-5 w-24 bg-gray-100 rounded"></div>
+                <div className="h-5 w-24 bg-surface-muted rounded-full"></div>
                 <div className="flex-1"></div>
-                <div className="h-4 w-12 bg-gray-50 rounded"></div>
+                <div className="h-4 w-12 bg-surface-muted rounded-full"></div>
             </div>
-            <div className="h-4 w-full bg-gray-100 rounded mb-2"></div>
-            <div className="h-4 w-2/3 bg-gray-100 rounded mb-6"></div>
+            <div className="h-4 w-full bg-surface-muted rounded-full mb-2"></div>
+            <div className="h-4 w-2/3 bg-surface-muted rounded-full mb-6"></div>
             <div className="flex gap-2 justify-end">
-                <div className="h-9 w-24 bg-gray-50 rounded-lg"></div>
-                <div className="h-9 w-24 bg-gray-50 rounded-lg"></div>
+                <div className="h-9 w-24 bg-surface-muted rounded-full"></div>
+                <div className="h-9 w-24 bg-surface-muted rounded-full"></div>
             </div>
         </div>
     );
@@ -47,21 +47,21 @@ function SkeletonBeliefCard() {
 
 function SkeletonTensionCard() {
     return ( // ... unchanged ...
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm animate-pulse">
-            <div className="h-5 w-1/3 bg-gray-100 rounded mb-6 mx-auto"></div>
+        <div className="bg-surface p-5 rounded-tile shadow-card animate-pulse">
+            <div className="h-5 w-1/3 bg-surface-muted rounded-full mb-6 mx-auto"></div>
             <div className="flex gap-4 mb-6">
-                <div className="flex-1 p-4 bg-gray-50/50 rounded-lg border border-gray-100">
-                    <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                <div className="flex-1 p-4 bg-surface-muted rounded-tile">
+                    <div className="h-4 w-full bg-line rounded-full mb-2"></div>
+                    <div className="h-4 w-3/4 bg-line rounded-full"></div>
                 </div>
-                <div className="flex-1 p-4 bg-gray-50/50 rounded-lg border border-gray-100">
-                    <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                <div className="flex-1 p-4 bg-surface-muted rounded-tile">
+                    <div className="h-4 w-full bg-line rounded-full mb-2"></div>
+                    <div className="h-4 w-3/4 bg-line rounded-full"></div>
                 </div>
             </div>
             <div className="flex justify-center gap-2">
-                <div className="h-9 w-32 bg-gray-100 rounded-lg"></div>
-                <div className="h-9 w-32 bg-gray-100 rounded-lg"></div>
+                <div className="h-9 w-32 bg-surface-muted rounded-full"></div>
+                <div className="h-9 w-32 bg-surface-muted rounded-full"></div>
             </div>
         </div>
     );
@@ -192,28 +192,28 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
     const unclassifiedTensions = tensions.filter((t: { id: string }) => !classifiedTensionIds.has(t.id));
 
     return (
-        <div className="flex flex-col h-full min-h-0 bg-gray-50">
+        <div className="h-full min-h-0 overflow-y-auto bg-canvas">
             {/* Header */}
-            <div className="flex-none px-6 pt-6 pb-2">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-serif text-gray-900 flex items-center gap-3">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-8 md:pt-12">
+                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                    <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink flex items-center gap-3">
                         Your Mind
                     </h1>
                     <button
                         onClick={() => setAddContentModalOpen(true)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+                        className="self-start md:self-auto h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                     >
                         Import Source
                     </button>
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="flex gap-6 mt-6 border-b border-gray-200">
+                <div className="flex gap-3 mt-8 overflow-x-auto p-2 -m-2 scrollbar-none">
                     <button
                         onClick={() => handleTabChange('beliefs')}
-                        className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 font-medium text-sm ${activeTab === 'beliefs'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-900'
+                        className={`h-10 px-5 rounded-full bg-canvas transition-all flex items-center gap-2 font-medium text-sm whitespace-nowrap ${activeTab === 'beliefs'
+                            ? 'shadow-pressed text-ember-600'
+                            : 'shadow-raised text-ink-soft hover:text-ink'
                             }`}
                     >
                         <Layers size={16} />
@@ -221,9 +221,9 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                     </button>
                     <button
                         onClick={() => handleTabChange('tensions')}
-                        className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 font-medium text-sm ${activeTab === 'tensions'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-900'
+                        className={`h-10 px-5 rounded-full bg-canvas transition-all flex items-center gap-2 font-medium text-sm whitespace-nowrap ${activeTab === 'tensions'
+                            ? 'shadow-pressed text-ember-600'
+                            : 'shadow-raised text-ink-soft hover:text-ink'
                             }`}
                     >
                         <Zap size={16} />
@@ -231,9 +231,9 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                     </button>
                     <button
                         onClick={() => handleTabChange('artifacts')}
-                        className={`pb-3 px-1 border-b-2 transition-colors flex items-center gap-2 font-medium text-sm ${activeTab === 'artifacts'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-900'
+                        className={`h-10 px-5 rounded-full bg-canvas transition-all flex items-center gap-2 font-medium text-sm whitespace-nowrap ${activeTab === 'artifacts'
+                            ? 'shadow-pressed text-ember-600'
+                            : 'shadow-raised text-ink-soft hover:text-ink'
                             }`}
                     >
                         <BookMarked size={16} />
@@ -243,24 +243,24 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-6 pb-32 min-h-0">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-8 pb-28 md:pb-12">
                 {activeTab === 'beliefs' && (
-                    <div className="w-full space-y-6">
+                    <div className="w-full flex flex-col gap-8">
                         {/* View Toggle */}
-                        <div className="flex items-center justify-between mb-2">
-                            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        <div className="flex items-center justify-between gap-4">
+                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">
                                 {beliefView === 'list' ? 'Belief List' : 'Strategic Mind Map'}
                             </h2>
-                            <div className="bg-gray-200/50 p-1 rounded-lg flex items-center text-xs font-medium shrink-0">
+                            <div className="bg-canvas shadow-well rounded-full p-1 flex items-center text-sm font-medium shrink-0">
                                 <button
                                     onClick={() => handleViewChange('list')}
-                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                    className={`h-9 px-4 rounded-full transition-all ${beliefView === 'list' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                                 >
                                     List
                                 </button>
                                 <button
                                     onClick={() => handleViewChange('tree')}
-                                    className={`px-3 py-1 rounded-md transition-all ${beliefView === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                    className={`h-9 px-4 rounded-full transition-all ${beliefView === 'tree' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                                 >
                                     Mind Map
                                 </button>
@@ -290,7 +290,7 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                                 {/* Core Beliefs */}
                                 {unreviewedCore.length > 0 && (
                                     <section>
-                                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Core Beliefs</h2>
+                                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Core Beliefs</h2>
                                         <div className="space-y-4">
                                             {unreviewedCore.map((b: { id: string; statement: string }) => (
                                                 <BeliefCard
@@ -310,7 +310,7 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                                 {/* Emerging Theses */}
                                 {unreviewedEmerging.length > 0 && (
                                     <section>
-                                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Emerging Theses</h2>
+                                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Emerging Theses</h2>
                                         <div className="space-y-4">
                                             {unreviewedEmerging.map((b: { id: string; statement: string }) => (
                                                 <BeliefCard
@@ -330,7 +330,7 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                                 {/* Overused Patterns */}
                                 {unreviewedOverused.length > 0 && (
                                     <section>
-                                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Overused Patterns</h2>
+                                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Overused Patterns</h2>
                                         <div className="space-y-4">
                                             {unreviewedOverused.map((b: { id: string; statement: string }) => (
                                                 <BeliefCard
@@ -349,8 +349,8 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
 
                                 {/* Empty State */}
                                 {unreviewedCore.length === 0 && unreviewedEmerging.length === 0 && unreviewedOverused.length === 0 && (
-                                    <div className="p-16 text-center border border-dashed border-gray-300 rounded-lg">
-                                        <p className="text-gray-500">No beliefs found. Import content to generate insights.</p>
+                                    <div className="p-16 text-center bg-canvas shadow-pressed rounded-card">
+                                        <p className="text-ink-muted">No beliefs found. Import content to generate insights.</p>
                                     </div>
                                 )}
                             </>
@@ -359,7 +359,7 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                 )}
 
                 {activeTab === 'tensions' && (
-                    <div className="w-full space-y-4">
+                    <div className="w-full flex flex-col gap-4">
                         {tensionsLoading ? (
                             <>
                                 <SkeletonTensionCard />
@@ -378,8 +378,8 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                                 />
                             ))
                         ) : (
-                            <div className="p-16 text-center border border-dashed border-gray-300 rounded-lg">
-                                <p className="text-gray-500">No tensions detected yet.</p>
+                            <div className="p-16 text-center bg-canvas shadow-pressed rounded-card">
+                                <p className="text-ink-muted">No tensions detected yet.</p>
                             </div>
                         )}
                     </div>

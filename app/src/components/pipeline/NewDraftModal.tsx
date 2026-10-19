@@ -51,39 +51,39 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-canvas rounded-card w-full max-w-2xl shadow-float overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="p-6 border-b flex items-start justify-between bg-gradient-to-r from-gray-50 to-white">
+                <div className="px-6 pt-6 md:px-8 md:pt-8 pb-2 flex items-start justify-between">
                     <div>
-                        <h2 className="text-xl font-serif text-gray-900 flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-purple-600" />
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-ember-500" />
                             New Draft
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-ink-soft mt-1">
                             Define your intent, and the Brain will guide the rest.
                         </p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                <div className="flex-1 overflow-y-auto p-6 md:px-8 space-y-8">
                     {/* 1. Topic */}
                     <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-ink">
                             What are you writing about?
                         </label>
                         <textarea
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
                             placeholder="e.g. Why specialized AI agents will replace general chatbots..."
-                            className="w-full h-24 p-4 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 resize-none text-[15px] placeholder:text-gray-400 transition-all shadow-sm"
+                            className="w-full h-24 bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 resize-none text-[15px] transition-all"
                             autoFocus
                         />
                     </div>
@@ -97,8 +97,8 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
 
                     {/* 2. Outcome (The Decision Spine) */}
                     <div className="space-y-3">
-                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <Target size={16} className="text-blue-500" />
+                        <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                            <Target size={16} className="text-ember-500" />
                             What is the goal? (The Outcome)
                         </label>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -106,9 +106,9 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
                                 <button
                                     key={o}
                                     onClick={() => setOutcome(o)}
-                                    className={`px-3 py-2.5 rounded-lg text-sm font-medium transition-all capitalize border ${outcome === o
-                                            ? 'bg-blue-50 border-blue-200 text-blue-700 ring-1 ring-blue-200'
-                                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                                    className={`h-10 px-3 rounded-full text-sm font-medium transition-all capitalize ${outcome === o
+                                            ? 'bg-canvas shadow-pressed text-ember-600'
+                                            : 'bg-canvas shadow-raised text-ink-soft hover:text-ink'
                                         }`}
                                 >
                                     {o}
@@ -120,8 +120,8 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {/* 3. Audience */}
                         <div className="space-y-3">
-                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                <Users size={16} className="text-amber-500" />
+                            <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                                <Users size={16} className="text-ember-500" />
                                 Who is this for?
                             </label>
                             <div className="space-y-2">
@@ -130,22 +130,22 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
                                     value={audience.role}
                                     onChange={(e) => setAudience({ ...audience, role: e.target.value })}
                                     placeholder="Role (e.g. Founders)"
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 text-sm transition-all"
+                                    className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm transition-all"
                                 />
                                 <input
                                     type="text"
                                     value={audience.pain}
                                     onChange={(e) => setAudience({ ...audience, pain: e.target.value })}
                                     placeholder="Pain (e.g. Overwhelmed)"
-                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 text-sm transition-all"
+                                    className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm transition-all"
                                 />
                             </div>
                         </div>
 
                         {/* 4. Stance */}
                         <div className="space-y-3">
-                            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                <Scale size={16} className="text-green-500" />
+                            <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                                <Scale size={16} className="text-ember-500" />
                                 What&apos;s your stance?
                             </label>
                             <div className="space-y-2">
@@ -153,13 +153,13 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
                                     <button
                                         key={s}
                                         onClick={() => setStance(s)}
-                                        className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all text-left flex items-center justify-between border ${stance === s
-                                                ? 'bg-green-50 border-green-200 text-green-700 ring-1 ring-green-200'
-                                                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        className={`w-full h-10 px-4 rounded-full text-sm font-medium transition-all text-left flex items-center justify-between ${stance === s
+                                                ? 'bg-canvas shadow-pressed text-ember-600'
+                                                : 'bg-canvas shadow-raised text-ink-soft hover:text-ink'
                                             }`}
                                     >
                                         <span className="capitalize">{s}</span>
-                                        {stance === s && <span className="w-2 h-2 rounded-full bg-green-500" />}
+                                        {stance === s && <span className="w-2 h-2 rounded-full bg-ember-500" />}
                                     </button>
                                 ))}
                             </div>
@@ -168,17 +168,17 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
+                <div className="px-6 pb-6 pt-2 md:px-8 md:pb-8 flex justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                        className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={!topic.trim() || isSubmitting}
-                        className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-gray-200"
+                        className="flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? (
                             <>

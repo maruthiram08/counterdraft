@@ -25,7 +25,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc]">
+    <div className="min-h-screen bg-canvas text-ink">
       <Navbar isScrolled={scrolled} />
 
       <main>
@@ -34,33 +34,33 @@ export default function Home() {
         <section id="the-brain" className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           {/* ... */}
           <div className="text-center mb-20">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-50 border border-green-100 text-[10px] font-bold text-green-700 mb-6 tracking-widest uppercase">
-              FIND YOUR ANGLE
+            <div className="inline-flex items-center h-8 px-4 rounded-full bg-ember-100 text-ember-700 text-sm font-medium mb-6">
+              Find your angle
             </div>
-            <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter text-zinc-900">Start with clarity, not a blank page.</h2>
-            <p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+            <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium mb-6 tracking-[-0.03em] text-ink">Start with clarity, not a blank page.</h2>
+            <p className="text-ink-soft text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
               Before you write a word, we help you define your reader, lock your perspective, and cut the clichés. So every piece sounds like you—not like everyone else.
             </p>
           </div>
           <TheBrain />
         </section>
 
-        <section id="command-center" className="py-32 bg-zinc-50 border-y border-zinc-100 overflow-hidden">
+        <section id="command-center" className="py-32 bg-surface-muted overflow-hidden">
           {/* ... */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row items-end justify-between gap-12 mb-20">
               <div className="md:w-3/5">
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-white border border-zinc-200 text-[10px] font-bold text-zinc-500 mb-6 tracking-widest uppercase shadow-sm">
-                  STAY ORGANIZED
+                <div className="inline-flex items-center h-8 px-4 rounded-full bg-canvas shadow-raised text-ink-soft text-sm font-medium mb-6">
+                  Stay organized
                 </div>
-                <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter leading-[1.1] text-zinc-900">All your ideas. Finally in one place.</h2>
-                <p className="text-zinc-500 text-lg md:text-xl max-w-xl">
+                <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium mb-6 tracking-[-0.03em] text-ink">All your ideas. Finally in one place.</h2>
+                <p className="text-ink-soft text-lg md:text-xl max-w-xl">
                   From first spark to published post—capture ideas, develop drafts, and track everything without scattered docs and lost notes.
                 </p>
               </div>
               <div className="hidden md:flex gap-3 mb-4">
-                <button className="h-12 w-12 rounded-full border border-zinc-200 bg-white flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:border-zinc-300 transition-all">←</button>
-                <button className="h-12 w-12 rounded-full border border-zinc-200 bg-white flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:border-zinc-300 transition-all">→</button>
+                <button className="h-12 w-12 rounded-full bg-canvas shadow-raised flex items-center justify-center text-ink-soft hover:text-ink active:shadow-pressed transition-all">←</button>
+                <button className="h-12 w-12 rounded-full bg-canvas shadow-raised flex items-center justify-center text-ink-soft hover:text-ink active:shadow-pressed transition-all">→</button>
               </div>
             </div>
             <CommandCenter />
@@ -71,11 +71,11 @@ export default function Home() {
           {/* ... */}
           <div className="flex flex-col lg:flex-row gap-20 items-start">
             <div className="lg:w-1/3 lg:sticky lg:top-32">
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-50 border border-green-100 text-[10px] font-bold text-green-700 mb-6 tracking-widest uppercase">
-                REPURPOSE EVERYWHERE
+              <div className="inline-flex items-center h-8 px-4 rounded-full bg-ember-100 text-ember-700 text-sm font-medium mb-6">
+                Repurpose everywhere
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-8 tracking-tighter leading-tight text-zinc-900">One article. Every platform. Your voice.</h2>
-              <p className="text-zinc-500 text-lg mb-10 leading-relaxed">
+              <h2 className="text-4xl md:text-5xl font-medium mb-6 tracking-[-0.03em] leading-[1.05] text-ink">One article. Every platform. Your voice.</h2>
+              <p className="text-ink-soft text-lg mb-10 leading-relaxed">
                 Turn your blog post into LinkedIn content, Twitter threads, and Instagram carousels—without sounding like a robot.
               </p>
               <div className="space-y-6">
@@ -85,11 +85,11 @@ export default function Home() {
                   { label: "Carousels & Slides", desc: "Visual content from your written work." }
                 ].map((item, i) => (
                   <div key={i} className="group cursor-default">
-                    <div className="flex items-center gap-3 text-zinc-800 font-bold mb-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-600"></div>
+                    <div className="flex items-center gap-3 text-ink text-[17px] font-medium tracking-[-0.01em] mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-ember-500"></div>
                       {item.label}
                     </div>
-                    <p className="text-zinc-400 text-sm pl-4.5">{item.desc}</p>
+                    <p className="text-ink-muted text-sm pl-4.5">{item.desc}</p>
                   </div>
                 ))}
               </div>
@@ -102,30 +102,30 @@ export default function Home() {
 
         <Testimonials />
 
-        <section className="py-40 text-center relative overflow-hidden bg-white">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-green-600/5 blur-[120px] rounded-full pointer-events-none"></div>
+        <section className="py-40 text-center relative overflow-hidden bg-canvas">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-ember-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
           <div className="relative z-10 max-w-4xl mx-auto px-4">
-            <h2 className="text-5xl md:text-7xl font-bold mb-10 tracking-tighter text-zinc-900">Ready to write something you&apos;re proud of?</h2>
-            <p className="text-zinc-500 text-xl md:text-2xl max-w-2xl mx-auto mb-12 font-light">
+            <h2 className="text-5xl md:text-7xl font-medium mb-8 tracking-[-0.03em] leading-[1.05] text-ink">Ready to write something you&apos;re proud of?</h2>
+            <p className="text-ink-soft text-xl md:text-2xl max-w-2xl mx-auto mb-12">
               Thousands of creators use Counterdraft for LinkedIn, Medium, Substack, and more.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <SignedOut>
                 <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'footer' })}>
-                  <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-green-600/20">
+                  <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                     Start Writing Free
                   </button>
                 </Link>
               </SignedOut>
               <SignedIn>
                 <Link href="/workspace">
-                  <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-green-600/20">
+                  <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                     Go to Dashboard
                   </button>
                 </Link>
               </SignedIn>
-              <button className="w-full sm:w-auto bg-white border border-zinc-200 text-zinc-900 px-10 py-5 rounded-xl font-bold text-xl hover:bg-zinc-50 transition-all">
+              <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-canvas text-ink text-base font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all">
                 The Philosophy
               </button>
             </div>

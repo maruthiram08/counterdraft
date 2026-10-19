@@ -17,7 +17,7 @@ export default function InviteClient({ code }: { code: string }) {
     return (
         <button
             onClick={handleAccept}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2"
+            className="w-full h-12 px-5 rounded-full bg-ember-500 hover:bg-ember-600 text-white text-sm font-medium shadow-ember active:shadow-pressed transition-all flex items-center justify-center gap-2"
         >
             Accept Invite & Join
             <ArrowRight size={18} />

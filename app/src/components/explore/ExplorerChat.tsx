@@ -276,26 +276,26 @@ export function ExplorerChat() {
     const isTopicSelected = (topic: FeedItem) => selectedTopics.some(t => t.title === topic.title);
 
     return (
-        <div className="flex flex-col h-full relative">
+        <div className="flex flex-col h-full relative bg-canvas">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32 md:pb-24">
+            <div className="flex-1 overflow-y-auto px-4 md:px-10 pt-8 md:pt-12 pb-32 md:pb-24">
                 {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                        <Sparkles size={36} className="text-[var(--accent)] mb-4 opacity-50 md:w-12 md:h-12" />
-                        <h2 className="text-xl md:text-2xl font-serif text-gray-900 mb-2">What would you like to explore?</h2>
-                        <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-8 max-w-md px-4">
+                        <span className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-canvas shadow-raised flex items-center justify-center mb-6"><Sparkles size={28} className="text-ember-500" /></span>
+                        <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink max-w-3xl">What would you like to explore?</h2>
+                        <p className="mt-3 text-base text-ink-soft mb-8 max-w-md px-4">
                             Ask about any topic or click a suggestion below to discover trending discussions.
                         </p>
                         <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             {/* Categories */}
-                            <div className="flex flex-wrap justify-center gap-2">
+                            <div className="flex flex-wrap justify-center gap-3">
                                 {trendCategories.map(cat => (
                                     <button
                                         key={cat.label}
                                         onClick={() => setSelectedCategory(prev => prev === cat.label ? null : cat.label)}
-                                        className={`px-4 py-2 border rounded-full text-sm transition-all flex items-center gap-2 ${selectedCategory === cat.label
-                                            ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md'
-                                            : 'bg-white border-gray-200 text-gray-700 hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                                        className={`h-10 px-5 rounded-full bg-canvas text-sm font-medium transition-all flex items-center gap-2 ${selectedCategory === cat.label
+                                            ? 'shadow-pressed text-ember-600'
+                                            : 'shadow-raised text-ink-soft hover:text-ink'
                                             }`}
                                     >
                                         {cat.label}
@@ -306,17 +306,17 @@ export function ExplorerChat() {
 
                             {/* Sub-Trends (Animated Expansion) */}
                             {selectedCategory && (
-                                <div className="flex flex-wrap justify-center gap-2 max-w-lg mt-2 p-4 bg-gray-50/50 rounded-2xl border border-gray-100 animate-in zoom-in-95 duration-300">
-                                    <span className="w-full text-center text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">
+                                <div className="flex flex-wrap justify-center gap-2 max-w-lg mt-2 p-5 bg-surface rounded-tile shadow-card animate-in zoom-in-95 duration-300">
+                                    <span className="w-full text-center text-sm text-ink-muted mb-1">
                                         {fetchingTrends ? "Updating trends..." : `Trending in ${selectedCategory}`}
                                     </span>
                                     {trendCategories.find(c => c.label === selectedCategory)?.trends.map(trend => (
                                         <button
                                             key={trend.label}
                                             onClick={() => sendQuery(trend.query)}
-                                            className="px-3 py-1.5 bg-white border border-blue-100 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-50 hover:scale-105 transition-all shadow-sm"
+                                            className="h-8 px-3 rounded-full bg-canvas shadow-well text-ink-soft text-xs font-medium hover:text-ember-600 active:shadow-pressed transition-all"
                                         >
-                                            <ExternalLink size={10} className="inline mr-1" />
+                                            <ExternalLink size={10} className="inline mr-1 text-ember-500" />
                                             {trend.label}
                                         </button>
                                     ))}
@@ -325,15 +325,15 @@ export function ExplorerChat() {
                         </div>
                     </div>
                 ) : (
-                    <div className="max-w-3xl mx-auto space-y-6">
+                    <div className="max-w-3xl mx-auto space-y-5">
                         {messages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[85%] ${msg.role === 'user' ? 'bg-[var(--accent)] text-white rounded-2xl rounded-tr-sm px-4 py-2' : ''}`}>
+                                <div className={`max-w-[85%] ${msg.role === 'user' ? 'bg-ink text-white rounded-tile rounded-tr-md px-4 py-2.5' : ''}`}>
                                     {msg.role === 'user' ? (
                                         <p>{msg.content}</p>
                                     ) : (
                                         <div className="space-y-3">
-                                            <p className="text-gray-700">{msg.content}</p>
+                                            <p className="text-ink-soft">{msg.content}</p>
 
                                             {/* Topic Results with Selection */}
                                             {msg.topics && msg.topics.length > 0 && (
@@ -341,18 +341,18 @@ export function ExplorerChat() {
                                                     {msg.topics.map((topic, i) => (
                                                         <div
                                                             key={i}
-                                                            className={`p-4 bg-white border rounded-lg transition-all ${isTopicSelected(topic)
-                                                                ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/20'
-                                                                : 'border-gray-100'
+                                                            className={`p-5 bg-surface rounded-tile shadow-card transition-all ${isTopicSelected(topic)
+                                                                ? 'ring-2 ring-ember-200'
+                                                                : 'hover:shadow-float'
                                                                 }`}
                                                         >
                                                             <div className="flex items-start gap-3">
                                                                 {/* Checkbox */}
                                                                 <button
                                                                     onClick={() => toggleTopicSelection(topic)}
-                                                                    className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${isTopicSelected(topic)
-                                                                        ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
-                                                                        : 'border-gray-300 hover:border-[var(--accent)]'
+                                                                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${isTopicSelected(topic)
+                                                                        ? 'bg-ember-500 text-white'
+                                                                        : 'bg-canvas shadow-well hover:ring-2 hover:ring-ember-200'
                                                                         }`}
                                                                 >
                                                                     {isTopicSelected(topic) && <Check size={12} />}
@@ -361,15 +361,15 @@ export function ExplorerChat() {
                                                                 <div className="flex-1">
                                                                     <div className="flex items-center gap-2 mb-1">
                                                                         {topic.type === 'question' && (
-                                                                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded flex items-center gap-1 uppercase tracking-wider">
+                                                                            <span className="h-6 px-2.5 bg-sand-100 text-sand-700 text-xs font-medium rounded-full flex items-center gap-1 shrink-0">
                                                                                 <Lightbulb size={10} /> Question
                                                                             </span>
                                                                         )}
-                                                                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                                                                        <h4 className="text-[15px] font-medium tracking-[-0.01em] text-ink truncate">
                                                                             {topic.title}
                                                                         </h4>
                                                                     </div>
-                                                                    <span className="text-xs text-gray-400 block mb-3">{topic.source}</span>
+                                                                    <span className="text-xs text-ink-muted block mb-3">{topic.source}</span>
 
                                                                     {/* CTAs */}
                                                                     <div className="flex gap-2">
@@ -377,7 +377,7 @@ export function ExplorerChat() {
                                                                             href={topic.sourceUrl}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
-                                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                                                            className="flex items-center gap-1.5 h-8 px-3 text-xs font-medium bg-canvas shadow-well text-ink-soft rounded-full hover:text-ink active:shadow-pressed transition-all"
                                                                         >
                                                                             <ExternalLink size={12} />
                                                                             Read
@@ -385,7 +385,7 @@ export function ExplorerChat() {
                                                                         <button
                                                                             onClick={() => generatePostIdeas([topic], msg.relatedQuery)}
                                                                             disabled={generatingIdeas !== null}
-                                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)]/20 transition-colors disabled:opacity-50"
+                                                                            className="flex items-center gap-1.5 h-8 px-3 text-xs font-medium bg-ember-100 text-ember-700 rounded-full hover:bg-ember-200 transition-colors disabled:opacity-50"
                                                                         >
                                                                             {generatingIdeas === topic.title ? (
                                                                                 <Loader2 size={12} className="animate-spin" />
@@ -408,26 +408,26 @@ export function ExplorerChat() {
                                                     {msg.ideas.map((idea, i) => (
                                                         <div
                                                             key={i}
-                                                            className="p-4 bg-gradient-to-br from-[var(--accent)]/5 to-transparent border border-[var(--accent)]/20 rounded-lg"
+                                                            className="p-5 bg-surface rounded-tile shadow-card"
                                                         >
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="w-5 h-5 bg-[var(--accent)] text-white text-xs rounded-full flex items-center justify-center font-medium">
+                                                                    <span className="w-6 h-6 bg-ember-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
                                                                         {i + 1}
                                                                     </span>
-                                                                    <span className="text-xs text-[var(--accent)] font-medium uppercase tracking-wider">
+                                                                    <span className="text-xs text-ember-600 font-medium">
                                                                         {idea.format}
                                                                     </span>
                                                                 </div>
                                                                 {savedIdeas.has(idea.hook) ? (
-                                                                    <span className="text-xs text-green-600 flex items-center gap-1">
+                                                                    <span className="h-7 px-3 rounded-full bg-sage-100 text-sage-700 text-xs font-medium flex items-center gap-1">
                                                                         <Check size={12} /> Saved
                                                                     </span>
                                                                 ) : (
                                                                     <button
                                                                         onClick={() => saveIdeaToPipeline(idea, msg.topics, msg.relatedQuery)}
                                                                         disabled={savingIdea === idea.hook}
-                                                                        className="text-xs px-2 py-1 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-dark)] transition-colors disabled:opacity-50"
+                                                                        className="h-8 px-3 text-xs font-medium bg-ember-500 text-white rounded-full hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                                                                     >
                                                                         {savingIdea === idea.hook ? (
                                                                             <Loader2 size={12} className="animate-spin" />
@@ -437,8 +437,8 @@ export function ExplorerChat() {
                                                                     </button>
                                                                 )}
                                                             </div>
-                                                            <p className="text-gray-900 font-medium mb-1">&quot;{idea.hook}&quot;</p>
-                                                            <p className="text-sm text-gray-600">{idea.angle}</p>
+                                                            <p className="text-[17px] tracking-[-0.01em] text-ink font-medium mb-1">&quot;{idea.hook}&quot;</p>
+                                                            <p className="text-sm text-ink-soft">{idea.angle}</p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -450,7 +450,7 @@ export function ExplorerChat() {
                         ))}
                         {loading && (
                             <div className="flex justify-start">
-                                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                <div className="flex items-center gap-2 text-ink-muted text-sm">
                                     <Loader2 size={16} className="animate-spin" />
                                     Searching...
                                 </div>
@@ -463,12 +463,12 @@ export function ExplorerChat() {
 
             {/* Floating Action Bar for Multi-Select */}
             {selectedTopics.length >= 2 && (
-                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-[var(--accent)] text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-4 animate-slide-up">
+                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-ink text-white pl-5 pr-2 py-2 rounded-full shadow-float flex items-center gap-3 animate-slide-up">
                     <span className="text-sm font-medium">{selectedTopics.length} topics selected</span>
                     <button
                         onClick={() => generatePostIdeas(selectedTopics, messages.findLast(m => m.role === 'assistant')?.relatedQuery)}
                         disabled={generatingIdeas !== null}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-[var(--accent)] rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 transition-colors disabled:opacity-50"
                     >
                         {generatingIdeas ? (
                             <Loader2 size={14} className="animate-spin" />
@@ -479,7 +479,7 @@ export function ExplorerChat() {
                     </button>
                     <button
                         onClick={() => setSelectedTopics([])}
-                        className="p-1 hover:bg-white/20 rounded transition-colors"
+                        className="w-10 h-10 flex items-center justify-center hover:bg-white/15 rounded-full transition-colors"
                     >
                         <X size={16} />
                     </button>
@@ -487,27 +487,27 @@ export function ExplorerChat() {
             )}
 
             {/* Sticky Input at Bottom */}
-            <div className="border-t bg-white p-4 shrink-0">
-                <div className="max-w-3xl mx-auto mb-3 flex items-center justify-between">
+            <div className="bg-canvas px-4 md:px-10 pt-3 pb-4 shrink-0">
+                <div className="max-w-3xl mx-auto mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Active Lens:</span>
-                        <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                        <span className="text-sm text-ink-muted">Active Lens:</span>
+                        <div className="flex bg-canvas shadow-well rounded-full p-1">
                             <button
                                 onClick={() => setLens('default')}
-                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${lens === 'default' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`h-8 px-3 rounded-full text-xs font-medium transition-all ${lens === 'default' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                             >
                                 Professional
                             </button>
                             <button
                                 onClick={() => setLens('beginner')}
-                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${lens === 'beginner' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`h-8 px-3 rounded-full text-xs font-medium transition-all ${lens === 'beginner' ? 'bg-surface shadow-raised text-sand-700' : 'text-ink-muted hover:text-ink'}`}
                             >
                                 Beginner&apos;s Lens
                             </button>
                         </div>
                     </div>
                     {lens === 'beginner' && (
-                        <span className="text-[10px] text-amber-600 font-medium italic animate-pulse">Surfacing common confusion points...</span>
+                        <span className="text-xs text-sand-700 font-medium italic animate-pulse">Surfacing common confusion points...</span>
                     )}
                 </div>
                 <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
@@ -517,14 +517,14 @@ export function ExplorerChat() {
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Ask about any topic..."
                         disabled={loading}
-                        className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 focus:border-[var(--accent)] transition-all"
+                        className="w-full h-14 bg-canvas shadow-well rounded-full pl-5 pr-14 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
                     />
                     <button
                         type="submit"
                         disabled={!input.trim() || loading}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-lg disabled:opacity-30 transition-all"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-ember-500 text-white hover:bg-ember-600 shadow-ember active:shadow-pressed disabled:opacity-30 transition-all"
                     >
-                        <Send size={18} />
+                        <Send size={16} />
                     </button>
                 </form>
 

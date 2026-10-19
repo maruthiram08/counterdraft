@@ -39,9 +39,9 @@ const PLATFORMS: PlatformConfig[] = [
         label: 'Medium Article',
         description: 'SEO-optimized drafts & structure',
         icon: FileText,
-        colorClass: 'border-gray-900',
-        bgClass: 'bg-gray-50',
-        textClass: 'text-gray-900',
+        colorClass: 'ring-ink',
+        bgClass: 'bg-surface-muted',
+        textClass: 'text-ink',
         options: [
             {
                 id: 'length',
@@ -67,9 +67,9 @@ const PLATFORMS: PlatformConfig[] = [
         label: 'Instagram Strategy',
         description: 'Captions, hashtags & carousel scripts',
         icon: Instagram,
-        colorClass: 'border-pink-500',
-        bgClass: 'bg-pink-50',
-        textClass: 'text-pink-700',
+        colorClass: 'ring-ember-500',
+        bgClass: 'bg-ember-50',
+        textClass: 'text-ember-700',
         options: [
             {
                 id: 'format',
@@ -102,9 +102,9 @@ const PLATFORMS: PlatformConfig[] = [
         label: 'Smart Studio',
         description: 'Instant ready-to-post visuals',
         icon: Zap,
-        colorClass: 'border-purple-500',
-        bgClass: 'bg-purple-50',
-        textClass: 'text-purple-700',
+        colorClass: 'ring-dusk-500',
+        bgClass: 'bg-dusk-100',
+        textClass: 'text-dusk-700',
         options: []
     }
 ];
@@ -252,23 +252,23 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
     // --- SUCCESS VIEW (Modal Overlay on top of Redesigned Layout) ---
     if (isSuccess) {
         return (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/30 backdrop-blur-sm p-4">
+                <div className="bg-surface rounded-card shadow-float w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
                     <div className="p-8 text-center">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Check size={32} className="text-green-600" />
+                        <div className="w-16 h-16 bg-sage-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Check size={32} className="text-sage-700" />
                         </div>
-                        <h2 className="font-serif text-2xl font-bold mb-2">Draft Created!</h2>
-                        <p className="text-gray-500 mb-8">
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Draft Created!</h2>
+                        <p className="text-ink-soft mb-8">
                             Your content is ready.{selectedPlatformId === 'instagram' && " Export to Canva to design."}
                         </p>
                         <div className="space-y-3">
                             {selectedPlatformId === 'instagram' && (
-                                <button onClick={handleDesignClick} className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:shadow-lg transition-all">
+                                <button onClick={handleDesignClick} className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center justify-center gap-2">
                                     <ImageIcon size={20} /> Download Design File
                                 </button>
                             )}
-                            <button onClick={() => resultData?.id ? window.location.href = `/workspace?draftId=${resultData.id}` : onClose()} className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                            <button onClick={() => resultData?.id ? window.location.href = `/workspace?draftId=${resultData.id}` : onClose()} className="w-full h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all flex items-center justify-center gap-2">
                                 <ExternalLink size={16} /> Open Draft
                             </button>
                         </div>
@@ -279,23 +279,23 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 md:p-8">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-gray-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm p-4 md:p-8">
+            <div className="bg-canvas rounded-card shadow-float w-full max-w-6xl h-[90vh] flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
                 {/* LEFT SIDEBAR navigation */}
-                <div className="w-[300px] bg-gray-50 border-r border-gray-200 flex flex-col shrink-0">
-                    <div className="p-6 border-b border-gray-200">
-                        <h2 className="font-serif text-xl font-bold text-gray-900">Repurpose</h2>
-                        <p className="text-xs text-gray-500 mt-1">Transform content for social.</p>
+                <div className="w-[300px] bg-canvas flex flex-col shrink-0">
+                    <div className="px-6 pt-8 pb-2">
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">Repurpose</h2>
+                        <p className="text-sm text-ink-soft mt-1">Transform content for social.</p>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-8">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-6">
                         {PLATFORM_GROUPS.map(group => (
                             <div key={group.title}>
                                 <div className="px-2 mb-3">
-                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{group.title}</h3>
+                                    <h3 className="text-sm text-ink-muted">{group.title}</h3>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {group.items.map(pid => {
                                         const p = PLATFORMS.find(x => x.id === pid)!;
                                         const isSelected = selectedPlatformId === p.id;
@@ -303,26 +303,26 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                             <button
                                                 key={p.id}
                                                 onClick={() => setSelectedPlatformId(p.id)}
-                                                className={`w-full text-left p-3 rounded-xl flex items-start gap-3 transition-all duration-200 relative overflow-hidden group ${isSelected ? 'bg-white shadow-md ring-1 ring-gray-200/50' : 'hover:bg-gray-200/50'
+                                                className={`w-full text-left p-4 rounded-tile flex items-start gap-3 transition-all duration-200 relative overflow-hidden group ${isSelected ? 'bg-canvas shadow-pressed' : 'bg-canvas shadow-raised hover:shadow-float'
                                                     }`}
                                             >
                                                 {/* Active Indicator Line */}
-                                                {isSelected && <div className={`absolute left-0 top-0 bottom-0 w-1 ${p.bgClass.replace('bg-', 'bg-').replace('50', '500')}`}></div>}
+                                                {isSelected && <div className={`absolute left-0 top-0 bottom-0 w-1 bg-ember-500`}></div>}
 
-                                                <div className={`p-2 rounded-lg shrink-0 ${isSelected ? `${p.bgClass} ${p.textClass}` : 'bg-gray-100 text-gray-400 group-hover:text-gray-600'}`}>
+                                                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isSelected ? `${p.bgClass} ${p.textClass}` : 'bg-canvas shadow-well text-ink-muted group-hover:text-ink'}`}>
                                                     <p.icon size={18} />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="font-bold text-sm text-gray-900 flex items-center gap-2">
+                                                    <div className="font-medium text-sm tracking-[-0.01em] text-ink flex items-center gap-2">
                                                         {p.label}
                                                     </div>
-                                                    <div className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                                                    <div className="text-xs text-ink-soft mt-0.5 leading-snug">
                                                         {p.description}
                                                     </div>
                                                     <div className="mt-2 flex gap-1">
                                                         {['smart_studio'].includes(p.id) ?
-                                                            <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold tracking-wide border border-purple-200">VISUALS</span> :
-                                                            <span className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-bold tracking-wide border border-gray-200">TEXT</span>
+                                                            <span className="h-6 px-2.5 inline-block leading-6 rounded-full bg-dusk-100 text-dusk-700 text-[11px] font-medium lowercase first-letter:uppercase">VISUALS</span> :
+                                                            <span className="h-6 px-2.5 inline-block leading-6 rounded-full bg-canvas shadow-well text-ink-soft text-[11px] font-medium lowercase first-letter:uppercase">TEXT</span>
                                                         }
                                                     </div>
                                                 </div>
@@ -336,22 +336,22 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                 </div>
 
                 {/* RIGHT CONTENT AREA */}
-                <div className="flex-1 flex flex-col bg-white min-w-0">
+                <div className="flex-1 flex flex-col bg-canvas min-w-0">
                     {/* Header */}
-                    <div className="h-16 border-b border-gray-100 flex items-center justify-between px-8 shrink-0 bg-white/80 backdrop-blur sticky top-0 z-10">
+                    <div className="h-20 flex items-center justify-between px-8 pt-4 shrink-0 bg-canvas sticky top-0 z-10">
                         <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-md ${currentPlatform.bgClass} ${currentPlatform.textClass}`}>
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${currentPlatform.bgClass} ${currentPlatform.textClass}`}>
                                 <currentPlatform.icon size={18} />
                             </div>
-                            <h2 className="font-bold text-gray-900 text-lg">{currentPlatform.label}</h2>
+                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">{currentPlatform.label}</h2>
                         </div>
-                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors">
+                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
                             <X size={20} />
                         </button>
                     </div>
 
                     {/* Scrollable Body */}
-                    <div className="flex-1 overflow-y-auto p-8 bg-gray-50/10">
+                    <div className="flex-1 overflow-y-auto p-6 md:p-8">
                         {selectedPlatformId === 'smart_studio' ? (
                             <div className="h-full flex flex-col">
                                 <SmartStudioPanel content={sourceContent || ''} onDownload={() => setIsSuccess(true)} />
@@ -360,12 +360,12 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                             <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 {/* Dynamic Form Generation */}
                                 {currentPlatform.options.map(opt => (
-                                    <div key={opt.id} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                                    <div key={opt.id} className="bg-surface p-6 rounded-card shadow-card">
                                         {/* ... (Keep existing form logic for select/radio/text/checkbox) ... */}
                                         {opt.type === 'select' && (
                                             <div>
-                                                <label className="text-sm font-bold text-gray-900 mb-3 block flex items-center gap-2">
-                                                    <LayoutTemplate size={14} className="text-gray-400" />
+                                                <label className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                                                    <LayoutTemplate size={14} className="text-ember-500" />
                                                     {opt.label}
                                                 </label>
                                                 <div className="grid grid-cols-3 gap-2">
@@ -373,7 +373,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                         <button
                                                             key={choice.value}
                                                             onClick={() => updateOption(opt.id, choice.value)}
-                                                            className={`flex flex-col items-center justify-center py-3 px-2 rounded-lg border transition-all ${currentValues[opt.id] === choice.value ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
+                                                            className={`flex flex-col items-center justify-center py-3 px-2 rounded-2xl transition-all ${currentValues[opt.id] === choice.value ? 'bg-ink text-white' : 'bg-canvas shadow-well text-ink-soft hover:text-ink'}`}
                                                         >
                                                             <div className="font-medium text-sm">{choice.label.split('(')[0]}</div>
                                                             {choice.label.includes('(') && <div className="text-[10px] opacity-70 mt-0.5">{choice.label.split('(')[1].replace(')', '')}</div>}
@@ -385,13 +385,13 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
 
                                         {opt.type === 'radio' && (
                                             <div>
-                                                <label className="text-sm font-bold text-gray-900 mb-3 block flex items-center gap-2">
-                                                    <LayoutTemplate size={14} className="text-gray-400" />
+                                                <label className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+                                                    <LayoutTemplate size={14} className="text-ember-500" />
                                                     {opt.label}
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     {(opt.choices as OptionChoice[]).map((choice) => (
-                                                        <label key={choice.value} className={`cursor-pointer border-2 rounded-xl p-4 transition-all ${currentValues[opt.id] === choice.value ? `${currentPlatform.colorClass} ${currentPlatform.bgClass}` : 'border-gray-100 hover:border-gray-200'}`}>
+                                                        <label key={choice.value} className={`cursor-pointer rounded-tile p-4 transition-all ${currentValues[opt.id] === choice.value ? `ring-2 ${currentPlatform.colorClass} ${currentPlatform.bgClass}` : 'bg-canvas shadow-well hover:text-ink'}`}>
                                                             <input
                                                                 type="radio"
                                                                 name={opt.id}
@@ -399,8 +399,8 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                                 onChange={() => updateOption(opt.id, choice.value)}
                                                                 className="hidden"
                                                             />
-                                                            <div className="font-bold text-sm mb-1">{choice.label}</div>
-                                                            <div className="text-xs text-gray-500 leading-snug">{choice.description}</div>
+                                                            <div className="font-medium text-sm text-ink mb-1">{choice.label}</div>
+                                                            <div className="text-xs text-ink-soft leading-snug">{choice.description}</div>
                                                         </label>
                                                     ))}
                                                 </div>
@@ -410,15 +410,15 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                         {opt.type === 'text' && (
                                             <div>
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                                        <Hash size={14} className="text-gray-400" />
+                                                    <label className="text-sm font-medium text-ink flex items-center gap-2">
+                                                        <Hash size={14} className="text-ember-500" />
                                                         {opt.label}
                                                     </label>
                                                     {opt.allowAutoGenerate && sourceContent && (
                                                         <button
                                                             onClick={() => handleAutoGenerate(opt.id)}
                                                             disabled={generatingField === opt.id}
-                                                            className="text-xs flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2 py-1 rounded-md hover:bg-purple-100 transition-colors disabled:opacity-50"
+                                                            className="h-8 px-3 text-xs font-medium flex items-center gap-1.5 rounded-full bg-canvas shadow-raised text-ink hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                                                         >
                                                             {generatingField === opt.id ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
                                                             Auto-Generate
@@ -430,14 +430,14 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                     value={(currentValues[opt.id] as string) || ''}
                                                     onChange={(e) => updateOption(opt.id, e.target.value)}
                                                     placeholder={opt.placeholder}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 text-sm font-medium transition-all"
+                                                    className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
                                                 />
                                             </div>
                                         )}
 
                                         {opt.type === 'checkbox' && (
-                                            <label className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                                                <div className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all ${currentValues[opt.id] ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-300 bg-white'}`}>
+                                            <label className="flex items-center gap-4 p-4 bg-canvas shadow-well rounded-tile cursor-pointer transition-all">
+                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${currentValues[opt.id] ? 'bg-ember-500 text-white shadow-ember' : 'bg-surface shadow-raised'}`}>
                                                     {currentValues[opt.id] && <Check size={14} strokeWidth={3} />}
                                                 </div>
                                                 <input
@@ -447,10 +447,10 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                     className="hidden"
                                                 />
                                                 <div className="flex-1">
-                                                    <span className="text-sm font-bold text-gray-900 block">{opt.label}</span>
-                                                    <span className="text-xs text-gray-500">Includes AI suggestions</span>
+                                                    <span className="text-sm font-medium text-ink block">{opt.label}</span>
+                                                    <span className="text-xs text-ink-soft">Includes AI suggestions</span>
                                                 </div>
-                                                <Palette size={20} className="text-gray-300" />
+                                                <Palette size={20} className="text-ink-muted" />
                                             </label>
                                         )}
                                     </div>
@@ -461,12 +461,12 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
 
                     {/* Footer - Only for non-Smart Studio */}
                     {selectedPlatformId !== 'smart_studio' && (
-                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 shrink-0">
-                            <button onClick={onClose} className="px-6 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
+                        <div className="px-6 pb-6 pt-2 md:px-8 flex justify-end gap-3 shrink-0">
+                            <button onClick={onClose} className="h-12 px-5 rounded-full text-sm font-medium text-ink-soft hover:text-ink transition-colors">Cancel</button>
                             <button
                                 onClick={handleConfirm}
                                 disabled={isProcessing}
-                                className="px-8 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+                                className="h-12 px-6 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isProcessing ? (
                                     <>
@@ -476,7 +476,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                 ) : (
                                     <>
                                         Create {currentPlatform.label.split(' ')[0]} Draft
-                                        <Sparkles size={16} className="text-yellow-300" />
+                                        <Sparkles size={16} className="text-white" />
                                     </>
                                 )}
                             </button>
