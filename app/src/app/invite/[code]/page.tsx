@@ -1,10 +1,6 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { Outfit } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import InviteClient from './InviteClient';
-
-const outfit = Outfit({ subsets: ['latin'] });
-
 
 interface Props {
     params: Promise<{ code: string }>
@@ -28,7 +24,7 @@ export default async function InvitePage({ params }: Props) {
     const planName = coupon.access_plans?.display_name || 'Pro Plan';
 
     return (
-        <div className={`min-h-screen flex flex-col items-center justify-center bg-[#F9FAFB] p-4 ${outfit.className}`}>
+        <div className={`min-h-screen flex flex-col items-center justify-center bg-[#F9FAFB] p-4 font-sans`}>
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-neutral-100 text-center">
                 <div className="mb-6 flex justify-center">
                     <div className="h-16 w-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
