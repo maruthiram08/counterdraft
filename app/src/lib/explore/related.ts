@@ -1,5 +1,6 @@
 import { openai } from '@/lib/openai';
 import { TraceLogger } from '@/lib/trace';
+import type { SearchIntent } from './plan';
 
 export interface RelatedTopic {
     label: string;
@@ -13,8 +14,8 @@ const RELATED_TTL_MS = 60 * 60 * 1000;
  * Suggests neighbouring subtopics for a search so the user can branch out
  * instead of typing a new query each time.
  */
-export async function suggestRelatedTopics(query: string, headlines: string[]): Promise<RelatedTopic[]> {
-    const cacheKey = query.trim().toLowerCase();
+export async function suggestRelatedTopics(query: string, intent: SearchIntent, headlines: string[]): Promise<RelatedTopic[]> {
+    const cacheKey = `${query.trim().toLowerCase()}:${intent}`;
     const cached = relatedCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.value;
 
@@ -27,16 +28,19 @@ export async function suggestRelatedTopics(query: string, headlines: string[]): 
                 {
                     role: 'system',
                     content: `You help a writer discover topics worth writing about.
-Given a search and the headlines it returned, suggest 5 related subtopics to explore next.
-Mix: narrower angles inside the topic, adjacent topics people discuss alongside it, and one less obvious connection.
-Return JSON: { "related": [ { "label": "2-4 word chip label", "query": "2-5 word news search query" } ] }
+Given a search and the results it returned, suggest 5 next steps that go deeper into what the person actually asked.
+${intent === 'learn'
+    ? `They are learning how to do something. Suggest the concrete parts of that job and the decisions inside it, keeping their context (for example for a B2C go-to-market strategy: "Consumer pricing experiments", "Launch channel mix for apps", "Activation and onboarding loops", "Referral programs that worked", "Positioning against incumbents"). Each query asks for frameworks, playbooks or case studies on that part.`
+    : 'Mix narrower angles inside the topic, adjacent debates people have alongside it, and one less obvious connection.'}
+Return JSON: { "related": [ { "label": "2-4 word chip label", "query": "4-8 word search query" } ] }
 Rules:
-- Labels must be specific (e.g. "Async hiring", not "Work").
+- Every suggestion must stay inside the person's context (their audience, market and goal), not the general field.
+- Never suggest a bare category ("B2C marketing", "Sales", "Creator economy") or a definition.
 - Do not repeat the original search.`,
                 },
                 {
                     role: 'user',
-                    content: `Search: ${query}\nHeadlines:\n${headlines.slice(0, 12).map(h => `- ${h}`).join('\n')}`,
+                    content: `Search: ${query}\nResults:\n${headlines.slice(0, 12).map(h => `- ${h}`).join('\n')}`,
                 },
             ],
         });

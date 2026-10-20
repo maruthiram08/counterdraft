@@ -30,17 +30,22 @@ export interface FeedEntry {
     relatedBelief: string | null;
     beliefStance: 'supports' | 'challenges' | null;
     type: 'article' | 'question';
+    kind?: ResultKind;
+    takeaway?: string;
 }
+
+export type ResultKind = 'framework' | 'case study' | 'expert view' | 'data' | 'news';
 
 // What the LLM screen said about one item (see annotate.ts)
 export interface ItemAnnotation {
     relevant: boolean;
     beliefId: string | null;
     stance: 'supports' | 'challenges' | null;
+    kind?: ResultKind;
+    takeaway?: string;
 }
 
 const MIN_KEYWORD_HITS = 2;
-const MIN_RELEVANT_RESULTS = 5;
 
 const ENTITIES: Record<string, string> = {
     '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&apos;': "'", '&nbsp;': ' ',
@@ -96,6 +101,16 @@ export function parseGoogleNewsRss(xml: string, query: string, limit = 8): RawFe
     }
 
     return items;
+}
+
+// Cut text to at most `max` characters at a word boundary, ending with an ellipsis when cut.
+export function trimSnippet(text: string, max = 280): string {
+    const clean = text.replace(/\s+/g, ' ').trim();
+    if (clean.length <= max) return clean;
+    const cut = clean.slice(0, max);
+    const lastSpace = cut.lastIndexOf(' ');
+    const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+    return `${base.replace(/[\s,;:.!?-]+$/, '')}…`;
 }
 
 export function normalizeTitle(title: string): string {
@@ -158,7 +173,8 @@ export function buildFeed(
     beliefs: BeliefRef[],
     lens: string,
     now = Date.now(),
-    annotations?: ItemAnnotation[] | null
+    annotations?: ItemAnnotation[] | null,
+    intent: 'learn' | 'news' = 'news'
 ): FeedEntry[] {
     const entries = items.map((item, index) => {
         const isQuestion = QUESTION_PATTERN.test(item.title) || item.title.includes('?');
@@ -190,27 +206,33 @@ export function buildFeed(
                 relatedBelief: belief?.statement ?? null,
                 beliefStance: belief ? annotation?.stance ?? null : null,
                 type: (isQuestion ? 'question' : 'article') as FeedEntry['type'],
+                kind: annotation?.kind,
+                takeaway: annotation?.takeaway,
             },
             relevant,
-            rank: rankScore(relatabilityScore, published, 1 + item.otherSources.length, now),
+            rank: rankScore(relatabilityScore, published, 1 + item.otherSources.length, now, intent),
         };
     });
 
     entries.sort((a, b) => b.rank - a.rank);
 
-    // Drop stories screened out as off-topic, unless that would leave too little to browse;
-    // then they go to the bottom instead.
-    const relevant = entries.filter(e => e.relevant);
-    const kept = relevant.length >= MIN_RELEVANT_RESULTS
-        ? relevant
-        : [...relevant, ...entries.filter(e => !e.relevant)];
-    return kept.map(e => e.entry);
+    // Results screened out as off-topic are dropped. Padding the list with them made a weak
+    // search look worse, so a short list of good results is shown as it is.
+    return entries.filter(e => e.relevant).map(e => e.entry);
 }
 
-// Belief match matters most, then freshness (halves every 2 days), then how widely the story is covered.
-export function rankScore(relatability: number, publishedMs: number, sourceCount: number, now: number): number {
+// Belief match matters most, then freshness, then how widely the story is covered.
+// News freshness halves every 2 days; a guide or case study stays useful for months.
+export function rankScore(
+    relatability: number,
+    publishedMs: number,
+    sourceCount: number,
+    now: number,
+    intent: 'learn' | 'news' = 'news'
+): number {
+    const halfLifeDays = intent === 'learn' ? 180 : 2;
     const ageDays = Number.isNaN(publishedMs) ? 7 : Math.max(0, (now - publishedMs) / 86_400_000);
-    const freshness = Math.pow(0.5, ageDays / 2);
+    const freshness = Math.pow(0.5, ageDays / halfLifeDays);
     const coverage = Math.min(Math.log2(sourceCount) / 4, 0.5);
     return relatability + freshness * 0.6 + coverage;
 }
