@@ -143,14 +143,20 @@ describe('ExploreWorkspace', () => {
         expect(screen.getByPlaceholderText('Search a topic to explore...')).toBeInTheDocument();
     });
 
-    it('leads with topics for the writer and refreshes a category without repeating it', async () => {
+    it('leads with topics for the writer and refresh brings new categories', async () => {
         const base = global.fetch as jest.Mock;
         global.fetch = jest.fn((url: string, init?: RequestInit) => {
             if (url === '/api/explore/trends') {
                 const body = JSON.parse(String(init?.body));
                 const groups = body.refresh
-                    ? [{ category: 'For you', trends: [{ label: 'Paternity leave in India', query: 'paternity leave policies India companies' }] }]
-                    : [{ category: 'For you', trends: [{ label: 'Dads and remote work', query: 'remote work new fathers' }] }];
+                    ? [
+                        { category: 'For you', trends: [{ label: 'Paternity leave in India', query: 'paternity leave policies India companies' }] },
+                        { category: 'School admissions', trends: [{ label: 'Nursery fee hikes', query: 'nursery school fee hikes India' }] },
+                    ]
+                    : [
+                        { category: 'For you', trends: [{ label: 'Dads and remote work', query: 'remote work new fathers' }] },
+                        { category: 'Fatherhood', trends: [{ label: 'Stay-at-home dads', query: 'stay at home dads India' }] },
+                    ];
                 return Promise.resolve({ ok: true, json: () => Promise.resolve({ groups }) });
             }
             return base(url, init);
@@ -158,12 +164,17 @@ describe('ExploreWorkspace', () => {
 
         render(<ExploreWorkspace />);
         expect(await screen.findByRole('tab', { name: 'For you' })).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('tab', { name: 'Fatherhood' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Dads and remote work' })).toBeInTheDocument();
+        const firstCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/trends');
+        expect(JSON.parse(firstCall[1].body)).toEqual({ mode: 'discover' });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Refresh topics in For you' }));
-        expect(await screen.findByRole('button', { name: 'Paternity leave in India' })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Show different topics' }));
+        expect(await screen.findByRole('tab', { name: 'School admissions' })).toBeInTheDocument();
+        expect(screen.queryByRole('tab', { name: 'Fatherhood' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Paternity leave in India' })).toBeInTheDocument();
         const refreshCall = (global.fetch as jest.Mock).mock.calls.find(([url, init]) => url === '/api/explore/trends' && JSON.parse(init.body).refresh);
-        expect(JSON.parse(refreshCall[1].body)).toEqual({ categories: ['For you'], refresh: true, exclude: ['Dads and remote work'] });
+        expect(JSON.parse(refreshCall[1].body)).toEqual({ mode: 'discover', refresh: true, exclude: ['Fatherhood'] });
     });
 
     it('restores the exploration after a remount and starts over with New', async () => {
