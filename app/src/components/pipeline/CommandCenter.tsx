@@ -205,8 +205,9 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: developingItem.id,
-                    beliefText: developingItem.angle || developingItem.hook,
+                    beliefText: developingItem.hook || developingItem.angle,
                     content: draftContent,
+                    autoTitle: true,
                 }),
             });
             if (!draftRes.ok) throw new Error(`Creating the draft failed (${draftRes.status})`);

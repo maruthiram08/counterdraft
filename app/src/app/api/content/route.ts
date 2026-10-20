@@ -4,6 +4,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { brainService } from '@/lib/brain/service';
 import { Belief } from '@/types';
+import { titleFromItem } from '@/lib/brain/title';
 import { TraceLogger } from '@/lib/trace';
 
 export const dynamic = 'force-dynamic';
@@ -311,10 +312,17 @@ export async function PATCH(req: Request) {
 
         // SYNC: If moving to draft or published stage, ensure it exists in drafts table (Editor Visibility)
         if (updates.stage === 'draft' || updates.stage === 'published') {
+            // Keep a title the writer already has; a new row gets a short one, never the full brief
+            const { data: existingDraft } = await supabaseAdmin
+                .from('drafts')
+                .select('belief_text')
+                .eq('id', data.id)
+                .eq('user_id', userId)
+                .maybeSingle();
             await supabaseAdmin.from('drafts').upsert({
                 id: data.id,
                 user_id: userId,
-                belief_text: data.hook || data.angle || 'Untitled Draft',
+                belief_text: existingDraft?.belief_text || titleFromItem(data.hook, data.angle),
                 content: data.draft_content || updates.draft_content || '', // Handle missing content
                 status: updates.stage === 'published' ? 'published' : 'draft',
                 updated_at: new Date().toISOString()

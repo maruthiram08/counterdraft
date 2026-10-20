@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
+import { generateDraftTitle, needsRetitle, titleFromItem } from '@/lib/brain/title';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,7 +69,7 @@ export async function GET() {
             .map(ci => ({
                 id: ci.id,
                 user_id: userId,
-                belief_text: ci.hook || 'Untitled Draft',
+                belief_text: titleFromItem(ci.hook),
                 content: ci.draft_content || '',
                 status: ci.stage === 'published' ? 'published' : 'draft',
                 created_at: ci.created_at || new Date().toISOString(), // Use real timestamp if available
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
         }
 
-        const { beliefText, content, id, status: passedStatus } = await req.json();
+        const { beliefText, content, id, status: passedStatus, autoTitle } = await req.json();
 
         if (!beliefText || !content) {
             return NextResponse.json(
@@ -177,12 +178,17 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // Drafts from the wizard arrive titled with the idea's hook or brief; give them a real headline
+        const title = autoTitle || (isCreation && needsRetitle(beliefText))
+            ? await generateDraftTitle({ content, hook: beliefText })
+            : beliefText;
+
         const { data: draft, error } = await supabase
             .from('drafts')
             .upsert({
                 ...(id ? { id } : {}),
                 user_id: userId,
-                belief_text: beliefText,
+                belief_text: title,
                 content: content,
                 status: passedStatus || 'draft',
                 updated_at: new Date().toISOString()

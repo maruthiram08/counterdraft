@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { titleFromItem } from '@/lib/brain/title';
 import { getOrCreateUser } from '@/lib/user-sync';
 
 
@@ -126,7 +127,7 @@ export async function PATCH(
                     .upsert({
                         id: contentItem.id,
                         user_id: userId,
-                        belief_text: contentItem.hook || contentItem.angle || 'Untitled Draft',
+                        belief_text: titleFromItem(contentItem.hook, contentItem.angle),
                         content: (updateData.content as string) || contentItem.draft_content || '',
                         status: (updateData.status as string) || (contentItem.stage === 'published' ? 'published' : 'draft'),
                         updated_at: new Date().toISOString()

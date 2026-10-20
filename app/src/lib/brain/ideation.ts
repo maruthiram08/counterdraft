@@ -29,7 +29,7 @@ Output as JSON matching this schema:
   "ideas": [
     {
       "theme": "high-level theme",
-      "topic": "specific topic to write about",
+      "topic": "the post's working title: a short headline under 12 words, not an instruction (never start with Explore, Investigate or similar)",
       "strengthensBelief": "which belief this reinforces",
       "exploresTension": "optional - which tension this explores",
       "risksWeakening": "optional - which belief might be weakened",
