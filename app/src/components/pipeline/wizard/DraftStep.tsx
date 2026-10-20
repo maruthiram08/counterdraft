@@ -93,7 +93,7 @@ export function DraftStep({
                             </div>
                             <div className="w-px h-4 bg-line mx-1" />
                             <button
-                                onClick={onVerifyStrategy}
+                                onClick={() => onVerifyStrategy()}
                                 disabled={verifyingStrategy}
                                 className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-ember-100 text-ember-700 text-xs font-medium hover:bg-ember-200 active:shadow-pressed transition-all disabled:opacity-50"
                             >
