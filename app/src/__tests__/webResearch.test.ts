@@ -48,3 +48,28 @@ describe('anchorQueries', () => {
         expect(anchorQueries(['anything'], {})).toEqual(['anything']);
     });
 });
+
+describe('place and country', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('adds the place the brief is about when a query leaves it out', () => {
+        const meta = { audience: { role: 'New dads', pain: '' } };
+        expect(anchorQueries(['new dads remote work boundaries', 'paternity leave for Indian dads'], meta, 'India')).toEqual([
+            'new dads remote work boundaries India',
+            'paternity leave for Indian dads',
+        ]);
+    });
+
+    it('boosts results from the country and retries without it if rejected', async () => {
+        process.env.TAVILY_API_KEY = 'test';
+        const fetchMock = jest.fn()
+            .mockResolvedValueOnce({ ok: false })
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ results: [{ title: 'T', url: 'https://a.in/x', content: 'c' }] }) });
+        global.fetch = fetchMock as unknown as typeof fetch;
+
+        const sources = await gatherWebSources(['q'], 12, 'india');
+        expect(JSON.parse(fetchMock.mock.calls[0][1].body).country).toBe('india');
+        expect(JSON.parse(fetchMock.mock.calls[1][1].body).country).toBeUndefined();
+        expect(sources).toHaveLength(1);
+    });
+});

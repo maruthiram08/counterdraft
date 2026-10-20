@@ -24,17 +24,22 @@ export function fallbackQueries(hook: string, meta?: Partial<BrainMetadata>, ang
 }
 
 // Every search must stay on the brief's audience: append it to any planned query that drifted to the general topic
-export function anchorQueries(queries: string[], meta?: Partial<BrainMetadata>): string[] {
+// and to the place the brief is about (e.g. India), which the planner names
+export function anchorQueries(queries: string[], meta?: Partial<BrainMetadata>, place?: string): string[] {
     const audience = meta?.audience?.role?.trim();
-    if (!audience) return queries;
-    const words = audience.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3);
+    const mentions = (q: string, term: string) => {
+        const words = term.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3);
+        return !words.length || words.some(w => q.toLowerCase().includes(w.replace(/s$/, '')));
+    };
     return queries.map(q => {
-        const lower = q.toLowerCase();
-        return words.some(w => lower.includes(w.replace(/s$/, ''))) ? q : `${q} ${audience}`;
+        let anchored = audience && !mentions(q, audience) ? `${q} ${audience}` : q;
+        if (place && !mentions(anchored, place)) anchored = `${anchored} ${place}`;
+        return anchored;
     });
 }
 
-export async function searchWeb(query: string, maxResults = 5): Promise<WebSource[]> {
+// `country` boosts results from that country (Tavily's lowercase country names); a rejected value falls back to a plain search
+export async function searchWeb(query: string, maxResults = 5, country?: string): Promise<WebSource[]> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) return [];
 
@@ -42,9 +47,9 @@ export async function searchWeb(query: string, maxResults = 5): Promise<WebSourc
         const res = await fetch('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ api_key: apiKey, query, topic: 'general', search_depth: 'advanced', max_results: maxResults }),
+            body: JSON.stringify({ api_key: apiKey, query, topic: 'general', search_depth: 'advanced', max_results: maxResults, ...(country ? { country } : {}) }),
         });
-        if (!res.ok) return [];
+        if (!res.ok) return country ? searchWeb(query, maxResults) : [];
         const data = await res.json() as { results?: { title?: string; url?: string; content?: string }[] };
         return (data.results || [])
             .filter(r => r.title && r.url && r.content)
@@ -56,8 +61,8 @@ export async function searchWeb(query: string, maxResults = 5): Promise<WebSourc
 }
 
 // Runs the queries in parallel and drops duplicate URLs, keeping at most `limit` sources
-export async function gatherWebSources(queries: string[], limit = 12): Promise<WebSource[]> {
-    const results = await Promise.all(queries.map(q => searchWeb(q)));
+export async function gatherWebSources(queries: string[], limit = 12, country?: string): Promise<WebSource[]> {
+    const results = await Promise.all(queries.map(q => searchWeb(q, 5, country)));
     const seen = new Set<string>();
     const sources: WebSource[] = [];
     for (const source of results.flat()) {

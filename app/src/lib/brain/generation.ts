@@ -6,6 +6,8 @@ import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchIte
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
 import { anchorQueries, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
+type ResearchPlan = { queries: string[]; place?: string; country?: string };
+
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
     userId: string;
@@ -87,8 +89,10 @@ export class BrainGenerationService {
         // Plan from the original search and saved angle first; the hook is only a working title
         const origin = originQuery(brainMetadata);
         const searchSeed = `${origin ? `\nOriginal search: ${origin}` : ''}\nSaved angle: ${originAngle(angle, brainMetadata) || 'None'}`;
-        const queries = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`).catch(() => fallbackQueries(hook, brainMetadata, angle));
-        const sources = await gatherWebSources(anchorQueries(queries, brainMetadata));
+        const plan = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`)
+            .catch((): ResearchPlan => ({ queries: fallbackQueries(hook, brainMetadata, angle) }));
+        const queries = anchorQueries(plan.queries, brainMetadata, plan.place);
+        const sources = await gatherWebSources(queries, 12, plan.country);
         const webSources = `${exploreSources}${formatWebSources(sources)}`;
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
@@ -120,6 +124,7 @@ Your task is to provide:
 
 1. **Research findings**: The raw material the planned post needs. Choose WHAT to research from the strategic context and the creator's brief: what this audience would find credible, specifics about their pain points, anything the creator asked to include, and the material the format calls for (for a practical walkthrough or guide: concrete use cases, the steps or workflow, before/after comparisons, worked examples, and limitations or when NOT to use it).
    - Each finding must be a specific, checkable fact, example or step. Opinions, predictions and "this can help X" claims belong in Key insights, not here.
+   - If the brief names a country, region or culture, most findings must be about that place: its laws and policies, named local employers, family set-ups, work culture and costs. Advice that would apply to any parent anywhere (a dedicated workspace, exercise, a schedule, talking to your employer) does not count unless it is made specific to that place. If the sources have too little local material, add a "Gap:" finding naming what is missing instead of padding with generic advice.
    - Every finding must be specific to the brief's audience and any place or culture it names. A general finding counts only once it is made specific to them (for Indian dads: joint families, paternity leave at named companies, long workdays across time zones); otherwise drop it.
    - If the brief asks for tips, practical advice or a how-to, most findings must be concrete actions the reader can take this week: what to do, when, and how, with a real example where the sources give one (e.g. "Block 7 to 8pm as no-laptop time and tell your manager in writing", not "create an organized home office").
    - Never repeat the same point twice.
@@ -167,7 +172,7 @@ IMPORTANT: Return a valid JSON object with the following structure:
     }
 
     // Turns the topic and strategy into a few targeted web searches
-    private async planResearchQueries(hook: string, context: string): Promise<string[]> {
+    private async planResearchQueries(hook: string, context: string): Promise<ResearchPlan> {
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
@@ -177,18 +182,20 @@ IMPORTANT: Return a valid JSON object with the following structure:
 The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
 Every query must name the brief's audience and any country, region, culture or market the brief mentions (e.g. "Indian dads", "India"); a query about the general topic alone is wasted.
 If the brief asks for tips, practical advice or a how-to, search for concrete steps, routines, real examples and local specifics (laws, policies, workplace norms, family set-ups) for that audience, not for statistics or general studies.
-Return JSON: { "queries": ["...", "...", "..."] }`
+Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; and "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null.
+Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null }`
                 },
                 { role: 'user', content: `Working title: ${hook}${context}` }
             ],
             response_format: { type: 'json_object' },
         });
-        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown };
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown };
         const queries = Array.isArray(parsed.queries)
             ? parsed.queries.filter((q): q is string => typeof q === 'string' && !!q.trim()).slice(0, 3)
             : [];
         if (!queries.length) throw new Error('No queries planned');
-        return queries;
+        const text = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : undefined;
+        return { queries, place: text(parsed.place), country: text(parsed.country)?.toLowerCase() };
     }
 
     // --- 2. Refine Point ---
@@ -628,6 +635,7 @@ RULES:
 - Leave out "cta", "include", "avoid", "toneNotes" and "length" unless the brief (or draft) actually implies them.
 - "outcome": use one of authority | engagement | conversion | connection if it fits, otherwise a short phrase.
 - "format": use one of thought_leadership | tactical_guide | personal_story | listicle if it fits, otherwise a short phrase.
+- "audience.role": keep any country, region or culture the brief names (e.g. "New dads in India", not "New dads").
 - "stance": a short phrase in the creator's terms (e.g. "contrarian", "gently sceptical", "excited but practical").
 - "clarifyingQuestion": ask ONE short question only if something that would materially change the post is ambiguous. Otherwise null.
 
