@@ -171,57 +171,57 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-canvas rounded-card max-w-2xl w-full shadow-float overflow-hidden flex flex-col max-h-[90vh]">
 
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div className="px-6 pt-6 md:px-8 md:pt-8 pb-2 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-serif font-bold text-gray-900 flex items-center gap-2">
-                            <Wand2 className="text-purple-600" size={20} />
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink flex items-center gap-2">
+                            <Wand2 className="text-ember-500" size={20} />
                             Train Your Writing Style
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-ink-soft mt-1">
                             {step === 'input' && "Teach the AI how you write."}
                             {step === 'analyzing' && "Analyzing your unique fingerprint..."}
                             {step === 'result' && "Here is what we found."}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                        <X size={20} className="text-gray-400" />
+                    <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
+                        <X size={20} />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 flex-1 overflow-y-auto">
+                <div className="p-6 md:px-8 md:pb-8 flex-1 overflow-y-auto">
 
                     {step === 'input' && (
                         <div className="space-y-4">
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800 flex gap-3">
-                                <PenTool className="shrink-0 mt-0.5" size={16} />
+                            <div className="bg-ember-50 p-4 rounded-tile shadow-raised text-sm text-ink-soft flex gap-3">
+                                <PenTool className="shrink-0 mt-0.5 text-ember-500" size={16} />
                                 <div>
-                                    <strong>How this works:</strong> Provide 3-5 of your best posts, emails, or essays.
+                                    <strong className="font-medium text-ink">How this works:</strong> Provide 3-5 of your best posts, emails, or essays.
                                     The AI will extract your tone, sentence structure, and vocabulary patterns.
                                 </div>
                             </div>
 
                             {/* Import Tabs */}
-                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <div className="flex bg-canvas shadow-well p-1 rounded-full">
                                 <button
                                     onClick={() => setImportMethod('text')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-all ${importMethod === 'text' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                    className={`flex-1 h-9 text-sm font-medium rounded-full flex items-center justify-center gap-2 transition-all ${importMethod === 'text' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                                 >
                                     <PenTool size={14} /> Paste Text
                                 </button>
                                 <button
                                     onClick={() => setImportMethod('url')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-all ${importMethod === 'url' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                    className={`flex-1 h-9 text-sm font-medium rounded-full flex items-center justify-center gap-2 transition-all ${importMethod === 'url' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                                 >
                                     <LinkIcon size={14} /> Import URL
                                 </button>
                                 <button
                                     onClick={() => setImportMethod('file')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-all ${importMethod === 'file' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                                    className={`flex-1 h-9 text-sm font-medium rounded-full flex items-center justify-center gap-2 transition-all ${importMethod === 'file' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                                 >
                                     <Upload size={14} /> Upload File
                                 </button>
@@ -233,12 +233,12 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                                         value={urlInput}
                                         onChange={(e) => setUrlInput(e.target.value)}
                                         placeholder={`https://your-blog.com/post-1\nhttps://your-blog.com/post-2\n(Up to 25 URLs)`}
-                                        className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm min-h-[100px] resize-y"
+                                        className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm min-h-[100px] resize-y"
                                     />
                                     <button
                                         onClick={handleExtractUrl}
                                         disabled={!urlInput.trim() || importLoading}
-                                        className="px-4 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-black disabled:opacity-50 min-w-[100px] flex items-center justify-center h-[100px]"
+                                        className="h-12 px-5 rounded-full bg-ink text-white text-sm font-medium hover:bg-ink/90 active:shadow-pressed transition-all disabled:opacity-50 min-w-[100px] flex items-center justify-center"
                                     >
                                         {importLoading ? <Loader2 size={16} className="animate-spin" /> : "Fetch All"}
                                     </button>
@@ -246,7 +246,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                             )}
 
                             {importMethod === 'file' && (
-                                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer animate-in fade-in slide-in-from-top-2" onClick={() => fileInputRef.current?.click()}>
+                                <div className="bg-canvas shadow-pressed rounded-card p-8 flex flex-col items-center justify-center text-center hover:text-ember-600 transition-all cursor-pointer animate-in fade-in slide-in-from-top-2" onClick={() => fileInputRef.current?.click()}>
                                     <input
                                         type="file"
                                         ref={fileInputRef}
@@ -255,12 +255,12 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                                         onChange={handleFileUpload}
                                     />
                                     {importLoading ? (
-                                        <Loader2 size={32} className="text-purple-600 animate-spin mb-2" />
+                                        <Loader2 size={32} className="text-ember-500 animate-spin mb-2" />
                                     ) : (
-                                        <FileText size={32} className="text-gray-400 mb-2" />
+                                        <FileText size={32} className="text-ember-500 mb-2" />
                                     )}
-                                    <p className="text-sm font-medium text-gray-900">Click to upload document</p>
-                                    <p className="text-xs text-gray-500 mt-1">Supports PDF, TXT, MD</p>
+                                    <p className="text-sm font-medium text-ink">Click to upload document</p>
+                                    <p className="text-xs text-ink-muted mt-1">Supports PDF, TXT, MD</p>
                                 </div>
                             )}
 
@@ -269,10 +269,10 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                                     value={samples}
                                     onChange={(e) => setSamples(e.target.value)}
                                     placeholder={importMethod === 'text' ? "Paste your writing samples here..." : "Extracted text will appear here..."}
-                                    className="w-full h-64 p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none font-mono text-sm leading-relaxed"
+                                    className="w-full h-64 bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 resize-none font-mono text-sm leading-relaxed"
                                 />
                                 {samples.length > 0 && (
-                                    <div className="absolute bottom-4 right-4 text-xs font-medium text-gray-400 bg-white/80 px-2 py-1 rounded-md backdrop-blur-sm border border-gray-100">
+                                    <div className="absolute bottom-4 right-4 h-7 px-3 flex items-center text-xs font-medium text-ink-soft bg-surface shadow-raised rounded-full">
                                         {samples.length} chars
                                     </div>
                                 )}
@@ -282,7 +282,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                                 <button
                                     onClick={handleAnalyze}
                                     disabled={samples.length < 100}
-                                    className="px-6 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     Analyze Style <ArrowRight size={16} />
                                 </button>
@@ -293,17 +293,17 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                     {step === 'analyzing' && (
                         <div className="flex flex-col items-center justify-center py-12 space-y-6 text-center">
                             <div className="relative">
-                                <div className="absolute inset-0 bg-purple-200 rounded-full animate-ping opacity-20"></div>
-                                <div className="relative bg-white p-4 rounded-full shadow-lg border border-purple-100">
-                                    <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+                                <div className="absolute inset-0 bg-ember-200 rounded-full animate-ping opacity-30"></div>
+                                <div className="relative bg-canvas p-4 rounded-full shadow-raised">
+                                    <Loader2 className="w-8 h-8 text-ember-500 animate-spin" />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-lg font-medium text-gray-900">Studying your syntax...</h3>
+                                <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Studying your syntax...</h3>
                                 <div className="flex gap-1 justify-center">
-                                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></span>
+                                    <span className="w-2 h-2 bg-ink-muted/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                    <span className="w-2 h-2 bg-ink-muted/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                    <span className="w-2 h-2 bg-ink-muted/50 rounded-full animate-bounce"></span>
                                 </div>
                             </div>
                         </div>
@@ -313,26 +313,26 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                         <div className="space-y-6 animate-fade-in">
                             {/* Tone Card */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Your Tone</label>
-                                    <div className="text-lg font-serif font-medium text-gray-900">{result.voice_tone}</div>
+                                <div className="p-5 bg-surface rounded-tile shadow-card">
+                                    <label className="text-sm text-ink-muted mb-1 block">Your Tone</label>
+                                    <div className="text-2xl font-medium tracking-[-0.02em] text-ink">{result.voice_tone}</div>
                                 </div>
-                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 block">Complexity</label>
-                                    <div className="text-lg font-serif font-medium text-gray-900">Medium-High</div>
+                                <div className="p-5 bg-surface rounded-tile shadow-card">
+                                    <label className="text-sm text-ink-muted mb-1 block">Complexity</label>
+                                    <div className="text-2xl font-medium tracking-[-0.02em] text-ink">Medium-High</div>
                                 </div>
                             </div>
 
                             {/* Rules */}
                             <div>
-                                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                    <CheckCircle size={16} className="text-green-600" />
+                                <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink mb-3 flex items-center gap-2">
+                                    <CheckCircle size={16} className="text-sage-500" />
                                     Do&apos;s (Your Patterns)
                                 </h3>
                                 <div className="space-y-2">
                                     {result.rules?.map((rule: string, i: number) => (
-                                        <div key={i} className="p-3 bg-green-50/50 border border-green-100 text-green-900 text-sm rounded-lg flex gap-3">
-                                            <span className="text-green-400 font-mono text-xs mt-0.5">{i + 1}.</span>
+                                        <div key={i} className="px-4 py-3 bg-surface shadow-card text-ink-soft text-sm rounded-2xl flex gap-3">
+                                            <span className="text-sage-500 font-mono text-xs mt-0.5">{i + 1}.</span>
                                             {rule}
                                         </div>
                                     ))}
@@ -341,14 +341,14 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
 
                             {/* Anti-Patterns */}
                             <div>
-                                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                    <AlertCircle size={16} className="text-red-600" />
+                                <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink mb-3 flex items-center gap-2">
+                                    <AlertCircle size={16} className="text-rose-500" />
                                     Don&apos;ts (Things you avoid)
                                 </h3>
                                 <div className="space-y-2">
                                     {result.anti_patterns?.map((rule: string, i: number) => (
-                                        <div key={i} className="p-3 bg-red-50/50 border border-red-100 text-red-900 text-sm rounded-lg flex gap-3">
-                                            <span className="text-red-400 font-mono text-xs mt-0.5">{i + 1}.</span>
+                                        <div key={i} className="px-4 py-3 bg-surface shadow-card text-ink-soft text-sm rounded-2xl flex gap-3">
+                                            <span className="text-rose-500 font-mono text-xs mt-0.5">{i + 1}.</span>
                                             {rule}
                                         </div>
                                     ))}
@@ -357,7 +357,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
 
                             <button
                                 onClick={handleSave}
-                                className="w-full py-4 bg-black text-white rounded-xl font-bold hover:bg-gray-900 transition-all shadow-lg hover:shadow-xl translate-y-0 hover:-translate-y-0.5"
+                                className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                             >
                                 Save & Use This Style
                             </button>

@@ -48,40 +48,40 @@ export default function BeliefsPage() {
     const filteredList = getFilteredBeliefs();
 
     return (
-        <main className="min-h-screen bg-[var(--background)]">
+        <main className="min-h-screen bg-canvas">
             {/* Header */}
-            <header className="border-b border-[var(--border)] bg-[var(--surface)] sticky top-0 z-10">
-                <div className="container py-4 flex items-center justify-between">
-                    <h1 className="text-xl font-medium tracking-tight">counterdraft</h1>
-                    <nav className="flex items-center gap-6">
-                        <a href="/beliefs" className="text-sm font-medium">Beliefs</a>
-                        <a href="/tensions" className="text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]">Tensions</a>
-                        <a href="/ideas" className="text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]">Ideas</a>
+            <header className="bg-canvas/90 backdrop-blur-sm sticky top-0 z-10">
+                <div className="max-w-[1440px] mx-auto px-4 md:px-10 py-4 flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-medium tracking-[-0.02em] text-ink">counterdraft</h1>
+                    <nav className="flex items-center gap-2 md:gap-3">
+                        <a href="/beliefs" className="h-10 px-4 inline-flex items-center rounded-full bg-canvas shadow-pressed text-sm font-medium text-ember-600">Beliefs</a>
+                        <a href="/tensions" className="h-10 px-4 inline-flex items-center rounded-full bg-canvas shadow-raised text-sm font-medium text-ink-soft hover:text-ink transition-all">Tensions</a>
+                        <a href="/ideas" className="h-10 px-4 inline-flex items-center rounded-full bg-canvas shadow-raised text-sm font-medium text-ink-soft hover:text-ink transition-all">Ideas</a>
                     </nav>
                 </div>
             </header>
 
-            <div className="container py-12">
-                <div className="max-w-4xl mx-auto">
-                    <header className="mb-8 flex items-end justify-between">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12">
+                <div className="flex flex-col gap-8">
+                    <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                         <div>
-                            <h2 className="text-3xl font-serif mb-2">Your Belief Graph</h2>
-                            <p className="text-[var(--text-muted)]">
+                            <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Your Belief Graph</h2>
+                            <p className="mt-1 text-sm text-ink-soft">
                                 Review, edit, and link your beliefs into a Strategy Tree.
                             </p>
                         </div>
 
                         {/* View Toggle */}
-                        <div className="bg-gray-100 p-1 rounded-lg flex items-center text-sm font-medium">
+                        <div className="self-start md:self-auto bg-canvas shadow-well rounded-full p-1 flex items-center text-sm font-medium">
                             <button
                                 onClick={() => setActiveFilter('all')} // Use filter as view toggle for now or add new state? Let's assume activeFilter=tree is managed elsewhere or just use a boolean
-                                className={`px-4 py-1.5 rounded-md transition-all ${activeFilter !== 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                className={`h-9 px-4 rounded-full transition-all ${activeFilter !== 'tree' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                             >
                                 List
                             </button>
                             <button
                                 onClick={() => setActiveFilter('tree')}
-                                className={`px-4 py-1.5 rounded-md transition-all ${activeFilter === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                className={`h-9 px-4 rounded-full transition-all ${activeFilter === 'tree' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                             >
                                 Mind Map
                             </button>
@@ -97,19 +97,19 @@ export default function BeliefsPage() {
                     ) : (
                         <>
                             {/* Controls */}
-                            <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b">
-                                <Filter size={16} className="text-[var(--text-muted)] mr-2" />
+                            <div className="flex flex-wrap items-center gap-3 mb-8">
+                                <Filter size={16} className="text-ink-muted mr-1" />
                                 {(['all', 'core', 'emerging', 'overused', 'confirmed'] as const).map((type) => (
                                     <button
                                         key={type}
                                         onClick={() => setActiveFilter(type)}
-                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors capitalize ${activeFilter === type
-                                            ? 'bg-[var(--foreground)] text-white'
-                                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-gray-50'
+                                        className={`h-10 px-4 rounded-full bg-canvas text-sm font-medium transition-all capitalize ${activeFilter === type
+                                            ? 'shadow-pressed text-ember-600'
+                                            : 'shadow-raised text-ink-soft hover:text-ink'
                                             }`}
                                     >
                                         {type}
-                                        <span className="ml-2 opacity-60 text-xs">
+                                        <span className="ml-2 text-xs text-ink-muted">
                                             {type === 'all'
                                                 ? beliefs.core.length + beliefs.emerging.length + beliefs.overused.length
                                                 : type === 'confirmed' ? beliefs.confirmed.length
@@ -121,23 +121,23 @@ export default function BeliefsPage() {
 
                             {loading ? (
                                 <div className="text-center py-20">
-                                    <Loader2 className="mx-auto animate-spin mb-4 text-[var(--text-muted)]" />
-                                    <p className="text-[var(--text-muted)]">Loading your beliefs...</p>
+                                    <Loader2 className="mx-auto animate-spin mb-4 text-ember-500" />
+                                    <p className="text-ink-muted">Loading your beliefs...</p>
                                 </div>
                             ) : filteredList.length === 0 ? (
-                                <div className="text-center py-20 border border-dashed rounded-lg bg-gray-50/50">
-                                    <Archive className="mx-auto mb-4 text-[var(--text-muted)]" />
-                                    <p className="text-[var(--text-muted)]">No beliefs found in this category.</p>
+                                <div className="text-center py-20 bg-canvas shadow-pressed rounded-card">
+                                    <Archive className="mx-auto mb-4 text-ink-muted" />
+                                    <p className="text-ink-muted">No beliefs found in this category.</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="flex flex-col gap-4">
                                     {filteredList.map((belief) => (
                                         <div
                                             key={belief.id}
-                                            className={`card group transition-all ${activeFilter === 'all' // visual hints for type when in 'all' view
-                                                ? belief.beliefType === 'core' ? 'border-l-4 border-l-blue-500'
-                                                    : belief.beliefType === 'overused' ? 'border-l-4 border-l-orange-500'
-                                                        : belief.beliefType === 'emerging' ? 'border-l-4 border-l-purple-500'
+                                            className={`group bg-surface rounded-tile shadow-card p-5 hover:shadow-float hover:-translate-y-0.5 transition-all ${activeFilter === 'all' // visual hints for type when in 'all' view
+                                                ? belief.beliefType === 'core' ? 'border-l-4 border-l-[var(--belief-core)]'
+                                                    : belief.beliefType === 'overused' ? 'border-l-4 border-l-[var(--belief-overused)]'
+                                                        : belief.beliefType === 'emerging' ? 'border-l-4 border-l-[var(--belief-emerging)]'
                                                             : ''
                                                 : ''
                                                 }`}
@@ -149,21 +149,21 @@ export default function BeliefsPage() {
                                                             <textarea
                                                                 value={editValue}
                                                                 onChange={(e) => setEditValue(e.target.value)}
-                                                                className="w-full p-2 border rounded text-lg font-serif resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                                className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-lg text-ink placeholder:text-ink-muted border-0 resize-none focus:outline-none focus:ring-2 focus:ring-ember-200"
                                                                 rows={2}
                                                                 autoFocus
                                                             />
                                                             <div className="flex flex-col gap-2">
                                                                 <button
                                                                     onClick={handleEditSave}
-                                                                    className="p-2 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-sage-100 text-sage-700 hover:shadow-raised active:shadow-pressed transition-all"
                                                                     title="Save"
                                                                 >
                                                                     <Check size={16} />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setEditingId(null)}
-                                                                    className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                                                                    className="w-10 h-10 flex items-center justify-center rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                                                                     title="Cancel"
                                                                 >
                                                                     <X size={16} />
@@ -172,15 +172,15 @@ export default function BeliefsPage() {
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <p className={`text-xl font-serif text-[var(--foreground)] mb-2 ${belief.userConfirmed ? 'text-green-900' : ''}`}>
+                                                            <p className={`text-[17px] md:text-xl font-medium tracking-[-0.01em] mb-3 ${belief.userConfirmed ? 'text-sage-700' : 'text-ink'}`}>
                                                                 {belief.statement}
                                                             </p>
-                                                            <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
-                                                                <span className="capitalize px-2 py-0.5 bg-gray-100 rounded-full">
+                                                            <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted">
+                                                                <span className="capitalize inline-flex items-center h-7 px-3 rounded-full bg-canvas shadow-well text-ink-soft font-medium">
                                                                     {belief.beliefType}
                                                                 </span>
                                                                 {belief.userConfirmed && (
-                                                                    <span className="flex items-center gap-1 text-green-700">
+                                                                    <span className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-sage-100 text-sage-700 font-medium">
                                                                         <Check size={12} /> Confirmed
                                                                     </span>
                                                                 )}
@@ -196,14 +196,14 @@ export default function BeliefsPage() {
                                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
                                                             onClick={() => handleEditStart(belief.id, belief.statement)}
-                                                            className="p-2 text-[var(--text-muted)] hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                            className="w-10 h-10 flex items-center justify-center rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                                                             title="Edit"
                                                         >
                                                             <Edit2 size={16} />
                                                         </button>
                                                         <button
                                                             onClick={() => submitFeedback(belief.id, 'accurate')}
-                                                            className="px-3 py-1.5 bg-[var(--foreground)] text-white text-xs font-medium rounded hover:opacity-90 transition-opacity"
+                                                            className="h-9 px-4 rounded-full bg-ink text-white text-xs font-medium hover:bg-ink/90 transition-colors"
                                                         >
                                                             Confirm
                                                         </button>
@@ -213,7 +213,7 @@ export default function BeliefsPage() {
                                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
                                                             onClick={() => handleEditStart(belief.id, belief.statement)}
-                                                            className="p-2 text-[var(--text-muted)] hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                            className="w-10 h-10 flex items-center justify-center rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                                                             title="Edit"
                                                         >
                                                             <Edit2 size={16} />

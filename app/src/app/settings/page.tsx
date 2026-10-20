@@ -102,7 +102,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+        <div className="flex h-screen bg-canvas overflow-hidden">
             <GlobalSidebar
                 activeSection="settings"
                 onNavigate={(section) => {
@@ -124,16 +124,16 @@ export default function SettingsPage() {
                 }}
             />
 
-            <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-paper">
-                <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-24 md:pb-12">
-                    <div className="max-w-3xl mx-auto">
+            <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-canvas">
+                <div className="flex-1 overflow-y-auto bg-canvas">
+                    <div className="max-w-3xl mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12">
                         {/* Page Header */}
-                        <div className="mb-8">
-                            <h1 className="text-2xl font-semibold mb-2 flex items-center gap-3">
-                                <Settings size={24} />
+                        <div className="mb-6">
+                            <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink flex items-center gap-4">
+                                <Settings size={40} className="text-ember-500 shrink-0" />
                                 Settings
                             </h1>
-                            <p className="text-[var(--text-muted)]">
+                            <p className="mt-1 text-sm text-ink-soft">
                                 Manage your account and connected platforms.
                             </p>
                         </div>
@@ -145,21 +145,21 @@ export default function SettingsPage() {
                         <UsageSection />
 
                         {/* Integrations Section */}
-                        <section className="mb-12">
-                            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
-                                <Link2 size={18} />
+                        <section className="mb-8">
+                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+                                <Link2 size={20} className="text-ember-500" />
                                 Integrations
                             </h2>
-                            <p className="text-sm text-[var(--text-muted)] mb-6">
+                            <p className="text-sm text-ink-soft mb-6">
                                 Connect platforms to import content and publish your drafts.
                             </p>
 
                             {loading ? (
                                 <div className="flex items-center justify-center py-12">
-                                    <Loader2 className="animate-spin text-[var(--text-muted)]" size={24} />
+                                    <Loader2 className="animate-spin text-ink-muted" size={24} />
                                 </div>
                             ) : error ? (
-                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                <div className="p-4 bg-rose-100 rounded-tile text-rose-700">
                                     {error}
                                 </div>
                             ) : (
@@ -203,13 +203,13 @@ function ProfileSection() {
 
     if (!isLoaded) {
         return (
-            <div className="mb-12 p-6 border rounded-lg animate-pulse">
-                <div className="h-6 bg-gray-200 w-1/4 mb-4 rounded"></div>
+            <div className="mb-12 p-6 md:p-8 bg-surface rounded-card shadow-card animate-pulse">
+                <div className="h-6 bg-surface-muted w-1/4 mb-4 rounded"></div>
                 <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                    <div className="w-16 h-16 bg-surface-muted rounded-full"></div>
                     <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 w-32 rounded"></div>
-                        <div className="h-4 bg-gray-200 w-48 rounded"></div>
+                        <div className="h-4 bg-surface-muted w-32 rounded"></div>
+                        <div className="h-4 bg-surface-muted w-48 rounded"></div>
                     </div>
                 </div>
             </div>
@@ -219,26 +219,26 @@ function ProfileSection() {
     if (!user) return null;
 
     return (
-        <section className="mb-12">
-            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
-                <UserIcon size={18} />
+        <section className="mb-8">
+            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+                <UserIcon size={20} className="text-ember-500" />
                 Profile
             </h2>
-            <p className="text-sm text-[var(--text-muted)] mb-6">
+            <p className="text-sm text-ink-soft mb-6">
                 Your personal account details used in the workspace.
             </p>
 
-            <div className="p-6 border border-[var(--border)] rounded-lg bg-[var(--surface)]">
+            <div className="bg-surface rounded-card shadow-card p-6 md:p-8">
                 <div className="flex items-center gap-6">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={user.imageUrl}
                         alt={user.fullName || "User"}
-                        className="w-16 h-16 rounded-full border border-[var(--border)]"
+                        className="w-16 h-16 rounded-full shadow-raised"
                     />
                     <div>
-                        <h3 className="font-semibold text-lg">{user.fullName}</h3>
-                        <p className="text-[var(--text-muted)]">{user.primaryEmailAddress?.emailAddress}</p>
+                        <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">{user.fullName}</h3>
+                        <p className="text-ink-muted">{user.primaryEmailAddress?.emailAddress}</p>
                     </div>
                 </div>
             </div>
@@ -279,37 +279,37 @@ function IntegrationCard({
     lastSyncResult,
 }: IntegrationCardProps) {
     return (
-        <div className={`p-5 border rounded-lg transition-colors ${connected
-            ? 'border-green-200 bg-green-50/30'
+        <div className={`bg-surface rounded-tile shadow-card p-5 transition-all ${connected
+            ? 'ring-1 ring-sage-500/30'
             : available
-                ? 'border-[var(--border)] hover:border-[var(--border-hover)]'
-                : 'border-[var(--border)] opacity-60'
+                ? 'hover:shadow-float hover:-translate-y-0.5'
+                : 'opacity-60'
             }`}>
             <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                    <div className="text-2xl">{icon}</div>
+                    <div className="w-11 h-11 rounded-full bg-canvas shadow-well flex items-center justify-center text-xl shrink-0">{icon}</div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className="font-medium">{name}</h3>
+                            <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink">{name}</h3>
                             {connected && (
-                                <span className="flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                                <span className="flex items-center gap-1 text-xs font-medium text-sage-700 bg-sage-100 px-2.5 py-0.5 rounded-full">
                                     <Check size={12} />
                                     Connected
                                 </span>
                             )}
                             {!available && (
-                                <span className="text-xs text-[var(--text-muted)] bg-gray-100 px-2 py-0.5 rounded-full">
+                                <span className="h-6 flex items-center text-xs font-medium text-ink-soft bg-canvas shadow-well px-2.5 rounded-full">
                                     Coming Soon
                                 </span>
                             )}
                         </div>
-                        <p className="text-sm text-[var(--text-muted)] mt-1">{description}</p>
+                        <p className="text-sm text-ink-muted mt-1">{description}</p>
 
                         {connected && profileName && (
-                            <div className="mt-3 text-sm text-[var(--text-secondary)]">
-                                Connected as <strong>{profileName}</strong>
+                            <div className="mt-3 text-sm text-ink-soft">
+                                Connected as <strong className="font-medium text-ink">{profileName}</strong>
                                 {connectedAt && (
-                                    <span className="text-[var(--text-muted)]">
+                                    <span className="text-ink-muted">
                                         {' · '}
                                         {new Date(connectedAt).toLocaleDateString()}
                                     </span>
@@ -326,7 +326,7 @@ function IntegrationCard({
                                 <button
                                     onClick={onSync}
                                     disabled={syncing}
-                                    className="flex items-center gap-1.5 text-sm font-medium text-[var(--foreground)] bg-[var(--surface)] border border-[var(--border)] px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                                 >
                                     <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
                                     {syncing ? 'Syncing...' : 'Sync Posts'}
@@ -334,7 +334,7 @@ function IntegrationCard({
                             )}
                             <button
                                 onClick={onDisconnect}
-                                className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+                                className="flex items-center gap-1.5 h-10 px-4 rounded-full text-sm font-medium text-rose-500 hover:text-rose-700 hover:bg-rose-100 active:shadow-pressed transition-all"
                             >
                                 <X size={14} />
                                 Disconnect
@@ -343,7 +343,7 @@ function IntegrationCard({
                     ) : available ? (
                         <button
                             onClick={onConnect}
-                            className="flex items-center gap-1.5 text-sm font-medium text-[var(--foreground)] bg-[var(--surface)] border border-[var(--border)] px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                         >
                             <ExternalLink size={14} />
                             Connect
@@ -351,7 +351,7 @@ function IntegrationCard({
                     ) : (
                         <button
                             disabled
-                            className="text-sm text-[var(--text-muted)] px-4 py-2 rounded-md cursor-not-allowed"
+                            className="h-10 px-4 rounded-full text-sm font-medium text-ink-muted cursor-not-allowed"
                         >
                             Coming Soon
                         </button>
@@ -360,8 +360,8 @@ function IntegrationCard({
 
                 {/* Sync Result */}
                 {lastSyncResult && platform === 'linkedin' && (
-                    <div className="mt-3 pt-3 border-t border-[var(--border)] text-sm text-[var(--text-secondary)]">
-                        <span className="text-green-600 font-medium">{lastSyncResult.synced} posts synced</span>
+                    <div className="mt-3 pt-3 border-t border-line text-sm text-ink-soft">
+                        <span className="text-sage-700 font-medium">{lastSyncResult.synced} posts synced</span>
                         {' · '}
                         <span>{lastSyncResult.eligible} eligible for beliefs</span>
                     </div>
@@ -396,47 +396,47 @@ function UsageSection() {
     const isUnlimited = usage.limit === Infinity || usage.limit === null;
 
     return (
-        <section className="mb-12">
-            <h2 className="text-lg font-medium mb-1 flex items-center gap-2">
-                <Settings size={18} /> {/* Reusing icon for visual consistency */}
+        <section className="mb-8">
+            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+                <Settings size={20} className="text-ember-500" /> {/* Reusing icon for visual consistency */}
                 Plan & Usage
             </h2>
-            <p className="text-sm text-[var(--text-muted)] mb-6">
+            <p className="text-sm text-ink-soft mb-6">
                 Your monthly content generation limits.
             </p>
 
-            <div className="p-6 border border-[var(--border)] rounded-lg bg-[var(--surface)]">
+            <div className="bg-surface rounded-card shadow-card p-6 md:p-8">
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg capitalize">{usage.tier} Plan</h3>
+                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink capitalize">{usage.tier} Plan</h3>
                             {usage.tier === 'free' && (
                                 <div className="flex gap-2 items-center">
                                     <RazorpayButton
                                         planId="pro_monthly"
                                         buttonText="Upgrade to Pro (₹29)"
-                                        className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-full font-medium hover:bg-blue-700 transition"
+                                        className="text-xs h-8 px-3 rounded-full bg-ember-500 text-white font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                         onSuccess={() => window.location.reload()}
                                     />
                                 </div>
                             )}
                         </div>
-                        <p className="text-sm text-[var(--text-muted)]">
+                        <p className="text-sm text-ink-muted">
                             {isUnlimited ? 'Unlimited drafts' : `${usage.limit} drafts per month`}
                         </p>
                     </div>
                     <div className="text-right">
-                        <div className="text-2xl font-bold">
-                            {usage.usage} <span className="text-sm text-[var(--text-muted)] font-normal">/ {isUnlimited ? '∞' : usage.limit}</span>
+                        <div className="text-4xl font-medium tracking-[-0.03em] text-ink">
+                            {usage.usage} <span className="text-sm text-ink-muted font-normal">/ {isUnlimited ? '∞' : usage.limit}</span>
                         </div>
-                        <div className="text-xs text-[var(--text-muted)]">Drafts used</div>
+                        <div className="text-xs text-ink-muted">Drafts used</div>
                     </div>
                 </div>
 
                 {!isUnlimited && (
-                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                    <div className="w-full bg-canvas shadow-well rounded-full h-2.5 overflow-hidden">
                         <div
-                            className={`h-2.5 rounded-full ${percent >= 90 ? 'bg-red-500' : 'bg-green-500'}`}
+                            className={`h-2.5 rounded-full ${percent >= 90 ? 'bg-rose-500' : 'bg-ember-500'}`}
                             style={{ width: `${percent}%` }}
                         ></div>
                     </div>

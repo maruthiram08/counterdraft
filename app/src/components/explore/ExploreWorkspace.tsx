@@ -408,12 +408,12 @@ export function ExploreWorkspace() {
         return (
             <div className="mt-6">
                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-900">Post angles</h4>
+                    <h4 className="text-sm font-medium text-ink">Post angles</h4>
                     {ideas && (
                         <button
                             onClick={() => generateIdeas(key, sources)}
                             disabled={generatingKey !== null}
-                            className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 disabled:opacity-50"
+                            className="text-xs text-ink-muted hover:text-ink flex items-center gap-1 disabled:opacity-50"
                         >
                             <RotateCcw size={12} /> Regenerate
                         </button>
@@ -424,7 +424,7 @@ export function ExploreWorkspace() {
                     <button
                         onClick={() => generateIdeas(key, sources)}
                         disabled={generatingKey !== null}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                        className="btn btn-primary w-full disabled:opacity-50"
                     >
                         {generating ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} />}
                         {generating ? 'Finding angles...' : `Get ${PLATFORMS.find(p => p.value === platform)?.label} post ideas`}
@@ -434,29 +434,29 @@ export function ExploreWorkspace() {
                 {ideas && (
                     <div className={`space-y-3 ${generating ? 'opacity-50' : ''}`}>
                         {ideas.map((idea, i) => (
-                            <div key={i} className="p-4 bg-white border border-gray-100 rounded-lg">
+                            <div key={i} className="p-4 bg-surface rounded-tile shadow-card">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-[var(--accent)] font-medium uppercase tracking-wider">
+                                    <span className="text-xs h-6 px-2.5 inline-flex items-center rounded-full bg-ember-50 text-ember-700 font-medium">
                                         {idea.format}
                                     </span>
                                     {savedIdeas.has(idea.hook) ? (
-                                        <span className="text-xs text-green-600 flex items-center gap-1">
+                                        <span className="text-xs text-sage-700 flex items-center gap-1">
                                             <Check size={12} /> Saved
                                         </span>
                                     ) : (
                                         <button
                                             onClick={() => saveIdeaToPipeline(idea, sources)}
                                             disabled={savingIdea === idea.hook}
-                                            className="text-xs px-2 py-1 bg-[var(--accent)] text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+                                            className="text-xs h-7 px-3 rounded-full bg-ember-500 text-white font-medium hover:bg-ember-600 transition-colors disabled:opacity-50"
                                         >
                                             {savingIdea === idea.hook ? <Loader2 size={12} className="animate-spin" /> : 'Save to Pipeline'}
                                         </button>
                                     )}
                                 </div>
-                                <p className="text-gray-900 font-medium mb-1">&ldquo;{idea.hook}&rdquo;</p>
-                                <p className="text-sm text-gray-600">{idea.angle}</p>
+                                <p className="text-ink font-medium mb-1">&ldquo;{idea.hook}&rdquo;</p>
+                                <p className="text-sm text-ink-soft">{idea.angle}</p>
                                 {idea.belief && (
-                                    <p className="text-xs text-gray-500 mt-2">Builds on your belief: &ldquo;{idea.belief}&rdquo;</p>
+                                    <p className="text-xs text-ink-muted mt-2">Builds on your belief: &ldquo;{idea.belief}&rdquo;</p>
                                 )}
                             </div>
                         ))}
@@ -470,14 +470,14 @@ export function ExploreWorkspace() {
         if (showingCombined) {
             return (
                 <div>
-                    <span className="text-xs font-medium text-gray-400 flex items-center gap-1 mb-2">
+                    <span className="text-xs font-medium text-ink-muted flex items-center gap-1 mb-2">
                         <Layers size={12} /> Combining {selectedStories.length} stories
                     </span>
                     <ul className="space-y-2">
                         {selectedStories.map(s => (
-                            <li key={s.sourceUrl} className="text-sm text-gray-900">
+                            <li key={s.sourceUrl} className="text-sm text-ink">
                                 {s.title}
-                                <span className="block text-xs text-gray-400">{storyMeta(s)}</span>
+                                <span className="block text-xs text-ink-muted">{storyMeta(s)}</span>
                             </li>
                         ))}
                     </ul>
@@ -488,7 +488,7 @@ export function ExploreWorkspace() {
 
         if (!focusedStory) {
             return (
-                <div className="h-full flex flex-col items-center justify-center text-center text-sm text-gray-400 px-6">
+                <div className="h-full flex flex-col items-center justify-center text-center text-sm text-ink-muted px-6">
                     <Lightbulb size={24} className="mb-2" />
                     Pick a story to see what it&apos;s about and get post angles.
                 </div>
@@ -497,16 +497,16 @@ export function ExploreWorkspace() {
 
         return (
             <div>
-                <h3 className="text-lg font-medium text-gray-900 leading-snug">{focusedStory.title}</h3>
-                <p className="text-xs text-gray-400 mt-1">{storyMeta(focusedStory)}</p>
+                <h3 className="text-xl font-medium tracking-[-0.01em] text-ink leading-snug">{focusedStory.title}</h3>
+                <p className="text-xs text-ink-muted mt-1">{storyMeta(focusedStory)}</p>
                 {focusedStory.otherSources && focusedStory.otherSources.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-1">Also covered by {focusedStory.otherSources.join(', ')}</p>
+                    <p className="text-xs text-ink-muted mt-1">Also covered by {focusedStory.otherSources.join(', ')}</p>
                 )}
                 {focusedStory.summary && (
-                    <p className="text-sm text-gray-700 mt-3">{focusedStory.summary}</p>
+                    <p className="text-sm text-ink-soft leading-relaxed mt-3">{focusedStory.summary}</p>
                 )}
                 {focusedStory.relatedBelief && (
-                    <p className="text-sm text-[var(--accent)] mt-3">
+                    <p className="text-sm text-ember-700 mt-3">
                         {beliefLabel(focusedStory)}: &ldquo;{focusedStory.relatedBelief}&rdquo;
                     </p>
                 )}
@@ -514,7 +514,7 @@ export function ExploreWorkspace() {
                     href={focusedStory.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-4 text-xs text-gray-600 hover:text-gray-900"
+                    className="inline-flex items-center gap-1.5 mt-4 h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink-soft hover:text-ink active:shadow-pressed transition-shadow"
                 >
                     <ExternalLink size={12} /> Read the full story
                 </a>
@@ -526,37 +526,37 @@ export function ExploreWorkspace() {
     return (
         <div className="flex flex-col h-full relative">
             {/* Search and settings */}
-            <div className="border-b bg-white px-4 md:px-6 py-3 shrink-0">
+            <div className="px-4 md:px-6 pt-4 md:pt-6 pb-3 shrink-0">
                 <form onSubmit={handleSubmit} className="max-w-5xl mx-auto relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Search a topic to explore..."
                         disabled={loading}
-                        className="w-full pl-9 pr-12 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 focus:border-[var(--accent)] transition-all"
+                        className="w-full h-12 pl-11 pr-14 bg-canvas shadow-well rounded-full text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
                     />
                     <button
                         type="submit"
                         aria-label="Search"
                         disabled={!input.trim() || loading}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-lg disabled:opacity-30 transition-all"
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-ember-500 text-white shadow-ember hover:bg-ember-600 disabled:opacity-30 disabled:shadow-none transition-all"
                     >
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <ChevronRight size={16} />}
                     </button>
                 </form>
                 <div className="max-w-5xl mx-auto mt-2 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                    <div className="flex bg-canvas shadow-pressed p-1 rounded-full">
                         <button
                             onClick={() => setLens('default')}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${lens === 'default' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'default' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                         >
                             Professional
                         </button>
                         <button
                             onClick={() => setLens('beginner')}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${lens === 'beginner' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'beginner' ? 'bg-ember-500 text-white shadow-ember' : 'text-ink-muted hover:text-ink'}`}
                         >
                             Beginner&apos;s Lens
                         </button>
@@ -566,7 +566,7 @@ export function ExploreWorkspace() {
                             value={platform}
                             onChange={(e) => setPlatform(e.target.value)}
                             aria-label="Platform for post ideas"
-                            className="text-[11px] text-gray-600 bg-gray-100 rounded-lg px-2 py-1 focus:outline-none"
+                            className="h-8 text-xs text-ink-soft bg-canvas shadow-raised rounded-full px-3 border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                         >
                             {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                         </select>
@@ -574,14 +574,14 @@ export function ExploreWorkspace() {
                             value={tone}
                             onChange={(e) => setTone(e.target.value)}
                             aria-label="Tone for post ideas"
-                            className="text-[11px] text-gray-600 bg-gray-100 rounded-lg px-2 py-1 focus:outline-none"
+                            className="h-8 text-xs text-ink-soft bg-canvas shadow-raised rounded-full px-3 border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                         >
                             {TONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
                         {trail.length > 0 && (
                             <button
                                 onClick={startOver}
-                                className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1"
+                                className="flex items-center gap-1 h-8 text-xs text-ink-muted hover:text-ink px-2"
                             >
                                 <RotateCcw size={12} /> New
                             </button>
@@ -593,9 +593,9 @@ export function ExploreWorkspace() {
             {trail.length === 0 ? (
                 /* Starting point */
                 <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center text-center p-6">
-                    <Sparkles size={36} className="text-[var(--accent)] mb-4 opacity-50" />
-                    <h2 className="text-xl md:text-2xl font-serif text-gray-900 mb-2">What would you like to explore?</h2>
-                    <p className="text-sm md:text-base text-gray-500 mb-6 max-w-md">
+                    <div className="w-14 h-14 mb-5 rounded-full bg-canvas shadow-raised flex items-center justify-center"><Sparkles size={24} className="text-ember-500" /></div>
+                    <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink mb-2">What would you like to explore?</h2>
+                    <p className="text-sm md:text-base text-ink-soft mb-6 max-w-md">
                         Search a topic or pick a trend. Each search suggests where to go next, so you can follow a thread to something worth writing.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
@@ -603,9 +603,9 @@ export function ExploreWorkspace() {
                             <button
                                 key={cat.label}
                                 onClick={() => setSelectedCategory(prev => prev === cat.label ? null : cat.label)}
-                                className={`px-4 py-2 border rounded-full text-sm transition-all flex items-center gap-2 ${selectedCategory === cat.label
-                                    ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md'
-                                    : 'bg-white border-gray-200 text-gray-700 hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                                className={`h-10 px-4 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${selectedCategory === cat.label
+                                    ? 'bg-ember-500 text-white shadow-ember'
+                                    : 'bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed'
                                     }`}
                             >
                                 {cat.label}
@@ -614,15 +614,15 @@ export function ExploreWorkspace() {
                         ))}
                     </div>
                     {selectedCategory && (
-                        <div className="flex flex-wrap justify-center gap-2 max-w-lg mt-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
-                            <span className="w-full text-center text-xs font-medium text-gray-400 mb-1 uppercase tracking-wider">
+                        <div className="flex flex-wrap justify-center gap-2 max-w-lg mt-5 p-4 bg-canvas shadow-pressed rounded-tile">
+                            <span className="w-full text-center text-xs font-medium text-ink-muted mb-1">
                                 {fetchingTrends ? "Updating trends..." : `Trending in ${selectedCategory}`}
                             </span>
                             {trendCategories.find(c => c.label === selectedCategory)?.trends.map(trend => (
                                 <button
                                     key={trend.label}
                                     onClick={() => runSearch(trend.query)}
-                                    className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-medium hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
+                                    className="h-8 px-3 bg-surface shadow-raised text-ink-soft rounded-full text-xs font-medium hover:text-ember-600 active:shadow-pressed transition-all"
                                 >
                                     {trend.label}
                                 </button>
@@ -630,7 +630,7 @@ export function ExploreWorkspace() {
                         </div>
                     )}
                     {loading && (
-                        <div className="mt-6 flex items-center gap-2 text-gray-400 text-sm">
+                        <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">
                             <Loader2 size={16} className="animate-spin" /> Searching...
                         </div>
                     )}
@@ -638,33 +638,33 @@ export function ExploreWorkspace() {
             ) : (
                 <>
                     {/* Exploration path */}
-                    <nav aria-label="Exploration path" className="px-4 md:px-6 py-2 border-b bg-gray-50/60 shrink-0 overflow-x-auto">
+                    <nav aria-label="Exploration path" className="px-4 md:px-6 pb-3 shrink-0 overflow-x-auto">
                         <ol className="max-w-5xl mx-auto flex items-center gap-1 text-xs whitespace-nowrap">
                             {trail.map((s, i) => (
                                 <li key={`${s.query}-${i}`} className="flex items-center gap-1">
-                                    {i > 0 && <ChevronRight size={12} className="text-gray-300" />}
+                                    {i > 0 && <ChevronRight size={12} className="text-ink-muted/60" />}
                                     <button
                                         onClick={() => goToStep(i)}
                                         aria-current={i === activeStep ? 'step' : undefined}
-                                        className={`px-2 py-1 rounded-md ${i === activeStep ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-800'}`}
+                                        className={`h-7 px-3 rounded-full ${i === activeStep ? 'bg-canvas shadow-pressed text-ink font-medium' : 'text-ink-muted hover:text-ink'}`}
                                     >
                                         {s.query}
                                     </button>
                                 </li>
                             ))}
-                            {loading && <li className="flex items-center gap-1 text-gray-400"><ChevronRight size={12} /><Loader2 size={12} className="animate-spin" /></li>}
+                            {loading && <li className="flex items-center gap-1 text-ink-muted"><ChevronRight size={12} /><Loader2 size={12} className="animate-spin" /></li>}
                         </ol>
                     </nav>
 
-                    <div className="flex-1 min-h-0 max-w-5xl w-full mx-auto flex">
+                    <div className="flex-1 min-h-0 max-w-5xl md:max-w-[67rem] w-full mx-auto flex md:gap-4 md:px-6 md:pb-6">
                         {/* Stories for the current step */}
                         <section
                             aria-label="Stories"
-                            className={`w-full md:w-[45%] md:border-r overflow-y-auto p-4 md:p-5 pb-28 md:pb-5 ${showDetailOnMobile ? 'hidden md:block' : ''}`}
+                            className={`w-full md:w-[45%] overflow-y-auto p-4 md:p-4 pb-28 md:pb-4 md:bg-canvas md:shadow-pressed md:rounded-card ${showDetailOnMobile ? 'hidden md:block' : ''}`}
                         >
                             {step?.related && step.related.length > 0 && (
                                 <div className="mb-4">
-                                    <span className="text-xs font-medium text-gray-400 flex items-center gap-1 mb-2">
+                                    <span className="text-xs font-medium text-ink-muted flex items-center gap-1 mb-2">
                                         <Compass size={12} /> Explore next
                                     </span>
                                     <div className="flex flex-wrap gap-2">
@@ -673,7 +673,7 @@ export function ExploreWorkspace() {
                                                 key={r.label}
                                                 onClick={() => runSearch(r.query)}
                                                 disabled={loading}
-                                                className="px-3 py-1.5 text-xs bg-white border border-gray-200 text-gray-700 rounded-full hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors disabled:opacity-50"
+                                                className="h-8 px-3 text-xs font-medium bg-canvas shadow-raised text-ink-soft rounded-full hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                                             >
                                                 {r.label}
                                             </button>
@@ -682,7 +682,7 @@ export function ExploreWorkspace() {
                                 </div>
                             )}
 
-                            {step?.message && <p className="text-sm text-gray-500">{step.message}</p>}
+                            {step?.message && <p className="text-sm text-ink-muted">{step.message}</p>}
 
                             <ul className="space-y-2">
                                 {stories.map(story => {
@@ -691,29 +691,29 @@ export function ExploreWorkspace() {
                                     return (
                                         <li key={story.sourceUrl}>
                                             <div
-                                                className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${focused
-                                                    ? 'bg-white border-[var(--accent)] shadow-sm'
-                                                    : 'bg-white border-gray-100 hover:border-gray-300'
+                                                className={`flex items-start gap-3 p-3.5 rounded-tile bg-surface transition-all ${focused
+                                                    ? 'shadow-card ring-2 ring-ember-200'
+                                                    : 'shadow-card hover:shadow-float'
                                                     }`}
                                             >
                                                 <button
                                                     onClick={() => toggleSelected(story)}
                                                     aria-label={selected ? 'Remove from combination' : 'Add to combination'}
-                                                    className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${selected
-                                                        ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
-                                                        : 'border-gray-300 hover:border-[var(--accent)]'
+                                                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${selected
+                                                        ? 'bg-ember-500 text-white shadow-ember'
+                                                        : 'bg-canvas shadow-well hover:ring-2 hover:ring-ember-200'
                                                         }`}
                                                 >
                                                     {selected && <Check size={10} />}
                                                 </button>
                                                 <button onClick={() => openStory(story)} className="flex-1 text-left">
                                                     {story.type === 'question' && (
-                                                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Question · </span>
+                                                        <span className="text-xs font-medium text-sand-700">Question · </span>
                                                     )}
-                                                    <span className="text-sm font-medium text-gray-900">{story.title}</span>
-                                                    <span className="block text-xs text-gray-400 mt-0.5">{storyMeta(story)}</span>
+                                                    <span className="text-sm font-medium text-ink">{story.title}</span>
+                                                    <span className="block text-xs text-ink-muted mt-0.5">{storyMeta(story)}</span>
                                                     {story.relatedBelief && (
-                                                        <span className="block text-xs text-[var(--accent)] mt-1 line-clamp-1">
+                                                        <span className="block text-xs text-ember-700 mt-1 line-clamp-1">
                                                             {beliefLabel(story)}
                                                         </span>
                                                     )}
@@ -728,11 +728,11 @@ export function ExploreWorkspace() {
                         {/* The story being looked at, with its angles */}
                         <section
                             aria-label="Story details"
-                            className={`flex-1 overflow-y-auto p-4 md:p-6 pb-28 md:pb-6 ${showDetailOnMobile ? 'block' : 'hidden md:block'}`}
+                            className={`flex-1 overflow-y-auto p-4 md:p-6 pb-28 md:pb-6 md:bg-surface md:shadow-card md:rounded-card ${showDetailOnMobile ? 'block' : 'hidden md:block'}`}
                         >
                             <button
                                 onClick={() => setShowDetailOnMobile(false)}
-                                className="md:hidden flex items-center gap-1 text-xs text-gray-500 mb-3"
+                                className="md:hidden flex items-center gap-1 text-xs text-ink-muted mb-3"
                             >
                                 <ChevronLeft size={14} /> All stories
                             </button>
@@ -744,16 +744,16 @@ export function ExploreWorkspace() {
 
             {/* Combine several stories into one set of angles */}
             {selectedStories.length >= 2 && !showingCombined && (
-                <div className="absolute bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
+                <div className="absolute bottom-28 md:bottom-10 left-1/2 -translate-x-1/2 bg-ink text-white pl-5 pr-2 h-12 rounded-full shadow-float flex items-center gap-3">
                     <span className="text-sm">{selectedStories.length} stories selected</span>
                     <button
                         onClick={combineSelected}
                         disabled={generatingKey !== null}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 h-9 px-4 bg-ember-500 text-white rounded-full text-sm font-medium hover:bg-ember-600 transition-colors disabled:opacity-50"
                     >
                         <Layers size={14} /> Combine into ideas
                     </button>
-                    <button onClick={() => setSelectedKeys([])} aria-label="Clear selection" className="p-1 hover:bg-white/20 rounded">
+                    <button onClick={() => setSelectedKeys([])} aria-label="Clear selection" className="w-8 h-8 flex items-center justify-center hover:bg-white/15 rounded-full">
                         <X size={16} />
                     </button>
                 </div>

@@ -103,7 +103,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                         alert("Verification error.");
                     }
                 },
-                theme: { color: "#16a34a" }
+                theme: { color: "#d4592a" }
             };
 
             const RazorpayCtor = (window as RazorpayWindow).Razorpay;
@@ -153,7 +153,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
     };
 
     return (
-        <div className="min-h-screen bg-[#fcfcfc] font-sans text-zinc-900 selection:bg-green-100 selection:text-green-900 flex flex-col">
+        <div className="min-h-screen bg-canvas font-sans text-ink selection:bg-ember-100 selection:text-ember-700 flex flex-col">
             <Navbar isScrolled={scrolled} />
 
             {/* Main Content with Massive Top Padding - Inline style to force fix */}
@@ -161,34 +161,34 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
 
                 {/* HERO SECTION */}
                 <div className="text-center max-w-3xl mx-auto mb-20">
-                    <span className="inline-block py-1.5 px-4 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 font-bold text-[10px] uppercase tracking-widest mb-8">
+                    <span className="inline-flex items-center h-8 px-4 rounded-full bg-canvas shadow-well text-ink-soft font-medium text-xs mb-8">
                         Used by founders, operators, and independent thinkers
                     </span>
 
-                    <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight text-zinc-900 leading-tight">
+                    <h1 className="text-5xl md:text-6xl font-medium mb-6 tracking-[-0.03em] text-ink leading-[1.05]">
                         Authority isn’t written.<br />
-                        It’s <span className="text-green-600">engineered</span>.
+                        It’s <span className="text-ember-500">engineered</span>.
                     </h1>
 
-                    <p className="text-xl text-zinc-500 max-w-2xl mx-auto mb-8 leading-relaxed font-medium">
+                    <p className="text-xl text-ink-soft max-w-2xl mx-auto mb-8 leading-relaxed">
                         Counterdraft is a strategic writing OS that helps you form stronger positions, expose weak arguments, and publish ideas that hold up under pressure.
                     </p>
-                    <p className="text-lg text-zinc-400 font-medium">Stop posting. Start persuading.</p>
+                    <p className="text-lg text-ink-muted font-medium">Stop posting. Start persuading.</p>
                 </div>
 
 
 
                 {/* PRICING TOGGLE */}
                 <div className="flex items-center justify-center gap-4 mb-16">
-                    <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-zinc-900' : 'text-zinc-400'}`}>Monthly</span>
+                    <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-ink' : 'text-ink-muted'}`}>Monthly</span>
                     <button
                         onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                        className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${billingCycle === 'yearly' ? 'bg-zinc-900' : 'bg-zinc-200'}`}
+                        className={`w-14 h-8 rounded-full p-1 shadow-well transition-colors duration-300 ${billingCycle === 'yearly' ? 'bg-ink' : 'bg-canvas'}`}
                     >
-                        <div className={`w-6 h-6 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${billingCycle === 'yearly' ? 'translate-x-6' : ''}`}></div>
+                        <div className={`w-6 h-6 rounded-full bg-surface shadow-raised transform transition-transform duration-300 ${billingCycle === 'yearly' ? 'translate-x-6' : ''}`}></div>
                     </button>
-                    <span className={`text-sm font-bold ${billingCycle === 'yearly' ? 'text-zinc-900' : 'text-zinc-400'}`}>
-                        Yearly <span className="text-xs text-green-600 font-black ml-1">(SAVE 20%)</span>
+                    <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-ink' : 'text-ink-muted'}`}>
+                        Yearly <span className="text-xs text-ember-600 font-medium ml-1">(SAVE 20%)</span>
                     </span>
                 </div>
 
@@ -196,10 +196,10 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 <div className="flex justify-center mb-8">
                     <button
                         onClick={() => setIsIndia(!isIndia)}
-                        className="text-xs font-medium text-zinc-400 hover:text-zinc-600 flex items-center gap-2 border border-zinc-200 rounded-full px-3 py-1 bg-white"
+                        className="text-xs font-medium text-ink-soft hover:text-ink flex items-center gap-2 h-8 rounded-full px-4 bg-canvas shadow-raised active:shadow-pressed transition-all"
                     >
                         <span>{isIndia ? "🇮🇳 India" : "🌎 Global"}</span>
-                        <span className="text-zinc-300">|</span>
+                        <span className="text-ink-muted">|</span>
                         <span>Click to Switch</span>
                     </button>
                 </div>
@@ -208,145 +208,145 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20 items-stretch">
 
                     {/* TIER 1: STARTER (TRIAL) */}
-                    <div className="bg-white rounded-3xl border border-zinc-200 p-10 flex flex-col items-start text-left shadow-sm hover:border-zinc-300 transition-colors">
+                    <div className="bg-surface rounded-card shadow-card p-8 md:p-10 flex flex-col items-start text-left hover:shadow-float transition-all">
                         <div className="mb-6">
-                            <h3 className="text-lg font-black text-zinc-400 uppercase tracking-widest mb-2">🧪 Starter (Trial)</h3>
-                            <p className="text-sm text-zinc-500 font-medium font-display leading-relaxed">
+                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">🧪 Starter (Trial)</h3>
+                            <p className="text-sm text-ink-soft leading-relaxed">
                                 Experience the system, not just the output. Understand how Counterdraft thinks before you commit.
                             </p>
                         </div>
 
-                        <div className="mt-auto mb-8 w-full border-t border-zinc-100 pt-6">
+                        <div className="mt-auto mb-8 w-full border-t border-line pt-6">
                             <div className="flex items-baseline mb-1">
-                                <span className="text-4xl font-black text-zinc-900">$0</span>
+                                <span className="text-5xl font-medium tracking-[-0.03em] text-ink">$0</span>
                             </div>
-                            <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide">Use Forever</p>
+                            <p className="text-sm text-ink-muted">Use Forever</p>
                         </div>
 
-                        <button className="w-full bg-zinc-100 text-zinc-900 font-bold py-4 rounded-xl hover:bg-zinc-200 transition-colors mb-10 flex items-center justify-center gap-2">
+                        <button className="w-full h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all mb-10 flex items-center justify-center gap-2">
                             Start with Starter
                         </button>
 
                         <div className="space-y-5 w-full">
-                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">You Get</p>
+                            <p className="text-sm text-ink-muted">You Get</p>
                             <div className="flex items-start gap-4">
-                                <span className="text-green-600 mt-1">●</span>
-                                <span className="text-zinc-700 font-medium text-sm">Limited access to <span className="font-bold">Studio</span></span>
+                                <span className="text-ember-500 mt-1">●</span>
+                                <span className="text-ink-soft text-sm">Limited access to <span className="font-medium text-ink">Studio</span></span>
                             </div>
                             <div className="flex items-start gap-4">
-                                <span className="text-green-600 mt-1">●</span>
-                                <span className="text-zinc-700 font-medium text-sm">1 complete strategic analysis from <span className="font-bold">The Brain</span></span>
+                                <span className="text-ember-500 mt-1">●</span>
+                                <span className="text-ink-soft text-sm">1 complete strategic analysis from <span className="font-medium text-ink">The Brain</span></span>
                             </div>
                             <div className="flex items-start gap-4">
-                                <span className="text-green-600 mt-1">●</span>
-                                <span className="text-zinc-700 font-medium text-sm">Basic syntax & clarity checks</span>
+                                <span className="text-ember-500 mt-1">●</span>
+                                <span className="text-ink-soft text-sm">Basic syntax & clarity checks</span>
                             </div>
 
-                            <div className="border-t border-dashed border-zinc-200 my-4"></div>
+                            <div className="border-t border-dashed border-line my-4"></div>
 
                             <div className="flex items-start gap-4 opacity-50">
-                                <span className="text-zinc-300 mt-1">○</span>
-                                <span className="text-zinc-400 font-medium text-sm">Strategy depth is capped</span>
+                                <span className="text-ink-muted mt-1">○</span>
+                                <span className="text-ink-muted text-sm">Strategy depth is capped</span>
                             </div>
                             <div className="flex items-start gap-4 opacity-50">
-                                <span className="text-zinc-300 mt-1">○</span>
-                                <span className="text-zinc-400 font-medium text-sm">No belief or tension tracking</span>
+                                <span className="text-ink-muted mt-1">○</span>
+                                <span className="text-ink-muted text-sm">No belief or tension tracking</span>
                             </div>
                         </div>
                     </div>
 
                     {/* TIER 2: PRO (AUTHORITY) */}
-                    <div className="bg-zinc-900 rounded-3xl p-10 flex flex-col items-start text-left shadow-2xl relative overflow-hidden ring-1 ring-zinc-900/5">
-                        <div className="absolute top-0 right-0 bg-green-600 text-white text-[10px] font-bold px-4 py-1.5 rounded-bl-xl uppercase tracking-widest z-10">
+                    <div className="bg-ink rounded-card p-8 md:p-10 flex flex-col items-start text-left shadow-float relative overflow-hidden">
+                        <div className="absolute top-6 right-6 bg-ember-500 text-white text-xs font-medium h-7 px-3 flex items-center rounded-full shadow-ember z-10">
                             The Full OS
                         </div>
 
                         <div className="mb-6 relative z-10">
-                            <h3 className="text-lg font-black text-green-500 uppercase tracking-widest mb-2">🧠 Pro Membership</h3>
-                            <p className="text-sm text-zinc-400 font-medium font-display leading-relaxed">
+                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-white mb-2">🧠 Pro Membership</h3>
+                            <p className="text-sm text-white/70 leading-relaxed">
                                 Build defensible authority. Stop guessing why a post feels weak or where your argument breaks.
                             </p>
                         </div>
 
-                        <div className="mt-auto mb-8 w-full border-t border-zinc-800 pt-6 relative z-10">
+                        <div className="mt-auto mb-8 w-full border-t border-white/10 pt-6 relative z-10">
                             <div className="flex items-baseline mb-1">
-                                <span className="text-5xl font-black text-white">{currentPlan.perMonth}</span>
-                                <span className="ml-2 text-zinc-500 font-bold">/ month</span>
+                                <span className="text-5xl font-medium tracking-[-0.03em] text-white">{currentPlan.perMonth}</span>
+                                <span className="ml-2 text-white/60 font-medium">/ month</span>
                             </div>
-                            <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">
+                            <p className="text-sm text-white/60">
                                 {currentPlan.billed}
-                                {billingCycle === 'yearly' && isIndia && <span className="text-green-500 ml-2"> (₹9,999/yr)</span>}
-                                {billingCycle === 'yearly' && !isIndia && <span className="text-green-500 ml-2"> (Total {currentPlan.price}/yr)</span>}
+                                {billingCycle === 'yearly' && isIndia && <span className="text-ember-200 ml-2"> (₹9,999/yr)</span>}
+                                {billingCycle === 'yearly' && !isIndia && <span className="text-ember-200 ml-2"> (Total {currentPlan.price}/yr)</span>}
                             </p>
                         </div>
 
                         <button
                             onClick={() => handleSubscribe(currentPlan.id)}
-                            className="w-full bg-white text-zinc-900 font-black py-4 rounded-xl hover:bg-zinc-100 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)] mb-10 flex items-center justify-center gap-2 relative z-10"
+                            className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all mb-10 flex items-center justify-center gap-2 relative z-10"
                         >
                             Upgrade to Pro
-                            <svg className="w-4 h-4 text-zinc-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                         </button>
 
                         <div className="space-y-5 w-full relative z-10 text-white">
-                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-600">You Get Everything In Starter, Plus:</p>
+                            <p className="text-sm text-white/60">You Get Everything In Starter, Plus:</p>
 
                             <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
                                 <div>
-                                    <span className="text-zinc-200 font-bold text-sm block">Unlimited Drafts & Revisions</span>
-                                    <span className="text-zinc-500 text-xs mt-0.5 block">Iterate until it&apos;s perfect.</span>
+                                    <span className="text-white font-medium text-sm block">Unlimited Drafts & Revisions</span>
+                                    <span className="text-white/60 text-xs mt-0.5 block">Iterate until it&apos;s perfect.</span>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
                                 <div>
-                                    <span className="text-zinc-200 font-bold text-sm block">Full Brain Access</span>
-                                    <span className="text-zinc-500 text-xs mt-0.5 block">Deep strategic analysis & logic checks.</span>
+                                    <span className="text-white font-medium text-sm block">Full Brain Access</span>
+                                    <span className="text-white/60 text-xs mt-0.5 block">Deep strategic analysis & logic checks.</span>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
                                 <div>
-                                    <span className="text-zinc-200 font-bold text-sm block">Belief & Tension Tracking</span>
-                                    <span className="text-zinc-500 text-xs mt-0.5 block">Detect inconsistencies in your position.</span>
+                                    <span className="text-white font-medium text-sm block">Belief & Tension Tracking</span>
+                                    <span className="text-white/60 text-xs mt-0.5 block">Detect inconsistencies in your position.</span>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                                 </div>
                                 <div>
-                                    <span className="text-zinc-200 font-bold text-sm block">Turn Weak Opinions into Defensible Positions</span>
-                                    <span className="text-zinc-500 text-xs mt-0.5 block">Strategic rewrites, not cosmetic edits.</span>
+                                    <span className="text-white font-medium text-sm block">Turn Weak Opinions into Defensible Positions</span>
+                                    <span className="text-white/60 text-xs mt-0.5 block">Strategic rewrites, not cosmetic edits.</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Subtle Background Gradient for Pro */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-green-900/10 blur-[100px] pointer-events-none"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-ember-500/20 blur-[100px] pointer-events-none"></div>
                     </div>
                 </div>
 
                 {/* SOCIAL PROOF / NON-AI PROMISE */}
-                <div className="mt-24 text-center max-w-2xl mx-auto border-t border-zinc-100 pt-16">
-                    <h4 className="text-sm font-bold text-zinc-900 uppercase tracking-widest mb-4">Why is this not just another AI Writer?</h4>
-                    <p className="text-zinc-500 leading-relaxed font-medium">
-                        AI writers generate text. <span className="text-zinc-900 font-bold bg-green-50 px-1 rounded">Counterdraft interrogates your thinking</span> before text exists. If your goal is SEO spam or engagement bait, this isn&apos;t for you. If your goal is credibility, influence, and long-term trust, you&apos;re home.
+                <div className="mt-24 text-center max-w-2xl mx-auto bg-surface rounded-card shadow-card p-6 md:p-8">
+                    <h4 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Why is this not just another AI Writer?</h4>
+                    <p className="text-ink-soft leading-relaxed">
+                        AI writers generate text. <span className="text-ember-700 font-medium bg-ember-50 px-1 rounded">Counterdraft interrogates your thinking</span> before text exists. If your goal is SEO spam or engagement bait, this isn&apos;t for you. If your goal is credibility, influence, and long-term trust, you&apos;re home.
                     </p>
                 </div>
 
                 <div className="mt-12 mb-16 text-center">
-                    <p className="text-xs text-zinc-400 font-medium">
+                    <p className="text-xs text-ink-muted font-medium">
                         {isIndia ? "🇮🇳 Localized pricing for India applied." : "Secure payments via Dodo Payments."} • Protected by 256-bit encryption.
                     </p>
                 </div>

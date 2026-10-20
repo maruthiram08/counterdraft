@@ -103,41 +103,41 @@ export function VerificationSidebar({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-y-0 right-0 w-96 bg-white border-l shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out overflow-hidden flex flex-col">
+        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-canvas shadow-float sm:rounded-l-card z-[70] transform transition-transform duration-300 ease-in-out overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b flex items-center justify-between bg-gray-50">
-                <h2 className="font-serif font-medium text-lg">Quality Suite</h2>
-                <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">Quality Suite</h2>
+                <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
                     <X size={20} />
                 </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b bg-gray-50/50">
+            <div className="flex gap-1 mx-4 mb-2 p-1 bg-canvas shadow-well rounded-3xl">
                 <button
                     onClick={() => setActiveTab('fact')}
-                    className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'fact' ? 'border-b-2 border-blue-600 text-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'
+                    className={`flex-1 h-12 rounded-2xl text-[11px] font-medium flex flex-col items-center justify-center gap-0.5 transition-all ${activeTab === 'fact' ? 'bg-canvas shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink'
                         }`}
                 >
                     <ShieldCheck size={14} /> Fact
                 </button>
                 <button
                     onClick={() => setActiveTab('plagiarism')}
-                    className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'plagiarism' ? 'border-b-2 border-purple-600 text-purple-600 bg-white' : 'text-gray-400 hover:text-gray-600'
+                    className={`flex-1 h-12 rounded-2xl text-[11px] font-medium flex flex-col items-center justify-center gap-0.5 transition-all ${activeTab === 'plagiarism' ? 'bg-canvas shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink'
                         }`}
                 >
                     <Search size={14} /> Uniqueness
                 </button>
                 <button
                     onClick={() => setActiveTab('style')}
-                    className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'style' ? 'border-b-2 border-orange-600 text-orange-600 bg-white' : 'text-gray-400 hover:text-gray-600'
+                    className={`flex-1 h-12 rounded-2xl text-[11px] font-medium flex flex-col items-center justify-center gap-0.5 transition-all ${activeTab === 'style' ? 'bg-canvas shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink'
                         }`}
                 >
                     <Sparkles size={14} /> Human
                 </button>
                 <button
                     onClick={() => setActiveTab('competitor')}
-                    className={`flex-1 py-3 text-[9px] font-bold uppercase tracking-wider flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'competitor' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-white' : 'text-gray-400 hover:text-gray-600'
+                    className={`flex-1 h-12 rounded-2xl text-[11px] font-medium flex flex-col items-center justify-center gap-0.5 transition-all ${activeTab === 'competitor' ? 'bg-canvas shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink'
                         }`}
                 >
                     <BarChart3 size={14} /> Competitors
@@ -145,22 +145,22 @@ export function VerificationSidebar({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
 
                 {/* FACT CHECK TAB */}
                 {activeTab === 'fact' && (
                     <>
                         {factLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-gray-400 space-y-3">
-                                <RefreshCw className="animate-spin text-blue-500" size={32} />
+                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
+                                <RefreshCw className="animate-spin text-ember-500" size={32} />
                                 <p className="text-sm">Verifying claims against the web...</p>
                             </div>
                         ) : factResults.length === 0 ? (
-                            <div className="text-center py-12 px-4 text-gray-500">
+                            <div className="text-center py-12 px-4 text-ink-soft">
                                 <p className="mb-4">No claims analyzed yet.</p>
                                 <button
                                     onClick={onFactVerify}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-all"
+                                    className="h-10 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                 >
                                     Run Verification
                                 </button>
@@ -168,31 +168,31 @@ export function VerificationSidebar({
                         ) : (
                             <div className="space-y-4 animate-fade-in">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold uppercase text-gray-500 tracking-wider">
+                                    <span className="text-sm text-ink-muted">
                                         {factResults.length} Claims Found
                                     </span>
-                                    <button onClick={onFactVerify} className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
+                                    <button onClick={onFactVerify} className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink hover:text-ember-600 active:shadow-pressed flex items-center gap-1 font-medium transition-all">
                                         <RefreshCw size={12} /> Re-run
                                     </button>
                                 </div>
                                 {factResults.map((res, i) => (
-                                    <div key={i} className={`p-3 rounded-lg border text-sm ${res.status === 'verified' ? 'bg-green-50 border-green-100' :
-                                        res.status === 'disputed' ? 'bg-red-50 border-red-100' :
-                                            'bg-yellow-50 border-yellow-100'
+                                    <div key={i} className={`p-4 rounded-tile bg-surface shadow-card text-sm border-l-4 ${res.status === 'verified' ? 'border-sage-500' :
+                                        res.status === 'disputed' ? 'border-rose-500' :
+                                            'border-sand-500'
                                         }`}>
                                         <div className="flex items-center gap-2 mb-2">
-                                            {res.status === 'verified' ? <ShieldCheck size={14} className="text-green-600" /> :
-                                                res.status === 'disputed' ? <ShieldAlert size={14} className="text-red-600" /> :
-                                                    <ShieldQuestion size={14} className="text-yellow-600" />}
-                                            <span className={`text-[10px] font-bold uppercase tracking-wide ${res.status === 'verified' ? 'text-green-700' :
-                                                res.status === 'disputed' ? 'text-red-700' : 'text-yellow-700'
+                                            {res.status === 'verified' ? <ShieldCheck size={14} className="text-sage-700" /> :
+                                                res.status === 'disputed' ? <ShieldAlert size={14} className="text-rose-700" /> :
+                                                    <ShieldQuestion size={14} className="text-sand-700" />}
+                                            <span className={`text-xs font-medium capitalize ${res.status === 'verified' ? 'text-sage-700' :
+                                                res.status === 'disputed' ? 'text-rose-700' : 'text-sand-700'
                                                 }`}>{res.status}</span>
-                                            <span className="ml-auto text-xs text-gray-400">{Math.round(res.confidence * 100)}%</span>
+                                            <span className="ml-auto text-xs text-ink-muted">{Math.round(res.confidence * 100)}%</span>
                                         </div>
-                                        <p className="font-serif text-gray-900 mb-1">&quot;{res.claim}&quot;</p>
-                                        <p className="text-gray-500 text-xs mb-2">{res.analysis}</p>
+                                        <p className="font-medium text-ink mb-1">&quot;{res.claim}&quot;</p>
+                                        <p className="text-ink-soft text-xs mb-2">{res.analysis}</p>
                                         {res.source && (
-                                            <a href={res.source.url} target="_blank" className="text-[10px] text-blue-500 hover:underline flex items-center gap-1">
+                                            <a href={res.source.url} target="_blank" className="text-xs text-ember-600 hover:underline flex items-center gap-1">
                                                 <ExternalLink size={10} /> Source Reference
                                             </a>
                                         )}
@@ -204,9 +204,9 @@ export function VerificationSidebar({
                                                 return (
                                                     <button
                                                         onClick={() => onFixClaim(res.claim, res.analysis, res.source?.snippet, normalizedStatus)}
-                                                        className={`mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-lg transition-colors border ${normalizedStatus === 'disputed'
-                                                                ? 'bg-red-100/50 hover:bg-red-100 text-red-700 border-red-200'
-                                                                : 'bg-yellow-100/50 hover:bg-yellow-100 text-yellow-700 border-yellow-200'
+                                                        className={`mt-3 w-full flex items-center justify-center gap-1.5 h-9 px-3 text-xs font-medium rounded-full transition-all active:shadow-pressed ${normalizedStatus === 'disputed'
+                                                                ? 'bg-rose-100 hover:bg-rose-100/70 text-rose-700'
+                                                                : 'bg-sand-100 hover:bg-sand-100/70 text-sand-700'
                                                             }`}
                                                     >
                                                         <Sparkles size={12} />
@@ -227,17 +227,17 @@ export function VerificationSidebar({
                 {activeTab === 'plagiarism' && (
                     <>
                         {plagiarismLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-gray-400 space-y-3">
-                                <RefreshCw className="animate-spin text-purple-500" size={32} />
+                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
+                                <RefreshCw className="animate-spin text-ember-500" size={32} />
                                 <p className="text-sm">Checking uniqueness across the web...</p>
                             </div>
                         ) : !plagiarismResult ? (
-                            <div className="text-center py-12 px-4 text-gray-500">
-                                <FileCheck className="mx-auto mb-4 text-purple-200" size={48} />
+                            <div className="text-center py-12 px-4 text-ink-soft">
+                                <FileCheck className="mx-auto mb-4 text-ember-200" size={48} />
                                 <p className="mb-4">Check if this draft is original.</p>
                                 <button
                                     onClick={onPlagiarismCheck}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-all"
+                                    className="h-10 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                 >
                                     Check Uniqueness
                                 </button>
@@ -245,23 +245,23 @@ export function VerificationSidebar({
                         ) : (
                             <div className="space-y-6 animate-fade-in">
                                 {/* Score Meter */}
-                                <div className="text-center p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                                    <div className="text-4xl font-serif font-bold mb-1" style={{
-                                        color: plagiarismResult.uniqueness_score > 80 ? '#059669' :
-                                            plagiarismResult.uniqueness_score > 50 ? '#d97706' : '#dc2626'
+                                <div className="text-center p-6 bg-surface rounded-card shadow-card">
+                                    <div className="text-4xl font-medium tracking-[-0.03em] mb-1" style={{
+                                        color: plagiarismResult.uniqueness_score > 80 ? 'var(--color-sage-700)' :
+                                            plagiarismResult.uniqueness_score > 50 ? 'var(--color-sand-700)' : 'var(--color-rose-700)'
                                     }}>
                                         {plagiarismResult.uniqueness_score}%
                                     </div>
-                                    <div className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">
+                                    <div className="text-sm text-ink-muted">
                                         Originality Score
                                     </div>
-                                    <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div className="mt-4 h-2 bg-canvas shadow-well rounded-full overflow-hidden">
                                         <div
                                             className="h-full transition-all duration-1000"
                                             style={{
                                                 width: `${plagiarismResult.uniqueness_score}%`,
-                                                backgroundColor: plagiarismResult.uniqueness_score > 80 ? '#10b981' :
-                                                    plagiarismResult.uniqueness_score > 50 ? '#f59e0b' : '#ef4444'
+                                                backgroundColor: plagiarismResult.uniqueness_score > 80 ? 'var(--color-sage-500)' :
+                                                    plagiarismResult.uniqueness_score > 50 ? 'var(--color-sand-500)' : 'var(--color-rose-500)'
                                             }}
                                         />
                                     </div>
@@ -269,29 +269,29 @@ export function VerificationSidebar({
 
                                 {/* Matched Sources */}
                                 <div className="space-y-3">
-                                    <h3 className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+                                    <h3 className="text-sm text-ink-muted">
                                         Potential Overlaps ({plagiarismResult.matched_sources.length})
                                     </h3>
 
                                     {plagiarismResult.matched_sources.length === 0 ? (
-                                        <p className="text-sm text-green-600 flex items-center gap-2">
+                                        <p className="text-sm text-sage-700 flex items-center gap-2">
                                             <ShieldCheck size={16} /> No significant matches found!
                                         </p>
                                     ) : (
                                         plagiarismResult.matched_sources.map((source, i) => (
-                                            <div key={i} className="p-3 bg-white border rounded-xl hover:shadow-sm transition-shadow">
+                                            <div key={i} className="p-4 bg-surface rounded-tile shadow-card hover:shadow-float transition-all">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold">
+                                                    <span className="text-xs bg-rose-100 text-rose-700 h-6 px-2.5 flex items-center rounded-full font-medium">
                                                         Overlap: Level {source.overlap_score}
                                                     </span>
-                                                    <a href={source.url} target="_blank" className="text-gray-400 hover:text-blue-500">
+                                                    <a href={source.url} target="_blank" className="text-ink-muted hover:text-ember-600">
                                                         <ExternalLink size={14} />
                                                     </a>
                                                 </div>
-                                                <p className="text-xs text-gray-500 line-clamp-2 italic">
+                                                <p className="text-xs text-ink-soft line-clamp-2 italic">
                                                     &quot;{source.snippet}&quot;
                                                 </p>
-                                                <p className="text-[10px] text-gray-400 mt-2 truncate">
+                                                <p className="text-xs text-ink-muted mt-2 truncate">
                                                     {source.url}
                                                 </p>
                                             </div>
@@ -299,7 +299,7 @@ export function VerificationSidebar({
                                     )}
                                 </div>
 
-                                <button onClick={onPlagiarismCheck} className="w-full py-2 text-xs text-purple-600 font-medium hover:bg-purple-50 rounded-lg border border-purple-100 transition-colors">
+                                <button onClick={onPlagiarismCheck} className="w-full h-10 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all">
                                     Re-scan Draft
                                 </button>
                             </div>
@@ -311,71 +311,71 @@ export function VerificationSidebar({
                 {activeTab === 'style' && (
                     <>
                         {slopLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-gray-400 space-y-3">
-                                <RefreshCw className="animate-spin text-orange-500" size={32} />
+                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
+                                <RefreshCw className="animate-spin text-ember-500" size={32} />
                                 <p className="text-sm">Scanning for AI-isms...</p>
                             </div>
                         ) : (!metrics.style.hasRun) ? (
-                            <div className="text-center py-12 px-4 text-gray-500">
-                                <MessageSquareX className="mx-auto mb-4 text-orange-200" size={48} />
+                            <div className="text-center py-12 px-4 text-ink-soft">
+                                <MessageSquareX className="mx-auto mb-4 text-ember-200" size={48} />
                                 <p className="mb-4">Analyze if your content sounds too artificial.</p>
                                 <button
                                     onClick={onSlopScan}
-                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-all"
+                                    className="h-10 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                 >
                                     Run Human Audit
                                 </button>
                             </div>
                         ) : slopMatches.length === 0 ? (
-                            <div className="text-center py-12 px-4 text-gray-500">
-                                <MessageSquareX className="mx-auto mb-4 text-green-200" size={48} />
-                                <p className="mb-4 text-green-700 font-medium">No AI cliches found!</p>
-                                <p className="text-xs text-gray-400 mb-6">Your writing sounds authentic and human.</p>
+                            <div className="text-center py-12 px-4 text-ink-soft">
+                                <MessageSquareX className="mx-auto mb-4 text-sage-500/40" size={48} />
+                                <p className="mb-4 text-sage-700 font-medium">No AI cliches found!</p>
+                                <p className="text-xs text-ink-muted mb-6">Your writing sounds authentic and human.</p>
                                 <button
                                     onClick={onSlopScan}
-                                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm font-medium transition-all"
+                                    className="h-10 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                 >
                                     Re-scan
                                 </button>
                             </div>
                         ) : (
                             <div className="space-y-4 animate-fade-in">
-                                <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 flex items-start gap-3">
-                                    <ShieldAlert className="text-orange-500 mt-1" size={18} />
+                                <div className="bg-ember-50 p-4 rounded-tile shadow-raised flex items-start gap-3">
+                                    <ShieldAlert className="text-ember-500 mt-1" size={18} />
                                     <div>
-                                        <p className="text-sm font-medium text-orange-800">
+                                        <p className="text-sm font-medium text-ink">
                                             {slopMatches.length} AI-isms detected
                                         </p>
-                                        <p className="text-xs text-orange-700 mt-1">
+                                        <p className="text-xs text-ink-soft mt-1">
                                             AI patterns make your writing feel generic. Try substituting these words.
                                         </p>
                                     </div>
                                 </div>
 
-                                <button onClick={onSlopScan} className="text-xs text-orange-600 hover:text-orange-800 flex items-center gap-1 font-medium ml-auto">
+                                <button onClick={onSlopScan} className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink hover:text-ember-600 active:shadow-pressed flex items-center gap-1 font-medium ml-auto transition-all">
                                     <RefreshCw size={12} /> Re-scan
                                 </button>
 
                                 <div className="space-y-3">
                                     {slopMatches.map((match, i) => (
-                                        <div key={i} className="p-3 bg-white border border-gray-100 rounded-xl hover:border-orange-200 transition-all">
+                                        <div key={i} className="p-4 bg-surface rounded-tile shadow-card hover:shadow-float transition-all">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="font-mono text-sm font-bold text-gray-900 bg-gray-100 px-1.5 rounded">
+                                                <span className="font-mono text-sm font-medium text-ink bg-canvas shadow-well px-2 py-0.5 rounded-lg">
                                                     &quot;{match.word}&quot;
                                                 </span>
-                                                <span className="text-[10px] text-gray-400 font-medium">Position: {match.startIndex}</span>
+                                                <span className="text-xs text-ink-muted">Position: {match.startIndex}</span>
                                             </div>
-                                            <p className="text-xs text-gray-500 mb-2">
+                                            <p className="text-xs text-ink-soft mb-2">
                                                 {match.reason}
                                             </p>
-                                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-50">
-                                                <span className="text-[10px] font-bold text-green-600 uppercase">Suggestion:</span>
-                                                <span className="text-xs font-medium text-gray-700">
+                                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-line">
+                                                <span className="text-xs font-medium text-sage-700">Suggestion:</span>
+                                                <span className="text-xs font-medium text-ink">
                                                     {match.suggestion || "Delete it"}
                                                 </span>
                                                 <button
                                                     onClick={() => onApplySlopSuggestion && onApplySlopSuggestion(match)}
-                                                    className="ml-auto px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded hover:bg-green-200 transition-colors"
+                                                    className="ml-auto h-7 px-3 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                                 >
                                                     Apply
                                                 </button>
@@ -392,20 +392,20 @@ export function VerificationSidebar({
                 {activeTab === 'competitor' && (
                     <>
                         {/* URL Input */}
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-4">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Compare Against Specific URL (Optional)</label>
+                        <div className="bg-surface p-4 rounded-tile shadow-card mb-4">
+                            <label className="text-sm text-ink-muted block mb-2">Compare Against Specific URL (Optional)</label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
                                     value={compUrl}
                                     onChange={(e) => setCompUrl(e.target.value)}
                                     placeholder="https://competitor.com/article"
-                                    className="flex-1 text-xs p-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                    className="flex-1 min-w-0 text-xs bg-canvas shadow-well rounded-full h-10 px-4 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                                 />
                                 <button
                                     onClick={() => onCompetitorCheck(compUrl)}
                                     disabled={competitorLoading}
-                                    className="p-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50"
+                                    className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-ember-500 text-white hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                                 >
                                     <Plus size={16} />
                                 </button>
@@ -413,25 +413,25 @@ export function VerificationSidebar({
                         </div>
 
                         {competitorLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-gray-400 space-y-3">
-                                <RefreshCw className="animate-spin text-emerald-500" size={32} />
+                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
+                                <RefreshCw className="animate-spin text-ember-500" size={32} />
                                 <p className="text-sm">Analyzing competitors...</p>
                             </div>
                         ) : !competitorResult ? (
-                            <div className="text-center py-12 px-4 text-gray-500">
-                                <Globe className="mx-auto mb-4 text-emerald-200" size={48} />
+                            <div className="text-center py-12 px-4 text-ink-soft">
+                                <Globe className="mx-auto mb-4 text-ember-200" size={48} />
                                 <p className="mb-4 text-sm">See how your draft stacks up against industry leaders.</p>
                                 <button
                                     onClick={() => onCompetitorCheck()}
-                                    className="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-all"
+                                    className="w-full h-10 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                 >
                                     Find Competitor Gaps
                                 </button>
                             </div>
                         ) : (
                             <div className="space-y-6 animate-fade-in">
-                                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                                    <p className="text-sm text-emerald-800 italic leading-relaxed">
+                                <div className="bg-dusk-100 p-4 rounded-tile shadow-raised">
+                                    <p className="text-sm text-ink-soft italic leading-relaxed">
                                         &quot;{competitorResult.summary}&quot;
                                     </p>
                                 </div>
@@ -443,30 +443,30 @@ export function VerificationSidebar({
 
                                         return (
                                             <div key={type} className="space-y-2">
-                                                <h3 className={`text-[10px] font-bold uppercase tracking-widest ${type === 'unique' ? 'text-emerald-600' :
-                                                    type === 'missing' ? 'text-red-500' : 'text-gray-400'
+                                                <h3 className={`text-sm font-medium ${type === 'unique' ? 'text-sage-700' :
+                                                    type === 'missing' ? 'text-rose-700' : 'text-ink-muted'
                                                     }`}>
                                                     {type === 'unique' ? '✨ Your Unique Angle' :
                                                         type === 'missing' ? '🚨 Missing Highlights' : '⚪ Common Ground'}
                                                 </h3>
                                                 {filtered.map((insight, idx) => (
-                                                    <div key={idx} className={`p-3 border rounded-xl ${type === 'unique' ? 'bg-emerald-50/30 border-emerald-100' :
-                                                        type === 'missing' ? 'bg-red-50/30 border-red-100' : 'bg-gray-50/30 border-gray-100'
+                                                    <div key={idx} className={`p-4 rounded-tile bg-surface shadow-card border-l-4 ${type === 'unique' ? 'border-sage-500' :
+                                                        type === 'missing' ? 'border-rose-500' : 'border-line'
                                                         }`}>
                                                         <div className="flex items-center justify-between mb-1">
-                                                            <span className="font-bold text-sm text-gray-900">{insight.claim}</span>
+                                                            <span className="font-medium text-sm text-ink">{insight.claim}</span>
                                                             {insight.sourceUrl && (
-                                                                <a href={insight.sourceUrl} target="_blank" className="text-gray-400 hover:text-emerald-500">
+                                                                <a href={insight.sourceUrl} target="_blank" className="text-ink-muted hover:text-ember-600">
                                                                     <ExternalLink size={12} />
                                                                 </a>
                                                             )}
                                                         </div>
-                                                        <p className="text-xs text-gray-600 leading-relaxed">
+                                                        <p className="text-xs text-ink-soft leading-relaxed">
                                                             {insight.description}
                                                         </p>
                                                         {type === 'missing' && (
                                                             <button
-                                                                className="mt-3 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-tight flex items-center gap-1"
+                                                                className="mt-3 text-xs font-medium text-ember-600 hover:text-ember-700 flex items-center gap-1"
                                                                 onClick={() => alert("AI Gap Filling coming in next update!")}
                                                             >
                                                                 <Sparkles size={10} /> Fill this gap
@@ -478,7 +478,7 @@ export function VerificationSidebar({
                                         );
                                     })}
                                 </div>
-                                <button onClick={() => onCompetitorCheck()} className="w-full py-2 text-xs text-emerald-600 font-medium hover:bg-emerald-50 rounded-lg border border-emerald-100 transition-colors">
+                                <button onClick={() => onCompetitorCheck()} className="w-full h-10 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all">
                                     Refresh Comparison
                                 </button>
                             </div>
@@ -488,24 +488,24 @@ export function VerificationSidebar({
             </div>
 
             {/* FIXED BOTTOM: Quality Score Footer */}
-            <div className="p-4 border-t bg-white z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+            <div className="m-3 p-4 bg-surface rounded-card shadow-card z-10">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         {/* Donut Chart (CSS Conic Gradient) */}
-                        <div className="relative w-12 h-12 flex items-center justify-center rounded-full bg-gray-100"
+                        <div className="relative w-12 h-12 flex items-center justify-center rounded-full bg-canvas"
                             style={{
-                                background: `conic-gradient(${overallScore > 80 ? '#10b981' : overallScore > 50 ? '#f59e0b' : '#ef4444'} ${overallScore}%, #e5e7eb 0)`
+                                background: `conic-gradient(${overallScore > 80 ? 'var(--color-sage-500)' : overallScore > 50 ? 'var(--color-sand-500)' : 'var(--color-rose-500)'} ${overallScore}%, var(--color-line) 0)`
                             }}
                         >
-                            <div className="absolute inset-[3px] bg-white rounded-full flex items-center justify-center">
-                                <span className={`text-xs font-bold ${overallScore > 80 ? 'text-green-600' : overallScore > 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                            <div className="absolute inset-[3px] bg-surface rounded-full flex items-center justify-center">
+                                <span className={`text-xs font-medium ${overallScore > 80 ? 'text-sage-700' : overallScore > 50 ? 'text-sand-700' : 'text-rose-700'}`}>
                                     {overallScore}%
                                 </span>
                             </div>
                         </div>
                         <div>
-                            <div className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Trust Score</div>
-                            <div className={`font-serif font-bold text-sm leading-tight ${overallScore > 80 ? 'text-green-700' : overallScore > 50 ? 'text-amber-700' : 'text-red-700'}`}>
+                            <div className="text-sm text-ink-muted">Trust Score</div>
+                            <div className={`font-medium text-sm leading-tight ${overallScore > 80 ? 'text-sage-700' : overallScore > 50 ? 'text-sand-700' : 'text-rose-700'}`}>
                                 {overallScore > 80 ? 'Credible' : overallScore > 50 ? 'Needs Review' : 'Unverified'}
                             </div>
                         </div>
@@ -513,7 +513,7 @@ export function VerificationSidebar({
 
                     <button
                         onClick={onRunAll}
-                        className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-black shadow-lg shadow-gray-200 active:scale-95 transition-all flex items-center gap-2"
+                        className="h-10 px-4 rounded-full bg-ink text-white text-xs font-medium hover:bg-ink/90 shadow-raised active:shadow-pressed transition-all flex items-center gap-2"
                     >
                         <RefreshCw size={14} className={metrics.fact.loading || metrics.uniqueness.loading ? "animate-spin" : ""} />
                         Run Audit
@@ -522,19 +522,19 @@ export function VerificationSidebar({
 
                 <div className="grid grid-cols-3 gap-2">
                     {/* Fact Metric */}
-                    <button onClick={() => setActiveTab('fact')} className="flex flex-col items-center p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                        <div className={`text-[10px] uppercase font-bold mb-1 ${metrics.fact.hasRun ? (metrics.fact.score > 80 ? 'text-green-600' : 'text-amber-500') : 'text-gray-400'}`}>Facts</div>
-                        <div className={`w-full h-1 rounded-full ${metrics.fact.hasRun ? (metrics.fact.score > 80 ? 'bg-green-500' : 'bg-amber-400') : 'bg-gray-200'}`}></div>
+                    <button onClick={() => setActiveTab('fact')} className="flex flex-col items-center p-2.5 rounded-2xl bg-canvas shadow-raised hover:text-ink active:shadow-pressed transition-all">
+                        <div className={`text-xs font-medium mb-1.5 ${metrics.fact.hasRun ? (metrics.fact.score > 80 ? 'text-sage-700' : 'text-sand-700') : 'text-ink-muted'}`}>Facts</div>
+                        <div className={`w-full h-1 rounded-full ${metrics.fact.hasRun ? (metrics.fact.score > 80 ? 'bg-sage-500' : 'bg-sand-500') : 'bg-line'}`}></div>
                     </button>
                     {/* Unique Metric */}
-                    <button onClick={() => setActiveTab('plagiarism')} className="flex flex-col items-center p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                        <div className={`text-[10px] uppercase font-bold mb-1 ${metrics.uniqueness.hasRun ? (metrics.uniqueness.score > 80 ? 'text-purple-600' : 'text-amber-500') : 'text-gray-400'}`}>Unique</div>
-                        <div className={`w-full h-1 rounded-full ${metrics.uniqueness.hasRun ? (metrics.uniqueness.score > 80 ? 'bg-purple-500' : 'bg-amber-400') : 'bg-gray-200'}`}></div>
+                    <button onClick={() => setActiveTab('plagiarism')} className="flex flex-col items-center p-2.5 rounded-2xl bg-canvas shadow-raised hover:text-ink active:shadow-pressed transition-all">
+                        <div className={`text-xs font-medium mb-1.5 ${metrics.uniqueness.hasRun ? (metrics.uniqueness.score > 80 ? 'text-sage-700' : 'text-sand-700') : 'text-ink-muted'}`}>Unique</div>
+                        <div className={`w-full h-1 rounded-full ${metrics.uniqueness.hasRun ? (metrics.uniqueness.score > 80 ? 'bg-sage-500' : 'bg-sand-500') : 'bg-line'}`}></div>
                     </button>
                     {/* Style Metric */}
-                    <button onClick={() => setActiveTab('style')} className="flex flex-col items-center p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                        <div className={`text-[10px] uppercase font-bold mb-1 ${metrics.style.hasRun ? (metrics.style.score > 80 ? 'text-orange-600' : 'text-amber-500') : 'text-gray-400'}`}>Human</div>
-                        <div className={`w-full h-1 rounded-full ${metrics.style.hasRun ? (metrics.style.score > 80 ? 'bg-orange-500' : 'bg-amber-400') : 'bg-gray-200'}`}></div>
+                    <button onClick={() => setActiveTab('style')} className="flex flex-col items-center p-2.5 rounded-2xl bg-canvas shadow-raised hover:text-ink active:shadow-pressed transition-all">
+                        <div className={`text-xs font-medium mb-1.5 ${metrics.style.hasRun ? (metrics.style.score > 80 ? 'text-sage-700' : 'text-sand-700') : 'text-ink-muted'}`}>Human</div>
+                        <div className={`w-full h-1 rounded-full ${metrics.style.hasRun ? (metrics.style.score > 80 ? 'bg-sage-500' : 'bg-sand-500') : 'bg-line'}`}></div>
                     </button>
                 </div>
             </div>

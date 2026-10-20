@@ -13,32 +13,32 @@ export const Hero: React.FC = () => {
   return (
     <section className="relative pt-40 pb-24 md:pt-52 md:pb-40 px-4 hero-gradient overflow-hidden">
       <div className="max-w-7xl mx-auto text-center relative z-10">
-        <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-green-50 border border-green-100 text-[11px] font-black text-green-700 mb-10 tracking-[0.2em] uppercase animate-fade-in-up shadow-sm">
-          FOR WRITERS & CREATORS
+        <div className="inline-flex items-center h-8 px-4 rounded-full bg-ember-100 text-ember-700 text-sm font-medium mb-10 animate-fade-in-up">
+          For writers & creators
         </div>
-        <h1 className="font-display text-6xl md:text-[7rem] font-black tracking-tighter mb-10 max-w-6xl mx-auto leading-[0.9] text-zinc-900 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          Write content that <span className="text-green-600">sounds like you</span>.
+        <h1 className="text-5xl md:text-[96px] font-medium tracking-[-0.04em] mb-8 max-w-5xl mx-auto leading-[1] text-ink animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          Write content that <span className="text-ember-500">sounds like you</span>.
         </h1>
-        <p className="text-zinc-500 text-xl md:text-2xl max-w-2xl mx-auto mb-14 font-medium leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <p className="text-ink-soft text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in-up [&_strong]:font-medium [&_strong]:text-ink" style={{ animationDelay: '0.2s' }}>
           LinkedIn posts. Blog articles. Newsletters. Even books. Counterdraft helps you <strong>find your angle, organize your ideas, and publish without sounding generic</strong>.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-28 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <SignedOut>
             <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'hero' })}>
-              <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-green-600/20">
+              <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                 Start Writing
               </button>
             </Link>
           </SignedOut>
           <SignedIn>
             <Link href="/workspace">
-              <button className="w-full sm:w-auto bg-green-600 text-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-green-700 transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-green-600/20">
+              <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                 Go to Dashboard
               </button>
             </Link>
           </SignedIn>
-          <Link href="/philosophy" className="w-full sm:w-auto bg-white border border-zinc-200 text-zinc-900 px-10 py-5 rounded-xl font-bold text-lg hover:bg-zinc-50 transition-all flex items-center justify-center">
+          <Link href="/philosophy" className="w-full sm:w-auto h-14 px-8 rounded-full bg-canvas text-ink text-base font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all flex items-center justify-center">
             The Philosophy
           </Link>
         </div>
@@ -50,22 +50,22 @@ export const Hero: React.FC = () => {
 
         {/* Dashboard Preview Container */}
         <div className="relative mx-auto max-w-6xl px-4 md:px-0 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-4/5 h-48 bg-green-600/5 blur-[100px] rounded-full z-0 opacity-40"></div>
-          <div className="bg-white rounded-3xl overflow-hidden border border-zinc-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] relative z-10 p-2 md:p-3">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 mb-2">
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-4/5 h-48 bg-ember-500/10 blur-[100px] rounded-full z-0 opacity-40"></div>
+          <div className="bg-surface rounded-card overflow-hidden shadow-float relative z-10 p-2 md:p-3">
+            <div className="flex items-center justify-between px-6 py-4 mb-1">
               <div className="flex gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-zinc-100"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-zinc-100"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-zinc-100"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-canvas shadow-well"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-canvas shadow-well"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-canvas shadow-well"></div>
               </div>
-              <div className="text-[9px] text-zinc-400 font-mono tracking-widest uppercase flex items-center gap-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <div className="text-xs text-ink-muted font-mono flex items-center gap-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-sage-500 animate-pulse"></span>
                 CONNECTED_BRAIN_INSTANCE.PRO
               </div>
               <div className="w-12"></div>
             </div>
             {/* Live Component Interface */}
-            <div className="min-h-[600px] md:aspect-video bg-zinc-50 rounded-2xl overflow-hidden border border-zinc-100 relative">
+            <div className="min-h-[600px] md:aspect-video bg-canvas rounded-tile overflow-hidden shadow-pressed relative">
               <HeroInterface className="w-full h-full" />
             </div>
           </div>

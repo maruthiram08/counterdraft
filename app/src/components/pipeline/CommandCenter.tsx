@@ -9,6 +9,7 @@ import { BrainMetadata } from "@/types";
 import { ContentItem, Stage } from "./board/types";
 import { PipelineHeader } from "./board/PipelineHeader";
 import { StatusColumn } from "./board/StatusColumn";
+import { STAGE_STYLES } from "./board/stageStyles";
 
 export interface CommandCenterProps {
     onEdit?: (id: string) => void;
@@ -288,106 +289,106 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
     const published = items.filter(i => i.stage === 'published');
 
     return (
-        <div className="h-full flex flex-col">
-            <PipelineHeader
-                loading={loading}
-                onSuggest={handleSuggest}
-                onNewDraft={handleNewDraftClick}
-            />
+        <div className="h-full overflow-y-auto bg-canvas">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-4 md:pt-6 pb-28 md:pb-12 flex flex-col gap-5">
+                <PipelineHeader
+                    loading={loading}
+                    counts={{ idea: ideas.length, developing: developing.length, draft: drafts.length, published: published.length }}
+                    onSuggest={handleSuggest}
+                    onNewDraft={handleNewDraftClick}
+                />
 
-            {showProfileBanner && (
-                <div className="mx-6 mb-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between animate-fade-in">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
-                            <User size={16} />
+                {showProfileBanner && (
+                    <div className="p-4 pl-5 bg-ember-50 rounded-tile shadow-raised flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-ember-500 rounded-full flex items-center justify-center text-white shrink-0">
+                                <User size={16} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-ink">Your profile is incomplete.</h3>
+                                <p className="text-sm text-ink-soft">Set your Role & Voice to help the Brain write better drafts.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-indigo-900">Your profile is incomplete.</h3>
-                            <p className="text-xs text-indigo-700">Set your Role & Voice to help the Brain write better drafts.</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setShowProfileBanner(false)}
-                            className="text-xs font-bold text-indigo-400 hover:text-indigo-600 px-3 py-2"
-                        >
-                            Dismiss
-                        </button>
-                        <button
-                            onClick={() => setIsProfileModalOpen(true)}
-                            className="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-                        >
-                            Complete Setup
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            <div className="flex-1 overflow-x-auto p-4 md:p-6 pt-2 pb-24 md:pb-6">
-                {isMobile && (
-                    <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
-                        {(['idea', 'developing', 'draft', 'published'] as Stage[]).map(stage => (
+                        <div className="flex items-center gap-2">
                             <button
-                                key={stage}
-                                onClick={() => setActiveStage(stage)}
-                                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeStage === stage
-                                    ? 'bg-[var(--foreground)] text-white'
-                                    : 'bg-white border border-gray-200 text-gray-600'
-                                    }`}
+                                onClick={() => setShowProfileBanner(false)}
+                                className="text-sm font-medium text-ink-soft hover:text-ink h-10 px-4 rounded-full"
                             >
-                                {stage === 'idea' ? 'Ideas' :
-                                    stage === 'developing' ? 'In Development' :
-                                        stage === 'draft' ? 'Drafts' : 'Published'}
+                                Dismiss
                             </button>
-                        ))}
+                            <button
+                                onClick={() => setIsProfileModalOpen(true)}
+                                className="text-sm font-medium bg-ink text-white h-10 px-5 rounded-full hover:bg-ink/90 transition-colors"
+                            >
+                                Complete setup
+                            </button>
+                        </div>
                     </div>
                 )}
+                <div>
+                    {isMobile && (
+                        <div className="flex items-center gap-3 mb-5 overflow-x-auto p-2 -m-2 scrollbar-none">
+                            {(['idea', 'developing', 'draft', 'published'] as Stage[]).map(stage => (
+                                <button
+                                    key={stage}
+                                    onClick={() => setActiveStage(stage)}
+                                    className={`h-10 px-5 rounded-full text-sm font-medium whitespace-nowrap transition-all bg-canvas ${activeStage === stage
+                                        ? 'shadow-pressed text-ember-600'
+                                        : 'shadow-raised text-ink-soft hover:text-ink'
+                                        }`}
+                                >
+                                    {STAGE_STYLES[stage].label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-h-full">
-                    {(!isMobile || activeStage === 'idea') && (
-                        <StatusColumn
-                            title="Ideas"
-                            icon={<Lightbulb size={16} className="text-purple-600" />}
-                            items={ideas}
-                            stage="idea"
-                            color="bg-purple-100"
-                            onAction={handleAction}
-                            loading={loading}
-                        />
-                    )}
-                    {(!isMobile || activeStage === 'developing') && (
-                        <StatusColumn
-                            title="In Development"
-                            icon={<Settings size={16} className="text-amber-600" />}
-                            items={developing}
-                            stage="developing"
-                            color="bg-amber-100"
-                            onAction={handleAction}
-                            loading={loading}
-                        />
-                    )}
-                    {(!isMobile || activeStage === 'draft') && (
-                        <StatusColumn
-                            title="Drafts"
-                            icon={<FileText size={16} className="text-blue-600" />}
-                            items={drafts}
-                            stage="draft"
-                            color="bg-blue-100"
-                            onAction={handleAction}
-                            loading={loading}
-                        />
-                    )}
-                    {(!isMobile || activeStage === 'published') && (
-                        <StatusColumn
-                            title="Published"
-                            icon={<CheckCircle size={16} className="text-green-600" />}
-                            items={published}
-                            stage="published"
-                            color="bg-green-100"
-                            onAction={handleAction}
-                            loading={loading}
-                        />
-                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                        {(!isMobile || activeStage === 'idea') && (
+                            <StatusColumn
+                                title="Ideas"
+                                icon={<Lightbulb size={16} className="text-purple-600" />}
+                                items={ideas}
+                                stage="idea"
+                                color="bg-purple-100"
+                                onAction={handleAction}
+                                loading={loading}
+                            />
+                        )}
+                        {(!isMobile || activeStage === 'developing') && (
+                            <StatusColumn
+                                title="In Development"
+                                icon={<Settings size={16} className="text-amber-600" />}
+                                items={developing}
+                                stage="developing"
+                                color="bg-amber-100"
+                                onAction={handleAction}
+                                loading={loading}
+                            />
+                        )}
+                        {(!isMobile || activeStage === 'draft') && (
+                            <StatusColumn
+                                title="Drafts"
+                                icon={<FileText size={16} className="text-blue-600" />}
+                                items={drafts}
+                                stage="draft"
+                                color="bg-blue-100"
+                                onAction={handleAction}
+                                loading={loading}
+                            />
+                        )}
+                        {(!isMobile || activeStage === 'published') && (
+                            <StatusColumn
+                                title="Published"
+                                icon={<CheckCircle size={16} className="text-green-600" />}
+                                items={published}
+                                stage="published"
+                                color="bg-green-100"
+                                onAction={handleAction}
+                                loading={loading}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
 

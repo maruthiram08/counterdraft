@@ -45,55 +45,55 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl p-6 relative">
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-zinc-100 rounded-full">
-                    <X size={20} className="text-zinc-400" />
+        <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-canvas rounded-card max-w-lg w-full shadow-float p-6 md:p-8 relative">
+                <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
+                    <X size={20} />
                 </button>
 
                 <div className="mb-8">
-                    <h2 className="text-2xl font-bold mb-2">Complete your Profile</h2>
-                    <p className="text-zinc-500 text-sm">Help the Brain understand who you are for better suggestions.</p>
+                    <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Complete your Profile</h2>
+                    <p className="text-ink-soft text-sm">Help the Brain understand who you are for better suggestions.</p>
                 </div>
 
                 <div className="space-y-6">
                     {/* Role */}
                     <div>
-                        <label className="text-sm font-bold text-zinc-900 mb-2 block flex items-center gap-2">
+                        <label className="text-sm font-medium text-ink mb-2 block flex items-center gap-2">
                             <User size={16} /> Role
                         </label>
                         <input
                             value={role}
                             onChange={(e) => setRole(e.target.value)}
                             placeholder="e.g. Founder, Creator, VC..."
-                            className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-black outline-none transition-all"
+                            className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
                         />
                     </div>
 
                     {/* Context */}
                     <div>
-                        <label className="text-sm font-bold text-zinc-900 mb-2 block flex items-center gap-2">
+                        <label className="text-sm font-medium text-ink mb-2 block flex items-center gap-2">
                             <Briefcase size={16} /> What are you building?
                         </label>
                         <textarea
                             value={context}
                             onChange={(e) => setContext(e.target.value)}
                             placeholder="One line pitch..."
-                            className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-black outline-none transition-all resize-none h-24"
+                            className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all resize-none h-24"
                         />
                     </div>
 
                     {/* Writing Style */}
                     <div>
-                        <label className="text-sm font-bold text-zinc-900 mb-2 block flex items-center justify-between">
+                        <label className="text-sm font-medium text-ink mb-2 block flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <PenTool size={16} /> Writing Style
                             </div>
                             <button
                                 onClick={() => setIsAnalysisOpen(true)}
-                                className="text-xs font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 rounded-md flex items-center gap-1 transition-colors"
+                                className="h-8 px-3 text-xs font-medium text-ink hover:text-ember-600 bg-canvas shadow-raised active:shadow-pressed rounded-full flex items-center gap-1 transition-all"
                             >
-                                <Wand2 size={12} /> Analyze My Style
+                                <Wand2 size={12} className="text-ember-500" /> Analyze My Style
                             </button>
                         </label>
 
@@ -102,13 +102,13 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                                 <button
                                     key={v}
                                     onClick={() => setVoice(v)}
-                                    className={`p-3 text-xs font-medium rounded-lg border transition-all text-center ${voice === v ? 'bg-black text-white border-black ring-2 ring-black/20' : 'bg-white border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50'}`}
+                                    className={`h-11 px-3 text-xs font-medium rounded-full transition-all text-center ${voice === v ? 'bg-canvas shadow-pressed text-ember-600' : 'bg-canvas shadow-raised text-ink-soft hover:text-ink'}`}
                                 >
                                     {v}
                                 </button>
                             ))}
                         </div>
-                        <p className="text-[10px] text-zinc-400 mt-2 ml-1">
+                        <p className="text-xs text-ink-muted mt-2 ml-1">
                             {voice && !['Neutral', 'Academic', 'Direct', 'Storyteller'].includes(voice)
                                 ? "✨ Using Custom Analyzed Style"
                                 : "Choose a preset or analyze your writing."}
@@ -130,7 +130,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                     <button
                         onClick={handleSubmit}
                         disabled={!role || !context || !voice || loading}
-                        className="w-full py-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {loading && <Loader2 className="animate-spin" size={16} />}
                         Save Profile

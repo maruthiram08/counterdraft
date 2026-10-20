@@ -11,22 +11,22 @@ interface DirectionCardProps {
 
 export function DirectionCard({ title, reason, relatedBelief, onDraft }: DirectionCardProps) {
     return (
-        <div className="group py-6 px-4 border-b border-gray-100 bg-white hover:bg-gray-50/30 transition-all">
+        <div className="group bg-surface rounded-tile shadow-card p-5 hover:shadow-float hover:-translate-y-0.5 transition-all">
             <div className="flex justify-between items-start gap-8">
 
                 {/* Content */}
                 <div className="max-w-2xl">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2 group-hover:text-[var(--accent)] transition-colors cursor-pointer" onClick={() => onDraft && onDraft(title)}>
+                    <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink mb-2 group-hover:text-ember-600 transition-colors cursor-pointer" onClick={() => onDraft && onDraft(title)}>
                         {title}
                     </h3>
-                    <p className="text-sm text-gray-500 leading-relaxed mb-3">
+                    <p className="text-sm text-ink-soft leading-relaxed mb-3">
                         {reason}
                     </p>
 
                     {relatedBelief && (
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                            <span className="w-1 h-1 rounded-full bg-gray-300" />
-                            <span className="font-serif italic truncate max-w-md opacity-70">
+                        <div className="flex items-center gap-2 text-xs text-ink-muted">
+                            <span className="w-1 h-1 rounded-full bg-ember-500" />
+                            <span className="italic truncate max-w-md">
                                 from &quot;{relatedBelief}&quot;
                             </span>
                         </div>
@@ -40,7 +40,7 @@ export function DirectionCard({ title, reason, relatedBelief, onDraft }: Directi
                             e.stopPropagation();
                             onDraft(title);
                         }}
-                        className="shrink-0 p-2 rounded-full text-gray-300 hover:text-[var(--accent)] hover:bg-white hover:shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                        className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
                         title="Start Draft"
                     >
                         <Pen size={16} />

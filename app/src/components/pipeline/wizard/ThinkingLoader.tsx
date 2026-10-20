@@ -7,8 +7,8 @@ interface ThinkingLoaderProps {
 
 export function ThinkingLoader({ message }: ThinkingLoaderProps) {
     return (
-        <div className="flex flex-col items-center py-12 text-gray-400 bg-white/50 rounded-lg border-2 border-dashed border-gray-100">
-            <Loader2 size={32} className="animate-spin mb-4 text-[var(--accent)]" />
+        <div className="flex flex-col items-center py-12 text-ink-muted bg-canvas shadow-pressed rounded-card">
+            <Loader2 size={32} className="animate-spin mb-4 text-ember-500" />
             <p className="animate-pulse">{message}</p>
         </div>
     );

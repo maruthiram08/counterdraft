@@ -12,9 +12,9 @@ export function WhyDrawer({ isOpen, onClose, confidence }: WhyDrawerProps) {
 
     const getIcon = () => {
         switch (confidence.level) {
-            case 'high': return <ShieldCheck className="text-green-600" size={32} />;
-            case 'medium': return <Shield className="text-yellow-600" size={32} />;
-            case 'low': return <ShieldAlert className="text-red-600" size={32} />;
+            case 'high': return <ShieldCheck className="text-sage-700" size={32} />;
+            case 'medium': return <Shield className="text-sand-700" size={32} />;
+            case 'low': return <ShieldAlert className="text-rose-700" size={32} />;
         }
     };
 
@@ -28,9 +28,9 @@ export function WhyDrawer({ isOpen, onClose, confidence }: WhyDrawerProps) {
 
     const getColorClass = () => {
         switch (confidence.level) {
-            case 'high': return "bg-green-50 border-green-200 text-green-900";
-            case 'medium': return "bg-yellow-50 border-yellow-200 text-yellow-900";
-            case 'low': return "bg-red-50 border-red-200 text-red-900";
+            case 'high': return "bg-sage-100 text-sage-700";
+            case 'medium': return "bg-sand-100 text-sand-700";
+            case 'low': return "bg-rose-100 text-rose-700";
         }
     };
 
@@ -38,29 +38,29 @@ export function WhyDrawer({ isOpen, onClose, confidence }: WhyDrawerProps) {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/20 z-50 backdrop-blur-sm"
+                className="fixed inset-0 bg-ink/30 z-50 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Drawer */}
-            <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out border-l flex flex-col">
-                <div className="p-4 border-b flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Why this score?</h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
-                        <X size={20} className="text-gray-500" />
+            <div className="fixed inset-y-0 right-0 w-80 bg-canvas shadow-float rounded-l-card z-50 transform transition-transform duration-300 ease-in-out flex flex-col">
+                <div className="px-6 pt-6 pb-2 flex items-center justify-between">
+                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Why this score?</h3>
+                    <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed">
+                        <X size={18} />
                     </button>
                 </div>
 
                 <div className="p-6 flex-1 overflow-y-auto">
-                    <div className="flex flex-col items-center mb-6">
-                        <div className={`p-4 rounded-full mb-3 ${confidence.level === 'high' ? 'bg-green-100' : confidence.level === 'medium' ? 'bg-yellow-100' : 'bg-red-100'}`}>
+                    <div className="flex flex-col items-center mb-6 bg-surface rounded-tile shadow-card p-5">
+                        <div className={`p-4 rounded-full mb-3 ${confidence.level === 'high' ? 'bg-sage-100' : confidence.level === 'medium' ? 'bg-sand-100' : 'bg-rose-100'}`}>
                             {getIcon()}
                         </div>
-                        <h4 className="text-xl font-bold">{getTitle()}</h4>
-                        <div className="text-3xl font-black mt-1 text-gray-800">{confidence.score}/100</div>
+                        <h4 className="text-[17px] font-medium tracking-[-0.01em] text-ink">{getTitle()}</h4>
+                        <div className="text-4xl font-medium tracking-[-0.03em] mt-1 text-ink">{confidence.score}/100</div>
                     </div>
 
-                    <div className={`p-4 rounded-lg border mb-6 ${getColorClass()}`}>
+                    <div className={`p-4 rounded-tile mb-6 ${getColorClass()}`}>
                         <p className="text-sm font-medium leading-relaxed">
                             {confidence.reasoning}
                         </p>
@@ -68,9 +68,9 @@ export function WhyDrawer({ isOpen, onClose, confidence }: WhyDrawerProps) {
 
                     {confidence.conflictingBeliefIds && confidence.conflictingBeliefIds.length > 0 && (
                         <div className="space-y-3">
-                            <h5 className="text-xs font-semibold uppercase text-gray-500 tracking-wider">Related Beliefs</h5>
+                            <h5 className="text-sm text-ink-muted">Related Beliefs</h5>
                             {/* In a real app we would resolve IDs to names here, or pass names in the analysis */}
-                            <p className="text-sm text-gray-600 italic">
+                            <p className="text-sm text-ink-soft italic">
                                 Alignment checks performed against {confidence.conflictingBeliefIds.length} beliefs.
                             </p>
                         </div>

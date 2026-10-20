@@ -1,5 +1,6 @@
 
-import { ContentItem } from "./types";
+import { ContentItem, Stage } from "./types";
+import { STAGE_STYLES } from "./stageStyles";
 import { ContentCard } from "./ContentCard";
 
 interface ColumnProps {
@@ -16,50 +17,39 @@ interface ColumnProps {
 
 function SkeletonCard() {
     return (
-        <div className="bg-white p-4 rounded-xl border border-gray-100/80 shadow-sm flex flex-col gap-3 h-auto min-h-[140px] animate-pulse">
+        <div className="bg-surface p-4 rounded-tile shadow-card flex flex-col gap-3 min-h-[120px] animate-pulse">
             <div className="flex items-center justify-between">
                 <div className="flex gap-2">
-                    <div className="h-5 w-16 bg-gray-100 rounded"></div>
-                    <div className="h-5 w-12 bg-gray-100 rounded"></div>
+                    <div className="h-7 w-20 bg-surface-muted rounded-full"></div>
+                    <div className="h-7 w-16 bg-surface-muted rounded-full"></div>
                 </div>
-                <div className="h-4 w-12 bg-gray-100 rounded"></div>
+                <div className="h-4 w-12 bg-surface-muted rounded-full"></div>
             </div>
-
-            <div className="space-y-2 mt-1">
-                <div className="h-5 w-3/4 bg-gray-100 rounded"></div>
-                <div className="space-y-1">
-                    <div className="h-3 w-full bg-gray-50 rounded"></div>
-                    <div className="h-3 w-5/6 bg-gray-50 rounded"></div>
-                </div>
-            </div>
-
-            <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50">
-                <div className="flex gap-2">
-                    <div className="h-8 w-12 bg-gray-50 rounded-lg"></div>
-                    <div className="h-8 w-12 bg-gray-50 rounded-lg"></div>
-                </div>
-                <div className="flex gap-1">
-                    <div className="h-7 w-7 bg-gray-50 rounded-md"></div>
-                    <div className="h-7 w-7 bg-gray-50 rounded-md"></div>
-                </div>
+            <div className="space-y-2">
+                <div className="h-5 w-4/5 bg-surface-muted rounded-full"></div>
+                <div className="h-3 w-full bg-surface-muted/70 rounded-full"></div>
+                <div className="h-3 w-2/3 bg-surface-muted/70 rounded-full"></div>
             </div>
         </div>
     );
 }
 
-export function StatusColumn({ title, items, onAction, loading, className = "", cols = 1 }: ColumnProps) {
+export function StatusColumn({ title, items, stage, onAction, loading, className = "", cols = 1 }: ColumnProps) {
+    const dot = STAGE_STYLES[stage as Stage]?.dot ?? 'bg-ink-muted';
+
     return (
-        <div className={`flex-1 min-w-[280px] sm:min-w-[250px] bg-transparent rounded-xl p-3 ${className}`}>
-            <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-serif font-medium text-gray-900">{title}</h3>
-                    <span className="text-xs font-medium text-gray-500 bg-gray-200/60 px-2 py-0.5 rounded-full">
-                        {loading ? '-' : items.length}
-                    </span>
+        <div className={`flex-1 min-w-[280px] sm:min-w-[250px] bg-canvas shadow-pressed rounded-card p-3 ${className}`}>
+            <div className="flex items-center justify-between px-3 pt-1 pb-3">
+                <div className="flex items-center gap-2.5">
+                    <span className={`w-2 h-2 rounded-full ${dot}`} />
+                    <h3 className="text-base font-medium text-ink">{title}</h3>
                 </div>
+                <span className="min-w-8 h-8 px-2 rounded-full bg-canvas shadow-raised text-ink text-xs font-semibold flex items-center justify-center">
+                    {loading ? '–' : items.length}
+                </span>
             </div>
 
-            <div className={cols > 1 ? `grid grid-cols-1 md:grid-cols-${cols} gap-3` : "space-y-3"}>
+            <div className={cols > 1 ? `grid grid-cols-1 md:grid-cols-${cols} gap-2.5` : "space-y-2.5"}>
                 {loading ? (
                     <>
                         <SkeletonCard />
@@ -72,8 +62,8 @@ export function StatusColumn({ title, items, onAction, loading, className = "", 
                         )}
                     </>
                 ) : items.length === 0 ? (
-                    <div className={`h-32 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center ${cols > 1 ? 'col-span-full' : ''}`}>
-                        <p className="text-sm text-gray-400">Empty</p>
+                    <div className={`h-28 border border-dashed border-ink/15 rounded-tile flex items-center justify-center ${cols > 1 ? 'col-span-full' : ''}`}>
+                        <p className="text-sm text-ink-muted">Nothing here yet</p>
                     </div>
                 ) : (
                     items.map(item => (

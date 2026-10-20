@@ -66,7 +66,7 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
             {/* Backdrop when expanded */}
             {sheetState !== 'collapsed' && (
                 <div
-                    className="fixed inset-0 bg-black/30 z-40 transition-opacity duration-300"
+                    className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-40 transition-opacity duration-300"
                     onClick={handleClose}
                 />
             )}
@@ -74,7 +74,7 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
             {/* Bottom Sheet */}
             <div
                 ref={sheetRef}
-                className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl transition-all duration-300 ease-out ${isDragging ? 'transition-none' : ''
+                className={`fixed bottom-0 left-0 right-0 z-50 bg-canvas rounded-t-card shadow-float transition-all duration-300 ease-out ${isDragging ? 'transition-none' : ''
                     }`}
                 style={{
                     height: heights[sheetState],
@@ -89,23 +89,23 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
                     onTouchEnd={handleTouchEnd}
                     onClick={handleClick}
                 >
-                    <div className="w-10 h-1 bg-gray-300 rounded-full mb-2" />
+                    <div className="w-10 h-1 bg-ink-muted/40 rounded-full mb-2" />
 
                     {sheetState === 'collapsed' ? (
-                        <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm py-1">
-                            <Sparkles size={16} />
+                        <div className="flex items-center gap-2 text-ink font-medium text-sm py-1">
+                            <Sparkles size={16} className="text-ember-500" />
                             <span>AI Agent</span>
                             <ChevronUp size={16} className="opacity-50" />
                         </div>
                     ) : (
                         <div className="w-full flex items-center justify-between px-4 py-1">
-                            <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                <Sparkles size={18} className="text-indigo-500" />
+                            <div className="flex items-center gap-2 text-ink font-medium tracking-[-0.01em]">
+                                <Sparkles size={18} className="text-ember-500" />
                                 <span>AI Agent</span>
                             </div>
                             <button
                                 onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="w-9 h-9 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
                             >
                                 <X size={18} />
                             </button>
