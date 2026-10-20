@@ -25,16 +25,16 @@ interface FieldConfig {
 
 // Every field takes free text; presets are only one-click shortcuts
 const FIELDS: FieldConfig[] = [
-    { key: 'outcome', label: 'Goal', icon: Target, color: 'text-blue-500', placeholder: 'What should this post achieve?', presets: ['Authority', 'Engagement', 'Conversion', 'Connection'] },
-    { key: 'audience', label: 'Audience', icon: Users, color: 'text-amber-500', placeholder: 'Who is this for?', presets: ['Founders', 'Engineers', 'Investors', 'Designers', 'Marketing Leaders'] },
+    { key: 'outcome', label: 'Goal', icon: Target, color: 'text-dusk-500', placeholder: 'What should this post achieve?', presets: ['Authority', 'Engagement', 'Conversion', 'Connection'] },
+    { key: 'audience', label: 'Audience', icon: Users, color: 'text-sand-500', placeholder: 'Who is this for?', presets: ['Founders', 'Engineers', 'Investors', 'Designers', 'Marketing Leaders'] },
     { key: 'pain', label: 'Their pain', icon: HeartCrack, color: 'text-rose-500', placeholder: 'What are they struggling with?' },
-    { key: 'stance', label: 'Stance', icon: Scale, color: 'text-green-500', placeholder: 'e.g. gently sceptical', presets: ['Supportive', 'Contrarian', 'Analytical', 'Visionary'] },
-    { key: 'format', label: 'Format', icon: LayoutTemplate, color: 'text-purple-500', placeholder: 'e.g. a short story', presets: FORMAT_PRESETS.map(f => formatLabel(f)) },
-    { key: 'toneNotes', label: 'Tone', icon: Flame, color: 'text-orange-500', placeholder: 'e.g. spicy but not preachy' },
-    { key: 'cta', label: 'Call to action', icon: Megaphone, color: 'text-sky-500', placeholder: 'What should readers do next?' },
-    { key: 'length', label: 'Length', icon: Ruler, color: 'text-gray-500', placeholder: 'e.g. under 200 words' },
-    { key: 'include', label: 'Include', icon: ListChecks, color: 'text-teal-500', placeholder: 'Points to include, separated by ;' },
-    { key: 'avoid', label: 'Avoid', icon: Ban, color: 'text-red-400', placeholder: 'Things to avoid, separated by ;' },
+    { key: 'stance', label: 'Stance', icon: Scale, color: 'text-sage-500', placeholder: 'e.g. gently sceptical', presets: ['Supportive', 'Contrarian', 'Analytical', 'Visionary'] },
+    { key: 'format', label: 'Format', icon: LayoutTemplate, color: 'text-ember-500', placeholder: 'e.g. a short story', presets: FORMAT_PRESETS.map(f => formatLabel(f)) },
+    { key: 'toneNotes', label: 'Tone', icon: Flame, color: 'text-ember-600', placeholder: 'e.g. spicy but not preachy' },
+    { key: 'cta', label: 'Call to action', icon: Megaphone, color: 'text-dusk-700', placeholder: 'What should readers do next?' },
+    { key: 'length', label: 'Length', icon: Ruler, color: 'text-ink-muted', placeholder: 'e.g. under 200 words' },
+    { key: 'include', label: 'Include', icon: ListChecks, color: 'text-sage-700', placeholder: 'Points to include, separated by ;' },
+    { key: 'avoid', label: 'Avoid', icon: Ban, color: 'text-rose-500', placeholder: 'Things to avoid, separated by ;' },
 ];
 
 const RECENT_KEY = 'counterdraft:strategy-recent';
@@ -213,20 +213,20 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
 
     return (
         <div className="mb-8">
-            <div className="relative bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-300">
+            <div className="relative bg-surface rounded-tile shadow-card transition-all duration-300">
                 <div className="absolute -top-3 left-4 z-10 flex gap-2">
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="bg-white px-2 py-0.5 border border-gray-200 rounded-md text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                        className="bg-canvas h-7 px-3 rounded-full text-xs font-medium text-ink-soft flex items-center gap-1.5 hover:text-ember-600 shadow-raised active:shadow-pressed transition-all"
                     >
-                        <Target size={10} className={isExpanded ? "text-blue-500" : ""} />
+                        <Target size={12} className={isExpanded ? "text-ember-500" : ""} />
                         Strategy
-                        {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                     </button>
                 </div>
 
                 {!isExpanded && (
-                    <button onClick={() => setIsExpanded(true)} className="w-full text-left px-4 pt-4 pb-3 text-xs text-gray-500 truncate">
+                    <button onClick={() => setIsExpanded(true)} className="w-full text-left px-5 pt-6 pb-4 text-xs text-ink-soft truncate">
                         {filledFields.length
                             ? filledFields.slice(0, 5).map(f => `${f.label}: ${getFieldValue(metadata, f.key)}`).join(' · ')
                             : "No strategy yet. Claude will infer one from your topic."}
@@ -234,7 +234,7 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
                 )}
 
                 {isExpanded && (
-                    <div className="p-4 pt-5 space-y-3">
+                    <div className="p-5 pt-7 space-y-4">
                         {/* Brief */}
                         <div className="relative">
                             <textarea
@@ -251,11 +251,11 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
                                 readOnly={isPublished}
                                 rows={3}
                                 placeholder={`What's this post for, and who should it reach? Say it however you like.\ne.g. "Get founders scared of hiring their first PM to stop overthinking it. Slightly spicy, a short story from my last startup, and nudge them to DM me."`}
-                                className="w-full resize-y bg-gray-50/60 border border-gray-100 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-200 focus:bg-white transition-colors"
+                                className="w-full resize-y bg-canvas shadow-well rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
                             />
                             {!isPublished && (
-                                <div className="flex items-center justify-between mt-1.5">
-                                    <span className="text-[11px] text-gray-400">
+                                <div className="flex items-center justify-between gap-3 mt-3">
+                                    <span className="text-xs text-ink-muted">
                                         {strategySet && !metadata.brief
                                             ? "Claude filled these in from your topic. Describe the post to steer it, or edit any field."
                                             : "Optional. Anything you leave out, Claude infers."}
@@ -263,9 +263,9 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
                                     <button
                                         onClick={() => parseBrief(brief)}
                                         disabled={isParsing}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all disabled:opacity-50 ${briefChanged ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`}
+                                        className={`shrink-0 h-10 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 active:shadow-pressed transition-all disabled:opacity-50 ${briefChanged ? 'bg-ember-500 text-white hover:bg-ember-600 shadow-ember' : 'bg-canvas text-ink shadow-raised hover:text-ember-600'}`}
                                     >
-                                        {isParsing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                        {isParsing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} className={briefChanged ? '' : 'text-ember-500'} />}
                                         {brief.trim() ? "Shape strategy" : "Infer strategy"}
                                     </button>
                                 </div>
@@ -274,24 +274,24 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
 
                         {/* Clarifying question */}
                         {metadata.clarifyingQuestion && !isPublished && (
-                            <div className="flex items-center gap-2 bg-blue-50/60 border border-blue-100 rounded-lg px-3 py-2">
-                                <MessageCircleQuestion size={14} className="text-blue-500 shrink-0" />
-                                <span className="text-xs text-blue-900 shrink-0 max-w-[50%]">{metadata.clarifyingQuestion}</span>
+                            <div className="flex items-center gap-2 bg-dusk-100 rounded-tile px-4 py-3">
+                                <MessageCircleQuestion size={14} className="text-dusk-700 shrink-0" />
+                                <span className="text-xs font-medium text-dusk-700 shrink-0 max-w-[50%]">{metadata.clarifyingQuestion}</span>
                                 <input
                                     value={answer}
                                     onChange={(e) => setAnswer(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && answerQuestion()}
                                     placeholder="Your answer"
-                                    className="flex-1 min-w-0 bg-transparent text-xs text-gray-900 placeholder:text-blue-300 focus:outline-none border-b border-blue-200"
+                                    className="flex-1 min-w-0 h-8 bg-surface shadow-well rounded-full px-3 text-xs text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                                 />
-                                <button onClick={dismissQuestion} className="text-blue-300 hover:text-blue-600" aria-label="Dismiss question">
+                                <button onClick={dismissQuestion} className="w-7 h-7 rounded-full flex items-center justify-center text-dusk-500 hover:text-dusk-700 active:shadow-pressed" aria-label="Dismiss question">
                                     <X size={12} />
                                 </button>
                             </div>
                         )}
 
                         {/* What Claude understood: every field is editable free text */}
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2">
                             {FIELDS.map(field => {
                                 const value = getFieldValue(metadata, field.key);
                                 const Icon = field.icon;
@@ -301,10 +301,10 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
                                         .filter((v, i, all) => all.findIndex(o => o.toLowerCase() === v.toLowerCase()) === i)
                                         .slice(0, 8);
                                     return (
-                                        <div key={field.key} className="w-full bg-white border border-blue-200 rounded-lg p-2 space-y-1.5">
-                                            <div className="flex items-center gap-1.5">
+                                        <div key={field.key} className="w-full bg-canvas shadow-pressed rounded-tile p-3 space-y-2.5">
+                                            <div className="flex items-center gap-2 bg-surface shadow-well rounded-full px-3 h-9">
                                                 <Icon size={12} className={field.color} />
-                                                <span className="text-[11px] font-medium text-gray-500">{field.label}</span>
+                                                <span className="text-xs font-medium text-ink-muted shrink-0">{field.label}</span>
                                                 <input
                                                     autoFocus
                                                     value={fieldDraft}
@@ -315,17 +315,17 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
                                                     }}
                                                     onBlur={() => commitField(field.key, fieldDraft)}
                                                     placeholder={field.placeholder}
-                                                    className="flex-1 min-w-0 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+                                                    className="flex-1 min-w-0 bg-transparent text-sm text-ink placeholder:text-ink-muted border-0 focus:outline-none"
                                                 />
                                             </div>
                                             {suggestions.length > 0 && (
-                                                <div className="flex flex-wrap gap-1">
+                                                <div className="flex flex-wrap gap-2">
                                                     {suggestions.map(s => (
                                                         <button
                                                             key={s}
                                                             // Commit before the input's blur fires
                                                             onMouseDown={(e) => { e.preventDefault(); commitField(field.key, s); }}
-                                                            className="px-2 py-0.5 text-xs text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+                                                            className="h-7 px-3 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all"
                                                         >
                                                             {s}
                                                         </button>
@@ -343,14 +343,14 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
                                         key={field.key}
                                         onClick={() => startEditing(field.key)}
                                         title={value ? `${field.label}: ${value}` : `Add ${field.label.toLowerCase()}`}
-                                        className={`max-w-full flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors ${value
-                                            ? 'bg-gray-50 border border-gray-100 text-gray-800 hover:border-blue-200'
-                                            : 'border border-dashed border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300'} ${isPublished ? 'cursor-default' : ''}`}
+                                        className={`max-w-full flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium transition-all ${value
+                                            ? 'bg-canvas shadow-well text-ink hover:text-ember-700'
+                                            : 'bg-surface border border-dashed border-line text-ink-muted hover:text-ink-soft hover:border-ink-muted/40'} ${isPublished ? 'cursor-default' : ''}`}
                                     >
                                         <Icon size={11} className={value ? field.color : ''} />
                                         {value ? (
                                             <>
-                                                <span className="text-gray-400">{field.label}:</span>
+                                                <span className="text-ink-muted">{field.label}:</span>
                                                 <span className="truncate max-w-[260px]">{value}</span>
                                             </>
                                         ) : (
