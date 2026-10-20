@@ -54,11 +54,11 @@ export const FloatingFeedbackButton = () => {
     };
 
     return (
-        <div className="fixed bottom-6 left-6 z-[100] flex flex-col items-start">
+        <div className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-[100] flex flex-col items-end">
 
             {/* Expanded Form */}
             {isOpen && (
-                <div className="mb-4 bg-canvas rounded-card shadow-float w-[320px] overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
+                <div className="mb-4 bg-canvas rounded-card shadow-float w-[min(320px,calc(100vw-2rem))] overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
                     <div className="px-5 pt-5 pb-1 flex justify-between items-center">
                         <span className="text-[17px] font-medium tracking-[-0.01em] text-ink">Share Feedback</span>
                         <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
