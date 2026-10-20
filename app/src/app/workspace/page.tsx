@@ -476,7 +476,7 @@ function WorkspaceContent() {
                 )}
 
                 {effectiveSection === 'explore' && (
-                    <div className="flex-1 overflow-y-auto bg-canvas">
+                    <div className="flex-1 overflow-hidden bg-canvas">
                         <ExplorerView />
                     </div>
                 )}
