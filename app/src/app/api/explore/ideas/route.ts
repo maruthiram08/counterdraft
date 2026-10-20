@@ -87,6 +87,26 @@ export async function POST(req: Request) {
             ? `Multiple topics: ${titles.join('; ')}`
             : titles[0];
 
+        // What the writer searched for is the topic; the stories they picked are the material for it
+        const search = typeof body.context === 'string' ? body.context.trim().slice(0, 300) : '';
+        type SourceInput = { title?: unknown; summary?: unknown; takeaway?: unknown };
+        const sources: SourceInput[] = Array.isArray(body.sources) ? body.sources.slice(0, 6) : [];
+        const material = sources
+            .filter(src => typeof src.title === 'string')
+            .map(src => [
+                `- ${src.title}`,
+                typeof src.takeaway === 'string' && src.takeaway ? `  Takeaway: ${src.takeaway.slice(0, 300)}` : '',
+                typeof src.summary === 'string' && src.summary ? `  Snippet: ${src.summary.slice(0, 400)}` : '',
+            ].filter(Boolean).join('\n'))
+            .join('\n');
+        const userMessage = search
+            ? `The writer is exploring: "${search}"
+Every idea must be about that, as they framed it. Use the material below as evidence, examples or a starting point, not as a new topic.
+
+Material they picked:
+${material || subject}`
+            : `Generate ${count} post ideas about: "${subject}"`;
+
         const writerContext = await getWriterContext(userId, body.relatedBeliefIds);
 
         const platformDesc = PLATFORM_GUIDANCE[platform] || PLATFORM_GUIDANCE.linkedin;
@@ -97,7 +117,7 @@ export async function POST(req: Request) {
 You are an editorial content strategist helping a creator turn a trending topic into strong, differentiated post ideas for ${platformDesc}.
 
 You are given:
-- A trending topic or theme
+- The topic the writer is exploring, and material (articles, guides, case studies) they picked for it
 - Optional audience context (who they are and what they care about)
 - Tone guidance: ${toneDesc}
 ${writerContext ? `- What the writer believes and how they write:\n${writerContext}\n` : ''}
@@ -142,7 +162,7 @@ Think like an editor helping a creator stand out during a noisy moment — not a
         const completion = await openai.chat.completions.create({
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: `Generate ${count} post ideas about: "${subject}"${body.context ? `\n\nContext/User Intent: "${body.context}"` : ''}` }
+                { role: "user", content: userMessage }
             ],
             model: "gpt-4o",
             response_format: { type: "json_object" },

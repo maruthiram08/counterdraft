@@ -6,6 +6,7 @@ import {
     ChevronRight, ChevronLeft, Compass, RotateCcw, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { ExploreOrigin } from "@/types";
 
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
@@ -342,6 +343,7 @@ export function ExploreWorkspace() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     titles: sources.map(s => s.title),
+                    sources: sources.map(s => ({ title: s.title, summary: s.summary, takeaway: s.takeaway })),
                     context: step?.query,
                     platform,
                     tone,
@@ -375,7 +377,7 @@ export function ExploreWorkspace() {
         if (step?.query) sourceContext += `Original Search Query: "${step.query}"\n\n`;
 
         if (sources.length > 0) {
-            sourceContext += `Source Topics:\n${sources.map(t => `- ${t.title} (${t.sourceUrl})`).join('\n')}\n\n`;
+            sourceContext += `Source Topics:\n${sources.map(t => `- ${t.title} (${t.sourceUrl})${t.takeaway ? `\n  Takeaway: ${t.takeaway}` : ''}`).join('\n')}\n\n`;
 
             // Fetch Full Content for the primary source
             const primarySource = sources[0];
@@ -407,7 +409,7 @@ export function ExploreWorkspace() {
                     format: idea.format,
                     source_type: 'explore',
                     stage: 'idea',
-                    brain_metadata: { sourceContext }
+                    brain_metadata: { sourceContext, explore: exploreOrigin(idea, sources) }
                 }),
             });
             if (res.ok) {
@@ -425,6 +427,24 @@ export function ExploreWorkspace() {
             setSavingIdea(null);
         }
     };
+
+    // Everything the idea came from, saved with it so research and drafting stay on the same topic
+    const exploreOrigin = (idea: PostIdea, sources: Story[]): ExploreOrigin => ({
+        query: step?.query ?? '',
+        label: step?.label,
+        intent: step?.intent,
+        platform,
+        tone,
+        sources: sources.map(s => ({
+            title: s.title,
+            url: s.sourceUrl,
+            source: s.source,
+            summary: s.summary,
+            takeaway: s.takeaway,
+            kind: s.kind,
+        })),
+        idea: { hook: idea.hook, angle: idea.angle, format: idea.format, belief: idea.belief },
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
