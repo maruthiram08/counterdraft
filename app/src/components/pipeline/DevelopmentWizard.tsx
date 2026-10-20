@@ -17,7 +17,7 @@ import { OutlineStep } from "./wizard/OutlineStep";
 import { DraftStep } from "./wizard/DraftStep";
 import { RefineContextPanel } from "./wizard/RefineContextPanel";
 import { ThinkingLoader } from "./wizard/ThinkingLoader";
-import { toStrategyAnalysis } from "@/lib/brain/strategy";
+import { StrategyAnalysis, toStrategyAnalysis } from "@/lib/brain/strategy";
 
 interface DevelopmentWizardProps {
     item: ContentItem;
@@ -49,7 +49,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const [draftContent, setDraftContent] = useState('');
 
     // Strategy Verification State
-    const [strategyAnalysis, setStrategyAnalysis] = useState<{ analysis: string; score: number; suggestions: string[] } | null>(null);
+    const [strategyAnalysis, setStrategyAnalysis] = useState<StrategyAnalysis | null>(null);
     const [verifyingStrategy, setVerifyingStrategy] = useState(false);
 
     // Global Context
@@ -68,10 +68,15 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         return meta;
     });
 
-    const handleVerifyStrategy = async (contentOverride?: string) => {
+    // Returns the new analysis so a caller can compare it with the last one
+    const handleVerifyStrategy = async (contentOverride?: string, fix?: string): Promise<StrategyAnalysis | null> => {
         // Buttons can call this with a click event; only a string is a draft
         const textToVerify = typeof contentOverride === 'string' && contentOverride.trim() ? contentOverride : draftContent;
-        if (!textToVerify) return;
+        if (!textToVerify) return null;
+        // The last check anchors the re-check, so ratings only move where the draft changed
+        const previous = strategyAnalysis?.criteria.length
+            ? { criteria: strategyAnalysis.criteria.map(c => ({ key: c.key, rating: c.rating, note: c.note })), fix }
+            : undefined;
 
         setVerifyingStrategy(true);
         // Ensure context panel is open so user sees result
@@ -84,29 +89,33 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 body: JSON.stringify({
                     action: 'verify_strategy',
                     draft: textToVerify,
-                    brainMetadata: item.brain_metadata
+                    brainMetadata: item.brain_metadata,
+                    previous
                 })
             });
 
             const data = await res.json();
             if (res.ok) {
-                setStrategyAnalysis(toStrategyAnalysis(data));
-                toast.success('Strategy analysis complete');
-            } else {
-                toast.error(data.error || 'Failed to verify strategy');
+                const analysis = toStrategyAnalysis(data);
+                setStrategyAnalysis(analysis);
+                if (!fix) toast.success('Strategy analysis complete');
+                return analysis;
             }
+            toast.error(data.error || 'Failed to verify strategy');
         } catch (error) {
             console.error("Strategy verification failed:", error);
             toast.error('Verification failed');
         } finally {
             setVerifyingStrategy(false);
         }
+        return null;
     };
 
     const [fixingStrategy, setFixingStrategy] = useState(false);
 
     const handleAutoFix = async (instruction: string) => {
         if (!draftContent) return;
+        const before = { draft: draftContent, analysis: strategyAnalysis };
         setFixingStrategy(true);
         try {
             const res = await fetch('/api/content/develop', {
@@ -123,9 +132,15 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             const data = await res.json();
             if (res.ok && data.draft) {
                 setDraftContent(data.draft);
-                toast.success('Auto-fix applied! Re-verifying...');
-                // Automatically re-run verification on the NEW content
-                await handleVerifyStrategy(data.draft);
+                // Re-check the new draft against the last check, and keep whichever version scores higher
+                const after = await handleVerifyStrategy(data.draft, instruction);
+                if (after && before.analysis && after.score < before.analysis.score) {
+                    setDraftContent(before.draft);
+                    setStrategyAnalysis(before.analysis);
+                    toast.info(`That fix scored ${after.score}, lower than ${before.analysis.score}, so your previous draft is kept`);
+                } else if (after) {
+                    toast.success(before.analysis ? `Fix applied: ${before.analysis.score} → ${after.score}` : 'Fix applied');
+                }
             } else {
                 toast.error('Failed to apply fix');
             }

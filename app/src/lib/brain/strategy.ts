@@ -155,19 +155,70 @@ export function formatIdeaChain({ hook, angle, meta }: { hook: string; angle?: s
     return `\n\nHOW THIS IDEA CAME TO BE (one connected chain, not separate inputs):\n${lines.join('\n')}`;
 }
 
+// Fixed rubric for the strategy check. The model rates each criterion 0-5 and the score is
+// computed here, so the same draft gets the same score and a fix moves only the part it touched.
+export const STRATEGY_CRITERIA = [
+    { key: 'audience', label: 'Audience fit', weight: 25, ask: 'Speaks to the defined audience in their language and addresses their specific pain' },
+    { key: 'stance', label: 'Stance & tone', weight: 20, ask: 'Holds the promised stance and tone all the way through' },
+    { key: 'goal', label: 'Goal & call to action', weight: 25, ask: 'Drives toward the goal and lands the call to action' },
+    { key: 'brief', label: 'Brief requirements', weight: 20, ask: "Covers the brief's must-include points, avoids what it says to avoid, fits the format and length" },
+    { key: 'clarity', label: 'Hook & specifics', weight: 10, ask: 'Opens with a hook and uses concrete specifics over generic claims' },
+] as const;
+
+export type StrategyCriterionKey = typeof STRATEGY_CRITERIA[number]['key'];
+
+export interface StrategyCriterion {
+    key: StrategyCriterionKey;
+    label: string;
+    rating: number; // 0-5
+    points: number;
+    max: number;
+    note: string;
+}
+
 export interface StrategyAnalysis {
     score: number;
     analysis: string;
     suggestions: string[];
+    criteria: StrategyCriterion[];
 }
 
-// The strategy check returns { score, critique, actionable_fix, weaknesses }; the panel shows
-// { score, analysis, suggestions } and auto-fixes with the first suggestion.
+// A criterion rated this high has nothing worth an auto-fix
+export const STRATEGY_DONE_RATING = 4;
+
+function clampRating(value: unknown): number {
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) ? Math.max(0, Math.min(5, n)) : 0;
+}
+
+export function scoreCriteria(raw: unknown): StrategyCriterion[] {
+    const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    return STRATEGY_CRITERIA.map(c => {
+        const entry = (data[c.key] && typeof data[c.key] === 'object' ? data[c.key] : { rating: data[c.key] }) as Record<string, unknown>;
+        const rating = clampRating(entry.rating);
+        return { key: c.key, label: c.label, rating, points: Math.round(rating / 5 * c.weight), max: c.weight, note: String(entry.note || '').trim() };
+    });
+}
+
+export function totalScore(criteria: StrategyCriterion[]): number {
+    return criteria.reduce((sum, c) => sum + c.points, 0);
+}
+
+// The criterion to fix next: the one losing the most points, if any is below "done"
+export function weakestCriterion(criteria: StrategyCriterion[]): StrategyCriterion | undefined {
+    return criteria
+        .filter(c => c.rating < STRATEGY_DONE_RATING)
+        .sort((a, b) => (b.max - b.points) - (a.max - a.points))[0];
+}
+
+// The strategy check returns { score, critique, actionable_fix, criteria }; the panel shows
+// { score, analysis, suggestions, criteria } and auto-fixes with the first suggestion.
 export function toStrategyAnalysis(raw: unknown): StrategyAnalysis {
     const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
     const score = Math.max(0, Math.min(100, Math.round(Number(data.score) || 0)));
     const analysis = String(data.critique || data.analysis || '').trim();
     const list = (v: unknown) => (Array.isArray(v) ? v : [v]).filter((s): s is string => typeof s === 'string' && !!s.trim()).map(s => s.trim());
-    const suggestions = [...new Set([...list(data.actionable_fix), ...list(data.suggestions), ...list(data.weaknesses)])];
-    return { score, analysis, suggestions };
+    const suggestions = [...new Set([...list(data.actionable_fix), ...list(data.suggestions)])];
+    const criteria = Array.isArray(data.criteria) ? data.criteria as StrategyCriterion[] : [];
+    return { score, analysis, suggestions, criteria };
 }
