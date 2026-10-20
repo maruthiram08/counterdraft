@@ -1,4 +1,4 @@
-import { formatStrategyContext, hasStrategy, normalizeFormat, sanitizeParsedStrategy } from '@/lib/brain/strategy';
+import { extractOriginQuery, formatIdeaChain, formatStrategyContext, hasStrategy, normalizeFormat, sanitizeParsedStrategy } from '@/lib/brain/strategy';
 
 describe('sanitizeParsedStrategy', () => {
     it('keeps free-text values and normalises presets', () => {
@@ -63,5 +63,19 @@ describe('helpers', () => {
     it('treats a brief alone as a strategy', () => {
         expect(hasStrategy({ brief: 'For founders' })).toBe(true);
         expect(hasStrategy({})).toBe(false);
+    });
+});
+
+describe('idea chain', () => {
+    it('lists the original search, source, idea and brief in order', () => {
+        const chain = formatIdeaChain({
+            hook: 'How a Holistic View of Time Can Transform Modern Life',
+            meta: { sourceContext: 'Original Search Query: "GTM for B2B SaaS"\n\nSource Topics: ...', brief: 'For first-time dads' },
+        });
+        expect(extractOriginQuery('Original Search Query: "GTM for B2B SaaS"')).toBe('GTM for B2B SaaS');
+        expect(chain).toContain('1. What the creator was originally searching for: "GTM for B2B SaaS"');
+        expect(chain).toContain('2. The source material they picked');
+        expect(chain).toContain('3. The idea they saved');
+        expect(chain).toContain('4. Their brief for this post: "For first-time dads"');
     });
 });

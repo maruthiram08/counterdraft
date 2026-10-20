@@ -115,3 +115,21 @@ export function sanitizeParsedStrategy(raw: unknown): ParsedStrategy {
 
     return result;
 }
+
+// Explore saves the user's original search at the top of sourceContext
+export function extractOriginQuery(sourceContext?: string): string | undefined {
+    const match = sourceContext?.match(/Original Search Query: "([^"]+)"/);
+    return match?.[1]?.trim() || undefined;
+}
+
+// The idea's whole history, oldest first, so each step builds on the ones before it.
+// Later steps refine earlier ones; the brief is the newest and most specific intent.
+export function formatIdeaChain({ hook, angle, meta }: { hook: string; angle?: string; meta?: Partial<BrainMetadata> }): string {
+    const lines: string[] = [];
+    const origin = extractOriginQuery(meta?.sourceContext);
+    if (origin) lines.push(`1. What the creator was originally searching for: "${origin}"`);
+    if (meta?.sourceContext) lines.push(`${lines.length + 1}. The source material they picked (below)`);
+    lines.push(`${lines.length + 1}. The idea they saved: "${hook}"${angle ? ` (angle: ${angle})` : ''}`);
+    if (meta?.brief?.trim()) lines.push(`${lines.length + 1}. Their brief for this post: "${meta.brief.trim()}"`);
+    return `\n\nHOW THIS IDEA CAME TO BE (one connected chain, not separate inputs):\n${lines.join('\n')}`;
+}

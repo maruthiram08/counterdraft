@@ -278,6 +278,19 @@ export async function PATCH(req: Request) {
             }
         }
 
+        // Clients usually hold brain_metadata without the large sourceContext (POST strips it),
+        // so keep the stored copy instead of wiping it on every strategy save
+        if (updates.brain_metadata && typeof updates.brain_metadata === 'object' && !updates.brain_metadata.sourceContext) {
+            const { data: existing } = await supabaseAdmin
+                .from('content_items')
+                .select('brain_metadata')
+                .eq('id', id)
+                .eq('user_id', userId)
+                .single();
+            const storedSource = existing?.brain_metadata?.sourceContext;
+            if (storedSource) updates.brain_metadata = { ...updates.brain_metadata, sourceContext: storedSource };
+        }
+
         // Add updated_at
         updates.updated_at = new Date().toISOString();
 

@@ -3,7 +3,7 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
-import { formatStrategyContext, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
+import { formatIdeaChain, formatStrategyContext, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
 import { fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 // Interfaces for standardized inputs/outputs
@@ -80,9 +80,10 @@ export class BrainGenerationService {
             : '';
 
         const brainContext = formatStrategyContext(brainMetadata, 'Strategic Context (decides what is worth researching; keep the facts themselves objective)');
+        const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
 
-        // Ground research in live web results aimed at where the topic meets the brief
-        const queries = await this.planResearchQueries(hook, angle, brainContext).catch(() => fallbackQueries(hook, brainMetadata));
+        // Ground research in live web results aimed at where the whole chain meets the brief
+        const queries = await this.planResearchQueries(hook, angle, `${ideaChain}${brainContext}`).catch(() => fallbackQueries(hook, brainMetadata));
         const sources = await gatherWebSources(queries);
         const webSources = formatWebSources(sources);
 
@@ -135,6 +136,7 @@ Avoid:
 
 INSTRUCTIONS ON SOURCE MATERIAL:
 - The creator's brief and strategic context are the NORTH STAR. Where they differ from the Hook or Angle (for example the hook is about creativity but the brief asks for a practical walkthrough), follow the brief.
+- Treat HOW THIS IDEA CAME TO BE as one connected chain: the original search, the source, the saved idea and the brief each narrow the one before. Research must serve the whole chain; drop any point that only fits one link (e.g. a point about the source article that has nothing to do with what the creator was searching for or their brief).
 - If the topic or source material is broader than the brief, research where they meet: apply the topic to the brief's audience and their pain (e.g. a topic about "a holistic view of time" with a brief for first-time dads means research on how new fathers experience and manage time across work and family). Drop any finding this audience would not care about.
 - If SOURCE MATERIAL is provided, treat it as PRIMARY EVIDENCE to support the user's angle.
 - If the Source Material's tone differs from the Angle, aggressively mine the source for relevant facts to support the REQUESTED angle.
@@ -148,7 +150,7 @@ IMPORTANT: Return a valid JSON object with the following structure:
                 },
                 {
                     role: 'user',
-                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${webSources}${referencesContext}${sourceMaterial}${userContextString}`
+                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${ideaChain}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${webSources}${referencesContext}${sourceMaterial}${userContextString}`
                 }
             ],
             response_format: { type: 'json_object' },
@@ -165,7 +167,7 @@ IMPORTANT: Return a valid JSON object with the following structure:
                 {
                     role: 'system',
                     content: `Write 3 web search queries that will find concrete, citable material for a post.
-Aim the queries at where the topic meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract.
+The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Aim the queries at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract.
 Return JSON: { "queries": ["...", "...", "..."] }`
                 },
                 { role: 'user', content: `Topic: ${hook}\nAngle: ${angle || 'None'}${brainContext}` }
@@ -207,7 +209,7 @@ Example: { "text": "Updated research point..." }`
 
     // --- 3. Outline ---
     async generateOutline({ hook, angle, deep_dive, references, brainMetadata }: OutlineParams): Promise<string[]> {
-        const brainContext = formatStrategyContext(brainMetadata);
+        const brainContext = `${formatIdeaChain({ hook, angle, meta: brainMetadata })}${formatStrategyContext(brainMetadata)}`;
 
         const referencesContext = this.formatReferences(references);
         const sourceContext = brainMetadata?.sourceContext
@@ -301,7 +303,7 @@ IMPORTANT: Return a JSON object with a "sections" key containing an array of str
     // --- 4. Draft ---
     async generateDraft({ userId, hook, angle, outline, references, userContext, brainMetadata }: DraftParams): Promise<string> {
         const format = normalizeFormat(brainMetadata?.format) || 'thought_leadership';
-        const brainContext = formatStrategyContext(brainMetadata);
+        const brainContext = `${formatIdeaChain({ hook, angle, meta: brainMetadata })}${formatStrategyContext(brainMetadata)}`;
 
         // Voice Injection
         let voiceContext = '';

@@ -1,4 +1,5 @@
 import { BrainMetadata } from '@/types';
+import { extractOriginQuery } from './strategy';
 
 export interface WebSource {
     title: string;
@@ -10,8 +11,10 @@ export interface WebSource {
 export function fallbackQueries(hook: string, meta?: Partial<BrainMetadata>): string[] {
     const audience = meta?.audience?.role;
     const pain = meta?.audience?.pain;
+    const origin = extractOriginQuery(meta?.sourceContext);
     const queries = [
         audience && pain ? `${audience} ${pain}` : '',
+        origin && audience ? `${origin} ${audience}` : origin || '',
         audience ? `${hook} for ${audience}` : hook,
         meta?.brief?.trim().slice(0, 200) || '',
     ];
