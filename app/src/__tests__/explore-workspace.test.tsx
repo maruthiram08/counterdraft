@@ -99,6 +99,19 @@ describe('ExploreWorkspace', () => {
             platform: 'linkedin',
             tone: 'educational',
             relatedBeliefIds: ['b1'],
+            sources: [{ title: 'Companies rethink remote work policies', summary: 'Firms are loosening office mandates.' }],
+        });
+
+        // Saving keeps the search, the source and the idea together for research and drafting
+        fireEvent.click(within(details).getByRole('button', { name: 'Save to Pipeline' }));
+        await waitFor(() => expect((global.fetch as jest.Mock).mock.calls.some(([url]) => url === '/api/content')).toBe(true));
+        const save = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/content');
+        expect(JSON.parse(save[1].body).brain_metadata.explore).toMatchObject({
+            query: 'remote work',
+            platform: 'linkedin',
+            tone: 'educational',
+            sources: [{ title: 'Companies rethink remote work policies', url: 'https://example.com/Companies%20rethink%20remote%20work%20policies', source: 'Reuters' }],
+            idea: { hook: 'Write it down', angle: 'Docs beat meetings', format: 'list' },
         });
     });
 
