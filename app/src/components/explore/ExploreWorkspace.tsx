@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
-import { FOR_YOU } from "@/lib/explore/trends";
+import { FOR_YOU, shuffle } from "@/lib/explore/trends";
 
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
@@ -96,9 +96,11 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const SESSION_KEY = 'cd-explore-workspace';
-const TRENDS_KEY = 'cd-explore-trends-v2';
+const TRENDS_KEY = 'cd-explore-trends-v3';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_TRAIL = 8;
+// Tabs shown beside "For you"; each visit picks a random few from the writer's saved set
+const TABS_SHOWN = 4;
 const COMBINED_KEY = 'combined';
 
 // Storage can be unavailable (private mode, blocked site data); Explore still works without it.
@@ -119,12 +121,12 @@ function writeStorage(key: string, value: unknown) {
     }
 }
 
-// Swap in freshly fetched topics, keeping a category's current topics when nothing came back for it
-function mergeTrendGroups(prev: { label: string; trends: TrendGroup['trends'] }[], groups: TrendGroup[]) {
-    return prev.map(cat => {
-        const fresh = groups.find(g => g.category === cat.label);
-        return fresh && fresh.trends.length > 0 ? { ...cat, trends: fresh.trends } : cat;
-    });
+// "For you" first, then a random few of the other categories that have topics
+function rotateTrendGroups(groups: TrendGroup[]) {
+    const withTopics = groups.filter(g => g.trends?.length > 0);
+    const forYou = withTopics.filter(g => g.category === FOR_YOU);
+    const others = shuffle(withTopics.filter(g => g.category !== FOR_YOU)).slice(0, TABS_SHOWN);
+    return [...forYou, ...others].map(g => ({ label: g.category, trends: g.trends }));
 }
 
 function timeAgo(iso?: string): string | null {
@@ -192,7 +194,8 @@ export function ExploreWorkspace() {
         const fetchRealTrends = async () => {
             const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
             if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS) {
-                setTrendCategories(prev => mergeTrendGroups(prev, cached.groups));
+                const rotated = rotateTrendGroups(cached.groups);
+                if (rotated.length > 0) setTrendCategories(rotated);
                 return;
             }
 
@@ -201,12 +204,15 @@ export function ExploreWorkspace() {
                 const res = await fetch('/api/explore/trends', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ categories: [FOR_YOU, ...DEFAULT_CATEGORIES.map(c => c.label)] })
+                    body: JSON.stringify({ mode: 'discover' })
                 });
                 const data = await res.json();
-                if (data.groups && Array.isArray(data.groups)) {
-                    setTrendCategories(prev => mergeTrendGroups(prev, data.groups));
-                    writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
+                if (Array.isArray(data.groups)) {
+                    const rotated = rotateTrendGroups(data.groups);
+                    if (rotated.length > 0) {
+                        setTrendCategories(rotated);
+                        writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
+                    }
                 }
             } catch (e) {
                 console.warn("Failed to fetch real-time trends, using defaults", e);
@@ -218,33 +224,29 @@ export function ExploreWorkspace() {
         fetchRealTrends();
     }, []);
 
-    // A fresh set of topics for the category being viewed, avoiding the ones already shown
+    // A new set of categories and topics, skipping the categories the writer has just seen
     const refreshTopics = async () => {
-        const category = trendCategories.find(c => c.label === activeCategory);
-        if (!category || refreshingTopics) return;
+        if (refreshingTopics) return;
         setRefreshingTopics(true);
         try {
             const res = await fetch('/api/explore/trends', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    categories: [category.label],
+                    mode: 'discover',
                     refresh: true,
-                    exclude: category.trends.map(t => t.label),
+                    exclude: trendCategories.map(c => c.label).filter(label => label !== FOR_YOU),
                 }),
             });
             const data = await res.json();
-            const fresh: TrendGroup | undefined = data.groups?.find((g: TrendGroup) => g.category === category.label);
-            if (!res.ok || !fresh?.trends?.length) {
+            const rotated = Array.isArray(data.groups) ? rotateTrendGroups(data.groups) : [];
+            if (!res.ok || rotated.length === 0) {
                 toast.error(data.error || "Couldn't find new topics right now. Try again in a bit.");
                 return;
             }
-            setTrendCategories(prev => mergeTrendGroups(prev, [fresh]));
-            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
-            if (cached) {
-                const others = cached.groups.filter(g => g.category !== fresh.category);
-                writeStorage(TRENDS_KEY, { ...cached, groups: [...others, fresh] });
-            }
+            setTrendCategories(rotated);
+            setSelectedCategory(null);
+            writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
         } catch {
             toast.error("Couldn't refresh topics. Try again.");
         } finally {
@@ -660,7 +662,7 @@ export function ExploreWorkspace() {
                                             role="tab"
                                             aria-selected={activeCategory === cat.label}
                                             onClick={() => setSelectedCategory(cat.label)}
-                                            className={`h-8 px-3 shrink-0 rounded-full text-xs font-medium transition-all ${activeCategory === cat.label
+                                            className={`h-8 px-3 shrink-0 rounded-full text-xs font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200 ${activeCategory === cat.label
                                                 ? 'bg-surface shadow-raised text-ink'
                                                 : 'text-ink-muted hover:text-ink'
                                                 }`}
@@ -672,9 +674,9 @@ export function ExploreWorkspace() {
                                 <button
                                     onClick={refreshTopics}
                                     disabled={refreshingTopics || fetchingTrends}
-                                    aria-label={`Refresh topics in ${activeCategory}`}
+                                    aria-label="Show different topics"
                                     title="Show different topics"
-                                    className="w-8 h-8 shrink-0 mb-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-canvas hover:shadow-raised active:shadow-pressed transition-all disabled:opacity-50"
+                                    className="w-8 h-8 shrink-0 mb-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-canvas hover:shadow-raised active:shadow-pressed transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
                                 >
                                     <RefreshCw size={14} className={refreshingTopics ? 'animate-spin' : ''} />
                                 </button>
@@ -685,7 +687,7 @@ export function ExploreWorkspace() {
                                         key={trend.label}
                                         onClick={() => runSearch(trend.query)}
                                         disabled={loading}
-                                        className="h-9 px-4 bg-canvas shadow-raised text-ink-soft rounded-full text-sm hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                                        className="h-9 px-4 bg-canvas shadow-raised text-ink-soft rounded-full text-sm hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
                                     >
                                         {trend.label}
                                     </button>
