@@ -39,7 +39,8 @@ describe('StrategyBar', () => {
         })
         global.fetch = fetchMock as unknown as typeof fetch
 
-        render(<StrategyBar draft={baseDraft({ stance: 'contrarian' })} onUpdate={onUpdate} />)
+        const onStrategyShaped = jest.fn()
+        render(<StrategyBar draft={baseDraft({ stance: 'contrarian' })} onUpdate={onUpdate} onStrategyShaped={onStrategyShaped} />)
 
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'For founders scared of hiring a PM. Nudge them to DM me.' } })
         fireEvent.click(screen.getByText('Shape strategy'))
@@ -53,5 +54,6 @@ describe('StrategyBar', () => {
             brief: 'For founders scared of hiring a PM. Nudge them to DM me.',
             audience: { role: 'First-time founders' },
         })
+        expect(onStrategyShaped).toHaveBeenCalled()
     })
 })

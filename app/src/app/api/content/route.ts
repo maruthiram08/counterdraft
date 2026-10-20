@@ -278,6 +278,24 @@ export async function PATCH(req: Request) {
             }
         }
 
+        // Clients usually hold brain_metadata without the large sourceContext (POST strips it),
+        // so keep the stored Explore origin instead of wiping it on every strategy save
+        const bm = updates.brain_metadata;
+        if (bm && typeof bm === 'object' && (!bm.sourceContext || !bm.explore)) {
+            const { data: existing } = await supabaseAdmin
+                .from('content_items')
+                .select('brain_metadata')
+                .eq('id', id)
+                .eq('user_id', userId)
+                .single();
+            const stored = existing?.brain_metadata;
+            updates.brain_metadata = {
+                ...bm,
+                ...(!bm.sourceContext && stored?.sourceContext ? { sourceContext: stored.sourceContext } : {}),
+                ...(!bm.explore && stored?.explore ? { explore: stored.explore } : {}),
+            };
+        }
+
         // Add updated_at
         updates.updated_at = new Date().toISOString();
 

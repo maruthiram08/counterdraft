@@ -10,6 +10,8 @@ interface StrategyBarProps {
     draft: Draft & { title?: string; hook?: string };
     onUpdate: (metadataUpdates: Partial<Draft>) => Promise<void>;
     enableCoach?: boolean;
+    // Called after the user shapes or infers a strategy, e.g. so research can follow it
+    onStrategyShaped?: () => void;
 }
 
 type FieldKey = 'outcome' | 'audience' | 'pain' | 'stance' | 'format' | 'toneNotes' | 'cta' | 'length' | 'include' | 'avoid';
@@ -103,7 +105,7 @@ function rememberRecent(meta: Partial<BrainMetadata>) {
     }
 }
 
-export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBarProps) {
+export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategyShaped }: StrategyBarProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [metadata, setMetadata] = useState<Partial<BrainMetadata>>(draft.brain_metadata || {});
     const [brief, setBrief] = useState(draft.brain_metadata?.brief || "");
@@ -158,14 +160,17 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBar
             await save(next);
             rememberRecent(next);
             setRecent(loadRecent());
-            if (!silent) toast.success("Strategy updated from your brief");
+            if (!silent) {
+                toast.success("Strategy updated from your brief");
+                onStrategyShaped?.();
+            }
         } catch (error) {
             console.error(error);
             if (!silent) toast.error("Couldn't shape the strategy. Try again.");
         } finally {
             setIsParsing(false);
         }
-    }, [draft.content, draft.hook, draft.title, metadata, save]);
+    }, [draft.content, draft.hook, draft.title, metadata, save, onStrategyShaped]);
 
     // With nothing set yet, quietly infer a starting strategy from the topic. It only fills
     // empty fields, so it never overwrites what the user wrote.

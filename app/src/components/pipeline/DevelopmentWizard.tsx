@@ -171,6 +171,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
 
     const handleUpdateBrainMetadata = (metadata: BrainMetadata) => {
+        // Update the ref now so research started right after a strategy change uses it
+        latestBrainMetadata.current = metadata;
         setLocalBrainMetadata(metadata);
         saveProgress({ brain_metadata: metadata });
     };
@@ -226,14 +228,16 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         });
     };
 
-    const runDeepDive = useCallback(async (mode: 'initial' | 'reset' | 'append' = 'initial') => {
+    // 'refresh' regenerates like 'reset' but without the confirm, for strategy-driven reruns
+    const runDeepDive = useCallback(async (mode: 'initial' | 'reset' | 'refresh' | 'append' = 'initial') => {
         if (mode === 'reset') {
             if (!confirm("This will clear current findings and regenerate from scratch. Continue?")) return;
         }
 
         setLoading(true);
         saveProgress({ dev_step: 'deep_dive_in_progress' });
-        const researchedWith = formatStrategyContext(localBrainMetadata);
+        const brainMetadataForRun = latestBrainMetadata.current;
+        const researchedWith = formatStrategyContext(brainMetadataForRun);
         try {
             const res = await fetch('/api/content/develop', {
                 method: 'POST',
@@ -242,9 +246,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     action: 'deep_dive',
                     hook: item.hook,
                     angle: item.angle,
-                    references: localBrainMetadata?.references || [],
+                    references: brainMetadataForRun?.references || [],
                     userContext: globalContext,
-                    brainMetadata: localBrainMetadata
+                    brainMetadata: brainMetadataForRun
                 }),
             });
             if (!res.ok) {
@@ -279,7 +283,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     saveProgress({ deep_dive: mergedData });
                 } else {
                     setDeepDive(richData);
-                    if (mode === 'reset') setGlobalContext("");
+                    if (mode === 'reset' || mode === 'refresh') setGlobalContext("");
                     const brainMetadata = { ...latestBrainMetadata.current, researchedWith } as BrainMetadata;
                     setLocalBrainMetadata(brainMetadata);
                     saveProgress({
@@ -298,7 +302,17 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         } finally {
             setLoading(false);
         }
-    }, [deepDive, globalContext, item.angle, item.hook, localBrainMetadata, saveProgress]);
+    }, [deepDive, globalContext, item.angle, item.hook, saveProgress]);
+
+    // Shaping the strategy reruns research so it follows the brief, unless the user has
+    // already annotated findings (then the stale-strategy banner lets them choose)
+    const handleStrategyShaped = () => {
+        if (step !== 'deep_dive' || loading) return;
+        const hasNotes = !!deepDive && [...deepDive.research, ...deepDive.insights].some(p => p.notes?.length);
+        if (hasNotes) return;
+        runDeepDive(deepDive ? 'refresh' : 'initial');
+    };
+
 
     const handleRefinePoint = async (type: 'research' | 'insights', index: number, manualNote?: string) => {
         if (!deepDive) return;
@@ -625,6 +639,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                         <BrainHeaderPanel
                             item={headerItem}
                             onUpdate={handleUpdateBrainMetadata}
+                            onStrategyShaped={handleStrategyShaped}
                         />
 
                         {step === 'deep_dive' && (
