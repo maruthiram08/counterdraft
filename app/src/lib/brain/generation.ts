@@ -6,7 +6,7 @@ import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchIte
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
 import { anchorQueries, countLocalFindings, dropUnknownCitations, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
-type ResearchPlan = { queries: string[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
+type ResearchPlan = { queries: string[]; asks?: { question: string; query: string }[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
 
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
@@ -93,7 +93,10 @@ export class BrainGenerationService {
             .catch((): ResearchPlan => ({ queries: fallbackQueries(hook, brainMetadata, angle) }));
         // Each "must include" item gets its own search so the brief's extra asks aren't crowded out by the hook
         const includeQueries = (brainMetadata?.include || []).slice(0, 2).map(item => plan.place && !item.toLowerCase().includes(plan.place.toLowerCase().slice(0, 4)) ? `${item} ${plan.place}` : item);
-        const queries = [...anchorQueries(plan.queries, brainMetadata, plan.place), ...includeQueries];
+        const askQueries = (plan.asks || []).map(a => a.query);
+        const queries = [...new Set([...anchorQueries([...plan.queries, ...askQueries], brainMetadata, plan.place), ...includeQueries])];
+        const asks = (plan.asks || []).map(a => a.question);
+        const asksBlock = asks.length ? `\n\nTHE BRIEF'S QUESTIONS (each needs at least two findings of its own, or a "Gap:" finding):\n${asks.map(a => `- ${a}`).join('\n')}` : '';
         const sources = await gatherWebSources(queries, 15, plan.country);
         const webSources = `${exploreSources}${formatWebSources(sources)}`;
 
@@ -164,7 +167,7 @@ IMPORTANT: Return a valid JSON object with the following structure:
                 },
                 {
                     role: 'user',
-                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${ideaChain}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${webSources}${referencesContext}${sourceMaterial}${userContextString}`
+                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${ideaChain}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${asksBlock}${webSources}${referencesContext}${sourceMaterial}${userContextString}`
                 }
             ];
         const run = async () => {
@@ -181,19 +184,20 @@ IMPORTANT: Return a valid JSON object with the following structure:
         const local = countLocalFindings(findings, terms);
         // A post wholly about the place needs half its findings there; one where the place is a side ask needs at least two
         const enough = plan.placeIsWholeBrief === false ? Math.min(2, findings.length) : Math.ceil(findings.length / 2);
-        if (!terms.length || !findings.length || local >= enough) return this.checkFindingsAgainstSources(first.result, sourceText);
+        if (!terms.length || !findings.length || local >= enough) return this.checkFindingsAgainstSources(first.result, sourceText, asks);
 
         TraceLogger.log('deep_dive', 'Local retry', { place: plan.place, local, total: findings.length });
         messages.push(
             { role: 'assistant', content: first.content },
             { role: 'user', content: `Only ${local} of ${findings.length} findings are specific to ${plan.place}. Rewrite the research so ${plan.placeIsWholeBrief === false ? `the part of the brief about ${plan.place} has at least two findings of its own` : `most findings are about ${plan.place}`} (laws, policies, named companies and brands, family set-ups, work culture, prices), taken from the sources above. Replace generic material that would apply anywhere with ${plan.place}-specific findings, or with "Gap:" findings naming what the sources lack. Rewrite the insights to match. Same JSON format.` },
         );
-        return this.checkFindingsAgainstSources((await run().catch(() => first)).result, sourceText);
+        return this.checkFindingsAgainstSources((await run().catch(() => first)).result, sourceText, asks);
     }
 
     // Drops findings whose cited source isn't in the material, then has the model check each one against its source:
     // supported claims stay, overstated ones are cut back to what the source says, unsupported ones go
-    private async checkFindingsAgainstSources(result: DeepDiveResult, sourceText: string): Promise<DeepDiveResult> {
+    // and names any of the brief's questions left without a finding, so a thin result says what's missing
+    private async checkFindingsAgainstSources(result: DeepDiveResult, sourceText: string, asks: string[] = []): Promise<DeepDiveResult> {
         const research = Array.isArray(result.research) ? result.research.map(String) : [];
         if (!research.length || !sourceText.trim()) return result;
 
@@ -209,13 +213,14 @@ IMPORTANT: Return a valid JSON object with the following structure:
 - "partial": the source supports part of it (e.g. the finding adds a country, number or claim the source doesn't have). Return "text": the finding cut back to only what the source says, keeping its "(source: ...)" ending.
 - "unsupported": the source doesn't say it, or no cited source is in the material.
 Findings starting with "Gap:" are always "supported".
-Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupported", "text": "..." }] }`
+Then, for each of the brief's questions, check whether any finding you kept answers it. List the ones none answers in "uncovered", word for word.
+Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupported", "text": "..." }], "uncovered": ["..."] }`
                     },
-                    { role: 'user', content: `FINDINGS:\n${cited.map((f, i) => `${i}. ${f}`).join('\n')}\n\nMATERIAL:${sourceText}` }
+                    { role: 'user', content: `FINDINGS:\n${cited.map((f, i) => `${i}. ${f}`).join('\n')}${asks.length ? `\n\nTHE BRIEF'S QUESTIONS:\n${asks.map(a => `- ${a}`).join('\n')}` : ''}\n\nMATERIAL:${sourceText}` }
                 ],
                 response_format: { type: 'json_object' },
             });
-            const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { checks?: { i?: number; verdict?: string; text?: string }[] };
+            const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { checks?: { i?: number; verdict?: string; text?: string }[]; uncovered?: unknown };
             const checks = new Map((parsed.checks || []).map(c => [c.i, c]));
             const verified = cited.flatMap((finding, i) => {
                 const check = checks.get(i);
@@ -224,8 +229,13 @@ Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupp
                 if (check.verdict === 'partial' && check.text?.trim()) return [check.text.trim()];
                 return [finding];
             });
-            TraceLogger.log('deep_dive', 'Source check', { before: research.length, cited: cited.length, after: verified.length });
-            return { ...result, research: verified.length ? verified : ['Gap: none of the findings could be confirmed against the sources found; add references or redo research.'] };
+            const uncovered = Array.isArray(parsed.uncovered) ? parsed.uncovered.filter((q): q is string => typeof q === 'string' && !!q.trim()) : [];
+            const gaps = uncovered
+                .filter(q => !verified.some(f => f.startsWith('Gap:') && f.includes(q)))
+                .map(q => `Gap: the sources found don't answer "${q}". Add a reference or your own experience for this part.`);
+            TraceLogger.log('deep_dive', 'Source check', { before: research.length, cited: cited.length, after: verified.length, gaps: gaps.length });
+            const checked = [...verified, ...gaps];
+            return { ...result, research: checked.length ? checked : ['Gap: none of the findings could be confirmed against the sources found; add references or redo research.'] };
         } catch (err) {
             console.error('Source check failed:', err);
             return { ...result, research: cited };
@@ -243,21 +253,29 @@ Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupp
 The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
 Every query must name the brief's audience and any country, region, culture or market the brief mentions (e.g. "Indian dads", "India"); a query about the general topic alone is wasted.
 If the brief asks for tips, practical advice or a how-to, search for concrete steps, routines, real examples and local specifics (laws, policies, workplace norms, family set-ups) for that audience, not for statistics or general studies.
-Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; "placeIsWholeBrief": true if the whole post is about that place, false if the place is only one part of it; and "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or [].
-Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "placeIsWholeBrief": true | false, "localTerms": ["..."] }`
+Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; "placeIsWholeBrief": true if the whole post is about that place, false if the place is only one part of it; "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or []; and "asks": each distinct question the brief wants the post to answer (up to 3, e.g. "what Gen Z thinks" and "what parents can do to help"), each with a web search aimed at answering it for this audience, or [] if the brief has none.
+Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "placeIsWholeBrief": true | false, "localTerms": ["..."], "asks": [{ "question": "...", "query": "..." }] }`
                 },
                 { role: 'user', content: `Working title: ${hook}${context}` }
             ],
             response_format: { type: 'json_object' },
         });
-        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown; placeIsWholeBrief?: unknown };
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown; placeIsWholeBrief?: unknown; asks?: unknown };
         const queries = Array.isArray(parsed.queries)
             ? parsed.queries.filter((q): q is string => typeof q === 'string' && !!q.trim()).slice(0, 3)
             : [];
         if (!queries.length) throw new Error('No queries planned');
         const text = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : undefined;
         const localTerms = Array.isArray(parsed.localTerms) ? parsed.localTerms.map(text).filter((t): t is string => !!t).slice(0, 8) : [];
-        return { queries, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms, placeIsWholeBrief: parsed.placeIsWholeBrief !== false };
+        const asks = Array.isArray(parsed.asks)
+            ? parsed.asks.flatMap(a => {
+                const r = (a || {}) as { question?: unknown; query?: unknown };
+                const question = text(r.question);
+                const query = text(r.query);
+                return question && query ? [{ question, query }] : [];
+            }).slice(0, 3)
+            : [];
+        return { queries, asks, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms, placeIsWholeBrief: parsed.placeIsWholeBrief !== false };
     }
 
     // --- 2. Refine Point ---

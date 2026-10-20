@@ -82,7 +82,9 @@ export async function gatherWebSources(queries: string[], limit = 12, country?: 
     const results = await Promise.all(queries.map(q => searchWeb(q, 5, country)));
     const seen = new Set<string>();
     const sources: WebSource[] = [];
-    for (const source of results.flat()) {
+    // Take results round-robin so every query (including each of the brief's asks) is represented under the limit
+    const interleaved = Array.from({ length: Math.max(0, ...results.map(r => r.length)) }, (_, i) => results.map(r => r[i]).filter(Boolean)).flat();
+    for (const source of interleaved) {
         if (seen.has(source.url)) continue;
         seen.add(source.url);
         sources.push(source);

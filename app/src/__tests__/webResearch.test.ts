@@ -100,3 +100,18 @@ describe('dropUnknownCitations', () => {
         ]);
     });
 });
+
+describe('gatherWebSources limit', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('keeps results from every query when the limit is hit', async () => {
+        process.env.TAVILY_API_KEY = 'test';
+        global.fetch = jest.fn().mockImplementation(async (_url: string, init: { body: string }) => {
+            const q = JSON.parse(init.body).query as string;
+            return { ok: true, json: async () => ({ results: [1, 2, 3].map(n => ({ title: `${q}${n}`, url: `https://${q}.com/${n}`, content: 'c' })) }) };
+        }) as unknown as typeof fetch;
+
+        const sources = await gatherWebSources(['a', 'b'], 2);
+        expect(sources.map(s => s.title)).toEqual(['a1', 'b1']);
+    });
+});
