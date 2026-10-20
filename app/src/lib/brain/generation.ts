@@ -126,6 +126,7 @@ Avoid:
 
 INSTRUCTIONS ON SOURCE MATERIAL:
 - The creator's brief and strategic context are the NORTH STAR. Where they differ from the Hook or Angle (for example the hook is about creativity but the brief asks for a practical walkthrough), follow the brief.
+- If the topic or source material is broader than the brief, research where they meet: apply the topic to the brief's audience and their pain (e.g. a topic about "a holistic view of time" with a brief for first-time dads means research on how new fathers experience and manage time across work and family). Drop any finding this audience would not care about.
 - If SOURCE MATERIAL is provided, treat it as PRIMARY EVIDENCE to support the user's angle.
 - If the Source Material's tone differs from the Angle, aggressively mine the source for relevant facts to support the REQUESTED angle.
 - You MAY supplement with external knowledge if the source is too narrow, but do not hallucinate specific data points.
@@ -138,7 +139,7 @@ IMPORTANT: Return a valid JSON object with the following structure:
                 },
                 {
                     role: 'user',
-                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${referencesContext}${sourceMaterial}${userContextString}`
+                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${referencesContext}${sourceMaterial}${userContextString}`
                 }
             ],
             response_format: { type: 'json_object' },
