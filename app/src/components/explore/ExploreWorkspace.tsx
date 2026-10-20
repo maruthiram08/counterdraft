@@ -10,6 +10,8 @@ import { toast } from "sonner";
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
     query: string;
+    label?: string; // Short name from the search planner, shown in the path
+    intent?: 'learn' | 'news';
     stories: Story[];
     related: RelatedTopic[];
     message?: string;
@@ -33,6 +35,8 @@ interface Story {
     relatedBeliefId?: string | null;
     relatedBelief?: string | null;
     beliefStance?: 'supports' | 'challenges' | null;
+    kind?: string;
+    takeaway?: string;
 }
 
 interface PostIdea {
@@ -135,7 +139,9 @@ function timeAgo(iso?: string): string | null {
     if (hours < 1) return 'just now';
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
-    return days < 30 ? `${days}d ago` : new Date(iso).toLocaleDateString();
+    if (days < 30) return `${days}d ago`;
+    const months = Math.floor(days / 30);
+    return months < 12 ? `${months}mo ago` : `${Math.floor(days / 365)}y ago`;
 }
 
 function storyMeta(story: Story): string {
@@ -152,6 +158,28 @@ function beliefLabel(story: Story): string {
     if (story.beliefStance === 'supports') return 'Supports your belief';
     if (story.beliefStance === 'challenges') return 'Challenges your belief';
     return 'Touches your belief';
+}
+
+// A native select drawn as one pill: the browser's own arrow is hidden and ours sits inside the pill
+function PillSelect({ value, onChange, label, options }: {
+    value: string;
+    onChange: (value: string) => void;
+    label: string;
+    options: { value: string; label: string }[];
+}) {
+    return (
+        <div className="relative">
+            <select
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                aria-label={label}
+                className="appearance-none h-8 pl-3 pr-8 text-xs font-medium text-ink-soft bg-canvas shadow-raised rounded-full border-0 cursor-pointer hover:text-ink focus:outline-none focus:ring-2 focus:ring-ember-200"
+            >
+                {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <ChevronDown size={12} aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+        </div>
+    );
 }
 
 export function ExploreWorkspace() {
@@ -259,9 +287,11 @@ export function ExploreWorkspace() {
             const data = await res.json();
             next = {
                 query,
+                label: data.label,
+                intent: data.intent,
                 stories: data.feed || [],
                 related: data.related || [],
-                message: data.feed?.length ? undefined : (data.message || data.error || `Nothing recent found for "${query}". Try a broader search.`),
+                message: data.feed?.length ? undefined : (data.message || data.error || `Nothing found for "${query}". Try a broader search.`),
             };
         } catch {
             next = { query, stories: [], related: [], message: "Something went wrong. Please try again." };
@@ -497,10 +527,21 @@ export function ExploreWorkspace() {
 
         return (
             <div>
+                {focusedStory.kind && (
+                    <span className="inline-flex items-center h-6 px-2.5 mb-2 rounded-full bg-ember-50 text-ember-700 text-xs font-medium capitalize">
+                        {focusedStory.kind}
+                    </span>
+                )}
                 <h3 className="text-xl font-medium tracking-[-0.01em] text-ink leading-snug">{focusedStory.title}</h3>
                 <p className="text-xs text-ink-muted mt-1">{storyMeta(focusedStory)}</p>
                 {focusedStory.otherSources && focusedStory.otherSources.length > 0 && (
                     <p className="text-xs text-ink-muted mt-1">Also covered by {focusedStory.otherSources.join(', ')}</p>
+                )}
+                {focusedStory.takeaway && (
+                    <div className="mt-4 p-4 bg-canvas shadow-well rounded-tile">
+                        <span className="text-xs font-medium text-ink-muted">What you can use</span>
+                        <p className="text-sm text-ink mt-1 leading-relaxed">{focusedStory.takeaway}</p>
+                    </div>
                 )}
                 {focusedStory.summary && (
                     <p className="text-sm text-ink-soft leading-relaxed mt-3">{focusedStory.summary}</p>
@@ -516,7 +557,7 @@ export function ExploreWorkspace() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 mt-4 h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink-soft hover:text-ink active:shadow-pressed transition-shadow"
                 >
-                    <ExternalLink size={12} /> Read the full story
+                    <ExternalLink size={12} /> {focusedStory.kind && focusedStory.kind !== 'news' ? 'Read the full piece' : 'Read the full story'}
                 </a>
                 {renderIdeas(focusedStory.sourceUrl, [focusedStory])}
             </div>
@@ -562,22 +603,18 @@ export function ExploreWorkspace() {
                         </button>
                     </div>
                     <div className="flex items-center gap-2">
-                        <select
+                        <PillSelect
                             value={platform}
-                            onChange={(e) => setPlatform(e.target.value)}
-                            aria-label="Platform for post ideas"
-                            className="h-8 text-xs text-ink-soft bg-canvas shadow-raised rounded-full px-3 border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
-                        >
-                            {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                        </select>
-                        <select
+                            onChange={setPlatform}
+                            label="Platform for post ideas"
+                            options={PLATFORMS}
+                        />
+                        <PillSelect
                             value={tone}
-                            onChange={(e) => setTone(e.target.value)}
-                            aria-label="Tone for post ideas"
-                            className="h-8 text-xs text-ink-soft bg-canvas shadow-raised rounded-full px-3 border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
-                        >
-                            {TONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                        </select>
+                            onChange={setTone}
+                            label="Tone for post ideas"
+                            options={TONES}
+                        />
                         {trail.length > 0 && (
                             <button
                                 onClick={startOver}
@@ -648,7 +685,7 @@ export function ExploreWorkspace() {
                                         aria-current={i === activeStep ? 'step' : undefined}
                                         className={`h-7 px-3 rounded-full ${i === activeStep ? 'bg-canvas shadow-pressed text-ink font-medium' : 'text-ink-muted hover:text-ink'}`}
                                     >
-                                        {s.query}
+                                        {s.label || s.query}
                                     </button>
                                 </li>
                             ))}
@@ -711,7 +748,13 @@ export function ExploreWorkspace() {
                                                         <span className="text-xs font-medium text-sand-700">Question · </span>
                                                     )}
                                                     <span className="text-sm font-medium text-ink">{story.title}</span>
-                                                    <span className="block text-xs text-ink-muted mt-0.5">{storyMeta(story)}</span>
+                                                    {story.takeaway && (
+                                                        <span className="block text-xs text-ink-soft mt-1 line-clamp-2">{story.takeaway}</span>
+                                                    )}
+                                                    <span className="block text-xs text-ink-muted mt-1">
+                                                        {story.kind && <span className="text-ember-700 font-medium capitalize">{story.kind} · </span>}
+                                                        {storyMeta(story)}
+                                                    </span>
                                                     {story.relatedBelief && (
                                                         <span className="block text-xs text-ember-700 mt-1 line-clamp-1">
                                                             {beliefLabel(story)}
@@ -728,7 +771,7 @@ export function ExploreWorkspace() {
                         {/* The story being looked at, with its angles */}
                         <section
                             aria-label="Story details"
-                            className={`flex-1 overflow-y-auto p-4 md:p-6 pb-28 md:pb-6 md:bg-surface md:shadow-card md:rounded-card ${showDetailOnMobile ? 'block' : 'hidden md:block'}`}
+                            className={`flex-1 overflow-y-auto p-4 md:p-6 pb-28 md:pb-6 md:self-start md:max-h-full md:bg-surface md:shadow-card md:rounded-card ${showDetailOnMobile ? 'block' : 'hidden md:block'}`}
                         >
                             <button
                                 onClick={() => setShowDetailOnMobile(false)}

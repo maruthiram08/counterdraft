@@ -24,7 +24,7 @@ const feeds: Record<string, unknown> = {
                 relatedBelief: 'Remote teams need a strong written culture',
                 beliefStance: 'supports',
             }),
-            story('Office leases hit a record low'),
+            story('Office leases hit a record low', { publishedAt: new Date(Date.now() - 400 * 86_400_000).toISOString() }),
         ],
         related: [{ label: 'Async hiring', query: 'async hiring' }],
     },
@@ -69,6 +69,9 @@ describe('ExploreWorkspace', () => {
         expect(within(details).getByText('Firms are loosening office mandates.')).toBeInTheDocument();
         expect(within(details).getByText(/Supports your belief/)).toBeInTheDocument();
 
+        // Old items read as relative dates like everything else
+        expect(screen.getByText('Reuters · 1y ago')).toBeInTheDocument();
+
         fireEvent.click(screen.getByRole('button', { name: 'Async hiring' }));
         expect(await within(details).findByText('Async interviews spread among startups')).toBeInTheDocument();
 
@@ -97,6 +100,26 @@ describe('ExploreWorkspace', () => {
             tone: 'educational',
             relatedBeliefIds: ['b1'],
         });
+    });
+
+    it('names a long search by its short label and shows what each result offers', async () => {
+        feeds['How to develop GTM strategy for B2C product as a product strategy'] = {
+            label: 'B2C go-to-market strategy',
+            intent: 'learn',
+            feed: [story('How Duolingo found its first million users', {
+                kind: 'case study',
+                takeaway: 'Duolingo grew through a free core product and app-store featuring before paid channels.',
+            })],
+            related: [],
+        };
+        render(<ExploreWorkspace />);
+        search('How to develop GTM strategy for B2C product as a product strategy');
+
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        expect(within(details).getByText('What you can use')).toBeInTheDocument();
+        expect(within(details).getByText(/free core product/)).toBeInTheDocument();
+        const path = screen.getByRole('navigation', { name: 'Exploration path' });
+        expect(within(path).getByRole('button', { name: 'B2C go-to-market strategy' })).toBeInTheDocument();
     });
 
     it('restores the exploration after a remount and starts over with New', async () => {

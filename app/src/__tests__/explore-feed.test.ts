@@ -1,4 +1,4 @@
-import { buildFeed, cleanTitle, dedupeItems, matchBelief, parseGoogleNewsRss, type RawFeedItem } from '@/lib/explore/feed';
+import { buildFeed, cleanTitle, dedupeItems, matchBelief, parseGoogleNewsRss, rankScore, trimSnippet, type RawFeedItem } from '@/lib/explore/feed';
 
 const RSS = `<?xml version="1.0"?><rss><channel>
 <item>
@@ -96,12 +96,27 @@ describe('explore feed helpers', () => {
         expect(feed[0]).toMatchObject({ title: 'Story 3', relatedBelief: beliefs[0].statement, beliefStance: 'challenges' });
     });
 
-    it('keeps screened-out stories at the bottom when too few remain', () => {
-        const items = [item({ title: 'Off-topic' }), item({ title: 'On-topic' })];
+    it('drops screened-out results instead of padding the list with them', () => {
+        const items = [item({ title: 'What is B2C marketing?' }), item({ title: 'How Duolingo launched in new markets' })];
         const annotations = [
             { relevant: false, beliefId: null, stance: null },
-            { relevant: true, beliefId: null, stance: null },
+            { relevant: true, beliefId: null, stance: null, kind: 'case study' as const, takeaway: 'Launch market by market.' },
         ];
-        expect(buildFeed(items, [], 'default', Date.now(), annotations).map(f => f.title)).toEqual(['On-topic', 'Off-topic']);
+        const feed = buildFeed(items, [], 'default', Date.now(), annotations, 'learn');
+        expect(feed).toHaveLength(1);
+        expect(feed[0]).toMatchObject({ title: 'How Duolingo launched in new markets', kind: 'case study', takeaway: 'Launch market by market.' });
+    });
+
+    it('trims snippets at a word boundary', () => {
+        const text = "When you don't have momentum, every launch channel looks the same and nothing compounds.";
+        expect(trimSnippet(text, 40)).toBe("When you don't have momentum, every…");
+        expect(trimSnippet('Short one.', 40)).toBe('Short one.');
+    });
+
+    it('keeps month-old guides competitive but not month-old news', () => {
+        const now = Date.parse('2026-10-20T00:00:00Z');
+        const monthOld = Date.parse('2026-09-20T00:00:00Z');
+        expect(rankScore(0, monthOld, 1, now, 'learn')).toBeGreaterThan(0.5);
+        expect(rankScore(0, monthOld, 1, now, 'news')).toBeLessThan(0.01);
     });
 });
