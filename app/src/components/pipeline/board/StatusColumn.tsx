@@ -17,7 +17,7 @@ interface ColumnProps {
 
 function SkeletonCard() {
     return (
-        <div className="bg-surface p-5 rounded-tile shadow-card flex flex-col gap-4 min-h-[160px] animate-pulse">
+        <div className="bg-surface p-4 rounded-tile shadow-card flex flex-col gap-3 min-h-[120px] animate-pulse">
             <div className="flex items-center justify-between">
                 <div className="flex gap-2">
                     <div className="h-7 w-20 bg-surface-muted rounded-full"></div>
@@ -39,7 +39,7 @@ export function StatusColumn({ title, items, stage, onAction, loading, className
 
     return (
         <div className={`flex-1 min-w-[280px] sm:min-w-[250px] bg-canvas shadow-pressed rounded-card p-3 ${className}`}>
-            <div className="flex items-center justify-between px-3 pt-2 pb-4">
+            <div className="flex items-center justify-between px-3 pt-1 pb-3">
                 <div className="flex items-center gap-2.5">
                     <span className={`w-2 h-2 rounded-full ${dot}`} />
                     <h3 className="text-base font-medium text-ink">{title}</h3>
@@ -62,7 +62,7 @@ export function StatusColumn({ title, items, stage, onAction, loading, className
                         )}
                     </>
                 ) : items.length === 0 ? (
-                    <div className={`h-36 border border-dashed border-ink/15 rounded-tile flex items-center justify-center ${cols > 1 ? 'col-span-full' : ''}`}>
+                    <div className={`h-28 border border-dashed border-ink/15 rounded-tile flex items-center justify-center ${cols > 1 ? 'col-span-full' : ''}`}>
                         <p className="text-sm text-ink-muted">Nothing here yet</p>
                     </div>
                 ) : (

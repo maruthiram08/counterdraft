@@ -34,7 +34,7 @@ export function ContentCard({ item, onAction }: ContentCardProps) {
     const confidence = item.brain_metadata?.confidence;
 
     return (
-        <div className="bg-surface p-5 rounded-tile shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-4 min-h-[160px]">
+        <div className="bg-surface p-4 rounded-tile shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-wrap gap-1.5">
                     {item.format && (
@@ -67,7 +67,7 @@ export function ContentCard({ item, onAction }: ContentCardProps) {
                 </p>
             </div>
 
-            <div className="mt-auto pt-1 flex items-center justify-between md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-200">
+            <div className="mt-auto pt-1 flex items-center justify-between md:hidden md:group-hover:flex md:group-focus-within:flex">
                 <div className="flex gap-1.5">
                     {stage === 'idea' && (
                         <>

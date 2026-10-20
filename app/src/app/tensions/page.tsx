@@ -31,11 +31,11 @@ export default function TensionsPage() {
                 </div>
             </header>
 
-            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-8 md:pt-12 pb-28 md:pb-12">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12">
                 <div className="flex flex-col gap-8">
                     <header>
-                        <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">Tensions & Contradictions</h2>
-                        <p className="mt-3 text-base text-ink-soft">
+                        <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Tensions & Contradictions</h2>
+                        <p className="mt-1 text-sm text-ink-soft">
                             We&apos;ve detected beliefs that might conflict. Classify each one to refine your worldview.
                         </p>
                     </header>

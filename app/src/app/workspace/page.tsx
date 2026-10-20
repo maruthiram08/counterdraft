@@ -235,11 +235,11 @@ function WorkspaceContent() {
 
                 {effectiveSection !== 'drafts' && effectiveSection !== 'explore' && effectiveSection !== 'pipeline' && effectiveSection !== 'mind' && (
                     <div className="flex-1 h-full overflow-y-auto overflow-x-hidden bg-canvas">
-                        <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-8 md:pt-12 pb-28 md:pb-12 flex flex-col gap-8 animate-fade-in">
+                        <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12 flex flex-col gap-8 animate-fade-in">
                             {effectiveSection === 'beliefs' && (
                                 <div className="flex flex-col gap-8">
                                     <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                                        <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">Belief Graph</h2>
+                                        <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Belief Graph</h2>
                                         <div className="bg-canvas shadow-well rounded-full p-1 flex items-center text-sm font-medium shrink-0 self-start md:self-auto">
                                             <button
                                                 onClick={() => setBeliefView('list')}
@@ -359,7 +359,7 @@ function WorkspaceContent() {
 
                             {effectiveSection === 'tensions' && (
                                 <div className="flex flex-col gap-6">
-                                    <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">Tensions</h2>
+                                    <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Tensions</h2>
                                     {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length > 0 && (
                                         <div className="p-4 bg-sand-100 rounded-tile shadow-raised">
                                             <p className="text-sm text-sand-700">
@@ -415,7 +415,7 @@ function WorkspaceContent() {
 
                             {effectiveSection === 'directions' && (
                                 <div className="flex flex-col gap-6">
-                                    <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">Ideas</h2>
+                                    <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Ideas</h2>
                                     {generated && directions.length > 0 && (
                                         <div className="p-4 bg-ember-50 rounded-tile shadow-raised">
                                             <p className="text-sm text-ember-700">

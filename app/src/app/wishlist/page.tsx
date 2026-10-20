@@ -109,7 +109,7 @@ export default function WishlistPage() {
                         <div className="inline-flex items-center h-7 px-3 rounded-full bg-dusk-100 text-xs font-medium text-dusk-700 mb-4">
                             Community Roadmap
                         </div>
-                        <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink mb-3">Feature Wishlist</h1>
+                        <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink mb-3">Feature Wishlist</h1>
                         <p className="text-ink-soft text-base max-w-2xl">
                             Help us build the Professional OS. Upvote the features you need most.
                         </p>

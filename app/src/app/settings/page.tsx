@@ -126,14 +126,14 @@ export default function SettingsPage() {
 
             <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-canvas">
                 <div className="flex-1 overflow-y-auto bg-canvas">
-                    <div className="max-w-3xl mx-auto px-4 md:px-10 pt-8 md:pt-12 pb-28 md:pb-12">
+                    <div className="max-w-3xl mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12">
                         {/* Page Header */}
-                        <div className="mb-10">
-                            <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink flex items-center gap-4">
+                        <div className="mb-6">
+                            <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink flex items-center gap-4">
                                 <Settings size={40} className="text-ember-500 shrink-0" />
                                 Settings
                             </h1>
-                            <p className="mt-3 text-base text-ink-soft">
+                            <p className="mt-1 text-sm text-ink-soft">
                                 Manage your account and connected platforms.
                             </p>
                         </div>
@@ -145,7 +145,7 @@ export default function SettingsPage() {
                         <UsageSection />
 
                         {/* Integrations Section */}
-                        <section className="mb-12">
+                        <section className="mb-8">
                             <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
                                 <Link2 size={20} className="text-ember-500" />
                                 Integrations
@@ -219,7 +219,7 @@ function ProfileSection() {
     if (!user) return null;
 
     return (
-        <section className="mb-12">
+        <section className="mb-8">
             <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
                 <UserIcon size={20} className="text-ember-500" />
                 Profile
@@ -396,7 +396,7 @@ function UsageSection() {
     const isUnlimited = usage.limit === Infinity || usage.limit === null;
 
     return (
-        <section className="mb-12">
+        <section className="mb-8">
             <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
                 <Settings size={20} className="text-ember-500" /> {/* Reusing icon for visual consistency */}
                 Plan & Usage

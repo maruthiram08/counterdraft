@@ -9,7 +9,6 @@ import { BrainMetadata } from "@/types";
 import { ContentItem, Stage } from "./board/types";
 import { PipelineHeader } from "./board/PipelineHeader";
 import { StatusColumn } from "./board/StatusColumn";
-import { PipelineSummary } from "./board/PipelineSummary";
 import { STAGE_STYLES } from "./board/stageStyles";
 
 export interface CommandCenterProps {
@@ -291,9 +290,10 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
 
     return (
         <div className="h-full overflow-y-auto bg-canvas">
-            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-8 md:pt-12 pb-28 md:pb-12 flex flex-col gap-8">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-4 md:pt-6 pb-28 md:pb-12 flex flex-col gap-5">
                 <PipelineHeader
                     loading={loading}
+                    counts={{ idea: ideas.length, developing: developing.length, draft: drafts.length, published: published.length }}
                     onSuggest={handleSuggest}
                     onNewDraft={handleNewDraftClick}
                 />
@@ -325,12 +325,6 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                         </div>
                     </div>
                 )}
-
-                <PipelineSummary
-                    loading={loading}
-                    counts={{ idea: ideas.length, developing: developing.length, draft: drafts.length, published: published.length }}
-                />
-
                 <div>
                     {isMobile && (
                         <div className="flex items-center gap-3 mb-5 overflow-x-auto p-2 -m-2 scrollbar-none">
@@ -349,7 +343,7 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                         {(!isMobile || activeStage === 'idea') && (
                             <StatusColumn
                                 title="Ideas"

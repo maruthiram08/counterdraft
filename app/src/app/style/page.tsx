@@ -220,18 +220,18 @@ export default function StylePage() {
             />
 
             <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-y-auto bg-canvas">
-                <div className="max-w-5xl mx-auto w-full px-4 md:px-10 pt-8 md:pt-12 pb-28 md:pb-12">
+                <div className="max-w-5xl mx-auto w-full px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12">
 
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
                         <div>
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 shrink-0 rounded-full bg-canvas shadow-raised text-ember-500 flex items-center justify-center">
                                     <PenTool size={22} />
                                 </div>
-                                <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">Your Voice</h1>
+                                <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Your Voice</h1>
                             </div>
-                            <p className="mt-3 text-base text-ink-soft max-w-2xl">
+                            <p className="mt-1 text-sm text-ink-soft max-w-2xl">
                                 Manage the writing style Counterdraft uses to generate your content.
                             </p>
                         </div>

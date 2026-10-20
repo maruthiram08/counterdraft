@@ -194,21 +194,21 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
     return (
         <div className="h-full min-h-0 overflow-y-auto bg-canvas">
             {/* Header */}
-            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-8 md:pt-12">
-                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                    <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink flex items-center gap-3">
+            <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-5 md:pt-7">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink flex items-center gap-3">
                         Your Mind
                     </h1>
                     <button
                         onClick={() => setAddContentModalOpen(true)}
-                        className="self-start md:self-auto h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                        className="self-start md:self-auto h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                     >
                         Import Source
                     </button>
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="flex gap-3 mt-8 overflow-x-auto p-2 -m-2 scrollbar-none">
+                <div className="flex gap-3 mt-4 overflow-x-auto p-2 -m-2 scrollbar-none">
                     <button
                         onClick={() => handleTabChange('beliefs')}
                         className={`h-10 px-5 rounded-full bg-canvas transition-all flex items-center gap-2 font-medium text-sm whitespace-nowrap ${activeTab === 'beliefs'
