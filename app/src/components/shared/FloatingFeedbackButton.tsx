@@ -54,7 +54,7 @@ export const FloatingFeedbackButton = () => {
     };
 
     return (
-        <div className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-[100] flex flex-col items-end">
+        <div className="fixed bottom-24 right-4 md:bottom-28 md:right-6 z-[100] flex flex-col items-end">
 
             {/* Expanded Form */}
             {isOpen && (

@@ -581,7 +581,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     return (
         <div className="fixed top-0 right-0 bottom-0 left-0 md:left-16 z-40 flex flex-col bg-canvas shadow-float animate-in fade-in duration-200">
-            <div className="w-full h-full flex flex-col bg-canvas">
+            <div className="relative w-full h-full flex flex-col bg-canvas">
                 {/* Header Row */}
                 <div className="px-4 md:px-8 h-20 flex items-center justify-between bg-canvas shrink-0 z-50">
                     <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
@@ -635,11 +635,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-canvas">
-                    <div className="max-w-6xl mx-auto px-4 py-6 md:p-8 min-h-full flex flex-col">
+                    <div className="max-w-6xl mx-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 min-h-full flex flex-col">
                         <BrainHeaderPanel
                             item={headerItem}
                             onUpdate={handleUpdateBrainMetadata}
                             onStrategyShaped={handleStrategyShaped}
+                            collapsed={step === 'generate' && !!draftContent}
                         />
 
                         {step === 'deep_dive' && (
@@ -726,17 +727,21 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     />
                 </div>
 
-                {/* Footer Actions */}
-                <div className="px-4 md:px-8 py-4 bg-canvas border-t border-line flex justify-between items-center z-50 shrink-0">
-                    <button
-                        onClick={handleBack}
-                        disabled={step === 'deep_dive' || loading}
-                        className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 disabled:hover:text-ink flex items-center gap-2"
-                    >
-                        <ArrowLeft size={16} className="text-ember-500" /> Back
-                    </button>
+                {/* Floating actions: no footer bar, so the content keeps the full height */}
+                <div className="pointer-events-none absolute bottom-4 md:bottom-6 left-4 right-4 md:left-8 md:right-8 flex justify-between items-end z-50">
+                    <div className="pointer-events-auto">
+                        {step !== 'deep_dive' && (
+                            <button
+                                onClick={handleBack}
+                                disabled={loading}
+                                className="h-10 px-4 rounded-full bg-canvas text-ink-soft text-sm font-medium shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                                <ArrowLeft size={14} className="text-ember-500" /> Back
+                            </button>
+                        )}
+                    </div>
 
-                    <div className="flex gap-3">
+                    <div className="pointer-events-auto flex gap-3">
                         {step === 'deep_dive' && (
                             <button
                                 onClick={() => {
@@ -744,7 +749,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                     document.querySelector('.overflow-y-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                                 disabled={loading || !deepDive}
-                                className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
+                                className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 <RefreshCw size={14} className="text-ember-500" /> Refine Research
                             </button>
