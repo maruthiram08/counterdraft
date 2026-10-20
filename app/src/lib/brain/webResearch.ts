@@ -23,6 +23,17 @@ export function fallbackQueries(hook: string, meta?: Partial<BrainMetadata>, ang
     return [...new Set(queries.map(q => q.trim()).filter(Boolean))].slice(0, 3);
 }
 
+// Every search must stay on the brief's audience: append it to any planned query that drifted to the general topic
+export function anchorQueries(queries: string[], meta?: Partial<BrainMetadata>): string[] {
+    const audience = meta?.audience?.role?.trim();
+    if (!audience) return queries;
+    const words = audience.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3);
+    return queries.map(q => {
+        const lower = q.toLowerCase();
+        return words.some(w => lower.includes(w.replace(/s$/, ''))) ? q : `${q} ${audience}`;
+    });
+}
+
 export async function searchWeb(query: string, maxResults = 5): Promise<WebSource[]> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) return [];
@@ -63,7 +74,7 @@ export function formatWebSources(sources: WebSource[]): string {
     const list = sources.map((s, i) => {
         let domain = s.url;
         try { domain = new URL(s.url).hostname.replace(/^www\./, ''); } catch { /* keep url */ }
-        return `[${i + 1}] ${s.title} (${domain})\n${s.content}`;
+        return `[${i + 1}] ${s.title} (${domain})\nURL: ${s.url}\n${s.content}`;
     }).join('\n\n');
     return `\n\nWEB SOURCES (found for this post; cite them):\n${list}`;
 }

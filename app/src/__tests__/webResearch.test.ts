@@ -1,4 +1,4 @@
-import { fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
+import { anchorQueries, fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
 
 describe('webResearch', () => {
     const originalKey = process.env.TAVILY_API_KEY;
@@ -35,5 +35,16 @@ describe('webResearch', () => {
         const sources = await gatherWebSources(['q1', 'q2']);
         expect(sources).toHaveLength(1);
         expect(formatWebSources(sources)).toContain('[1] New dads at work (hbr.org)');
+    });
+});
+
+describe('anchorQueries', () => {
+    it('appends the audience to queries that drifted to the general topic', () => {
+        const meta = { audience: { role: 'Indian dads', pain: '' } };
+        expect(anchorQueries(['remote work self-care tips', 'paternity leave for Indian dad in IT'], meta)).toEqual([
+            'remote work self-care tips Indian dads',
+            'paternity leave for Indian dad in IT',
+        ]);
+        expect(anchorQueries(['anything'], {})).toEqual(['anything']);
     });
 });

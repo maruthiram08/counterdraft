@@ -4,7 +4,7 @@ import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
-import { fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
+import { anchorQueries, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
@@ -88,7 +88,7 @@ export class BrainGenerationService {
         const origin = originQuery(brainMetadata);
         const searchSeed = `${origin ? `\nOriginal search: ${origin}` : ''}\nSaved angle: ${originAngle(angle, brainMetadata) || 'None'}`;
         const queries = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`).catch(() => fallbackQueries(hook, brainMetadata, angle));
-        const sources = await gatherWebSources(queries);
+        const sources = await gatherWebSources(anchorQueries(queries, brainMetadata));
         const webSources = `${exploreSources}${formatWebSources(sources)}`;
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
@@ -120,11 +120,14 @@ Your task is to provide:
 
 1. **Research findings**: The raw material the planned post needs. Choose WHAT to research from the strategic context and the creator's brief: what this audience would find credible, specifics about their pain points, anything the creator asked to include, and the material the format calls for (for a practical walkthrough or guide: concrete use cases, the steps or workflow, before/after comparisons, worked examples, and limitations or when NOT to use it).
    - Each finding must be a specific, checkable fact, example or step. Opinions, predictions and "this can help X" claims belong in Key insights, not here.
+   - Every finding must be specific to the brief's audience and any place or culture it names. A general finding counts only once it is made specific to them (for Indian dads: joint families, paternity leave at named companies, long workdays across time zones); otherwise drop it.
+   - If the brief asks for tips, practical advice or a how-to, most findings must be concrete actions the reader can take this week: what to do, when, and how, with a real example where the sources give one (e.g. "Block 7 to 8pm as no-laptop time and tell your manager in writing", not "create an organized home office").
    - Never repeat the same point twice.
-   - Base findings on the EXPLORE SOURCES, WEB SOURCES, references and source material provided. End each sourced finding with its source in brackets, e.g. "(source: hbr.org)".
+   - Base findings on the EXPLORE SOURCES, WEB SOURCES, references and source material provided. End each sourced finding with the domain shown in brackets after that source's title, e.g. "(source: hbr.org)"; never a paraphrased title or site name.
    - Never mention a study, statistic or institution that is not in the provided material. If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
+   Each insight must be something the post can use directly: a claim to argue, a reframe the reader hasn't heard, or a way to structure the post. Never summarise the findings or say the audience "needs support" or "should prioritise" something.
 
 Prioritize:
 - Insights that reframe the problem from the audience's perspective
@@ -172,6 +175,8 @@ IMPORTANT: Return a valid JSON object with the following structure:
                     role: 'system',
                     content: `Write 3 web search queries that will find concrete, citable material for a post.
 The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
+Every query must name the brief's audience and any country, region, culture or market the brief mentions (e.g. "Indian dads", "India"); a query about the general topic alone is wasted.
+If the brief asks for tips, practical advice or a how-to, search for concrete steps, routines, real examples and local specifics (laws, policies, workplace norms, family set-ups) for that audience, not for statistics or general studies.
 Return JSON: { "queries": ["...", "...", "..."] }`
                 },
                 { role: 'user', content: `Working title: ${hook}${context}` }
