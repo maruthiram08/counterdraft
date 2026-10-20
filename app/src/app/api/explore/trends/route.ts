@@ -4,7 +4,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { UsageService } from '@/lib/billing/usage';
 import { rateLimit } from '@/lib/rate-limit';
-import { FOR_YOU, buildTrendSearch, type WriterProfile } from '@/lib/explore/trends';
+import { CATEGORIES_PER_SET, FOR_YOU, buildTrendSearch, pickCategories, type WriterProfile } from '@/lib/explore/trends';
 
 export const maxDuration = 60; // Allow 1 minute for search + LLM
 
@@ -12,6 +12,10 @@ export const maxDuration = 60; // Allow 1 minute for search + LLM
 const trendsCache = new Map<string, { value: TrendGroup[]; expiresAt: number }>();
 const TRENDS_CACHE_TTL_MS = 30 * 60 * 1000;
 const TOPICS_PER_CATEGORY = 4;
+
+// Categories drawn from each writer's niche; they change slowly, so they are kept for a day
+const nicheCache = new Map<string, { value: string[]; expiresAt: number }>();
+const NICHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface TrendGroup {
     category: string;
@@ -42,6 +46,40 @@ function describeWriter(profile: WriterProfile): string {
         profile.beliefs.length ? `Views they hold:\n${profile.beliefs.map(b => `- ${b}`).join('\n')}` : '',
     ].filter(Boolean);
     return lines.length ? lines.join('\n') : '(no profile yet)';
+}
+
+// Topic areas this writer's audience follows, used as rotating Explore tabs
+async function nicheCategories(userId: string, profile: WriterProfile): Promise<string[]> {
+    if (!profile.role && !profile.context && profile.beliefs.length === 0) return [];
+    const cached = nicheCache.get(userId);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            temperature: 0.7,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: `Suggest 8 topic areas this writer and their audience follow, to use as browsing categories for finding things to post about.
+Each is 1-3 words (e.g. "Fatherhood", "Indian workplace", "Remote work"), broad enough to have news every week, and distinct from the others.
+Return JSON: { "categories": ["..."] }`,
+                },
+                { role: 'user', content: describeWriter(profile) },
+            ],
+        });
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}');
+        const categories = (Array.isArray(parsed.categories) ? parsed.categories : [])
+            .filter((c: unknown): c is string => typeof c === 'string' && c.trim().length > 0 && c.length <= 40)
+            .map((c: string) => c.trim())
+            .slice(0, 8);
+        nicheCache.set(userId, { value: categories, expiresAt: Date.now() + NICHE_TTL_MS });
+        return categories;
+    } catch (e) {
+        console.error('Niche categories failed:', e);
+        return [];
+    }
 }
 
 async function trendsForCategory(
@@ -115,8 +153,10 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
+        // 'discover' picks a fresh, random set of categories for this writer and fetches their topics
+        const discover = body.mode === 'discover';
         const categories: unknown = body.categories;
-        if (!Array.isArray(categories) || categories.some(c => typeof c !== 'string') || categories.length > 6) {
+        if (!discover && (!Array.isArray(categories) || categories.some(c => typeof c !== 'string') || categories.length > 6)) {
             return NextResponse.json({ error: 'Invalid categories' }, { status: 400 });
         }
         const refresh = body.refresh === true;
@@ -124,7 +164,9 @@ export async function POST(req: Request) {
             ? body.exclude.filter((e: unknown): e is string => typeof e === 'string').slice(0, 20)
             : [];
 
-        const cacheKey = `${userId}:${categories.map(c => c.toLowerCase().trim()).sort().join('|')}`;
+        const cacheKey = discover
+            ? `${userId}:discover`
+            : `${userId}:${(categories as string[]).map(c => c.toLowerCase().trim()).sort().join('|')}`;
         if (!refresh) {
             const cached = trendsCache.get(cacheKey);
             if (cached && cached.expiresAt > Date.now()) {
@@ -156,7 +198,13 @@ export async function POST(req: Request) {
         }
 
         const profile = await getWriterProfile(userId);
-        const results = await Promise.all(categories.map(cat => trendsForCategory(cat, profile, exclude, apiKey)));
+        const chosen = discover
+            ? [FOR_YOU, ...pickCategories(await nicheCategories(userId, profile), exclude, CATEGORIES_PER_SET)]
+            : categories as string[];
+        // In discover mode `exclude` lists categories, not topics, so topics start fresh
+        const topicExclude = discover ? [] : exclude;
+        const results = (await Promise.all(chosen.map(cat => trendsForCategory(cat, profile, topicExclude, apiKey))))
+            .filter(group => group.category === FOR_YOU || group.trends.length > 0);
 
         await UsageService.incrementSearchCount(userId);
         if (!refresh) trendsCache.set(cacheKey, { value: results, expiresAt: Date.now() + TRENDS_CACHE_TTL_MS });
