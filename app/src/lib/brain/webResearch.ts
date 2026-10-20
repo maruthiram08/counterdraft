@@ -39,6 +39,12 @@ export function anchorQueries(queries: string[], meta?: Partial<BrainMetadata>, 
 }
 
 // `country` boosts results from that country (Tavily's lowercase country names); a rejected value falls back to a plain search
+// How many findings mention the place or one of its local terms ("India" also matches "Indian")
+export function countLocalFindings(findings: string[], terms: string[]): number {
+    const needles = terms.map(t => t.toLowerCase().trim()).filter(t => t.length > 2);
+    return findings.filter(f => needles.some(n => f.toLowerCase().includes(n))).length;
+}
+
 export async function searchWeb(query: string, maxResults = 5, country?: string): Promise<WebSource[]> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) return [];

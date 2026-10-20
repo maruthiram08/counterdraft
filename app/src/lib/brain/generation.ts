@@ -4,9 +4,9 @@ import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
-import { anchorQueries, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
+import { anchorQueries, countLocalFindings, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
-type ResearchPlan = { queries: string[]; place?: string; country?: string };
+type ResearchPlan = { queries: string[]; place?: string; country?: string; localTerms?: string[] };
 
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
@@ -103,9 +103,7 @@ export class BrainGenerationService {
             webSourceCount: sources.length
         });
 
-        const completion = await this.openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
+        const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
                 {
                     role: 'system',
                     content: `${SAFETY_PREAMBLE}
@@ -164,11 +162,26 @@ IMPORTANT: Return a valid JSON object with the following structure:
                     role: 'user',
                     content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${ideaChain}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${webSources}${referencesContext}${sourceMaterial}${userContextString}`
                 }
-            ],
-            response_format: { type: 'json_object' },
-        });
+            ];
+        const run = async () => {
+            const completion = await this.openai.chat.completions.create({ model: 'gpt-4o-mini', messages, response_format: { type: 'json_object' } });
+            const content = completion.choices[0].message.content || '{}';
+            return { content, result: JSON.parse(content) as DeepDiveResult };
+        };
 
-        return JSON.parse(completion.choices[0].message.content || '{}');
+        const first = await run();
+        // The model drifts to generic advice when most sources are from elsewhere; one corrective pass if it did
+        const terms = plan.place ? [plan.place, ...(plan.localTerms || [])] : [];
+        const findings = Array.isArray(first.result.research) ? first.result.research.map(String) : [];
+        const local = countLocalFindings(findings, terms);
+        if (!terms.length || !findings.length || local * 2 >= findings.length) return first.result;
+
+        TraceLogger.log('deep_dive', 'Local retry', { place: plan.place, local, total: findings.length });
+        messages.push(
+            { role: 'assistant', content: first.content },
+            { role: 'user', content: `Only ${local} of ${findings.length} findings are specific to ${plan.place}. Rewrite the research so most findings are about ${plan.place} (its laws, policies, named employers, family set-ups, work culture), taken from the sources above. Replace generic advice that would apply anywhere with ${plan.place}-specific findings, or with "Gap:" findings naming what the sources lack. Rewrite the insights to match. Same JSON format.` },
+        );
+        return (await run().catch(() => first)).result;
     }
 
     // Turns the topic and strategy into a few targeted web searches
@@ -182,20 +195,21 @@ IMPORTANT: Return a valid JSON object with the following structure:
 The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
 Every query must name the brief's audience and any country, region, culture or market the brief mentions (e.g. "Indian dads", "India"); a query about the general topic alone is wasted.
 If the brief asks for tips, practical advice or a how-to, search for concrete steps, routines, real examples and local specifics (laws, policies, workplace norms, family set-ups) for that audience, not for statistics or general studies.
-Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; and "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null.
-Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null }`
+Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; and "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or [].
+Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "localTerms": ["..."] }`
                 },
                 { role: 'user', content: `Working title: ${hook}${context}` }
             ],
             response_format: { type: 'json_object' },
         });
-        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown };
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown };
         const queries = Array.isArray(parsed.queries)
             ? parsed.queries.filter((q): q is string => typeof q === 'string' && !!q.trim()).slice(0, 3)
             : [];
         if (!queries.length) throw new Error('No queries planned');
         const text = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : undefined;
-        return { queries, place: text(parsed.place), country: text(parsed.country)?.toLowerCase() };
+        const localTerms = Array.isArray(parsed.localTerms) ? parsed.localTerms.map(text).filter((t): t is string => !!t).slice(0, 8) : [];
+        return { queries, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms };
     }
 
     // --- 2. Refine Point ---

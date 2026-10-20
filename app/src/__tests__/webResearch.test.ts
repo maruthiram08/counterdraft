@@ -1,4 +1,4 @@
-import { anchorQueries, fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
+import { anchorQueries, countLocalFindings, fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
 
 describe('webResearch', () => {
     const originalKey = process.env.TAVILY_API_KEY;
@@ -71,5 +71,13 @@ describe('place and country', () => {
         expect(JSON.parse(fetchMock.mock.calls[0][1].body).country).toBe('india');
         expect(JSON.parse(fetchMock.mock.calls[1][1].body).country).toBeUndefined();
         expect(sources).toHaveLength(1);
+    });
+});
+
+describe('countLocalFindings', () => {
+    it('counts findings that mention the place or a local term', () => {
+        const findings = ['Indian firms like Zomato give 26 weeks', 'Keep a dedicated workspace', 'Joint family help in Bengaluru'];
+        expect(countLocalFindings(findings, ['India', 'Bengaluru'])).toBe(2);
+        expect(countLocalFindings(findings, [])).toBe(0);
     });
 });
