@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
-import { refineSearchQuery } from '@/lib/brain/ideation';
 import { TraceLogger } from '@/lib/trace';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
-import { buildFeed, dedupeItems, parseGoogleNewsRss, type RawFeedItem } from '@/lib/explore/feed';
+import { buildFeed, dedupeItems, parseGoogleNewsRss, trimSnippet, type RawFeedItem } from '@/lib/explore/feed';
 import { suggestRelatedTopics } from '@/lib/explore/related';
 import { annotateItems } from '@/lib/explore/annotate';
+import { planSearch, type SearchIntent } from '@/lib/explore/plan';
 
 // Mapping from our categories to Google News search terms
 const CATEGORY_TO_QUERY: Record<string, string> = {
@@ -41,8 +41,10 @@ async function fetchGoogleNews(query: string): Promise<RawFeedItem[]> {
     }
 }
 
-// Tavily adds stories with a text snippet, which Google News RSS does not provide.
-async function fetchTavilyNews(query: string): Promise<RawFeedItem[]> {
+// Tavily adds results with a text snippet, which Google News RSS does not provide.
+// For news it searches the last two weeks of news; for learning it searches the whole web,
+// where frameworks, case studies and practitioner essays live.
+async function fetchTavily(query: string, intent: SearchIntent): Promise<RawFeedItem[]> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) return [];
 
@@ -50,14 +52,9 @@ async function fetchTavilyNews(query: string): Promise<RawFeedItem[]> {
         const res = await fetch('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                api_key: apiKey,
-                query,
-                topic: 'news',
-                search_depth: 'basic',
-                days: 14,
-                max_results: 5,
-            }),
+            body: JSON.stringify(intent === 'learn'
+                ? { api_key: apiKey, query, topic: 'general', search_depth: 'advanced', max_results: 8 }
+                : { api_key: apiKey, query, topic: 'news', search_depth: 'basic', days: 14, max_results: 5 }),
             next: { revalidate: 3600 },
         });
         type TavilyResult = { title?: string; url?: string; content?: string; published_date?: string };
@@ -70,12 +67,12 @@ async function fetchTavilyNews(query: string): Promise<RawFeedItem[]> {
                 link: r.url!,
                 source: new URL(r.url!).hostname.replace(/^www\./, ''),
                 pubDate: r.published_date,
-                summary: r.content ? r.content.slice(0, 280) : undefined,
+                summary: r.content ? trimSnippet(r.content) : undefined,
                 otherSources: [],
                 query,
             }));
     } catch (err) {
-        console.error(`Failed to fetch Tavily news for query "${query}":`, err);
+        console.error(`Failed to fetch Tavily results for query "${query}":`, err);
         return [];
     }
 }
@@ -100,25 +97,15 @@ export async function GET(req: Request) {
         const lens = searchParams.get('lens') || 'default';
 
         let queries: string[] = [];
+        let intent: SearchIntent = 'news';
+        let label: string | undefined;
 
         if (directQuery) {
-            // Intelligent Refinement:
-            // If query is "complex" (has > 3 words), use LLM to extract keywords.
-            // Otherwise, just do simple formatting.
-            const wordCount = directQuery.split(' ').length;
-
-            if (wordCount > 3 || lens === 'beginner') {
-                console.log(`[Explore] Refine query with lens ${lens}: "${directQuery}"`);
-                try {
-                    queries = await refineSearchQuery(directQuery, lens);
-                } catch (e) {
-                    console.error("Refine failed, fallback to raw query", e);
-                    queries = [directQuery];
-                }
-            } else {
-                // Short queries go to the news search as typed
-                queries = [directQuery.trim()];
-            }
+            // Turn what was typed into focused searches, and decide whether it asks for news or know-how
+            const plan = await planSearch(directQuery, lens);
+            queries = plan.queries;
+            intent = plan.intent;
+            label = plan.label;
         } else {
             // Fallback to saved interests
             const { data: interestData } = await supabaseAdmin
@@ -144,11 +131,17 @@ export async function GET(req: Request) {
             }
         }
 
-        // 3. Fetch every query from both sources in parallel
+        // 3. Fetch every query in parallel. Know-how searches go to the web, not the news;
+        // Google News is only their fallback when the web search returns nothing.
         const searches = queries.slice(0, 3); // Limit to 3 queries to avoid rate limits
-        const batches = await Promise.all(searches.flatMap(q => [fetchGoogleNews(q), fetchTavilyNews(q)]));
+        let batches = await Promise.all(searches.flatMap(q => intent === 'learn'
+            ? [fetchTavily(q, intent)]
+            : [fetchGoogleNews(q), fetchTavily(q, intent)]));
+        if (intent === 'learn' && batches.every(b => b.length === 0)) {
+            batches = await Promise.all(searches.map(fetchGoogleNews));
+        }
         const allItems = dedupeItems(batches.flat());
-        TraceLogger.log('explore', 'Feed Search', { queries: searches, results: allItems.length });
+        TraceLogger.log('explore', 'Feed Search', { queries: searches, intent, results: allItems.length });
 
         // P2.3: Handle empty search results gracefully
         if (allItems.length === 0) {
@@ -156,7 +149,8 @@ export async function GET(req: Request) {
             return NextResponse.json({
                 feed: [],
                 related: [],
-                message: "No recent news found for your topics. Try broadening your search terms or check back later for fresh content.",
+                label,
+                message: "Nothing found for this search. Try broadening your search terms.",
                 queries: queries
             });
         }
@@ -175,15 +169,20 @@ export async function GET(req: Request) {
         const candidates = allItems.slice(0, 24);
         const searchLabel = directQuery || queries.join(', ');
         const [annotations, related] = await Promise.all([
-            annotateItems(searchLabel, candidates, beliefs),
-            directQuery ? suggestRelatedTopics(directQuery, candidates.map(i => i.title)) : Promise.resolve([]),
+            annotateItems(searchLabel, intent, candidates, beliefs),
+            directQuery ? suggestRelatedTopics(directQuery, intent, candidates.map(i => i.title)) : Promise.resolve([]),
         ]);
 
-        const feed = buildFeed(candidates, beliefs, lens, Date.now(), annotations).slice(0, 20);
+        const feed = buildFeed(candidates, beliefs, lens, Date.now(), annotations, intent).slice(0, 20);
 
         return NextResponse.json({
             feed,
             related,
+            label,
+            intent,
+            message: feed.length === 0
+                ? 'Nothing found was a strong match for this. Try one of the suggestions below or rephrase the search.'
+                : undefined,
         });
     } catch (err) {
         console.error('Feed API Error:', err);
