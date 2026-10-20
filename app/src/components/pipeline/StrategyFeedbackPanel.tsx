@@ -28,7 +28,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                     See if your draft specifically hits your Goal and Audience targets.
                 </p>
                 <button
-                    onClick={onVerify}
+                    onClick={() => onVerify()}
                     className="h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                 >
                     Run Strategy Check
@@ -106,7 +106,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
 
             <div className="flex justify-end pt-2">
                 <button
-                    onClick={onVerify}
+                    onClick={() => onVerify()}
                     className="text-xs text-ink-muted hover:text-ink flex items-center gap-1 transition-colors"
                 >
                     <RefreshCw size={12} /> Re-check Strategy
