@@ -5,6 +5,7 @@ import { openai, SAFETY_PREAMBLE } from '@/lib/openai';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // Platform-specific guidance
 const PLATFORM_GUIDANCE: Record<string, string> = {
@@ -86,6 +87,8 @@ export async function POST(req: Request) {
             ? `Multiple topics: ${titles.join('; ')}`
             : titles[0];
 
+        const writerContext = await getWriterContext(userId, body.relatedBeliefIds);
+
         const platformDesc = PLATFORM_GUIDANCE[platform] || PLATFORM_GUIDANCE.linkedin;
         const toneDesc = TONE_GUIDANCE[tone] || TONE_GUIDANCE.provocative;
 
@@ -97,7 +100,7 @@ You are given:
 - A trending topic or theme
 - Optional audience context (who they are and what they care about)
 - Tone guidance: ${toneDesc}
-
+${writerContext ? `- What the writer believes and how they write:\n${writerContext}\n` : ''}
 Your task is to generate up to ${count} post ideas that are worth writing — not just reacting.
 
 Each post idea must:
@@ -110,6 +113,8 @@ For each idea, include:
 - "hook": an opening line or framing that would stop the right reader
 - "angle": the specific point of view, argument, or tension the post would explore
 - "format": the structural approach (e.g., short insight, mini-essay, list, narrative, how-to, question-led)
+
+If writer context is given, build the angles from where this writer actually stands: agree with, push back on, or add nuance to the topic from their beliefs, and match their voice. Never invent beliefs they did not state.
 
 Prioritize ideas that:
 - Reframe the trend from an unexpected or under-discussed angle
@@ -127,6 +132,7 @@ Quality over quantity: If you cannot find ${count} genuinely differentiated angl
 Output format:
 Return a JSON object with an "ideas" array.
 Each item must include "hook", "angle", and "format".
+If an idea draws on one of the writer's beliefs, add "belief" with that belief's statement, copied exactly.
 
 Think like an editor helping a creator stand out during a noisy moment — not an AI generating trend content.
 `;
@@ -158,4 +164,46 @@ Think like an editor helping a creator stand out during a noisy moment — not a
         const message = err instanceof Error ? err.message : 'Internal Server Error';
         return NextResponse.json({ error: 'Failed to generate ideas', details: message }, { status: 500 });
     }
+}
+
+// The writer's own beliefs and active voice, so ideas start from where they stand.
+async function getWriterContext(userId: string, relatedBeliefIds: unknown): Promise<string> {
+    const ids = Array.isArray(relatedBeliefIds)
+        ? relatedBeliefIds.filter((id): id is string => typeof id === 'string').slice(0, 5)
+        : [];
+
+    const [related, core, voice] = await Promise.all([
+        ids.length > 0
+            ? supabaseAdmin.from('beliefs').select('statement').eq('user_id', userId).in('id', ids)
+            : Promise.resolve({ data: [] as { statement: string }[] }),
+        supabaseAdmin
+            .from('beliefs')
+            .select('statement')
+            .eq('user_id', userId)
+            .eq('belief_type', 'core')
+            .order('confidence', { ascending: false })
+            .limit(8),
+        supabaseAdmin
+            .from('voice_profiles')
+            .select('voice_tone, rules, anti_patterns')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .maybeSingle(),
+    ]);
+
+    const statements = [...new Set([...(related.data || []), ...(core.data || [])].map(b => b.statement))];
+    const lines: string[] = [];
+    if (statements.length > 0) {
+        lines.push(`Beliefs:\n${statements.map(s => `  - ${s}`).join('\n')}`);
+    }
+    if (voice.data?.voice_tone) {
+        lines.push(`Voice: ${voice.data.voice_tone}`);
+    }
+    if (voice.data?.rules?.length) {
+        lines.push(`Style rules: ${voice.data.rules.slice(0, 5).join('; ')}`);
+    }
+    if (voice.data?.anti_patterns?.length) {
+        lines.push(`Avoid: ${voice.data.anti_patterns.slice(0, 5).join('; ')}`);
+    }
+    return lines.join('\n');
 }

@@ -4,6 +4,9 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { refineSearchQuery } from '@/lib/brain/ideation';
 import { TraceLogger } from '@/lib/trace';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { buildFeed, dedupeItems, parseGoogleNewsRss, type RawFeedItem } from '@/lib/explore/feed';
+import { suggestRelatedTopics } from '@/lib/explore/related';
+import { annotateItems } from '@/lib/explore/annotate';
 
 // Mapping from our categories to Google News search terms
 const CATEGORY_TO_QUERY: Record<string, string> = {
@@ -26,40 +29,53 @@ const CATEGORY_TO_QUERY: Record<string, string> = {
     'personal.career': 'career advice',
 };
 
-interface RSSItem {
-    title: string;
-    link: string;
-    pubDate?: string;
-    description?: string;
-    source?: string;
-}
-
-// Simple RSS parser (no external deps)
-async function fetchGoogleNewsRSS(query: string): Promise<RSSItem[]> {
+async function fetchGoogleNews(query: string): Promise<RawFeedItem[]> {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
 
     try {
         const res = await fetch(url, { next: { revalidate: 3600 } }); // Cache for 1 hour
-        const text = await res.text();
-
-        // Simple regex-based XML parsing (avoiding external XML parser)
-        const items: RSSItem[] = [];
-        const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
-
-        for (const itemXml of itemMatches.slice(0, 5)) { // Limit to 5 per query
-            const title = itemXml.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/, '$1') || '';
-            const link = itemXml.match(/<link>([\s\S]*?)<\/link>/)?.[1] || '';
-            const pubDate = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] || '';
-            const source = itemXml.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]?.replace(/<!\[CDATA\[(.*?)\]\]>/, '$1') || 'Google News';
-
-            if (title && link) {
-                items.push({ title, link, pubDate, source });
-            }
-        }
-
-        return items;
+        return parseGoogleNewsRss(await res.text(), query);
     } catch (err) {
         console.error(`Failed to fetch RSS for query "${query}":`, err);
+        return [];
+    }
+}
+
+// Tavily adds stories with a text snippet, which Google News RSS does not provide.
+async function fetchTavilyNews(query: string): Promise<RawFeedItem[]> {
+    const apiKey = process.env.TAVILY_API_KEY;
+    if (!apiKey) return [];
+
+    try {
+        const res = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                api_key: apiKey,
+                query,
+                topic: 'news',
+                search_depth: 'basic',
+                days: 14,
+                max_results: 5,
+            }),
+            next: { revalidate: 3600 },
+        });
+        type TavilyResult = { title?: string; url?: string; content?: string; published_date?: string };
+        const data = await res.json() as { results?: TavilyResult[] };
+
+        return (data.results || [])
+            .filter(r => r.title && r.url)
+            .map(r => ({
+                title: r.title!,
+                link: r.url!,
+                source: new URL(r.url!).hostname.replace(/^www\./, ''),
+                pubDate: r.published_date,
+                summary: r.content ? r.content.slice(0, 280) : undefined,
+                otherSources: [],
+                query,
+            }));
+    } catch (err) {
+        console.error(`Failed to fetch Tavily news for query "${query}":`, err);
         return [];
     }
 }
@@ -100,11 +116,8 @@ export async function GET(req: Request) {
                     queries = [directQuery];
                 }
             } else {
-                // Simple formatting for short queries
-                const formattedQuery = directQuery.toLowerCase().includes('news') || directQuery.toLowerCase().includes('trends')
-                    ? directQuery
-                    : `${directQuery} news trends`;
-                queries = [formattedQuery];
+                // Short queries go to the news search as typed
+                queries = [directQuery.trim()];
             }
         } else {
             // Fallback to saved interests
@@ -131,74 +144,46 @@ export async function GET(req: Request) {
             }
         }
 
-        // 3. Fetch RSS for each query
-        const allItems: (RSSItem & { category: string })[] = [];
-        for (const q of queries.slice(0, 3)) { // Limit to 3 queries to avoid rate limits
-            const items = await fetchGoogleNewsRSS(q);
-            TraceLogger.log('explore', `Feed Search: "${q}"`, { results: items.length });
-            allItems.push(...items.map(item => ({ ...item, category: q })));
-        }
+        // 3. Fetch every query from both sources in parallel
+        const searches = queries.slice(0, 3); // Limit to 3 queries to avoid rate limits
+        const batches = await Promise.all(searches.flatMap(q => [fetchGoogleNews(q), fetchTavilyNews(q)]));
+        const allItems = dedupeItems(batches.flat());
+        TraceLogger.log('explore', 'Feed Search', { queries: searches, results: allItems.length });
 
         // P2.3: Handle empty search results gracefully
         if (allItems.length === 0) {
             TraceLogger.log('explore', 'No results found', { queries });
             return NextResponse.json({
                 feed: [],
+                related: [],
                 message: "No recent news found for your topics. Try broadening your search terms or check back later for fresh content.",
                 queries: queries
             });
         }
 
-        // 4. Get user beliefs for relatability (basic keyword matching)
-        const { data: beliefs } = await supabaseAdmin
+        // 4. Get user beliefs, then screen results and suggest related topics in parallel
+        const { data: beliefData } = await supabaseAdmin
             .from('beliefs')
             .select('id, statement')
             .eq('user_id', userId)
-            .limit(10);
+            .neq('belief_type', 'rejected')
+            .order('confidence', { ascending: false })
+            .limit(40);
+        const beliefs = beliefData || [];
 
-        const feed = allItems.map(item => {
-            let relatedBeliefId: string | null = null;
-            let relatabilityScore = 0;
+        // Screen at most 24 stories so the prompt stays small; the rest are rarely shown anyway
+        const candidates = allItems.slice(0, 24);
+        const searchLabel = directQuery || queries.join(', ');
+        const [annotations, related] = await Promise.all([
+            annotateItems(searchLabel, candidates, beliefs),
+            directQuery ? suggestRelatedTopics(directQuery, candidates.map(i => i.title)) : Promise.resolve([]),
+        ]);
 
-            // Simple type detection
-            const isQuestion = /^(how|why|what|is|should|does|where|can|reddit|quora|forum)/i.test(item.title) || item.title.includes('?');
-            const type = isQuestion ? 'question' : 'article';
-
-            // Simple keyword match
-            for (const belief of beliefs || []) {
-                const beliefWords = belief.statement.toLowerCase().split(' ');
-                const titleWords = item.title.toLowerCase();
-
-                for (const word of beliefWords) {
-                    if (word.length > 4 && titleWords.includes(word)) {
-                        relatabilityScore += 0.2;
-                        relatedBeliefId = belief.id;
-                    }
-                }
-            }
-
-            // Lens-based boosting
-            if (lens === 'beginner' && isQuestion) {
-                relatabilityScore += 0.3;
-            }
-
-            return {
-                title: item.title,
-                sourceUrl: item.link,
-                source: item.source || 'News',
-                category: item.category,
-                publishedAt: item.pubDate,
-                relatabilityScore: Math.min(relatabilityScore, 1),
-                relatedBeliefId,
-                type
-            };
-        });
-
-        // Sort: Relatable first, then by date
-        feed.sort((a, b) => b.relatabilityScore - a.relatabilityScore);
+        const feed = buildFeed(candidates, beliefs, lens, Date.now(), annotations).slice(0, 20);
 
         return NextResponse.json({
             feed,
+            related,
         });
     } catch (err) {
         console.error('Feed API Error:', err);
