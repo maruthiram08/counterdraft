@@ -154,3 +154,20 @@ export function formatIdeaChain({ hook, angle, meta }: { hook: string; angle?: s
     if (meta?.brief?.trim()) lines.push(`${lines.length + 1}. Their brief for this post: "${meta.brief.trim()}"`);
     return `\n\nHOW THIS IDEA CAME TO BE (one connected chain, not separate inputs):\n${lines.join('\n')}`;
 }
+
+export interface StrategyAnalysis {
+    score: number;
+    analysis: string;
+    suggestions: string[];
+}
+
+// The strategy check returns { score, critique, actionable_fix, weaknesses }; the panel shows
+// { score, analysis, suggestions } and auto-fixes with the first suggestion.
+export function toStrategyAnalysis(raw: unknown): StrategyAnalysis {
+    const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const score = Math.max(0, Math.min(100, Math.round(Number(data.score) || 0)));
+    const analysis = String(data.critique || data.analysis || '').trim();
+    const list = (v: unknown) => (Array.isArray(v) ? v : [v]).filter((s): s is string => typeof s === 'string' && !!s.trim()).map(s => s.trim());
+    const suggestions = [...new Set([...list(data.actionable_fix), ...list(data.suggestions), ...list(data.weaknesses)])];
+    return { score, analysis, suggestions };
+}

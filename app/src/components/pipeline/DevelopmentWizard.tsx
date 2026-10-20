@@ -17,6 +17,7 @@ import { OutlineStep } from "./wizard/OutlineStep";
 import { DraftStep } from "./wizard/DraftStep";
 import { RefineContextPanel } from "./wizard/RefineContextPanel";
 import { ThinkingLoader } from "./wizard/ThinkingLoader";
+import { toStrategyAnalysis } from "@/lib/brain/strategy";
 
 interface DevelopmentWizardProps {
     item: ContentItem;
@@ -68,7 +69,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     });
 
     const handleVerifyStrategy = async (contentOverride?: string) => {
-        const textToVerify = contentOverride || draftContent;
+        // Buttons can call this with a click event; only a string is a draft
+        const textToVerify = typeof contentOverride === 'string' && contentOverride.trim() ? contentOverride : draftContent;
         if (!textToVerify) return;
 
         setVerifyingStrategy(true);
@@ -88,7 +90,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
             const data = await res.json();
             if (res.ok) {
-                setStrategyAnalysis(data);
+                setStrategyAnalysis(toStrategyAnalysis(data));
                 toast.success('Strategy analysis complete');
             } else {
                 toast.error(data.error || 'Failed to verify strategy');
