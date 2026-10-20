@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle, FileText, Lightbulb, Settings, User } from "lucide-react";
+import { toast } from "sonner";
 import { DevelopmentWizard } from "./DevelopmentWizard";
 import { NewDraftModal } from "./NewDraftModal";
 import { LimitModal } from "../modal/LimitModal";
@@ -149,8 +150,9 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
         }
     };
 
-    const handleWizardComplete = async (draftContent: string) => {
-        if (!developingItem) return;
+    // Resolves true once the draft is saved and the wizard is closing, false if it was not saved
+    const handleWizardComplete = async (draftContent: string): Promise<boolean> => {
+        if (!developingItem) return false;
 
         try {
             // 1. Update Content Item (Pipeline Status) & Save Initial Draft for Voice Learning
@@ -166,7 +168,8 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                     id: developingItem.id,
                     stage: 'draft',
                     draft_content: draftContent,
-                    brain_metadata: updatedMetadata
+                    brain_metadata: updatedMetadata,
+                    dev_step: null
                 }),
             });
 
@@ -190,9 +193,11 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                     } else {
                         alert(data.message);
                     }
-                    return;
+                    return false;
                 }
             }
+
+            if (!res.ok) throw new Error(`Saving the draft failed (${res.status})`);
 
             // 2. Create Real Draft (Bridge to Editor)
             const draftRes = await fetch('/api/drafts', {
@@ -204,6 +209,7 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                     content: draftContent,
                 }),
             });
+            if (!draftRes.ok) throw new Error(`Creating the draft failed (${draftRes.status})`);
             const draftData = await draftRes.json();
 
             if (draftData.draft) {
@@ -230,9 +236,13 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
             ));
 
             setDevelopingItem(null);
+            toast.success("Draft saved. Opening it in the editor.");
+            return true;
 
         } catch (e) {
             console.error("Failed to sync/update:", e);
+            toast.error("Couldn't save your draft. Check your connection and try again.");
+            return false;
         }
     };
 

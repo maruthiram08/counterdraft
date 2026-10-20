@@ -16,6 +16,7 @@ interface DraftStepProps {
     brainMetadata: BrainMetadata | undefined;
     outline: ResearchPoint[];
     deepDive: DeepDiveData | null;
+    readOnly?: boolean;
     onUpdateDraft: (content: string) => void;
     onToggleContextPanel: () => void;
     onVerifyStrategy: () => void;
@@ -32,6 +33,7 @@ export function DraftStep({
     brainMetadata,
     outline,
     deepDive,
+    readOnly,
     onUpdateDraft,
     onToggleContextPanel,
     onVerifyStrategy,
@@ -114,6 +116,7 @@ export function DraftStep({
                         <div className="flex-1 relative">
                             <textarea
                                 value={draftContent}
+                                readOnly={readOnly}
                                 onChange={(e) => onUpdateDraft(e.target.value)}
                                 className="absolute inset-0 w-full h-full resize-none outline-none bg-surface text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:px-12 md:py-8"
                                 placeholder="Start writing..."
