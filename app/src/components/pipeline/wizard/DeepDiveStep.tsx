@@ -1,13 +1,14 @@
 
 import { DeepDiveData, ResearchPoint } from "./types";
 import { ResearchItem } from "../ResearchItem";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, RefreshCw, Search } from "lucide-react";
 
 interface DeepDiveStepProps {
     deepDive: DeepDiveData | null;
     loading: boolean;
     refiningItems: { type: 'research' | 'insights', index: number }[];
     onRunDeepDive: (mode: 'initial' | 'reset' | 'append') => void;
+    strategyChanged?: boolean;
     onExport: () => void;
     onRefinePoint: (type: 'research' | 'insights', index: number, manualNote?: string) => void;
     onUpdateItem: (type: 'research' | 'insights', index: number, updates: Partial<ResearchPoint>) => void;
@@ -21,6 +22,7 @@ export function DeepDiveStep({
     loading,
     refiningItems,
     onRunDeepDive,
+    strategyChanged,
     onExport,
     onRefinePoint,
     onUpdateItem,
@@ -30,39 +32,62 @@ export function DeepDiveStep({
 }: DeepDiveStepProps) {
 
     if (!deepDive && !loading) {
-        return <p className="text-gray-500 text-center py-12">Starting research...</p>;
+        return (
+            <div className="flex flex-col items-center text-center py-12 gap-3">
+                <p className="text-sm text-ink-soft max-w-md">
+                    Describe the post in the strategy box above first, if you like. Research will focus on your audience, stance and anything you asked to include.
+                </p>
+                <button
+                    onClick={() => onRunDeepDive('initial')}
+                    className="flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                >
+                    <Search size={14} /> Start research
+                </button>
+            </div>
+        );
     }
 
     if (!deepDive) return null; // Should be handled by parent showing loader if loading is true, but for safety
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center px-2">
-                <p className="text-xs text-gray-500 italic">
+            {strategyChanged && (
+                <div className="flex items-center justify-between gap-3 bg-ember-50 rounded-tile shadow-raised p-4 text-sm text-ember-700">
+                    <span>Your strategy has changed since this research ran, so it may not reflect it.</span>
+                    <button
+                        onClick={() => onRunDeepDive('reset')}
+                        className="shrink-0 flex items-center gap-1.5 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                    >
+                        <RefreshCw size={14} /> Redo research
+                    </button>
+                </div>
+            )}
+            <div className="flex flex-wrap justify-between items-center gap-3 px-1">
+                <p className="text-sm text-ink-muted">
                     Tip: You can also refresh individual cards below to apply this context granularly.
                 </p>
                 <div className="flex gap-2">
                     <button
                         onClick={() => onRunDeepDive('reset')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded text-xs transition-colors"
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-rose-700 text-sm font-medium shadow-raised hover:text-rose-500 active:shadow-pressed transition-all"
                         title="Clear and restart research"
                     >
                         <RefreshCw size={14} /> Reset
                     </button>
                     <button
                         onClick={onExport}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded text-xs transition-colors"
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                     >
-                        <Download size={14} /> Export
+                        <Download size={14} className="text-ember-500" /> Export
                     </button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4 flex items-center gap-3">
                         Research Findings
-                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Facts</span>
+                        <span className="h-7 px-3 inline-flex items-center rounded-full bg-canvas shadow-well text-ink-soft text-xs font-medium tracking-normal">Facts</span>
                     </h3>
                     <div className="space-y-3">
                         {deepDive.research.map((r, i) => (
@@ -83,9 +108,9 @@ export function DeepDiveStep({
                 </div>
 
                 <div>
-                    <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4 flex items-center gap-3">
                         Key Insights
-                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Angles</span>
+                        <span className="h-7 px-3 inline-flex items-center rounded-full bg-canvas shadow-well text-ink-soft text-xs font-medium tracking-normal">Angles</span>
                     </h3>
                     <div className="space-y-3">
                         {deepDive.insights.map((r, i) => (

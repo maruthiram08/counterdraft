@@ -214,15 +214,25 @@ export type DevStep =
 export interface Audience {
   role: string;
   pain: string;
+  beliefs?: string; // What they already believe about the topic
 }
 
 // Brain: Metadata structure (stored in content_items.brain_metadata)
+// Preset values stay as suggestions; users can describe anything in their own words
 export interface BrainMetadata {
-  outcome: Outcome;
+  outcome: Outcome | (string & {});
   audience?: Audience;
-  stance?: Stance;
-  format?: PostFormat;
+  stance?: Stance | (string & {});
+  format?: PostFormat | (string & {});
   confidence: ConfidenceLevel;
+  brief?: string; // The user's own description of the post, passed verbatim to generation
+  cta?: string; // What the reader should do next
+  include?: string[]; // Facts, names or points that must appear
+  avoid?: string[]; // Words, topics or habits to stay away from
+  toneNotes?: string; // Tone in the user's own words
+  length?: string; // Length or platform preference
+  clarifyingQuestion?: string; // One open question from the brief parser, if something important is unclear
+  researchedWith?: string; // Strategy snapshot the current research was generated from
   source?: {
     type: 'belief' | 'tension' | 'idea' | 'manual' | 'artifact' | 'synthesis';
     id?: string;

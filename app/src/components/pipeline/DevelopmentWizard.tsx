@@ -5,6 +5,7 @@ import { Check, X, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2 } from "lucide
 import { toast } from "sonner";
 import { BrainHeaderPanel } from "./BrainHeaderPanel";
 import { BrainMetadata } from "@/types";
+import { formatStrategyContext } from "@/lib/brain/strategy";
 import { LimitModal } from "../modal/LimitModal";
 
 import { KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -158,8 +159,16 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
     };
 
+    // Latest strategy for async callbacks, so a finished research run never overwrites edits made while it ran
+    const latestBrainMetadata = useRef(localBrainMetadata);
+    useEffect(() => {
+        latestBrainMetadata.current = localBrainMetadata;
+    }, [localBrainMetadata]);
+    const researchStrategy = formatStrategyContext(localBrainMetadata);
+    const strategyChangedSinceResearch = !!deepDive && !!researchStrategy
+        && (localBrainMetadata?.researchedWith ?? '') !== researchStrategy;
+
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
-    const [showStrategyWarning, setShowStrategyWarning] = useState(false);
 
     const handleUpdateBrainMetadata = (metadata: BrainMetadata) => {
         setLocalBrainMetadata(metadata);
@@ -224,6 +233,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
         setLoading(true);
         saveProgress({ dev_step: 'deep_dive_in_progress' });
+        const researchedWith = formatStrategyContext(localBrainMetadata);
         try {
             const res = await fetch('/api/content/develop', {
                 method: 'POST',
@@ -270,9 +280,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 } else {
                     setDeepDive(richData);
                     if (mode === 'reset') setGlobalContext("");
+                    const brainMetadata = { ...latestBrainMetadata.current, researchedWith } as BrainMetadata;
+                    setLocalBrainMetadata(brainMetadata);
                     saveProgress({
                         deep_dive: richData,
-                        dev_step: 'deep_dive_complete'
+                        dev_step: 'deep_dive_complete',
+                        brain_metadata: brainMetadata
                     });
                 }
             } else {
@@ -412,16 +425,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             setStep('outline');
             generateOutline();
         } else if (step === 'outline' && outlineApproved) {
-            const isVague = !localBrainMetadata?.outcome || !localBrainMetadata?.audience?.role;
-
-            if (isVague && !showStrategyWarning) {
-                setShowStrategyWarning(true);
-                return;
-            }
-
             checkLimit().then(allowed => {
                 if (!allowed) return;
-                setShowStrategyWarning(false);
                 setStep('generate');
                 generateDraft();
             });
@@ -535,9 +540,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             setDraftContent(item.draft_content);
         }
 
-        if (!deepDive && !item.deep_dive && !loading) {
-            runDeepDive();
-        } else if (item.dev_step) {
+        // Research waits for the user to start it, so the strategy brief can shape it
+        if (item.dev_step) {
             if (item.dev_step.includes('draft') || item.dev_step === 'complete') {
                 setStep('generate');
             } else if (item.dev_step.includes('outline')) {
@@ -550,7 +554,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             else if (item.outline) setStep('outline');
             else setStep('deep_dive');
         }
-    }, [item.id, item.deep_dive, item.outline, item.draft_content, item.dev_step, deepDive, draftContent, outline.length, loading, runDeepDive]);
+    }, [item.id, item.deep_dive, item.outline, item.draft_content, item.dev_step, deepDive, draftContent, outline.length]);
 
     const steps = [
         { key: 'deep_dive', label: 'Research' },
@@ -562,12 +566,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const headerItem: ContentItem = { ...item, brain_metadata: localBrainMetadata };
 
     return (
-        <div className="fixed top-0 right-0 bottom-0 left-0 md:left-16 z-40 flex flex-col bg-white animate-in fade-in duration-200 border-l border-gray-200">
-            <div className="w-full h-full flex flex-col bg-white">
+        <div className="fixed top-0 right-0 bottom-0 left-0 md:left-16 z-40 flex flex-col bg-canvas shadow-float animate-in fade-in duration-200">
+            <div className="w-full h-full flex flex-col bg-canvas">
                 {/* Header Row */}
-                <div className="px-6 h-16 border-b flex items-center justify-between bg-white shrink-0 z-50">
+                <div className="px-4 md:px-8 h-20 flex items-center justify-between bg-canvas shrink-0 z-50">
                     <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
-                        <h2 className="font-serif text-lg font-medium text-gray-900 truncate" title={item.hook}>
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink truncate" title={item.hook}>
                             {item.hook}
                         </h2>
                     </div>
@@ -577,37 +581,37 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 saveProgress({ dev_step: step === 'deep_dive' ? 'deep_dive_in_progress' : step === 'outline' ? 'outline_in_progress' : 'draft_in_progress' });
                                 onClose();
                             }}
-                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                         >
-                            Save & Exit <X size={14} />
+                            Save & Exit <X size={14} className="text-ember-500" />
                         </button>
                     </div>
                 </div>
 
                 {/* Steps Row */}
-                <div className="px-6 py-2 bg-white border-b shrink-0 flex justify-center shadow-[0_1px_2px_rgba(0,0,0,0.02)] z-40">
-                    <div className="flex items-center gap-4">
+                <div className="px-4 md:px-8 pb-4 bg-canvas shrink-0 flex justify-center z-40">
+                    <div className="flex items-center gap-2 md:gap-3">
                         {steps.map((s, i) => {
                             const isActive = s.key === step;
                             const isPast = i < currentStepIndex;
                             return (
                                 <div key={s.key} className="flex items-center">
                                     <div
-                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-2 ${isActive
-                                            ? 'bg-[var(--accent)] text-white shadow-sm ring-2 ring-[var(--accent)]/20'
+                                        className={`h-10 px-4 rounded-full bg-canvas text-sm font-medium transition-all flex items-center gap-2 ${isActive
+                                            ? 'shadow-pressed text-ember-600'
                                             : isPast
-                                                ? 'bg-green-50 text-green-700'
-                                                : 'text-gray-400'
+                                                ? 'shadow-raised text-sage-700'
+                                                : 'shadow-raised text-ink-muted'
                                             }`}
                                     >
-                                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${isActive ? 'bg-white/20' : isPast ? 'bg-green-200/50' : 'bg-gray-100'
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${isActive ? 'bg-ember-500 text-white' : isPast ? 'bg-sage-100 text-sage-700' : 'bg-canvas shadow-well'
                                             }`}>
                                             {isPast ? <Check size={10} strokeWidth={3} /> : i + 1}
                                         </span>
                                         <span>{s.label}</span>
                                     </div>
                                     {i < steps.length - 1 && (
-                                        <div className={`w-12 h-[1px] mx-2 ${isPast ? 'bg-green-200' : 'bg-gray-100'}`} />
+                                        <div className={`w-6 md:w-12 h-0.5 rounded-full mx-1 md:mx-2 ${isPast ? 'bg-sage-500/40' : 'bg-line'}`} />
                                     )}
                                 </div>
                             );
@@ -616,8 +620,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto bg-gray-50/30">
-                    <div className="max-w-6xl mx-auto p-6 md:p-8 min-h-full flex flex-col">
+                <div className="flex-1 overflow-y-auto bg-canvas">
+                    <div className="max-w-6xl mx-auto px-4 py-6 md:p-8 min-h-full flex flex-col">
                         <BrainHeaderPanel
                             item={headerItem}
                             onUpdate={handleUpdateBrainMetadata}
@@ -632,6 +636,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                     loading={loading} // Effectively redundant here as checked above, but kept for interface
                                     refiningItems={refiningItems}
                                     onRunDeepDive={runDeepDive}
+                                    strategyChanged={strategyChangedSinceResearch}
                                     onExport={handleExportResearch}
                                     onRefinePoint={handleRefinePoint}
                                     onUpdateItem={handleUpdateItem}
@@ -707,13 +712,13 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 border-t bg-gray-50 flex justify-between items-center z-50 shrink-0">
+                <div className="px-4 md:px-8 py-4 bg-canvas border-t border-line flex justify-between items-center z-50 shrink-0">
                     <button
                         onClick={handleBack}
                         disabled={step === 'deep_dive' || loading}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 flex items-center gap-2"
+                        className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 disabled:hover:text-ink flex items-center gap-2"
                     >
-                        <ArrowLeft size={16} /> Back
+                        <ArrowLeft size={16} className="text-ember-500" /> Back
                     </button>
 
                     <div className="flex gap-3">
@@ -724,9 +729,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                     document.querySelector('.overflow-y-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                                 disabled={loading || !deepDive}
-                                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2"
+                                className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
-                                <RefreshCw size={14} /> Refine Research
+                                <RefreshCw size={14} className="text-ember-500" /> Refine Research
                             </button>
                         )}
 
@@ -734,7 +739,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             <button
                                 onClick={handleComplete}
                                 disabled={!draftContent || loading}
-                                className="px-6 py-2 bg-[var(--accent)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 <CheckCircle2 size={16} /> Complete & Save
                             </button>
@@ -742,7 +747,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             <button
                                 onClick={handleNext}
                                 disabled={loading || (step === 'outline' && !outlineApproved) || (step === 'deep_dive' && !deepDive)}
-                                className="px-6 py-2 bg-[var(--foreground)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 <ArrowRight size={16} /> Next Step
                             </button>

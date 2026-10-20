@@ -1,7 +1,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Target, LayoutTemplate, Scale, Users, Info, Check, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
+import { Target, LayoutTemplate, Scale, Users, ChevronDown, ChevronUp, Sparkles, Loader2, Flame, Megaphone, Ruler, ListChecks, Ban, HeartCrack, MessageCircleQuestion, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Draft, BrainMetadata } from "@/types";
+import { formatLabel, hasStrategy, FORMAT_PRESETS, GOAL_PRESETS } from "@/lib/brain/strategy";
 import { toast } from "sonner";
 
 interface StrategyBarProps {
@@ -10,272 +12,357 @@ interface StrategyBarProps {
     enableCoach?: boolean;
 }
 
+type FieldKey = 'outcome' | 'audience' | 'pain' | 'stance' | 'format' | 'toneNotes' | 'cta' | 'length' | 'include' | 'avoid';
+
+interface FieldConfig {
+    key: FieldKey;
+    label: string;
+    icon: LucideIcon;
+    color: string;
+    placeholder: string;
+    presets?: string[];
+}
+
+// Every field takes free text; presets are only one-click shortcuts
+const FIELDS: FieldConfig[] = [
+    { key: 'outcome', label: 'Goal', icon: Target, color: 'text-dusk-500', placeholder: 'What should this post achieve?', presets: ['Authority', 'Engagement', 'Conversion', 'Connection'] },
+    { key: 'audience', label: 'Audience', icon: Users, color: 'text-sand-500', placeholder: 'Who is this for?', presets: ['Founders', 'Engineers', 'Investors', 'Designers', 'Marketing Leaders'] },
+    { key: 'pain', label: 'Their pain', icon: HeartCrack, color: 'text-rose-500', placeholder: 'What are they struggling with?' },
+    { key: 'stance', label: 'Stance', icon: Scale, color: 'text-sage-500', placeholder: 'e.g. gently sceptical', presets: ['Supportive', 'Contrarian', 'Analytical', 'Visionary'] },
+    { key: 'format', label: 'Format', icon: LayoutTemplate, color: 'text-ember-500', placeholder: 'e.g. a short story', presets: FORMAT_PRESETS.map(f => formatLabel(f)) },
+    { key: 'toneNotes', label: 'Tone', icon: Flame, color: 'text-ember-600', placeholder: 'e.g. spicy but not preachy' },
+    { key: 'cta', label: 'Call to action', icon: Megaphone, color: 'text-dusk-700', placeholder: 'What should readers do next?' },
+    { key: 'length', label: 'Length', icon: Ruler, color: 'text-ink-muted', placeholder: 'e.g. under 200 words' },
+    { key: 'include', label: 'Include', icon: ListChecks, color: 'text-sage-700', placeholder: 'Points to include, separated by ;' },
+    { key: 'avoid', label: 'Avoid', icon: Ban, color: 'text-rose-500', placeholder: 'Things to avoid, separated by ;' },
+];
+
+const RECENT_KEY = 'counterdraft:strategy-recent';
+const RECENT_FIELDS: FieldKey[] = ['outcome', 'audience', 'stance', 'toneNotes', 'cta'];
+
+function getFieldValue(meta: Partial<BrainMetadata>, key: FieldKey): string {
+    switch (key) {
+        case 'audience': return typeof meta.audience === 'object' ? meta.audience?.role || '' : (meta.audience as string | undefined) || '';
+        case 'pain': return typeof meta.audience === 'object' ? meta.audience?.pain || '' : '';
+        case 'format': return formatLabel(meta.format);
+        case 'include':
+        case 'avoid': return (meta[key] || []).join('; ');
+        default: return (meta[key] as string | undefined) || '';
+    }
+}
+
+function setFieldValue(meta: Partial<BrainMetadata>, key: FieldKey, raw: string): Partial<BrainMetadata> {
+    const value = raw.trim();
+    const next = { ...meta };
+    const audience = typeof meta.audience === 'object' ? meta.audience : { role: (meta.audience as string | undefined) || '', pain: '' };
+
+    switch (key) {
+        case 'audience':
+            next.audience = { ...audience, role: value };
+            break;
+        case 'pain':
+            next.audience = { ...audience, pain: value };
+            break;
+        case 'outcome':
+            next.outcome = GOAL_PRESETS.includes(value.toLowerCase()) ? value.toLowerCase() : value;
+            break;
+        case 'format':
+            next.format = FORMAT_PRESETS.find(f => formatLabel(f).toLowerCase() === value.toLowerCase()) || value || undefined;
+            break;
+        case 'include':
+        case 'avoid': {
+            const items = value.split(/[;\n]/).map(s => s.trim()).filter(Boolean);
+            next[key] = items.length ? items : undefined;
+            break;
+        }
+        default:
+            next[key] = value || undefined;
+    }
+    return next;
+}
+
+function loadRecent(): Partial<Record<FieldKey, string[]>> {
+    try {
+        return JSON.parse(localStorage.getItem(RECENT_KEY) || '{}');
+    } catch {
+        return {};
+    }
+}
+
+function rememberRecent(meta: Partial<BrainMetadata>) {
+    try {
+        const recent = loadRecent();
+        for (const key of RECENT_FIELDS) {
+            const value = getFieldValue(meta, key);
+            if (!value) continue;
+            recent[key] = [value, ...(recent[key] || []).filter(v => v.toLowerCase() !== value.toLowerCase())].slice(0, 6);
+        }
+        localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+    } catch {
+        // Recent suggestions are a convenience; ignore storage failures
+    }
+}
+
 export function StrategyBar({ draft, onUpdate, enableCoach = true }: StrategyBarProps) {
     const [isExpanded, setIsExpanded] = useState(true);
-    // Explicitly type as Partial<BrainMetadata>
     const [metadata, setMetadata] = useState<Partial<BrainMetadata>>(draft.brain_metadata || {});
-    const [isAutofilling, setIsAutofilling] = useState(false);
+    const [brief, setBrief] = useState(draft.brain_metadata?.brief || "");
+    const [isParsing, setIsParsing] = useState(false);
+    const [editingField, setEditingField] = useState<FieldKey | null>(null);
+    const [fieldDraft, setFieldDraft] = useState("");
+    const [answer, setAnswer] = useState("");
+    const [recent, setRecent] = useState<Partial<Record<FieldKey, string[]>>>({});
 
-    // Sync specific fields
-    const goal = metadata.outcome || ""; // Mapped from 'outcome'
-    const format = metadata.format || "";
-    const stance = metadata.stance || "";
-
-    // Audience might be object { role, pain } or string (legacy)
-    const rawAudience = metadata.audience;
-    const audience = typeof rawAudience === 'object' ? rawAudience?.role || "" : rawAudience || "";
-
-    // Derived State
-    const isComplete = goal && format && stance && audience;
-    const missingFields = [
-        !goal && "Goal",
-        // !format && "Format", // Format is optional often?
-        !stance && "Stance",
-        !audience && "Audience"
-    ].filter(Boolean);
+    const isPublished = draft.status === 'published';
+    const strategySet = hasStrategy(metadata);
 
     useEffect(() => {
         setMetadata(draft.brain_metadata || {});
+        setBrief(draft.brain_metadata?.brief || "");
     }, [draft.brain_metadata]);
 
-    const handleAutofill = useCallback(async () => {
-        if (!draft.title && !draft.hook) {
-            toast.error("Please enter a topic/hook first.");
+    useEffect(() => {
+        setRecent(loadRecent());
+    }, []);
+
+    const save = useCallback(async (next: Partial<BrainMetadata>) => {
+        setMetadata(next);
+        await onUpdate({ brain_metadata: next as BrainMetadata });
+    }, [onUpdate]);
+
+    // Sends the brief (possibly empty) to Claude and merges the parsed strategy over the current one
+    const parseBrief = useCallback(async (briefText: string, { silent = false } = {}) => {
+        if (!briefText.trim() && !draft.title && !draft.hook) {
+            if (!silent) toast.error("Describe the post or add a topic first.");
             return;
         }
 
-        setIsAutofilling(true);
+        setIsParsing(true);
         try {
             const res = await fetch('/api/content/develop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'autofill_strategy',
-                    hook: draft.hook || draft.title
+                    action: 'parse_brief',
+                    brief: briefText,
+                    hook: draft.hook || draft.title,
+                    draftText: draft.content,
+                    brainMetadata: metadata
                 })
             });
+            if (!res.ok) throw new Error("Failed to parse brief");
 
-            if (res.ok) {
-                const data = await res.json();
-                const newMetadata = {
-                    ...metadata,
-                    ...data
-                };
-                setMetadata(newMetadata);
-                await onUpdate({ brain_metadata: newMetadata });
-                toast.success("Strategy generated from your Voice!");
-            } else {
-                throw new Error("Failed to generate strategy");
-            }
+            const parsed = await res.json();
+            const next: Partial<BrainMetadata> = { ...metadata, ...parsed, brief: briefText.trim() || undefined };
+            if (!parsed.clarifyingQuestion) delete next.clarifyingQuestion;
+            await save(next);
+            rememberRecent(next);
+            setRecent(loadRecent());
+            if (!silent) toast.success("Strategy updated from your brief");
         } catch (error) {
             console.error(error);
-            toast.error("Failed to autofill strategy.");
+            if (!silent) toast.error("Couldn't shape the strategy. Try again.");
         } finally {
-            setIsAutofilling(false);
+            setIsParsing(false);
         }
-    }, [draft.hook, draft.title, metadata, onUpdate]);
+    }, [draft.content, draft.hook, draft.title, metadata, save]);
 
-    // Auto-Strategy Trigger
+    // With nothing set yet, quietly infer a starting strategy from the topic. It only fills
+    // empty fields, so it never overwrites what the user wrote.
     const hasAutoRun = useRef(false);
-
     useEffect(() => {
         const hasContent = draft.title || draft.hook;
-        // Trigger if:
-        // 1. Coach enabled
-        // 2. Strategy is NOT complete
-        // 3. We have a title/hook to base it on
-        // 4. We haven't run it yet this session (component mount)
-        // 5. Specifically, if the GOAL is missing (proxy for "totally empty" or "needs setup")
-        if (enableCoach && !isComplete && hasContent && !hasAutoRun.current && !metadata.outcome) {
+        if (enableCoach && !isPublished && hasContent && !strategySet && !hasAutoRun.current) {
             hasAutoRun.current = true;
-            // Small delay to ensure smooth UI enter
-            const timer = setTimeout(() => {
-                handleAutofill();
-            }, 800);
+            const timer = setTimeout(() => parseBrief("", { silent: true }), 800);
             return () => clearTimeout(timer);
         }
-    }, [enableCoach, isComplete, draft.title, draft.hook, metadata.outcome, handleAutofill]);
+    }, [enableCoach, isPublished, draft.title, draft.hook, strategySet, parseBrief]);
 
-    const handleUpdate = async (key: string, value: string) => {
-        const newMetadata = { ...metadata };
-
-        if (key === 'audience') {
-            const existingPain = typeof metadata.audience === 'object' ? metadata.audience.pain : '';
-            newMetadata.audience = { role: value, pain: existingPain };
-        } else if (key === 'goal') {
-            newMetadata.outcome = value as import("@/types").Outcome;
-        } else {
-            // @ts-expect-error - Dynamic key access on defined type
-            newMetadata[key as keyof BrainMetadata] = value;
-        }
-
-        setMetadata(newMetadata);
-        // Cast to BrainMetadata to satisfy Draft type (even if partial)
-        await onUpdate({ brain_metadata: newMetadata as BrainMetadata });
+    const startEditing = (key: FieldKey) => {
+        if (isPublished) return;
+        setEditingField(key);
+        setFieldDraft(getFieldValue(metadata, key));
     };
 
-    return (
-        <div className="mb-8 select-none">
-            {/* Main Bar */}
-            <div className={`relative bg-white border ${isComplete ? 'border-gray-200' : 'border-gray-300'} rounded-xl shadow-sm transition-all duration-300`}>
+    const commitField = async (key: FieldKey, value: string) => {
+        setEditingField(null);
+        if (value.trim() === getFieldValue(metadata, key)) return;
+        const next = setFieldValue(metadata, key, value);
+        await save(next);
+        rememberRecent(next);
+        setRecent(loadRecent());
+    };
 
-                {/* Header / Toggle */}
+    const answerQuestion = async () => {
+        if (!answer.trim() || !metadata.clarifyingQuestion) return;
+        const nextBrief = `${brief.trim()}\n${metadata.clarifyingQuestion} ${answer.trim()}`.trim();
+        setBrief(nextBrief);
+        setAnswer("");
+        await parseBrief(nextBrief);
+    };
+
+    const dismissQuestion = async () => {
+        const next = { ...metadata };
+        delete next.clarifyingQuestion;
+        await save(next);
+    };
+
+    const filledFields = FIELDS.filter(f => getFieldValue(metadata, f.key));
+    const briefChanged = brief.trim() !== (metadata.brief || "");
+
+    return (
+        <div className="mb-8">
+            <div className="relative bg-surface rounded-tile shadow-card transition-all duration-300">
                 <div className="absolute -top-3 left-4 z-10 flex gap-2">
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="bg-white px-2 py-0.5 border border-gray-200 rounded-md text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+                        className="bg-canvas h-7 px-3 rounded-full text-xs font-medium text-ink-soft flex items-center gap-1.5 hover:text-ember-600 shadow-raised active:shadow-pressed transition-all"
                     >
-                        <Target size={10} className={isExpanded ? "text-blue-500" : ""} />
-                        Strategy Coach
-                        {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                        <Target size={12} className={isExpanded ? "text-ember-500" : ""} />
+                        Strategy
+                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                     </button>
-
-                    {isExpanded && !isComplete && draft.status !== 'published' && (
-                        <button
-                            onClick={handleAutofill}
-                            disabled={isAutofilling}
-                            className="bg-purple-50 px-2 py-0.5 border border-purple-100 rounded-md text-[10px] font-bold text-purple-600 uppercase tracking-widest flex items-center gap-1 hover:bg-purple-100 transition-all shadow-sm disabled:opacity-50"
-                        >
-                            {isAutofilling ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                            Auto-Strategy
-                        </button>
-                    )}
                 </div>
 
+                {!isExpanded && (
+                    <button onClick={() => setIsExpanded(true)} className="w-full text-left px-5 pt-6 pb-4 text-xs text-ink-soft truncate">
+                        {filledFields.length
+                            ? filledFields.slice(0, 5).map(f => `${f.label}: ${getFieldValue(metadata, f.key)}`).join(' · ')
+                            : "No strategy yet. Claude will infer one from your topic."}
+                    </button>
+                )}
+
                 {isExpanded && (
-                    <div className="flex flex-col xl:flex-row items-stretch divide-y xl:divide-y-0 xl:divide-x divide-gray-100 overflow-x-auto hide-scrollbar">
-                        {/* 1. GOAL */}
-                        <div className="p-3 flex flex-col justify-center min-w-[140px] xl:flex-1">
-                            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                <Target size={12} className="text-blue-400" />
-                                <span>Goal</span>
-                            </div>
-                            <select
-                                value={goal}
-                                onChange={(e) => handleUpdate('goal', e.target.value)}
-                                disabled={draft.status === 'published'}
-                                className={`bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer hover:text-blue-600 transition-colors w-full appearance-none truncate ${draft.status === 'published' ? 'cursor-default opacity-70' : ''}`}
-                            >
-                                <option value="" disabled>Select Goal</option>
-                                <option value="authority">Authority</option>
-                                <option value="engagement">Engagement</option>
-                                <option value="conversion">Conversion</option>
-                                <option value="connection">Connection</option>
-                            </select>
-                        </div>
-
-                        {/* 2. FORMAT */}
-                        <div className="p-3 flex flex-col justify-center min-w-[140px] xl:flex-1">
-                            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                <LayoutTemplate size={12} className="text-purple-400" />
-                                <span>Format</span>
-                            </div>
-                            <select
-                                value={format}
-                                onChange={(e) => handleUpdate('format', e.target.value)}
-                                disabled={draft.status === 'published'}
-                                className={`bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer hover:text-purple-600 transition-colors w-full appearance-none truncate ${draft.status === 'published' ? 'cursor-default opacity-70' : ''}`}
-                            >
-                                <option value="" disabled>Select Format</option>
-                                <option value="thought_leadership">Thought Leadership</option>
-                                <option value="tactical_guide">Tactical Guide</option>
-                                <option value="story">Personal Story</option>
-                                <option value="listicle">Listicle</option>
-                            </select>
-                        </div>
-
-                        {/* 3. STANCE */}
-                        <div className="p-3 flex flex-col justify-center min-w-[180px] xl:flex-[1.5] group/stance">
-                            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                <Scale size={12} className="text-green-400" />
-                                <span>Stance</span>
-                                {stance && <Check size={10} className="text-green-500 ml-auto" />}
-                            </div>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={stance}
-                                    onChange={(e) => handleUpdate('stance', e.target.value)}
-                                    readOnly={draft.status === 'published'}
-                                    placeholder="e.g. Contrarian..."
-                                    className={`w-full bg-transparent text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none border-b border-transparent focus:border-green-300 transition-all ${stance ? 'border-green-300/50' : ''} ${draft.status === 'published' ? 'cursor-default opacity-70' : ''}`}
-                                />
-                                {draft.status !== 'published' && !stance && (
-                                    <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                        <div className="text-[10px] font-medium text-gray-400 mb-1 px-1 uppercase tracking-wider">Suggestions</div>
-                                        <div className="flex flex-wrap gap-1">
-                                            {['Supportive', 'Contrarian', 'Analytical', 'Visionary'].map(s => (
-                                                <button
-                                                    key={s}
-                                                    onClick={() => handleUpdate('stance', s)}
-                                                    className="text-left px-2 py-1 text-xs text-gray-600 bg-gray-50 hover:bg-green-50 hover:text-green-700 hover:border-green-200 border border-transparent rounded-md transition-colors"
-                                                >
-                                                    {s}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* 4. AUDIENCE */}
-                        <div className="p-3 flex flex-col justify-center min-w-[180px] xl:flex-[1.5] group/audience lg:border-r-0">
-                            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                <Users size={12} className="text-amber-400" />
-                                <span>Audience</span>
-                                {!audience && <div className="w-1.5 h-1.5 rounded-full bg-red-400 ml-1 animate-pulse" />}
-                            </div>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={audience}
-                                    onChange={(e) => handleUpdate('audience', e.target.value)}
-                                    readOnly={draft.status === 'published'}
-                                    placeholder="Who is this for?"
-                                    className={`w-full bg-transparent text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none border-b border-transparent focus:border-amber-300 transition-all ${audience ? 'border-amber-300/50' : ''} ${draft.status === 'published' ? 'cursor-default opacity-70' : ''}`}
-                                />
-                                {draft.status !== 'published' && !audience && (
-                                    <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                        <div className="text-[10px] font-medium text-gray-400 mb-1 px-1 uppercase tracking-wider">Common Audiences</div>
-                                        <div className="flex flex-col gap-1">
-                                            {['Founders', 'Engineers', 'Investors', 'Designers', 'Marketing Leaders'].map(a => (
-                                                <button
-                                                    key={a}
-                                                    onClick={() => handleUpdate('audience', a)}
-                                                    className="block w-full text-left px-2 py-1.5 text-xs text-gray-600 hover:bg-amber-50 hover:text-amber-700 rounded-md transition-colors"
-                                                >
-                                                    {a}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* 5. VAGUE STRATEGY INDICATOR */}
-                        {!isComplete && enableCoach && (
-                            <div className="p-3 hidden xl:flex items-center justify-center bg-red-50/30 min-w-[140px]">
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-500/80 bg-red-100/50 px-2 py-1 rounded-full whitespace-nowrap">
-                                    <Info size={10} className="stroke-[3]" />
-                                    <span>Define Strategy</span>
+                    <div className="p-5 pt-7 space-y-4">
+                        {/* Brief */}
+                        <div className="relative">
+                            <textarea
+                                value={brief}
+                                onChange={(e) => setBrief(e.target.value)}
+                                // Keep the brief even if it isn't parsed: generation reads it verbatim
+                                onBlur={() => briefChanged && !isParsing && save({ ...metadata, brief: brief.trim() || undefined })}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                        e.preventDefault();
+                                        parseBrief(brief);
+                                    }
+                                }}
+                                readOnly={isPublished}
+                                rows={3}
+                                placeholder={`What's this post for, and who should it reach? Say it however you like.\ne.g. "Get founders scared of hiring their first PM to stop overthinking it. Slightly spicy, a short story from my last startup, and nudge them to DM me."`}
+                                className="w-full resize-y bg-canvas shadow-well rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
+                            />
+                            {!isPublished && (
+                                <div className="flex items-center justify-between gap-3 mt-3">
+                                    <span className="text-xs text-ink-muted">
+                                        {strategySet && !metadata.brief
+                                            ? "Claude filled these in from your topic. Describe the post to steer it, or edit any field."
+                                            : "Optional. Anything you leave out, Claude infers."}
+                                    </span>
+                                    <button
+                                        onClick={() => parseBrief(brief)}
+                                        disabled={isParsing}
+                                        className={`shrink-0 h-10 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 active:shadow-pressed transition-all disabled:opacity-50 ${briefChanged ? 'bg-ember-500 text-white hover:bg-ember-600 shadow-ember' : 'bg-canvas text-ink shadow-raised hover:text-ember-600'}`}
+                                    >
+                                        {isParsing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} className={briefChanged ? '' : 'text-ember-500'} />}
+                                        {brief.trim() ? "Shape strategy" : "Infer strategy"}
+                                    </button>
                                 </div>
+                            )}
+                        </div>
+
+                        {/* Clarifying question */}
+                        {metadata.clarifyingQuestion && !isPublished && (
+                            <div className="flex items-center gap-2 bg-dusk-100 rounded-tile px-4 py-3">
+                                <MessageCircleQuestion size={14} className="text-dusk-700 shrink-0" />
+                                <span className="text-xs font-medium text-dusk-700 shrink-0 max-w-[50%]">{metadata.clarifyingQuestion}</span>
+                                <input
+                                    value={answer}
+                                    onChange={(e) => setAnswer(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && answerQuestion()}
+                                    placeholder="Your answer"
+                                    className="flex-1 min-w-0 h-8 bg-surface shadow-well rounded-full px-3 text-xs text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
+                                />
+                                <button onClick={dismissQuestion} className="w-7 h-7 rounded-full flex items-center justify-center text-dusk-500 hover:text-dusk-700 active:shadow-pressed" aria-label="Dismiss question">
+                                    <X size={12} />
+                                </button>
                             </div>
                         )}
+
+                        {/* What Claude understood: every field is editable free text */}
+                        <div className="flex flex-wrap gap-2">
+                            {FIELDS.map(field => {
+                                const value = getFieldValue(metadata, field.key);
+                                const Icon = field.icon;
+
+                                if (editingField === field.key) {
+                                    const suggestions = [...(recent[field.key] || []), ...(field.presets || [])]
+                                        .filter((v, i, all) => all.findIndex(o => o.toLowerCase() === v.toLowerCase()) === i)
+                                        .slice(0, 8);
+                                    return (
+                                        <div key={field.key} className="w-full bg-canvas shadow-pressed rounded-tile p-3 space-y-2.5">
+                                            <div className="flex items-center gap-2 bg-surface shadow-well rounded-full px-3 h-9">
+                                                <Icon size={12} className={field.color} />
+                                                <span className="text-xs font-medium text-ink-muted shrink-0">{field.label}</span>
+                                                <input
+                                                    autoFocus
+                                                    value={fieldDraft}
+                                                    onChange={(e) => setFieldDraft(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') commitField(field.key, fieldDraft);
+                                                        if (e.key === 'Escape') setEditingField(null);
+                                                    }}
+                                                    onBlur={() => commitField(field.key, fieldDraft)}
+                                                    placeholder={field.placeholder}
+                                                    className="flex-1 min-w-0 bg-transparent text-sm text-ink placeholder:text-ink-muted border-0 focus:outline-none"
+                                                />
+                                            </div>
+                                            {suggestions.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {suggestions.map(s => (
+                                                        <button
+                                                            key={s}
+                                                            // Commit before the input's blur fires
+                                                            onMouseDown={(e) => { e.preventDefault(); commitField(field.key, s); }}
+                                                            className="h-7 px-3 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all"
+                                                        >
+                                                            {s}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }
+
+                                if (!value && isPublished) return null;
+
+                                return (
+                                    <button
+                                        key={field.key}
+                                        onClick={() => startEditing(field.key)}
+                                        title={value ? `${field.label}: ${value}` : `Add ${field.label.toLowerCase()}`}
+                                        className={`max-w-full flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium transition-all ${value
+                                            ? 'bg-canvas shadow-well text-ink hover:text-ember-700'
+                                            : 'bg-surface border border-dashed border-line text-ink-muted hover:text-ink-soft hover:border-ink-muted/40'} ${isPublished ? 'cursor-default' : ''}`}
+                                    >
+                                        <Icon size={11} className={value ? field.color : ''} />
+                                        {value ? (
+                                            <>
+                                                <span className="text-ink-muted">{field.label}:</span>
+                                                <span className="truncate max-w-[260px]">{value}</span>
+                                            </>
+                                        ) : (
+                                            <span>{field.label}</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>
-
-            {/* Coach Alert (Logic: If strategy is blocked/incomplete) */}
-            {!isComplete && enableCoach && draft.status !== 'published' && (
-                <div className="mt-2 text-xs font-medium text-red-500 flex items-center gap-2 animate-in slide-in-from-top-1 duration-300 px-1">
-                    <Info size={12} />
-                    <span>
-                        STRATEGY COACH: To avoid generic AI results, you should define your <strong className="font-bold underline decoration-red-200 underline-offset-2">{(missingFields[0] || "Strategy") as string}</strong>.
-                    </span>
-                </div>
-            )}
         </div>
     );
 }
