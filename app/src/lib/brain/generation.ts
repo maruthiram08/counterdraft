@@ -133,11 +133,15 @@ Your task is to provide:
    - Every finding must be specific to the brief's audience and any place or culture it names. A general finding counts only once it is made specific to them (for Indian dads: joint families, paternity leave at named companies, long workdays across time zones); otherwise drop it.
    - If the brief asks for tips, practical advice or a how-to, most findings must be concrete actions the reader can take this week: what to do, when, and how, with a real example where the sources give one (e.g. "Block 7 to 8pm as no-laptop time and tell your manager in writing", not "create an organized home office").
    - Never repeat the same point twice.
+   - Prefer strong sources: news outlets, journals and research, surveys, government and established organisations, named experts. Use a personal blog only for a first-hand story, and say it is one person's experience.
+   - Include the numbers the sources give (survey results, percentages, counts, dates). A finding with a figure beats one that says "many" or "increasingly".
+   - When the brief asks what someone can do, give concrete actions recommended by named experts or organisations (e.g. a child psychologist's advice), one action per finding.
    - Base findings on the EXPLORE SOURCES, WEB SOURCES, references and source material provided. End each sourced finding with the domain shown in brackets after that source's title, e.g. "(source: hbr.org)"; never a paraphrased title or site name.
    - Never mention a study, statistic or institution that is not in the provided material. If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
-   Each insight must be something the post can use directly: a claim to argue, a reframe the reader hasn't heard, or a way to structure the post. Never summarise the findings or say the audience "needs support" or "should prioritise" something.
+   Each insight must be something the post can use directly: a claim to argue, a reframe the reader hasn't heard, or a way to structure the post. Never summarise the findings or say the audience "needs support", "should prioritise" or "might reconsider" something.
+   Write each as a sharp, arguable statement that cites the findings it rests on. Weak: "Parents might reconsider K-pop as an opportunity for nurturing." Strong: "The fandom gives teens the emotional vocabulary their homes don't; parents who learn one song's story get a way into conversations they can't start head-on."
 
 Prioritize:
 - Insights that reframe the problem from the audience's perspective
@@ -253,14 +257,14 @@ Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupp
 The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
 Every query must name the brief's audience and any country, region, culture or market the brief mentions (e.g. "Indian dads", "India"); a query about the general topic alone is wasted.
 If the brief asks for tips, practical advice or a how-to, search for concrete steps, routines, real examples and local specifics (laws, policies, workplace norms, family set-ups) for that audience, not for statistics or general studies.
-Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; "placeIsWholeBrief": true if the whole post is about that place, false if the place is only one part of it; "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or []; and "asks": each distinct question the brief wants the post to answer (up to 3, e.g. "what Gen Z thinks" and "what parents can do to help"), each with a web search aimed at answering it for this audience, or [] if the brief has none.
-Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "placeIsWholeBrief": true | false, "localTerms": ["..."], "asks": [{ "question": "...", "query": "..." }] }`
+Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; "placeIsWholeBrief": true if the whole post is about that place, false if the place is only one part of it; "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or []; and "asks": each distinct question the brief wants the post to answer (up to 3, e.g. "what Gen Z thinks" and "what parents can do to help"), each with a web search aimed at answering it for this audience (when the question is what someone can do, aim the search at expert advice, e.g. "child psychologist advice parents K-pop India"), or [] if the brief has none; and "statsQuery": one web search aimed at hard numbers for the topic and place (surveys, reports, statistics), or null.
+Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "placeIsWholeBrief": true | false, "localTerms": ["..."], "asks": [{ "question": "...", "query": "..." }], "statsQuery": "..." | null }`
                 },
                 { role: 'user', content: `Working title: ${hook}${context}` }
             ],
             response_format: { type: 'json_object' },
         });
-        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown; placeIsWholeBrief?: unknown; asks?: unknown };
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown; placeIsWholeBrief?: unknown; asks?: unknown; statsQuery?: unknown };
         const queries = Array.isArray(parsed.queries)
             ? parsed.queries.filter((q): q is string => typeof q === 'string' && !!q.trim()).slice(0, 3)
             : [];
@@ -275,7 +279,8 @@ Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country
                 return question && query ? [{ question, query }] : [];
             }).slice(0, 3)
             : [];
-        return { queries, asks, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms, placeIsWholeBrief: parsed.placeIsWholeBrief !== false };
+        const statsQuery = text(parsed.statsQuery);
+        return { queries: statsQuery ? [...queries, statsQuery] : queries, asks, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms, placeIsWholeBrief: parsed.placeIsWholeBrief !== false };
     }
 
     // --- 2. Refine Point ---
