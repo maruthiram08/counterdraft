@@ -4,7 +4,9 @@ import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
-import { fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
+import { anchorQueries, countLocalFindings, dropUnknownCitations, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
+
+type ResearchPlan = { queries: string[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
 
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
@@ -87,8 +89,12 @@ export class BrainGenerationService {
         // Plan from the original search and saved angle first; the hook is only a working title
         const origin = originQuery(brainMetadata);
         const searchSeed = `${origin ? `\nOriginal search: ${origin}` : ''}\nSaved angle: ${originAngle(angle, brainMetadata) || 'None'}`;
-        const queries = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`).catch(() => fallbackQueries(hook, brainMetadata, angle));
-        const sources = await gatherWebSources(queries);
+        const plan = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`)
+            .catch((): ResearchPlan => ({ queries: fallbackQueries(hook, brainMetadata, angle) }));
+        // Each "must include" item gets its own search so the brief's extra asks aren't crowded out by the hook
+        const includeQueries = (brainMetadata?.include || []).slice(0, 2).map(item => plan.place && !item.toLowerCase().includes(plan.place.toLowerCase().slice(0, 4)) ? `${item} ${plan.place}` : item);
+        const queries = [...anchorQueries(plan.queries, brainMetadata, plan.place), ...includeQueries];
+        const sources = await gatherWebSources(queries, 15, plan.country);
         const webSources = `${exploreSources}${formatWebSources(sources)}`;
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
@@ -99,9 +105,7 @@ export class BrainGenerationService {
             webSourceCount: sources.length
         });
 
-        const completion = await this.openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
+        const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
                 {
                     role: 'system',
                     content: `${SAFETY_PREAMBLE}
@@ -120,11 +124,17 @@ Your task is to provide:
 
 1. **Research findings**: The raw material the planned post needs. Choose WHAT to research from the strategic context and the creator's brief: what this audience would find credible, specifics about their pain points, anything the creator asked to include, and the material the format calls for (for a practical walkthrough or guide: concrete use cases, the steps or workflow, before/after comparisons, worked examples, and limitations or when NOT to use it).
    - Each finding must be a specific, checkable fact, example or step. Opinions, predictions and "this can help X" claims belong in Key insights, not here.
+   - If the whole brief is about a country, region or culture, most findings must be about that place: its laws and policies, named local companies and brands, family set-ups, work culture, prices. Advice that would apply to anyone anywhere (a dedicated workspace, exercise, a schedule, "focus on authenticity") does not count unless it is made specific to that place. If the place is one part of the brief, that part still gets its own place-specific findings. If the sources have too little local material, add a "Gap:" finding naming what is missing instead of padding with generic material.
+   - Every "Must include" item and every extra ask in the brief (e.g. "also talk about how Indian D2C brands identify the shift and plan around it") gets at least two findings of its own with specifics: named companies or people, numbers, what they did and what happened. When the brief asks HOW someone does something, findings describe the method (what they track or measure, the steps they took, the result), not just that it happens.
+   - A statistic about one country or group must say which (e.g. "In South Korea, 92% of Gen Z..."); never present it as if it applied to the brief's audience or place.
+   - Every finding must be specific to the brief's audience and any place or culture it names. A general finding counts only once it is made specific to them (for Indian dads: joint families, paternity leave at named companies, long workdays across time zones); otherwise drop it.
+   - If the brief asks for tips, practical advice or a how-to, most findings must be concrete actions the reader can take this week: what to do, when, and how, with a real example where the sources give one (e.g. "Block 7 to 8pm as no-laptop time and tell your manager in writing", not "create an organized home office").
    - Never repeat the same point twice.
-   - Base findings on the EXPLORE SOURCES, WEB SOURCES, references and source material provided. End each sourced finding with its source in brackets, e.g. "(source: hbr.org)".
+   - Base findings on the EXPLORE SOURCES, WEB SOURCES, references and source material provided. End each sourced finding with the domain shown in brackets after that source's title, e.g. "(source: hbr.org)"; never a paraphrased title or site name.
    - Never mention a study, statistic or institution that is not in the provided material. If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
+   Each insight must be something the post can use directly: a claim to argue, a reframe the reader hasn't heard, or a way to structure the post. Never summarise the findings or say the audience "needs support" or "should prioritise" something.
 
 Prioritize:
 - Insights that reframe the problem from the audience's perspective
@@ -156,15 +166,74 @@ IMPORTANT: Return a valid JSON object with the following structure:
                     role: 'user',
                     content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${ideaChain}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${webSources}${referencesContext}${sourceMaterial}${userContextString}`
                 }
-            ],
-            response_format: { type: 'json_object' },
-        });
+            ];
+        const run = async () => {
+            const completion = await this.openai.chat.completions.create({ model: 'gpt-4o-mini', messages, response_format: { type: 'json_object' } });
+            const content = completion.choices[0].message.content || '{}';
+            return { content, result: JSON.parse(content) as DeepDiveResult };
+        };
 
-        return JSON.parse(completion.choices[0].message.content || '{}');
+        const sourceText = `${webSources}${referencesContext}${sourceMaterial}`;
+        const first = await run();
+        // The model drifts to generic advice when most sources are from elsewhere; one corrective pass if it did
+        const terms = plan.place ? [plan.place, ...(plan.localTerms || [])] : [];
+        const findings = Array.isArray(first.result.research) ? first.result.research.map(String) : [];
+        const local = countLocalFindings(findings, terms);
+        // A post wholly about the place needs half its findings there; one where the place is a side ask needs at least two
+        const enough = plan.placeIsWholeBrief === false ? Math.min(2, findings.length) : Math.ceil(findings.length / 2);
+        if (!terms.length || !findings.length || local >= enough) return this.checkFindingsAgainstSources(first.result, sourceText);
+
+        TraceLogger.log('deep_dive', 'Local retry', { place: plan.place, local, total: findings.length });
+        messages.push(
+            { role: 'assistant', content: first.content },
+            { role: 'user', content: `Only ${local} of ${findings.length} findings are specific to ${plan.place}. Rewrite the research so ${plan.placeIsWholeBrief === false ? `the part of the brief about ${plan.place} has at least two findings of its own` : `most findings are about ${plan.place}`} (laws, policies, named companies and brands, family set-ups, work culture, prices), taken from the sources above. Replace generic material that would apply anywhere with ${plan.place}-specific findings, or with "Gap:" findings naming what the sources lack. Rewrite the insights to match. Same JSON format.` },
+        );
+        return this.checkFindingsAgainstSources((await run().catch(() => first)).result, sourceText);
+    }
+
+    // Drops findings whose cited source isn't in the material, then has the model check each one against its source:
+    // supported claims stay, overstated ones are cut back to what the source says, unsupported ones go
+    private async checkFindingsAgainstSources(result: DeepDiveResult, sourceText: string): Promise<DeepDiveResult> {
+        const research = Array.isArray(result.research) ? result.research.map(String) : [];
+        if (!research.length || !sourceText.trim()) return result;
+
+        const cited = dropUnknownCitations(research, sourceText);
+        try {
+            const completion = await this.openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You fact-check research findings against the sources they cite. For each numbered finding, find the cited source in the material and decide:
+- "supported": the source says this.
+- "partial": the source supports part of it (e.g. the finding adds a country, number or claim the source doesn't have). Return "text": the finding cut back to only what the source says, keeping its "(source: ...)" ending.
+- "unsupported": the source doesn't say it, or no cited source is in the material.
+Findings starting with "Gap:" are always "supported".
+Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupported", "text": "..." }] }`
+                    },
+                    { role: 'user', content: `FINDINGS:\n${cited.map((f, i) => `${i}. ${f}`).join('\n')}\n\nMATERIAL:${sourceText}` }
+                ],
+                response_format: { type: 'json_object' },
+            });
+            const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { checks?: { i?: number; verdict?: string; text?: string }[] };
+            const checks = new Map((parsed.checks || []).map(c => [c.i, c]));
+            const verified = cited.flatMap((finding, i) => {
+                const check = checks.get(i);
+                if (!check) return [finding];
+                if (check.verdict === 'unsupported') return [];
+                if (check.verdict === 'partial' && check.text?.trim()) return [check.text.trim()];
+                return [finding];
+            });
+            TraceLogger.log('deep_dive', 'Source check', { before: research.length, cited: cited.length, after: verified.length });
+            return { ...result, research: verified.length ? verified : ['Gap: none of the findings could be confirmed against the sources found; add references or redo research.'] };
+        } catch (err) {
+            console.error('Source check failed:', err);
+            return { ...result, research: cited };
+        }
     }
 
     // Turns the topic and strategy into a few targeted web searches
-    private async planResearchQueries(hook: string, context: string): Promise<string[]> {
+    private async planResearchQueries(hook: string, context: string): Promise<ResearchPlan> {
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
@@ -172,18 +241,23 @@ IMPORTANT: Return a valid JSON object with the following structure:
                     role: 'system',
                     content: `Write 3 web search queries that will find concrete, citable material for a post.
 The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
-Return JSON: { "queries": ["...", "...", "..."] }`
+Every query must name the brief's audience and any country, region, culture or market the brief mentions (e.g. "Indian dads", "India"); a query about the general topic alone is wasted.
+If the brief asks for tips, practical advice or a how-to, search for concrete steps, routines, real examples and local specifics (laws, policies, workplace norms, family set-ups) for that audience, not for statistics or general studies.
+Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; "placeIsWholeBrief": true if the whole post is about that place, false if the place is only one part of it; and "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or [].
+Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "placeIsWholeBrief": true | false, "localTerms": ["..."] }`
                 },
                 { role: 'user', content: `Working title: ${hook}${context}` }
             ],
             response_format: { type: 'json_object' },
         });
-        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown };
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown; placeIsWholeBrief?: unknown };
         const queries = Array.isArray(parsed.queries)
             ? parsed.queries.filter((q): q is string => typeof q === 'string' && !!q.trim()).slice(0, 3)
             : [];
         if (!queries.length) throw new Error('No queries planned');
-        return queries;
+        const text = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : undefined;
+        const localTerms = Array.isArray(parsed.localTerms) ? parsed.localTerms.map(text).filter((t): t is string => !!t).slice(0, 8) : [];
+        return { queries, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms, placeIsWholeBrief: parsed.placeIsWholeBrief !== false };
     }
 
     // --- 2. Refine Point ---
@@ -623,6 +697,7 @@ RULES:
 - Leave out "cta", "include", "avoid", "toneNotes" and "length" unless the brief (or draft) actually implies them.
 - "outcome": use one of authority | engagement | conversion | connection if it fits, otherwise a short phrase.
 - "format": use one of thought_leadership | tactical_guide | personal_story | listicle if it fits, otherwise a short phrase.
+- "audience.role": keep any country, region or culture the brief names (e.g. "New dads in India", not "New dads").
 - "stance": a short phrase in the creator's terms (e.g. "contrarian", "gently sceptical", "excited but practical").
 - "clarifyingQuestion": ask ONE short question only if something that would materially change the post is ambiguous. Otherwise null.
 
