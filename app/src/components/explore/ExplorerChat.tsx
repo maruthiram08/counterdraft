@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X, ChevronDown, ChevronUp, Compass, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 interface ChatMessage {
@@ -10,6 +10,12 @@ interface ChatMessage {
     topics?: FeedItem[];
     ideas?: PostIdea[];
     relatedQuery?: string; // Track which query generated this
+    related?: RelatedTopic[]; // Subtopics to branch into from this search
+}
+
+interface RelatedTopic {
+    label: string;
+    query: string;
 }
 
 interface FeedItem {
@@ -18,12 +24,19 @@ interface FeedItem {
     source: string;
     category: string;
     type?: 'article' | 'question';
+    publishedAt?: string;
+    summary?: string;
+    sourceCount?: number;
+    otherSources?: string[];
+    relatedBeliefId?: string | null;
+    relatedBelief?: string | null;
 }
 
 interface PostIdea {
     hook: string;
     angle: string;
     format: string;
+    belief?: string; // The user's belief this idea builds on, if any
 }
 
 const DEFAULT_CATEGORIES = [
@@ -65,6 +78,54 @@ interface TrendGroup {
     trends: { label: string; query: string }[];
 }
 
+const PLATFORMS = [
+    { value: 'linkedin', label: 'LinkedIn' },
+    { value: 'twitter', label: 'X' },
+    { value: 'newsletter', label: 'Newsletter' },
+    { value: 'blog', label: 'Blog' },
+];
+
+const TONES = [
+    { value: 'provocative', label: 'Provocative' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'balanced', label: 'Balanced' },
+    { value: 'storytelling', label: 'Storytelling' },
+];
+
+const SESSION_KEY = 'cd-explore-session';
+const TRENDS_KEY = 'cd-explore-trends';
+const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_SAVED_MESSAGES = 40;
+
+// Storage can be unavailable (private mode, blocked site data); Explore still works without it.
+function readStorage<T>(key: string): T | null {
+    try {
+        const raw = window.localStorage.getItem(key);
+        return raw ? JSON.parse(raw) as T : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeStorage(key: string, value: unknown) {
+    try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+        // Ignore quota or access errors
+    }
+}
+
+function timeAgo(iso?: string): string | null {
+    if (!iso) return null;
+    const ms = Date.now() - Date.parse(iso);
+    if (Number.isNaN(ms) || ms < 0) return null;
+    const hours = Math.floor(ms / 3_600_000);
+    if (hours < 1) return 'just now';
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return days < 30 ? `${days}d ago` : new Date(iso).toLocaleDateString();
+}
+
 export function ExplorerChat() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState("");
@@ -73,6 +134,11 @@ export function ExplorerChat() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedTopics, setSelectedTopics] = useState<FeedItem[]>([]);
     const [lens, setLens] = useState<'default' | 'beginner'>('default');
+    const [platform, setPlatform] = useState('linkedin');
+    const [tone, setTone] = useState('provocative');
+    const [restored, setRestored] = useState(false);
+    const [savingIdea, setSavingIdea] = useState<string | null>(null);
+    const [savedIdeas, setSavedIdeas] = useState<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const [trendCategories, setTrendCategories] = useState(DEFAULT_CATEGORIES);
@@ -80,6 +146,12 @@ export function ExplorerChat() {
 
     useEffect(() => {
         const fetchRealTrends = async () => {
+            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
+            if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS) {
+                applyTrendGroups(cached.groups);
+                return;
+            }
+
             setFetchingTrends(true);
             try {
                 // Fetch trends for our 4 main buckets
@@ -93,13 +165,8 @@ export function ExplorerChat() {
                 const data = await res.json();
 
                 if (data.groups && Array.isArray(data.groups)) {
-                    // Merge fetched trends with existing structure
-                    setTrendCategories(prev => prev.map(cat => {
-                        const newGroup = data.groups.find((g: TrendGroup) => g.category === cat.label);
-                        return newGroup && newGroup.trends.length > 0
-                            ? { ...cat, trends: newGroup.trends }
-                            : cat;
-                    }));
+                    applyTrendGroups(data.groups);
+                    writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
                 }
             } catch (e) {
                 console.warn("Failed to fetch real-time trends, using defaults", e);
@@ -108,9 +175,43 @@ export function ExplorerChat() {
             }
         };
 
+        // Merge fetched trends with existing structure
+        const applyTrendGroups = (groups: TrendGroup[]) => {
+            setTrendCategories(prev => prev.map(cat => {
+                const newGroup = groups.find(g => g.category === cat.label);
+                return newGroup && newGroup.trends.length > 0
+                    ? { ...cat, trends: newGroup.trends }
+                    : cat;
+            }));
+        };
+
         // Fire once on mount
         fetchRealTrends();
     }, []);
+
+    // Restore the last exploration so a refresh or tab switch doesn't lose it
+    useEffect(() => {
+        const saved = readStorage<{ messages: ChatMessage[]; savedIdeas: string[] }>(SESSION_KEY);
+        if (saved?.messages?.length) {
+            setMessages(saved.messages);
+            setSavedIdeas(new Set(saved.savedIdeas || []));
+        }
+        setRestored(true);
+    }, []);
+
+    useEffect(() => {
+        if (!restored) return;
+        writeStorage(SESSION_KEY, {
+            messages: messages.slice(-MAX_SAVED_MESSAGES),
+            savedIdeas: [...savedIdeas],
+        });
+    }, [messages, savedIdeas, restored]);
+
+    const startNewExploration = () => {
+        setMessages([]);
+        setSelectedTopics([]);
+        setSavedIdeas(new Set());
+    };
 
     // ... scroll effect ...
 
@@ -135,6 +236,7 @@ export function ExplorerChat() {
                     ? `Here's what I found on "${query}":`
                     : `I couldn't find trending topics for "${query}". Try a different search.`,
                 topics: data.feed || [],
+                related: data.related || [],
                 relatedQuery: query, // CAPTURE QUERY
             };
             setMessages(prev => [...prev, assistantMessage]);
@@ -171,7 +273,13 @@ export function ExplorerChat() {
             const res = await fetch('/api/explore/ideas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ titles, context: originalQuery }), // Send array of titles + intent context
+                body: JSON.stringify({
+                    titles, // Send array of titles + intent context
+                    context: originalQuery,
+                    platform,
+                    tone,
+                    relatedBeliefIds: topics.map(t => t.relatedBeliefId).filter(Boolean),
+                }),
             });
             const data = await res.json();
 
@@ -202,9 +310,6 @@ export function ExplorerChat() {
             setGeneratingIdeas(null);
         }
     };
-
-    const [savingIdea, setSavingIdea] = useState<string | null>(null);
-    const [savedIdeas, setSavedIdeas] = useState<Set<string>>(new Set());
 
     const saveIdeaToPipeline = async (idea: PostIdea, contextTopics?: FeedItem[], contextQuery?: string) => {
         setSavingIdea(idea.hook);
@@ -365,11 +470,27 @@ export function ExplorerChat() {
                                                                                 <Lightbulb size={10} /> Question
                                                                             </span>
                                                                         )}
-                                                                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                                                                        <h4 className="text-sm font-medium text-gray-900">
                                                                             {topic.title}
                                                                         </h4>
                                                                     </div>
-                                                                    <span className="text-xs text-gray-400 block mb-3">{topic.source}</span>
+                                                                    <span className="text-xs text-gray-400 block mb-2">
+                                                                        {[
+                                                                            topic.source,
+                                                                            topic.sourceCount && topic.sourceCount > 1
+                                                                                ? `${topic.sourceCount - 1} more outlet${topic.sourceCount > 2 ? 's' : ''}`
+                                                                                : null,
+                                                                            timeAgo(topic.publishedAt),
+                                                                        ].filter(Boolean).join(' · ')}
+                                                                    </span>
+                                                                    {topic.summary && (
+                                                                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{topic.summary}</p>
+                                                                    )}
+                                                                    {topic.relatedBelief && (
+                                                                        <p className="text-xs text-[var(--accent)] mb-3 line-clamp-1" title={topic.relatedBelief}>
+                                                                            Touches your belief: &ldquo;{topic.relatedBelief}&rdquo;
+                                                                        </p>
+                                                                    )}
 
                                                                     {/* CTAs */}
                                                                     <div className="flex gap-2">
@@ -399,6 +520,27 @@ export function ExplorerChat() {
                                                             </div>
                                                         </div>
                                                     ))}
+                                                </div>
+                                            )}
+
+                                            {/* Related topics to branch into */}
+                                            {msg.related && msg.related.length > 0 && (
+                                                <div className="pt-1">
+                                                    <span className="text-xs font-medium text-gray-400 flex items-center gap-1 mb-2">
+                                                        <Compass size={12} /> Explore next
+                                                    </span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {msg.related.map(r => (
+                                                            <button
+                                                                key={r.label}
+                                                                onClick={() => sendQuery(r.query)}
+                                                                disabled={loading}
+                                                                className="px-3 py-1.5 text-xs bg-white border border-gray-200 text-gray-700 rounded-full hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors disabled:opacity-50"
+                                                            >
+                                                                {r.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -439,6 +581,9 @@ export function ExplorerChat() {
                                                             </div>
                                                             <p className="text-gray-900 font-medium mb-1">&quot;{idea.hook}&quot;</p>
                                                             <p className="text-sm text-gray-600">{idea.angle}</p>
+                                                            {idea.belief && (
+                                                                <p className="text-xs text-gray-500 mt-2">Builds on your belief: &ldquo;{idea.belief}&rdquo;</p>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -488,7 +633,7 @@ export function ExplorerChat() {
 
             {/* Sticky Input at Bottom */}
             <div className="border-t bg-white p-4 shrink-0">
-                <div className="max-w-3xl mx-auto mb-3 flex items-center justify-between">
+                <div className="max-w-3xl mx-auto mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Active Lens:</span>
                         <div className="flex bg-gray-100 p-0.5 rounded-lg">
@@ -505,10 +650,36 @@ export function ExplorerChat() {
                                 Beginner&apos;s Lens
                             </button>
                         </div>
+                        {lens === 'beginner' && (
+                            <span className="hidden md:inline text-[10px] text-amber-600 font-medium italic animate-pulse">Surfacing common confusion points...</span>
+                        )}
                     </div>
-                    {lens === 'beginner' && (
-                        <span className="text-[10px] text-amber-600 font-medium italic animate-pulse">Surfacing common confusion points...</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={platform}
+                            onChange={(e) => setPlatform(e.target.value)}
+                            aria-label="Platform for post ideas"
+                            className="text-[11px] text-gray-600 bg-gray-100 rounded-lg px-2 py-1 focus:outline-none"
+                        >
+                            {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                        </select>
+                        <select
+                            value={tone}
+                            onChange={(e) => setTone(e.target.value)}
+                            aria-label="Tone for post ideas"
+                            className="text-[11px] text-gray-600 bg-gray-100 rounded-lg px-2 py-1 focus:outline-none"
+                        >
+                            {TONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                        {messages.length > 0 && (
+                            <button
+                                onClick={startNewExploration}
+                                className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1"
+                            >
+                                <RotateCcw size={12} /> New
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative">
                     <input
