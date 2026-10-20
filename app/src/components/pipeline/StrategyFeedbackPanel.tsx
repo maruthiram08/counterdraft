@@ -1,6 +1,8 @@
 import React from 'react';
 import { StrategyAnalysis } from '@/lib/brain/strategy';
-import { AlertTriangle, CheckCircle, Target, Lightbulb, Sparkles, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Target, Lightbulb, Loader2 } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
 
 interface StrategyFeedbackPanelProps {
     analysis: StrategyAnalysis | null;
@@ -114,7 +116,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                                 disabled={isFixing}
                                 className="h-10 px-4 rounded-full bg-ember-500 hover:bg-ember-600 text-white text-sm font-medium shadow-ember active:shadow-pressed transition-all flex items-center gap-2 disabled:opacity-50 w-full justify-center"
                             >
-                                {isFixing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                {isFixing ? <Loader2 size={14} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={14} />}
                                 {isFixing ? 'Applying Fix...' : 'Auto-Fix Draft'}
                             </button>
                         </div>
@@ -127,7 +129,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                     onClick={() => onVerify()}
                     className="text-xs text-ink-muted hover:text-ink flex items-center gap-1 transition-colors"
                 >
-                    <RefreshCw size={12} /> Re-check Strategy
+                    <AnimatedIcon icon={RefreshCWIcon} size={12} /> Re-check Strategy
                 </button>
             </div>
 
@@ -164,7 +166,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                                             onClick={() => onFixClaim(fact.claim, fact.analysis)}
                                             className="mt-2 h-7 px-3 text-xs font-medium bg-rose-100 text-rose-700 rounded-full hover:bg-rose-100/70 active:shadow-pressed transition-all flex items-center gap-1"
                                         >
-                                            <Sparkles size={10} /> Auto-Correct
+                                            <AnimatedIcon icon={SparklesIcon} size={10} /> Auto-Correct
                                         </button>
                                     )}
                                 </div>
@@ -180,4 +182,4 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
 }
 
 // Helper icons
-import { RefreshCw, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';

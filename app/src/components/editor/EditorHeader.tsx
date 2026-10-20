@@ -1,4 +1,6 @@
-import { Edit2, Eye, Check, Copy, Save, RefreshCw, BrainCircuit, ShieldCheck, Image as ImageIcon } from "lucide-react";
+import { Edit2, Eye, Check, Save, Image as ImageIcon } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { BrainIcon, CopyIcon, RefreshCWIcon, SendIcon, ShieldCheckIcon } from "@/components/icons/animated";
 import type { Draft } from "@/types";
 
 interface EditorHeaderProps {
@@ -76,7 +78,7 @@ export function EditorHeader({
                     title="Copy to Clipboard"
                     className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:shadow-pressed text-ink-muted hover:text-ink"
                 >
-                    {copied ? <Check size={14} className="text-sage-700" /> : <Copy size={14} />}
+                    {copied ? <Check size={14} className="text-sage-700" /> : <AnimatedIcon icon={CopyIcon} size={14} />}
                 </button>
 
                 {draft.status !== 'published' && (
@@ -97,7 +99,7 @@ export function EditorHeader({
                     title="Repurpose / Rewrite"
                     className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:shadow-pressed text-ember-500 hover:text-ember-600"
                 >
-                    <RefreshCw size={14} />
+                    <AnimatedIcon icon={RefreshCWIcon} size={14} />
                 </button>
 
                 <div className="w-px h-4 bg-line mx-1"></div>
@@ -109,7 +111,7 @@ export function EditorHeader({
                         title="Finalize & Learn (Updates Voice)"
                         className="h-8 px-3 rounded-full bg-ember-100 text-ember-700 hover:bg-ember-200 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
-                        <BrainCircuit size={14} />
+                        <AnimatedIcon icon={BrainIcon} size={14} />
                         <span className="text-xs font-medium">Finalize</span>
                     </button>
                 )}
@@ -119,7 +121,7 @@ export function EditorHeader({
                     title="Verify Claims & Plagiarism"
                     className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:shadow-pressed text-ink-muted hover:text-ink"
                 >
-                    <ShieldCheck size={14} />
+                    <AnimatedIcon icon={ShieldCheckIcon} size={14} />
                 </button>
 
                 {draft.platform === 'instagram' && (
@@ -135,8 +137,9 @@ export function EditorHeader({
                 {draft.status !== 'published' && (
                     <button
                         onClick={() => setShowPublishModal(true)}
-                        className="ml-1 h-8 px-4 rounded-full bg-ember-500 hover:bg-ember-600 text-white text-xs font-medium shadow-ember active:shadow-pressed transition-all"
+                        className="ml-1 h-8 px-4 rounded-full bg-ember-500 hover:bg-ember-600 text-white text-xs font-medium shadow-ember active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
+                        <AnimatedIcon icon={SendIcon} size={13} />
                         Publish
                     </button>
                 )}

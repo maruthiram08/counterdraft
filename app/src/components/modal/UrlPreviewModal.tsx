@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ExternalLink, ArrowRight, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { X, ExternalLink, ArrowRight, Loader2 } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
 
 interface UrlPreviewModalProps {
     isOpen: boolean;
@@ -194,7 +196,7 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
                                         onClick={fetchUrlContent}
                                         className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink hover:text-ember-600 active:shadow-pressed transition-all flex items-center gap-1 shrink-0"
                                     >
-                                        <RefreshCw size={14} />
+                                        <AnimatedIcon icon={RefreshCWIcon} size={14} />
                                         Refetch
                                     </button>
                                 </div>
@@ -246,7 +248,7 @@ export function UrlPreviewModal({ isOpen, onClose, artifact, onCreateDraft }: Ur
                                 onClick={handleCreateDraft}
                                 className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center gap-2"
                             >
-                                <Sparkles size={16} />
+                                <AnimatedIcon icon={SparklesIcon} size={16} />
                                 Create Draft from This
                             </button>
                         )}

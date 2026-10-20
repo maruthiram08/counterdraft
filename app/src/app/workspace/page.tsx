@@ -6,7 +6,9 @@ import { useBeliefs } from "@/hooks/useBeliefs";
 import { TensionCard } from "@/components/thinking/TensionCard";
 import { DirectionCard } from "@/components/thinking/DirectionCard";
 import { AddContentModal } from "@/components/thinking/AddContentModal";
-import { CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2 } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { SparklesIcon } from "@/components/icons/animated";
 import { useDirections } from "@/hooks/useDirections";
 import { useTensions } from "@/hooks/useTensions";
 import { useDrafts } from "@/hooks/useDrafts";
@@ -425,14 +427,14 @@ function WorkspaceContent() {
                                     )}
                                     {!generated && !directionsLoading && (
                                         <div className="text-center py-16 px-6 bg-surface rounded-card shadow-card">
-                                            <Sparkles size={48} className="mx-auto text-ember-500 mb-4" />
+                                            <AnimatedIcon icon={SparklesIcon} size={48} trigger="mount" className="flex mx-auto w-fit text-ember-500 mb-4" />
                                             <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Generate Content Ideas</h3>
                                             <p className="text-ink-soft mb-6">Based on your beliefs, AI will suggest what to write next.</p>
                                             <button
                                                 onClick={generateDirections}
                                                 className="inline-flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                             >
-                                                <Sparkles size={16} /> Generate Ideas
+                                                <AnimatedIcon icon={SparklesIcon} size={16} /> Generate Ideas
                                             </button>
                                         </div>
                                     )}

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { X, Loader2, ExternalLink, Check, AlertCircle } from 'lucide-react';
+import { AnimatedIcon } from '@/components/icons/AnimatedIcon';
+import { SendIcon } from '@/components/icons/animated';
 
 interface PublishModalProps {
     isOpen: boolean;
@@ -183,7 +185,10 @@ export function PublishModal({
                                         Publishing...
                                     </>
                                 ) : (
-                                    'Publish to LinkedIn'
+                                    <>
+                                        <AnimatedIcon icon={SendIcon} size={16} />
+                                        Publish to LinkedIn
+                                    </>
                                 )}
                             </button>
                         </>

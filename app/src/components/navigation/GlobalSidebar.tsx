@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Home, Brain, Compass, Book, Settings, PenTool } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { BookTextIcon, BrainIcon, CompassIcon, HomeIcon, PenToolIcon, SettingsIcon } from "@/components/icons/animated";
 import Image from "next/image";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -22,11 +23,11 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
     const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const navItems = [
-        { id: 'explore', label: 'Explore', icon: Compass },
-        { id: 'pipeline', label: 'Command Center', icon: Home },
-        { id: 'drafts', label: 'Your Post', icon: Book },
-        { id: 'mind', label: 'Your Mind', icon: Brain },
-        { id: 'style', label: 'Your Voice', icon: PenTool },
+        { id: 'explore', label: 'Explore', icon: CompassIcon },
+        { id: 'pipeline', label: 'Command Center', icon: HomeIcon },
+        { id: 'drafts', label: 'Your Post', icon: BookTextIcon },
+        { id: 'mind', label: 'Your Mind', icon: BrainIcon },
+        { id: 'style', label: 'Your Voice', icon: PenToolIcon },
     ];
 
     useEffect(() => {
@@ -97,7 +98,7 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
                                 }`}
                             title={isCollapsed ? item.label : undefined}
                         >
-                            <item.icon size={18} className={`shrink-0 transition-colors duration-150 ${activeSection === item.id ? 'text-ember-500' : 'opacity-80 group-hover:opacity-100'}`} />
+                            <AnimatedIcon icon={item.icon} size={18} className={`shrink-0 transition-colors duration-150 ${activeSection === item.id ? 'text-ember-500' : 'opacity-80 group-hover:opacity-100'}`} />
                             <span className={labelClass}>{item.label}</span>
                         </button>
                     ))}
@@ -113,7 +114,7 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
                             }`}
                         title={isCollapsed ? 'Settings' : undefined}
                     >
-                        <Settings size={18} className="shrink-0" />
+                        <AnimatedIcon icon={SettingsIcon} size={18} className="shrink-0" />
                         <span className={labelClass}>Settings</span>
                     </button>
 
