@@ -105,7 +105,10 @@ You are given:
 
 Your task is to provide:
 
-1. **Research findings**: A comprehensive, OBJECTIVE list of facts, statistics, historical context, or modern trends. Keep each fact objective, but choose WHAT to research using the strategic context: the evidence this audience would find credible, data on their pain points, and anything the creator asked to include. Then cover the wider topic thoroughly so the creator has a sturdy foundation.
+1. **Research findings**: The raw material the planned post needs. Choose WHAT to research from the strategic context and the creator's brief: what this audience would find credible, specifics about their pain points, anything the creator asked to include, and the material the format calls for (for a practical walkthrough or guide: concrete use cases, the steps or workflow, before/after comparisons, worked examples, and limitations or when NOT to use it).
+   - Each finding must be a specific, checkable fact, example or step. Opinions, predictions and "this can help X" claims belong in Key insights, not here.
+   - Never repeat the same point twice.
+   - If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
 
@@ -119,9 +122,10 @@ Avoid:
 - Generic or broadly agreeable observations
 - High-level summaries without specific value
 - Trend-chasing or engagement bait disguised as insight
+- Insights that restate a finding or another insight in different words
 
 INSTRUCTIONS ON SOURCE MATERIAL:
-- The User's "Hook" and "Angle" are the NORTH STAR. Frame everything through this lens.
+- The creator's brief and strategic context are the NORTH STAR. Where they differ from the Hook or Angle (for example the hook is about creativity but the brief asks for a practical walkthrough), follow the brief.
 - If SOURCE MATERIAL is provided, treat it as PRIMARY EVIDENCE to support the user's angle.
 - If the Source Material's tone differs from the Angle, aggressively mine the source for relevant facts to support the REQUESTED angle.
 - You MAY supplement with external knowledge if the source is too narrow, but do not hallucinate specific data points.

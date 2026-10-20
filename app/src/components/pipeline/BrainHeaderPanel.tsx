@@ -14,9 +14,10 @@ interface BrainHeaderPanelProps {
         title?: string;
     };
     onUpdate?: (metadata: BrainMetadata) => void;
+    onStrategyShaped?: () => void;
 }
 
-export function BrainHeaderPanel({ item, onUpdate }: BrainHeaderPanelProps) {
+export function BrainHeaderPanel({ item, onUpdate, onStrategyShaped }: BrainHeaderPanelProps) {
     // derived metadata for stability
     const metadata = item.brain_metadata || item.brainMetadata;
 
@@ -43,6 +44,7 @@ export function BrainHeaderPanel({ item, onUpdate }: BrainHeaderPanelProps) {
             <StrategyBar
                 draft={mockDraft}
                 onUpdate={handleUpdate}
+                onStrategyShaped={onStrategyShaped}
             />
         </div>
     );
