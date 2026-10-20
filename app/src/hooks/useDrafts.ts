@@ -85,6 +85,32 @@ export function useDrafts() {
         fetchDrafts();
     }, [fetchDrafts]);
 
+    // Older drafts were titled with the idea's full brief; fix those once per session in the background
+    useEffect(() => {
+        if (loading) return;
+        try {
+            if (sessionStorage.getItem('drafts-retitled')) return;
+            sessionStorage.setItem('drafts-retitled', '1');
+        } catch { /* storage blocked: still worth one pass */ }
+
+        (async () => {
+            for (let pass = 0; pass < 3; pass++) {
+                try {
+                    const res = await fetch('/api/drafts/retitle', { method: 'POST' });
+                    if (!res.ok) return;
+                    const data: { updated: { id: string; title: string }[]; remaining: number } = await res.json();
+                    if (data.updated.length > 0) {
+                        const titles = new Map(data.updated.map(u => [u.id, u.title]));
+                        setDrafts(prev => prev.map(d => titles.has(d.id) ? { ...d, belief_text: titles.get(d.id)! } : d));
+                    }
+                    if (data.remaining <= 0 || data.updated.length === 0) return;
+                } catch {
+                    return;
+                }
+            }
+        })();
+    }, [loading]);
+
     return {
         drafts,
         loading,
