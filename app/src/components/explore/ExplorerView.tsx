@@ -1,7 +1,7 @@
 "use client";
 
-import { ExplorerChat } from "./ExplorerChat";
+import { ExploreWorkspace } from "./ExploreWorkspace";
 
 export function ExplorerView() {
-    return <ExplorerChat />;
+    return <ExploreWorkspace />;
 }
