@@ -4,6 +4,7 @@ import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatStrategyContext, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
+import { fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
@@ -80,10 +81,17 @@ export class BrainGenerationService {
 
         const brainContext = formatStrategyContext(brainMetadata, 'Strategic Context (decides what is worth researching; keep the facts themselves objective)');
 
+        // Ground research in live web results aimed at where the topic meets the brief
+        const queries = await this.planResearchQueries(hook, angle, brainContext).catch(() => fallbackQueries(hook, brainMetadata));
+        const sources = await gatherWebSources(queries);
+        const webSources = formatWebSources(sources);
+
         TraceLogger.log('deep_dive', 'Research Phase Input', {
             hook,
             sourceMaterialPreview: sourceMaterial.substring(0, 200) + '...',
-            fullSourceLength: sourceMaterial.length
+            fullSourceLength: sourceMaterial.length,
+            queries,
+            webSourceCount: sources.length
         });
 
         const completion = await this.openai.chat.completions.create({
@@ -108,7 +116,8 @@ Your task is to provide:
 1. **Research findings**: The raw material the planned post needs. Choose WHAT to research from the strategic context and the creator's brief: what this audience would find credible, specifics about their pain points, anything the creator asked to include, and the material the format calls for (for a practical walkthrough or guide: concrete use cases, the steps or workflow, before/after comparisons, worked examples, and limitations or when NOT to use it).
    - Each finding must be a specific, checkable fact, example or step. Opinions, predictions and "this can help X" claims belong in Key insights, not here.
    - Never repeat the same point twice.
-   - If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
+   - Base findings on the WEB SOURCES, references and source material provided. End each sourced finding with its source in brackets, e.g. "(source: hbr.org)".
+   - Never mention a study, statistic or institution that is not in the provided material. If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
 
@@ -139,13 +148,36 @@ IMPORTANT: Return a valid JSON object with the following structure:
                 },
                 {
                     role: 'user',
-                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${referencesContext}${sourceMaterial}${userContextString}`
+                    content: `Topic: ${hook}\nAngle: ${angle || 'General exploration'}${brainContext ? `\n\nWHAT THIS POST MUST DO (every finding and insight must serve this):${brainContext}` : ''}${webSources}${referencesContext}${sourceMaterial}${userContextString}`
                 }
             ],
             response_format: { type: 'json_object' },
         });
 
         return JSON.parse(completion.choices[0].message.content || '{}');
+    }
+
+    // Turns the topic and strategy into a few targeted web searches
+    private async planResearchQueries(hook: string, angle: string | undefined, brainContext: string): Promise<string[]> {
+        const completion = await this.openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                {
+                    role: 'system',
+                    content: `Write 3 web search queries that will find concrete, citable material for a post.
+Aim the queries at where the topic meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract.
+Return JSON: { "queries": ["...", "...", "..."] }`
+                },
+                { role: 'user', content: `Topic: ${hook}\nAngle: ${angle || 'None'}${brainContext}` }
+            ],
+            response_format: { type: 'json_object' },
+        });
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown };
+        const queries = Array.isArray(parsed.queries)
+            ? parsed.queries.filter((q): q is string => typeof q === 'string' && !!q.trim()).slice(0, 3)
+            : [];
+        if (!queries.length) throw new Error('No queries planned');
+        return queries;
     }
 
     // --- 2. Refine Point ---
