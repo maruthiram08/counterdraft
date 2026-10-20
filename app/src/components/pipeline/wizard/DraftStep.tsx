@@ -3,7 +3,7 @@ import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2 
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
-import { hasStrategy } from "@/lib/brain/strategy";
+import { hasStrategy, StrategyAnalysis } from "@/lib/brain/strategy";
 import { ResearchPoint, DeepDiveData } from "./types";
 
 interface DraftStepProps {
@@ -12,7 +12,7 @@ interface DraftStepProps {
     showContextPanel: boolean;
     verifyingStrategy: boolean;
     fixingStrategy: boolean;
-    strategyAnalysis: { analysis: string; score: number; suggestions: string[] } | null;
+    strategyAnalysis: StrategyAnalysis | null;
     brainMetadata: BrainMetadata | undefined;
     outline: ResearchPoint[];
     deepDive: DeepDiveData | null;

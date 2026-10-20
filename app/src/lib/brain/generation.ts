@@ -3,7 +3,7 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
-import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
+import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
 import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 type ResearchPlan = { queries: string[]; asks?: { question: string; query: string }[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
@@ -48,6 +48,13 @@ export interface StrategyVerificationResult {
     strengths: string[];
     weaknesses: string[];
     actionable_fix: string;
+    criteria: StrategyCriterion[];
+}
+
+// The last check of an earlier version, so a re-check after a fix judges the change, not a fresh draft
+export interface PreviousStrategyCheck {
+    criteria?: { key: string; rating: number; note?: string }[];
+    fix?: string;
 }
 
 export interface FactCheckResult {
@@ -582,53 +589,75 @@ ${referencesContext}${sourceContext}${userContextString}`
     }
 
     // --- 5. Verify Strategy ---
-    async verifyStrategy({ draft, brainMetadata }: { draft: string, brainMetadata: BrainMetadata }): Promise<StrategyVerificationResult> {
+    async verifyStrategy({ draft, brainMetadata, previous }: { draft: string, brainMetadata: BrainMetadata, previous?: PreviousStrategyCheck }): Promise<StrategyVerificationResult> {
         const strategyContext = formatStrategyContext(brainMetadata, 'Strategic Goals').trim()
             || 'No explicit strategy was given. Infer the most likely intent from the draft and judge against that.';
+        const rubric = STRATEGY_CRITERIA.map(c => `- "${c.key}": ${c.ask}`).join('\n');
+        const prevRatings = previous?.criteria?.filter(c => STRATEGY_CRITERIA.some(k => k.key === c.key));
+        const previousBlock = prevRatings?.length
+            ? `\n\nPREVIOUS CHECK (of the version before this edit):\n${prevRatings.map(c => `- ${c.key}: ${Math.max(0, Math.min(5, Math.round(Number(c.rating)) || 0))}/5${c.note ? ` (${String(c.note).slice(0, 200)})` : ''}`).join('\n')}${previous?.fix ? `\nEdit that was applied: "${String(previous.fix).slice(0, 500)}"` : ''}
+Re-rating rules: a criterion keeps its previous rating unless the edit changed the part of the draft it judges. Raise it if the edit fixed the gap, lower it only if the edit made that part worse. Do not invent new problems in parts the edit did not touch.`
+            : '';
 
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
+            temperature: 0,
+            seed: 7,
             messages: [
                 {
                     role: 'system',
-                    content: `You are a strict Editorial Strategy Coach.
-Your specific job is to measure the "Strategic Alignment" of a piece of content.
+                    content: `You are a strict but consistent Editorial Strategy Coach.
+You rate how well a draft achieves the creator's strategic intent, using a fixed rubric so the same draft always gets the same ratings.
 
-You are given:
-1. A Draft Post
-2. The Strategic Intent (Goal, Audience, Stance, and the creator's own brief when given)
+Rate each criterion 0-5:
+${rubric}
 
-Your task:
-Analyze strictly whether the draft achieves the specific intent.
-- Does it actually speak to the defined Audience (using their language, addressing their specific pain)?
-- Does it maintain the promised Stance (e.g. if "Contrarian", is it actually bold? If "Empathetic", is it warm?)?
-- Does it drive toward the Goal?
-- Does it respect any call to action, must-include points and things to avoid?
+Rating scale (use these anchors exactly):
+5 = fully achieved, nothing worth changing
+4 = achieved, only a minor polish left
+3 = partly achieved, one clear gap
+2 = weak, the gap is obvious to a reader
+1 = barely present
+0 = missing or contradicted
+If the strategy says nothing about a criterion, rate it against the draft's own evident intent.
 
 Output JSON:
 {
-  "score": number (0-100),
-  "critique": "A concise, 2-sentence summary of the main strategic gap. Be direct.",
-  "strengths": ["string", "string"], (Max 2 key things they did well)
-  "weaknesses": ["string", "string"], (Max 2 key conceptual failures)
-  "actionable_fix": "One specific, high-impact instruction to fix the biggest issue."
+  "criteria": { "<key>": { "rating": 0-5, "note": "one short line on why" } },
+  "critique": "Two direct sentences on the main strategic gap, or on why the draft works if nothing is below 4.",
+  "strengths": ["max 2 things it does well"],
+  "weaknesses": ["max 2 gaps, only from criteria rated below 4"],
+  "actionable_fix": "One specific instruction that fixes the lowest-rated criterion. Empty string if every criterion is 4 or 5."
 }`
                 },
                 {
                     role: 'user',
-                    content: `STRATEGY:\n${strategyContext}\n\nDRAFT CONTENT:\n${draft}`
+                    content: `STRATEGY:\n${strategyContext}${previousBlock}\n\nDRAFT CONTENT:\n${draft}`
                 }
             ],
             response_format: { type: 'json_object' },
         });
 
-        return JSON.parse(completion.choices[0].message.content || '{}');
+        const raw = JSON.parse(completion.choices[0].message.content || '{}');
+        const criteria = scoreCriteria(raw.criteria);
+        const weakest = weakestCriterion(criteria);
+        const list = (v: unknown) => Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
+        return {
+            score: totalScore(criteria),
+            critique: String(raw.critique || '').trim(),
+            strengths: list(raw.strengths).slice(0, 2),
+            weaknesses: list(raw.weaknesses).slice(0, 2),
+            // Nothing left below "done" means no fix to offer, which ends the fix loop
+            actionable_fix: weakest ? String(raw.actionable_fix || weakest.note || '').trim() : '',
+            criteria,
+        };
     }
 
     // --- 6. Auto Fix Strategy ---
     async autoFixStrategy({ draft, fix_instruction, brainMetadata }: { draft: string, fix_instruction: string, brainMetadata: BrainMetadata }): Promise<string> {
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
+            temperature: 0.3,
             messages: [
                 {
                     role: 'system',

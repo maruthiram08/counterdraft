@@ -1,12 +1,9 @@
 import React from 'react';
+import { StrategyAnalysis } from '@/lib/brain/strategy';
 import { AlertTriangle, CheckCircle, Target, Lightbulb, Sparkles, Loader2 } from 'lucide-react';
 
 interface StrategyFeedbackPanelProps {
-    analysis: {
-        score: number;
-        analysis: string;
-        suggestions: string[];
-    } | null;
+    analysis: StrategyAnalysis | null;
     loading: boolean;
     isFixing: boolean;
     onVerify: () => void;
@@ -78,7 +75,28 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                 </p>
             </div>
 
+            {/* Where the points went, so a change in score has a visible reason */}
+            {analysis.criteria.length > 0 && (
+                <div className="bg-surface p-5 rounded-tile shadow-card space-y-3">
+                    <h4 className="text-sm text-ink-muted">Score breakdown</h4>
+                    {analysis.criteria.map(c => (
+                        <div key={c.key}>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-ink">{c.label}</span>
+                                <span className={c.rating >= 4 ? 'text-sage-700' : 'text-ink-soft'}>{c.points}/{c.max}</span>
+                            </div>
+                            {c.note && <p className="text-xs text-ink-muted leading-snug mt-0.5">{c.note}</p>}
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* Fix */}
+            {analysis.criteria.length > 0 && analysis.suggestions.length === 0 && (
+                <div className="bg-sage-100 p-4 rounded-tile shadow-raised text-sm text-sage-700">
+                    No big gaps left. Every part of the strategy scores 4 or 5 out of 5, so there is nothing worth an auto-fix.
+                </div>
+            )}
             {analysis.suggestions && analysis.suggestions.length > 0 && (
                 <div className="bg-ember-50 p-4 rounded-tile shadow-raised">
                     <div className="flex items-start gap-3">

@@ -135,7 +135,8 @@ export async function POST(req: Request) {
 
             const result = await brainGenerationService.verifyStrategy({
                 draft: textToVerify,
-                brainMetadata
+                brainMetadata,
+                previous: body.previous
             });
 
             return NextResponse.json(result);
