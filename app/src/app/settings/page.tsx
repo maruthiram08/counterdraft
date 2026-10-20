@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon } from "lucide-react";
+import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon, Puzzle, Download } from "lucide-react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { RazorpayButton } from "@/components/billing/RazorpayButton";
 import { useRouter } from 'next/navigation';
@@ -191,6 +191,9 @@ export default function SettingsPage() {
                                 </div>
                             )}
                         </section>
+
+                        {/* Chrome Extension Section */}
+                        <ExtensionSection />
                     </div>
                 </div>
             </main>
@@ -368,6 +371,74 @@ function IntegrationCard({
                 )}
             </div>
         </div>
+    );
+}
+
+// Set to the Chrome Web Store listing once CounterDraft Lens is published.
+const CHROME_EXTENSION_URL = process.env.NEXT_PUBLIC_CHROME_EXTENSION_URL;
+
+function ExtensionSection() {
+    return (
+        <section className="mb-8">
+            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+                <Puzzle size={20} className="text-ember-500" />
+                Chrome Extension
+            </h2>
+            <p className="text-sm text-ink-soft mb-6">
+                Capture ideas from anywhere on the web straight into your brain.
+            </p>
+
+            <div className="bg-surface rounded-tile shadow-card p-5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                        <div className="w-11 h-11 rounded-full bg-canvas shadow-well flex items-center justify-center text-ember-500 shrink-0">
+                            <Puzzle size={20} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink">CounterDraft Lens</h3>
+                                {!CHROME_EXTENSION_URL && (
+                                    <span className="h-6 flex items-center text-xs font-medium text-ink-soft bg-canvas shadow-well px-2.5 rounded-full">
+                                        Beta
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-sm text-ink-muted mt-1">
+                                Snip part of any page or save the whole page, note why it matters, and Lens files it in your brain.
+                            </p>
+                        </div>
+                    </div>
+
+                    {CHROME_EXTENSION_URL && (
+                        <a
+                            href={CHROME_EXTENSION_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 self-start flex items-center gap-1.5 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                        >
+                            <Download size={14} />
+                            Add to Chrome
+                        </a>
+                    )}
+                </div>
+
+                <ol className="mt-4 pt-4 border-t border-line text-sm text-ink-soft space-y-1.5 list-decimal list-inside">
+                    {CHROME_EXTENSION_URL ? (
+                        <>
+                            <li>Click <strong className="font-medium text-ink">Add to Chrome</strong> and pin Lens to your toolbar.</li>
+                            <li>Stay signed in to CounterDraft in the same browser.</li>
+                            <li>Click the Lens icon on any page to open the capture panel.</li>
+                        </>
+                    ) : (
+                        <>
+                            <li>Lens isn&apos;t on the Chrome Web Store yet. Ask the CounterDraft team for the beta build.</li>
+                            <li>Open <code className="text-ink">chrome://extensions</code>, turn on Developer mode and click <strong className="font-medium text-ink">Load unpacked</strong>.</li>
+                            <li>Choose the unzipped folder, stay signed in here, then click the Lens icon on any page.</li>
+                        </>
+                    )}
+                </ol>
+            </div>
+        </section>
     );
 }
 
