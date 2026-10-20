@@ -83,43 +83,43 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
             {/* Controls */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                 {isSelectMode ? (
-                    <div className="flex items-center gap-4 w-full bg-blue-50 p-2 rounded-lg border border-blue-100 animate-slide-in">
-                        <span className="text-sm font-medium text-blue-900 ml-2">{selectedIds.size} Selected</span>
+                    <div className="flex items-center gap-3 w-full bg-ember-50 p-2 rounded-full shadow-raised animate-slide-in">
+                        <span className="text-sm font-medium text-ember-700 ml-3">{selectedIds.size} Selected</span>
                         <div className="flex-1" />
                         <button
                             onClick={() => { setIsSelectMode(false); setSelectedIds(new Set()); }}
-                            className="px-3 py-1 text-sm text-gray-500 hover:text-gray-900"
+                            className="h-10 px-4 rounded-full text-sm font-medium text-ink-soft hover:text-ink"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSynthesize}
                             disabled={selectedIds.size < 2}
-                            className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Synthesize
                         </button>
                     </div>
                 ) : (
                     <>
-                        <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <div className="relative w-full sm:w-72">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={16} />
                             <input
                                 type="text"
                                 placeholder="Search your brain..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full h-12 pl-10 pr-4 bg-canvas shadow-well rounded-full text-sm text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                             />
                         </div>
 
                         <div className="flex gap-2 w-full sm:w-auto items-center">
                             <button
                                 onClick={() => setIsSelectMode(true)}
-                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all"
                                 title="Select Multiple"
                             >
-                                <MousePointerClick size={20} />
+                                <MousePointerClick size={18} />
                             </button>
                         </div>
                     </>
@@ -129,14 +129,14 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
             {/* Grid */}
             {loading ? (
                 <div className="py-20 flex justify-center">
-                    <Loader2 className="animate-spin text-gray-400" />
+                    <Loader2 className="animate-spin text-ember-500" />
                 </div>
             ) : artifacts.length === 0 ? (
-                <div className="py-20 text-center border-2 border-dashed border-gray-100 rounded-xl">
-                    <p className="text-gray-400">No artifacts found.</p>
+                <div className="py-20 text-center bg-canvas shadow-pressed rounded-card">
+                    <p className="text-ink-muted">No artifacts found.</p>
                 </div>
             ) : (
-                <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+                <div className="columns-1 md:columns-2 lg:columns-3 gap-5 space-y-5">
                     {artifacts.map(artifact => (
                         <div key={artifact.id} className="relative group break-inside-avoid mb-4">
                             {isSelectMode && (
@@ -151,7 +151,7 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
                                         type="checkbox"
                                         checked={selectedIds.has(artifact.id)}
                                         onChange={() => toggleSelection(artifact.id)}
-                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shadow-sm"
+                                        className="w-5 h-5 rounded border-line accent-ember-500 focus:ring-ember-200 cursor-pointer"
                                     />
                                 </div>
                             )}

@@ -22,9 +22,9 @@ export function RefinementFeedback({ instruction, onFeedback, onDismiss }: Refin
 
     if (submitted) {
         return (
-            <div className="bg-green-50 border border-green-100 p-3 rounded-lg flex items-center justify-between animate-fade-in mb-4">
-                <span className="text-sm text-green-700 font-medium">Thanks for the feedback! I&apos;ll learn from this.</span>
-                <button onClick={onDismiss} className="text-green-400 hover:text-green-600">
+            <div className="bg-sage-100 p-4 rounded-tile shadow-raised flex items-center justify-between animate-fade-in mb-4">
+                <span className="text-sm text-sage-700 font-medium">Thanks for the feedback! I&apos;ll learn from this.</span>
+                <button onClick={onDismiss} className="w-8 h-8 rounded-full flex items-center justify-center text-sage-700/70 hover:text-sage-700 active:shadow-pressed">
                     <X size={16} />
                 </button>
             </div>
@@ -32,22 +32,22 @@ export function RefinementFeedback({ instruction, onFeedback, onDismiss }: Refin
     }
 
     return (
-        <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl shadow-sm animate-slide-up mb-4">
+        <div className="bg-surface p-5 rounded-tile shadow-card animate-slide-up mb-4">
             <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2 text-amber-800">
-                    <ThumbsDown size={16} className="text-amber-600" />
-                    <span className="text-sm font-bold">Refinement rejected</span>
+                <div className="flex items-center gap-2 text-ink">
+                    <ThumbsDown size={16} className="text-sand-500" />
+                    <span className="text-sm font-medium">Refinement rejected</span>
                 </div>
-                <button onClick={onDismiss} className="text-amber-400 hover:text-amber-600">
+                <button onClick={onDismiss} className="w-8 h-8 -mt-1 -mr-1 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed">
                     <X size={16} />
                 </button>
             </div>
 
-            <p className="text-xs text-amber-700 mb-4 bg-amber-100/50 p-2 rounded italic">
+            <p className="text-xs text-ink-soft mb-4 bg-canvas shadow-well px-3 py-2 rounded-2xl italic">
                 &quot;{instruction}&quot;
             </p>
 
-            <p className="text-xs font-medium text-amber-900 mb-2">What went wrong?</p>
+            <p className="text-sm text-ink-muted mb-2">What went wrong?</p>
             <div className="flex flex-wrap gap-2">
                 {reasons.map(reason => (
                     <button
@@ -56,7 +56,7 @@ export function RefinementFeedback({ instruction, onFeedback, onDismiss }: Refin
                             onFeedback(reason);
                             setSubmitted(true);
                         }}
-                        className="px-3 py-1.5 bg-white border border-amber-200 text-[10px] font-bold text-amber-700 rounded-lg hover:bg-amber-100 hover:border-amber-300 transition-all shadow-xs"
+                        className="h-8 px-3.5 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all"
                     >
                         {reason}
                     </button>
@@ -69,7 +69,7 @@ export function RefinementFeedback({ instruction, onFeedback, onDismiss }: Refin
                             setSubmitted(true);
                         }
                     }}
-                    className="px-3 py-1.5 bg-white border border-amber-200 text-[10px] font-bold text-amber-700 rounded-lg hover:bg-amber-100 hover:border-amber-300 transition-all flex items-center gap-1 shadow-xs"
+                    className="h-8 px-3.5 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all flex items-center gap-1"
                 >
                     <MessageSquare size={10} /> Other
                 </button>

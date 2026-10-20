@@ -37,23 +37,23 @@ export const TheBrain: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
       {/* LEFT: Process Steps - Explicit Numbering & Action */}
       <div className="space-y-4">
-        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-4 ml-1">Input Sequence</label>
+        <label className="text-sm text-ink-muted block mb-4 ml-1">Input Sequence</label>
         {steps.map((step, idx) => (
           <div
             key={idx}
-            className={`p-6 rounded-2xl border transition-all duration-500 cursor-pointer relative ${activeStep === idx ? 'bg-white border-zinc-300 shadow-xl shadow-zinc-200/50' : 'bg-transparent border-zinc-100 hover:border-zinc-200'}`}
+            className={`p-5 md:p-6 rounded-tile transition-all duration-300 cursor-pointer relative ${activeStep === idx ? 'bg-surface shadow-card' : 'bg-canvas shadow-raised hover:-translate-y-0.5'}`}
             onClick={() => setActiveStep(idx)}
           >
             {/* Active Arrow Connector */}
-            <div className={`absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-r border-t border-zinc-300 transform rotate-45 z-10 ${activeStep === idx ? 'block' : 'hidden'} lg:block hidden opacity-0 ${activeStep === idx ? 'lg:opacity-100' : ''}`} style={{ transition: 'opacity 0.3s' }}></div>
+            <div className={`absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 bg-surface transform rotate-45 z-10 ${activeStep === idx ? 'block' : 'hidden'} lg:block hidden opacity-0 ${activeStep === idx ? 'lg:opacity-100' : ''}`} style={{ transition: 'opacity 0.3s' }}></div>
 
             <div className="flex gap-5">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black border transition-all flex-shrink-0 ${activeStep === idx ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-300 border-zinc-100'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all flex-shrink-0 ${activeStep === idx ? 'bg-ember-500 text-white shadow-ember' : 'bg-canvas shadow-well text-ink-muted'}`}>
                 0{idx + 1}
               </div>
               <div>
-                <h3 className={`font-bold text-lg mb-0.5 ${activeStep === idx ? 'text-zinc-900' : 'text-zinc-400'}`}>{step.title}</h3>
-                <p className={`text-sm ${activeStep === idx ? 'text-zinc-500' : 'text-zinc-400'}`}>{step.desc}</p>
+                <h3 className={`font-medium text-[17px] tracking-[-0.01em] mb-0.5 ${activeStep === idx ? 'text-ink' : 'text-ink-soft'}`}>{step.title}</h3>
+                <p className={`text-sm ${activeStep === idx ? 'text-ink-soft' : 'text-ink-muted'}`}>{step.desc}</p>
               </div>
             </div>
           </div>
@@ -62,17 +62,17 @@ export const TheBrain: React.FC = () => {
 
       {/* RIGHT: Engine Output - Simulation */}
       <div>
-        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-4 ml-1 text-center lg:text-left">Engine Output Logic</label>
-        <div className="bg-white rounded-3xl p-8 border border-zinc-200 min-h-[500px] flex flex-col shadow-2xl shadow-zinc-100 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-10 border-b border-zinc-100 pb-6">
+        <label className="text-sm text-ink-muted block mb-4 ml-1 text-center lg:text-left">Engine Output Logic</label>
+        <div className="bg-surface rounded-card p-6 md:p-8 min-h-[500px] flex flex-col shadow-card relative overflow-hidden">
+          <div className="flex items-center justify-between mb-8 border-b border-line pb-5">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-[10px] text-zinc-400 font-mono tracking-widest uppercase font-black">ANALYSIS_ACTIVE</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-ember-500 animate-pulse"></div>
+              <span className="text-xs text-ink-muted font-mono">ANALYSIS_ACTIVE</span>
             </div>
             <div className="flex gap-1.5">
-              <div className="w-1 h-1 rounded-full bg-zinc-200"></div>
-              <div className="w-1 h-1 rounded-full bg-zinc-200"></div>
-              <div className="w-1 h-1 rounded-full bg-zinc-200"></div>
+              <div className="w-1 h-1 rounded-full bg-ink-muted/40"></div>
+              <div className="w-1 h-1 rounded-full bg-ink-muted/40"></div>
+              <div className="w-1 h-1 rounded-full bg-ink-muted/40"></div>
             </div>
           </div>
 
@@ -80,64 +80,64 @@ export const TheBrain: React.FC = () => {
             {activeStep === 0 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-8">
                 <div>
-                  <label className="text-[9px] uppercase text-zinc-400 mb-3 block font-black tracking-[0.2em]">Target Identification</label>
-                  <div className="text-2xl font-bold text-zinc-900 border-b-2 border-green-600 pb-2 inline-block">Freelance Marketers</div>
+                  <label className="text-sm text-ink-muted mb-3 block">Target Identification</label>
+                  <div className="text-2xl font-medium tracking-[-0.02em] text-ink border-b-2 border-ember-500 pb-2 inline-block">Freelance Marketers</div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-5 bg-zinc-50 rounded-xl border border-zinc-100">
-                    <span className="text-[9px] text-green-600 font-black block mb-2 uppercase tracking-[0.15em]">Core Desire</span>
-                    <span className="text-sm text-zinc-600 font-medium">Stand out in a crowded feed.</span>
+                  <div className="p-5 bg-canvas shadow-well rounded-tile">
+                    <span className="text-xs text-ember-600 font-medium block mb-2">Core Desire</span>
+                    <span className="text-sm text-ink-soft">Stand out in a crowded feed.</span>
                   </div>
-                  <div className="p-5 bg-zinc-50 rounded-xl border border-zinc-100">
-                    <span className="text-[9px] text-blue-600 font-black block mb-2 uppercase tracking-[0.15em]">Emerging Conflict</span>
-                    <span className="text-sm text-zinc-600 font-medium">Everyone sounds the same on LinkedIn.</span>
+                  <div className="p-5 bg-canvas shadow-well rounded-tile">
+                    <span className="text-xs text-dusk-700 font-medium block mb-2">Emerging Conflict</span>
+                    <span className="text-sm text-ink-soft">Everyone sounds the same on LinkedIn.</span>
                   </div>
                 </div>
               </div>
             )}
             {activeStep === 1 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-6">
-                <label className="text-[9px] uppercase text-zinc-400 mb-3 block font-black tracking-[0.2em]">Locked Stance</label>
-                <div className="p-8 bg-zinc-50 border border-zinc-100 rounded-2xl text-zinc-900 text-xl font-medium leading-relaxed italic border-l-4 border-l-green-600">
+                <label className="text-sm text-ink-muted mb-3 block">Locked Stance</label>
+                <div className="p-6 md:p-8 bg-ember-50 rounded-tile text-ink text-xl font-medium tracking-[-0.01em] leading-relaxed border-l-4 border-l-ember-500">
                   &quot;Technical debt isn&apos;t a bug; it&apos;s a feature of velocity. Most leaders fail by fixing the wrong debt at the wrong time.&quot;
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <span className="px-3 py-1 bg-green-50 border border-green-100 rounded-lg text-[9px] text-green-700 font-black uppercase tracking-widest">LOCKED</span>
-                  <span className="px-3 py-1 bg-white border border-zinc-200 rounded-lg text-[9px] text-zinc-500 font-black uppercase tracking-widest">HIGH_CONFIDENCE</span>
+                  <span className="h-7 px-3 flex items-center bg-ink rounded-full text-xs text-white font-medium">LOCKED</span>
+                  <span className="h-7 px-3 flex items-center bg-canvas shadow-well rounded-full text-xs text-ink-soft font-medium">HIGH_CONFIDENCE</span>
                 </div>
               </div>
             )}
             {activeStep === 2 && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-4">
-                <label className="text-[9px] uppercase text-zinc-400 mb-1 block font-black tracking-[0.2em]">Semantic Filter</label>
+                <label className="text-sm text-ink-muted mb-1 block">Semantic Filter</label>
                 <div className="space-y-2.5">
-                  <div className="p-4 bg-green-50/30 border border-green-100 rounded-xl flex items-center justify-between">
+                  <div className="p-4 bg-ember-50 rounded-tile flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-sm text-zinc-800 font-bold">&quot;Strategic Velocity Framework&quot;</span>
+                      <div className="w-2 h-2 rounded-full bg-ember-500"></div>
+                      <span className="text-sm text-ink font-medium">&quot;Strategic Velocity Framework&quot;</span>
                     </div>
-                    <span className="text-[9px] text-green-600 font-black uppercase tracking-widest">CORE</span>
+                    <span className="text-xs text-ember-700 font-medium">CORE</span>
                   </div>
-                  <div className="p-4 bg-blue-50/30 border border-blue-100 rounded-xl flex items-center justify-between">
+                  <div className="p-4 bg-dusk-100/60 rounded-tile flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <span className="text-sm text-zinc-700">&quot;Post-AI Refactoring Crisis&quot;</span>
+                      <div className="w-2 h-2 rounded-full bg-dusk-500"></div>
+                      <span className="text-sm text-ink-soft">&quot;Post-AI Refactoring Crisis&quot;</span>
                     </div>
-                    <span className="text-[9px] text-blue-600 font-black uppercase tracking-widest">EMERGING</span>
+                    <span className="text-xs text-dusk-700 font-medium">EMERGING</span>
                   </div>
-                  <div className="p-4 bg-amber-50/30 border border-amber-100 rounded-xl opacity-60 flex items-center justify-between">
+                  <div className="p-4 bg-sand-100/60 rounded-tile opacity-70 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-sm text-zinc-500 line-through">&quot;Innovative agile&quot;</span>
+                      <div className="w-2 h-2 rounded-full bg-sand-500"></div>
+                      <span className="text-sm text-ink-muted line-through">&quot;Innovative agile&quot;</span>
                     </div>
-                    <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest">SLOP</span>
+                    <span className="text-xs text-sand-700 font-medium">SLOP</span>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          <button className="w-full py-4 mt-10 bg-zinc-900 text-white rounded-xl text-sm font-bold shadow-xl hover:bg-green-600 transition-all flex items-center justify-center gap-2 group">
+          <button className="w-full h-12 px-5 mt-8 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center justify-center gap-2 group">
             Finalize Strategy
             <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
           </button>

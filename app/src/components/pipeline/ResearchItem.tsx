@@ -48,13 +48,13 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
     };
 
     return (
-        <div className={`group bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-all ${loading ? 'opacity-70' : ''} ${isNew ? 'ring-1 ring-amber-200 bg-amber-50/10' : ''}`}>
+        <div className={`group bg-surface rounded-tile shadow-card p-4 hover:shadow-float transition-all ${loading ? 'opacity-70' : ''} ${isNew ? 'ring-1 ring-ember-200 bg-ember-50/40' : ''}`}>
             {/* Content Area */}
             <div className="flex items-start gap-3">
                 {isNew ? (
-                    <span className="text-amber-500 mt-1 animate-pulse scale-110" title="New finding">✨</span>
+                    <span className="text-ember-500 mt-1 animate-pulse scale-110" title="New finding">✨</span>
                 ) : showBullet ? (
-                    <span className="text-[var(--accent)] mt-1">•</span>
+                    <span className="text-ember-500 mt-1">•</span>
                 ) : null}
 
                 <div className="flex-1 min-w-0">
@@ -68,7 +68,7 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                                     e.target.style.height = "auto";
                                     e.target.style.height = e.target.scrollHeight + "px";
                                 }}
-                                className="w-full p-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none overflow-hidden"
+                                className="w-full px-3 py-2 text-sm bg-canvas shadow-well rounded-2xl text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 resize-none overflow-hidden"
                                 rows={2}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -78,18 +78,18 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                                 }}
                             />
                             <div className="flex justify-end gap-2">
-                                <button onClick={() => setIsEditing(false)} className="p-1 hover:bg-gray-100 rounded text-gray-400">
+                                <button onClick={() => setIsEditing(false)} className="p-1.5 rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all">
                                     <X size={14} />
                                 </button>
-                                <button onClick={handleSaveEdit} className="p-1 hover:bg-green-50 rounded text-green-600">
+                                <button onClick={handleSaveEdit} className="p-1.5 rounded-full text-sage-700 hover:bg-sage-100 active:shadow-pressed transition-all">
                                     <Check size={14} />
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-700 leading-relaxed">
+                        <p className="text-sm text-ink-soft leading-relaxed">
                             {loading ? (
-                                <span className="flex items-center gap-2 text-gray-400 italic">
+                                <span className="flex items-center gap-2 text-ink-muted italic">
                                     <Loader2 size={14} className="animate-spin" /> Refining...
                                 </span>
                             ) : text}
@@ -98,13 +98,13 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
 
                     {/* Notes List */}
                     {notes && notes.length > 0 && (
-                        <div className="mt-3 space-y-2 pl-2 border-l-2 border-amber-100">
+                        <div className="mt-3 space-y-2 pl-2 border-l-2 border-ember-100">
                             {notes.map((note, idx) => (
-                                <div key={idx} className="bg-amber-50/50 p-2 rounded text-xs text-gray-600 flex justify-between group/note">
+                                <div key={idx} className="bg-ember-50 px-3 py-2 rounded-xl text-xs text-ink-soft flex justify-between group/note">
                                     <span>{note}</span>
                                     <button
                                         onClick={() => onDeleteNote(idx)}
-                                        className="text-gray-400 hover:text-red-500 opacity-0 group-hover/note:opacity-100 transition-opacity"
+                                        className="text-ink-muted hover:text-rose-500 opacity-0 group-hover/note:opacity-100 transition-opacity"
                                     >
                                         <X size={12} />
                                     </button>
@@ -121,14 +121,14 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                                 value={noteText}
                                 onChange={(e) => setNoteText(e.target.value)}
                                 placeholder="Add a note or instruction..."
-                                className="flex-1 text-xs px-2 py-1.5 border rounded focus:outline-none focus:border-amber-400"
+                                className="flex-1 text-xs px-3 py-2 bg-canvas shadow-well rounded-full text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                                 onKeyDown={(e) => e.key === 'Enter' && handleSaveNote()}
                                 autoFocus
                             />
                             <button
                                 onClick={handleSaveNote}
                                 disabled={!noteText.trim()}
-                                className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs hover:bg-amber-200 disabled:opacity-50"
+                                className="h-8 px-3 rounded-full bg-ember-100 text-ember-700 text-xs font-medium hover:bg-ember-200 disabled:opacity-50 transition-all"
                             >
                                 Add
                             </button>
@@ -142,7 +142,7 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                         {onRefine && (
                             <button
                                 onClick={onRefine}
-                                className="p-1.5 text-gray-400 hover:text-[var(--accent)] hover:bg-indigo-50 rounded"
+                                className="p-1.5 rounded-full text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
                                 title="Regenerate this point"
                             >
                                 <RefreshCw size={14} />
@@ -150,21 +150,21 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                         )}
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                            className="p-1.5 rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                             title="Edit text"
                         >
                             <Edit2 size={14} />
                         </button>
                         <button
                             onClick={() => setShowNoteInput(!showNoteInput)}
-                            className={`p-1.5 rounded transition-colors ${showNoteInput ? 'text-amber-600 bg-amber-50' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'}`}
+                            className={`p-1.5 rounded-full transition-all ${showNoteInput ? 'text-ember-600 bg-canvas shadow-pressed' : 'text-ink-muted hover:text-ember-600 active:shadow-pressed'}`}
                             title="Add note"
                         >
                             <MessageSquare size={14} />
                         </button>
                         <button
                             onClick={onDelete}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                            className="p-1.5 rounded-full text-ink-muted hover:text-rose-500 active:shadow-pressed transition-all"
                             title="Delete item"
                         >
                             <Trash2 size={14} />

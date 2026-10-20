@@ -83,7 +83,7 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
                 {/* SVG Branch Line for Depth */}
                 {depth > 0 && (
                     <div className="absolute left-[-18px] top-[-10px] w-[18px] h-[34px] pointer-events-none">
-                        <svg width="18" height="34" className="text-gray-200 stroke-current fill-none">
+                        <svg width="18" height="34" className="text-line stroke-current fill-none">
                             <path d={`M 0 0 V 22 Q 0 22 18 22`} strokeWidth="1.5" />
                         </svg>
                     </div>
@@ -91,37 +91,37 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
 
                 <div className="space-y-2 mb-4">
                     <div
-                        className={`group flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${node.belief.parentId
-                            ? 'bg-white border-gray-100 hover:border-gray-300 shadow-sm'
-                            : 'bg-white border-2 border-slate-200 hover:border-slate-400 font-bold'
+                        className={`group flex items-center gap-3 p-3 pr-4 rounded-tile bg-surface shadow-card hover:shadow-float transition-all cursor-pointer ${node.belief.parentId
+                            ? ''
+                            : 'font-medium'
                             }`}
                         onClick={() => hasChildren && toggleCollapse(node.belief.id)}
                     >
-                        <div className={`p-1.5 rounded-lg ${node.belief.parentId ? 'bg-slate-50' : 'bg-slate-900 text-white'}`}>
-                            {node.belief.parentId ? <GitBranch size={14} className="text-slate-400" /> : <Target size={14} />}
+                        <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center ${node.belief.parentId ? 'bg-canvas shadow-well' : 'bg-ink text-white'}`}>
+                            {node.belief.parentId ? <GitBranch size={14} className="text-ink-muted" /> : <Target size={14} />}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className={`text-sm leading-relaxed ${node.belief.parentId ? 'text-slate-600' : 'text-slate-900'}`}>
+                            <p className={`text-sm leading-relaxed ${node.belief.parentId ? 'text-ink-soft' : 'text-ink'}`}>
                                 {node.belief.statement}
                             </p>
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
                             {node.belief.confidence && (
-                                <span className="text-[10px] font-mono text-slate-400">
+                                <span className="h-7 px-3 inline-flex items-center rounded-full bg-canvas shadow-well text-xs font-medium text-ink-soft">
                                     {Math.round(node.belief.confidence)}%
                                 </span>
                             )}
                             {hasChildren && (
                                 <div className={`transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>
-                                    <ChevronDown size={14} className="text-slate-400" />
+                                    <ChevronDown size={14} className="text-ink-muted" />
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {!isCollapsed && (
-                        <div className="ml-6 space-y-2 border-l border-gray-100 pl-4 py-1">
+                        <div className="ml-6 space-y-2 border-l border-line pl-4 py-1">
                             {/* Render Drafts */}
                             {node.drafts.map((draft) => (
                                 <button
@@ -130,15 +130,15 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
                                         e.stopPropagation();
                                         onSelectDraft?.(draft.id);
                                     }}
-                                    className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-blue-50/30 border border-blue-100/50 hover:bg-blue-50 hover:border-blue-200 transition-all text-left group"
+                                    className="flex items-center gap-3 w-full h-10 px-4 rounded-full bg-dusk-100 hover:shadow-raised active:shadow-pressed transition-all text-left group"
                                 >
-                                    <FileText size={14} className="text-blue-500" />
+                                    <FileText size={14} className="text-dusk-500" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-blue-900 truncate">
+                                        <p className="text-xs font-medium text-dusk-700 truncate">
                                             {draft.belief_text || 'Untitled Draft'}
                                         </p>
                                     </div>
-                                    <ChevronRight size={12} className="text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <ChevronRight size={12} className="text-dusk-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </button>
                             ))}
 
@@ -152,16 +152,16 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
     };
 
     return (
-        <div className="p-6 space-y-8 animate-fade-in max-w-5xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6">
+        <div className="flex flex-col gap-8 animate-fade-in">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-serif text-gray-900">Strategic Mind Map</h2>
-                    <p className="text-sm text-gray-500 mt-1">Visualize how your specific drafts branch from your foundational beliefs.</p>
+                    <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">Strategic Mind Map</h2>
+                    <p className="text-base text-ink-soft mt-2">Visualize how your specific drafts branch from your foundational beliefs.</p>
                 </div>
                 <button
                     onClick={handleBootstrap}
                     disabled={isBootstrapping}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition shadow-sm disabled:opacity-50 text-sm font-medium"
+                    className="self-start md:self-auto flex items-center gap-2 h-10 px-4 rounded-full bg-ink text-white hover:bg-ink/90 transition-colors disabled:opacity-50 text-sm font-medium"
                 >
                     {isBootstrapping ? (
                         <>
@@ -177,16 +177,16 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
                 </button>
             </div>
 
-            <div className="space-y-6 pt-4">
+            <div className="space-y-6">
                 {tree.length > 0 ? (
                     tree.map((root) => renderNode(root, 0))
                 ) : (
-                    <div className="text-center py-20 bg-gray-50/50 border border-dashed border-gray-200 rounded-3xl">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                            <GitBranch className="text-gray-300" />
+                    <div className="text-center py-20 px-6 bg-canvas shadow-pressed rounded-card">
+                        <div className="w-12 h-12 bg-canvas rounded-full flex items-center justify-center mx-auto mb-4 shadow-raised">
+                            <GitBranch className="text-ember-500" />
                         </div>
-                        <h3 className="text-slate-900 font-medium mb-1">Your Map is Empty</h3>
-                        <p className="text-slate-500 text-sm max-w-xs mx-auto mb-6">
+                        <h3 className="text-ink text-[17px] font-medium tracking-[-0.01em] mb-1">Your Map is Empty</h3>
+                        <p className="text-ink-soft text-sm max-w-xs mx-auto mb-6">
                             Upload your posts or add manual beliefs to start building your strategic hierarchy.
                         </p>
                     </div>

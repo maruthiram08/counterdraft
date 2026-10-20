@@ -28,7 +28,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 export default function WorkspacePage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--background)]"><div className="text-[var(--text-muted)] animate-pulse">Loading workspace...</div></div>}>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-canvas"><div className="text-sm text-ink-muted animate-pulse">Loading workspace...</div></div>}>
             <WorkspaceContent />
         </Suspense>
     );
@@ -155,8 +155,8 @@ function WorkspaceContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-                <div className="text-[var(--text-muted)] animate-pulse">Loading your belief graph...</div>
+            <div className="min-h-screen flex items-center justify-center bg-canvas">
+                <div className="text-sm text-ink-muted animate-pulse">Loading your belief graph...</div>
             </div>
         );
     }
@@ -172,16 +172,16 @@ function WorkspaceContent() {
     const allBeliefsReviewed = unreviewedCore.length === 0 && unreviewedEmerging.length === 0 && unreviewedOverused.length === 0 && beliefs.core.length + beliefs.emerging.length + beliefs.overused.length > 0;
 
     const renderEmptyState = (type: string) => (
-        <div className="text-center py-12 border border-dashed border-[var(--border)] rounded-lg">
-            <p className="text-[var(--text-muted)]">No {type} found yet.</p>
+        <div className="text-center py-12 bg-canvas shadow-pressed rounded-card">
+            <p className="text-ink-muted">No {type} found yet.</p>
         </div>
     );
 
     const renderCompletionState = () => (
-        <div className="text-center py-16 border border-green-200 bg-green-50/50 rounded-lg">
-            <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
-            <h3 className="text-xl font-medium text-green-700 mb-2">All beliefs reviewed!</h3>
-            <p className="text-[var(--text-muted)]">Great job! Add more content to extract new beliefs.</p>
+        <div className="text-center py-16 px-6 bg-surface rounded-card shadow-card">
+            <CheckCircle size={48} className="mx-auto text-sage-500 mb-4" />
+            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">All beliefs reviewed!</h3>
+            <p className="text-ink-soft">Great job! Add more content to extract new beliefs.</p>
         </div>
     );
 
@@ -189,7 +189,7 @@ function WorkspaceContent() {
     const publishedItems = drafts.filter(d => d.status === 'published');
 
     return (
-        <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+        <div className="flex h-screen bg-canvas overflow-hidden">
             <GlobalSidebar
                 activeSection={effectiveSection}
                 onNavigate={(section) => {
@@ -216,7 +216,7 @@ function WorkspaceContent() {
                 onImport={() => setAddContentModalOpen(true)}
             />
 
-            <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-paper">
+            <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-canvas">
                 {effectiveSection === 'mind' && (
                     <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                         <YourMind
@@ -234,22 +234,22 @@ function WorkspaceContent() {
                 )}
 
                 {effectiveSection !== 'drafts' && effectiveSection !== 'explore' && effectiveSection !== 'pipeline' && effectiveSection !== 'mind' && (
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-12 pb-24 md:pb-12">
-                        <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+                    <div className="flex-1 h-full overflow-y-auto overflow-x-hidden bg-canvas">
+                        <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12 flex flex-col gap-8 animate-fade-in">
                             {effectiveSection === 'beliefs' && (
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-xl font-serif">Belief Graph</h2>
-                                        <div className="bg-gray-100 p-1 rounded-lg flex items-center text-xs font-medium shrink-0">
+                                <div className="flex flex-col gap-8">
+                                    <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                                        <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Belief Graph</h2>
+                                        <div className="bg-canvas shadow-well rounded-full p-1 flex items-center text-sm font-medium shrink-0 self-start md:self-auto">
                                             <button
                                                 onClick={() => setBeliefView('list')}
-                                                className={`px-3 py-1 rounded-md transition-all ${beliefView === 'list' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                                className={`h-9 px-4 rounded-full transition-all ${beliefView === 'list' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                                             >
                                                 List
                                             </button>
                                             <button
                                                 onClick={() => setBeliefView('tree')}
-                                                className={`px-3 py-1 rounded-md transition-all ${beliefView === 'tree' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                                                className={`h-9 px-4 rounded-full transition-all ${beliefView === 'tree' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                                             >
                                                 Mind Map
                                             </button>
@@ -265,8 +265,8 @@ function WorkspaceContent() {
                                     ) : (
                                         <>
                                             {!allBeliefsReviewed && (
-                                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                                    <p className="text-sm text-blue-800">
+                                                <div className="p-4 bg-dusk-100 rounded-tile shadow-raised">
+                                                    <p className="text-sm text-dusk-700">
                                                         <strong>Review your beliefs:</strong> Mark as <strong>Accurate</strong> if it reflects your thinking, <strong>Misses</strong> if it&apos;s wrong, or <strong>Clarify</strong> if it needs nuance.
                                                     </p>
                                                 </div>
@@ -277,7 +277,7 @@ function WorkspaceContent() {
 
                                     {unreviewedCore.length > 0 && (
                                         <section>
-                                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">CORE BELIEFS</h3>
+                                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Core beliefs</h3>
                                             <div className="space-y-4">
                                                 {unreviewedCore.map((b: { id: string; statement: string }) => (
                                                     <BeliefCard
@@ -303,7 +303,7 @@ function WorkspaceContent() {
 
                                     {unreviewedEmerging.length > 0 && (
                                         <section>
-                                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">EMERGING THESES</h3>
+                                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Emerging theses</h3>
                                             <div className="space-y-4">
                                                 {unreviewedEmerging.map((b: { id: string; statement: string }) => (
                                                     <BeliefCard
@@ -329,7 +329,7 @@ function WorkspaceContent() {
 
                                     {unreviewedOverused.length > 0 && (
                                         <section>
-                                            <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">OVERUSED ANGLES</h3>
+                                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Overused angles</h3>
                                             <div className="space-y-4">
                                                 {unreviewedOverused.map((b: { id: string; statement: string }) => (
                                                     <BeliefCard
@@ -358,18 +358,19 @@ function WorkspaceContent() {
                             )}
 
                             {effectiveSection === 'tensions' && (
-                                <div className="space-y-6">
+                                <div className="flex flex-col gap-6">
+                                    <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Tensions</h2>
                                     {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length > 0 && (
-                                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                                            <p className="text-sm text-amber-800">
+                                        <div className="p-4 bg-sand-100 rounded-tile shadow-raised">
+                                            <p className="text-sm text-sand-700">
                                                 <strong>Classify your tensions:</strong> Is this a real <strong>Inconsistency</strong> to resolve, an <strong>Intentional Nuance</strong> you hold, or something to <strong>Explore</strong> further?
                                             </p>
                                         </div>
                                     )}
                                     {tensionsLoading && (
                                         <div className="text-center py-16">
-                                            <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
-                                            <p className="text-[var(--text-muted)]">Loading tensions...</p>
+                                            <Loader2 size={32} className="mx-auto animate-spin text-ember-500 mb-4" />
+                                            <p className="text-ink-muted">Loading tensions...</p>
                                         </div>
                                     )}
 
@@ -377,10 +378,10 @@ function WorkspaceContent() {
                                         tensions.length === 0
                                             ? renderEmptyState("tensions")
                                             : (
-                                                <div className="text-center py-16 border border-green-200 bg-green-50/50 rounded-lg">
-                                                    <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
-                                                    <h3 className="text-xl font-medium text-green-700 mb-2">All tensions classified!</h3>
-                                                    <p className="text-[var(--text-muted)]">Great work! Add more content to detect new tensions.</p>
+                                                <div className="text-center py-16 px-6 bg-surface rounded-card shadow-card">
+                                                    <CheckCircle size={48} className="mx-auto text-sage-500 mb-4" />
+                                                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">All tensions classified!</h3>
+                                                    <p className="text-ink-soft">Great work! Add more content to detect new tensions.</p>
                                                 </div>
                                             )
                                     )}
@@ -413,22 +414,23 @@ function WorkspaceContent() {
                             )}
 
                             {effectiveSection === 'directions' && (
-                                <div className="space-y-6">
+                                <div className="flex flex-col gap-6">
+                                    <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Ideas</h2>
                                     {generated && directions.length > 0 && (
-                                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                            <p className="text-sm text-green-800">
+                                        <div className="p-4 bg-ember-50 rounded-tile shadow-raised">
+                                            <p className="text-sm text-ember-700">
                                                 <strong>Your writing directions:</strong> Based on your beliefs, here are ideas for what to write next. Click on a card to start drafting.
                                             </p>
                                         </div>
                                     )}
                                     {!generated && !directionsLoading && (
-                                        <div className="text-center py-16 border border-dashed border-[var(--border)] rounded-lg">
-                                            <Sparkles size={48} className="mx-auto text-[var(--accent)] mb-4" />
-                                            <h3 className="text-xl font-medium mb-2">Generate Content Ideas</h3>
-                                            <p className="text-[var(--text-muted)] mb-6">Based on your beliefs, AI will suggest what to write next.</p>
+                                        <div className="text-center py-16 px-6 bg-surface rounded-card shadow-card">
+                                            <Sparkles size={48} className="mx-auto text-ember-500 mb-4" />
+                                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Generate Content Ideas</h3>
+                                            <p className="text-ink-soft mb-6">Based on your beliefs, AI will suggest what to write next.</p>
                                             <button
                                                 onClick={generateDirections}
-                                                className="btn btn-primary"
+                                                className="inline-flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                             >
                                                 <Sparkles size={16} /> Generate Ideas
                                             </button>
@@ -437,13 +439,13 @@ function WorkspaceContent() {
 
                                     {directionsLoading && (
                                         <div className="text-center py-16">
-                                            <Loader2 size={32} className="mx-auto animate-spin text-[var(--accent)] mb-4" />
-                                            <p className="text-[var(--text-muted)]">Generating ideas...</p>
+                                            <Loader2 size={32} className="mx-auto animate-spin text-ember-500 mb-4" />
+                                            <p className="text-ink-muted">Generating ideas...</p>
                                         </div>
                                     )}
 
                                     {generated && directions.length > 0 && (
-                                        <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="grid md:grid-cols-2 gap-5">
                                             {directions.map((d, idx) => (
                                                 <DirectionCard
                                                     key={idx}
@@ -464,7 +466,7 @@ function WorkspaceContent() {
 
                                     {generated && directions.length === 0 && (
                                         <div className="text-center py-12">
-                                            <p className="text-[var(--text-muted)]">No ideas generated. Try adding more content first.</p>
+                                            <p className="text-ink-muted">No ideas generated. Try adding more content first.</p>
                                         </div>
                                     )}
                                 </div>
@@ -474,13 +476,13 @@ function WorkspaceContent() {
                 )}
 
                 {effectiveSection === 'explore' && (
-                    <div className="flex-1 overflow-hidden bg-gray-50/30">
+                    <div className="flex-1 overflow-hidden bg-canvas">
                         <ExplorerView />
                     </div>
                 )}
 
                 {effectiveSection === 'pipeline' && (
-                    <div className="flex-1 overflow-hidden bg-gray-50/30">
+                    <div className="flex-1 overflow-hidden bg-canvas">
                         <CommandCenter
                             onDraftCreated={refetch}
                             onEdit={(draftId) => {
@@ -506,17 +508,17 @@ function WorkspaceContent() {
                 )}
 
                 {effectiveSection === 'drafts' && (
-                    <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-gray-50/30">
+                    <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-canvas">
                         {/* Sub-Tabs for Posts */}
-                        <div className="flex items-center gap-6 px-6 py-3 border-b bg-white">
+                        <div className="flex items-center gap-3 px-4 md:px-6 py-3 bg-canvas">
                             <button
                                 onClick={() => {
                                     setPostsTab('drafts');
                                     selectDraft(null);
                                 }}
-                                className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${effectivePostsTab === 'drafts'
-                                    ? 'border-[var(--foreground)] text-[var(--foreground)]'
-                                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
+                                className={`h-10 px-5 rounded-full text-sm font-medium bg-canvas transition-all ${effectivePostsTab === 'drafts'
+                                    ? 'shadow-pressed text-ember-600'
+                                    : 'shadow-raised text-ink-soft hover:text-ink'
                                     }`}
                             >
                                 Drafts
@@ -526,9 +528,9 @@ function WorkspaceContent() {
                                     setPostsTab('published');
                                     selectDraft(null);
                                 }}
-                                className={`text-sm font-medium pb-0.5 border-b-2 transition-colors ${effectivePostsTab === 'published'
-                                    ? 'border-[var(--foreground)] text-[var(--foreground)]'
-                                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
+                                className={`h-10 px-5 rounded-full text-sm font-medium bg-canvas transition-all ${effectivePostsTab === 'published'
+                                    ? 'shadow-pressed text-ember-600'
+                                    : 'shadow-raised text-ink-soft hover:text-ink'
                                     }`}
                             >
                                 Published
@@ -542,16 +544,16 @@ function WorkspaceContent() {
                                     <div className="h-full flex flex-col pb-20">
                                         {activeDraftId ? (
                                             <div className="flex-1 flex flex-col min-h-0">
-                                                <div className="flex items-center gap-3 px-4 py-3 border-b bg-white shrink-0">
+                                                <div className="flex items-center gap-3 px-4 py-3 bg-canvas shrink-0">
                                                     <button
                                                         onClick={() => selectDraft(null)}
-                                                        className="p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
                                                     >
                                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                             <path d="M19 12H5M12 19l-7-7 7-7" />
                                                         </svg>
                                                     </button>
-                                                    <span className="font-medium text-gray-900 truncate flex-1 text-sm">
+                                                    <span className="font-medium text-ink truncate flex-1 text-sm">
                                                         {selectedDraft?.belief_text || 'Edit Draft'}
                                                     </span>
                                                 </div>

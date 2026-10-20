@@ -10,54 +10,89 @@
   --font-weight-extrabold: 700;
   --font-weight-black: 700;
 
-  /* Custom Colors */
-  --color-paper: #fcfcfc;
-  --color-accent: #16a34a;
+  /* Design system: warm white + burnt orange, navy for emphasis */
+  --color-canvas: #ecedf1;        /* app background behind cards */
+  --color-surface: #ffffff;       /* cards */
+  --color-surface-muted: #f5f5f8; /* chips, inset tiles, hover fills */
+  --color-line: #e3e4ea;          /* hairlines and dividers */
+
+  --color-ink: #161c2d;           /* headings, primary text, emphasis pills */
+  --color-ink-soft: #4b5164;      /* body text */
+  --color-ink-muted: #8b90a0;     /* captions, meta */
+
+  --color-ember-50: #fdf2ec;
+  --color-ember-100: #fbe2d5;
+  --color-ember-200: #f5c3a7;
+  --color-ember-500: #d4592a;     /* burnt orange: brand accent, primary actions */
+  --color-ember-600: #b94a1f;
+  --color-ember-700: #963b18;
+
+  --color-dusk-100: #e3e9f5;      /* dusty blue: the complement to ember */
+  --color-dusk-500: #7b93c4;
+  --color-dusk-700: #4d6496;
+
+  --color-sand-100: #f6ecdf;      /* warm neutral for in-progress states */
+  --color-sand-500: #c49a62;
+  --color-sand-700: #8a6a3d;
+
+  --color-sage-100: #e3efe6;      /* success / published */
+  --color-sage-500: #5f9470;
+  --color-sage-700: #3f6b4d;
+
+  --color-rose-100: #f7e1de;      /* errors, destructive */
+  --color-rose-500: #b9473a;
+  --color-rose-700: #8c3227;
+
+  --color-paper: #ecedf1; /* legacy alias of canvas */
+  --color-accent: #d4592a;
+
+  --radius-card: 28px;
+  --radius-tile: 20px;
+
+  /* Soft neumorphism: light comes from the top left, so every raised surface
+     carries a white highlight up-left and a cool shadow down-right. */
+  --shadow-card: -8px -8px 20px rgb(255 255 255 / 0.85), 10px 12px 28px -6px rgb(146 152 176 / 0.38);
+  --shadow-float: -10px -10px 24px rgb(255 255 255 / 0.9), 16px 20px 40px -8px rgb(146 152 176 / 0.48);
+  --shadow-raised: -4px -4px 10px rgb(255 255 255 / 0.9), 5px 6px 12px rgb(146 152 176 / 0.4);
+  --shadow-pressed: inset 3px 3px 7px rgb(146 152 176 / 0.45), inset -3px -3px 7px rgb(255 255 255 / 0.9);
+  --shadow-well: inset 2px 2px 5px rgb(146 152 176 / 0.35), inset -2px -2px 5px rgb(255 255 255 / 0.85);
+  --shadow-ember: -4px -4px 10px rgb(255 255 255 / 0.9), 6px 8px 16px -2px rgb(212 89 42 / 0.45);
 }
 
 :root {
   /* Fallback for raw CSS usage if needed, though Tailwind utils are preferred */
-  --background: #ffffff;
-  --foreground: #111827;
-  --text-primary: #111827;
-  --text-muted: #9ca3af;
-  --accent: #16a34a;
+  --background: #ecedf1;
+  --foreground: #161c2d;
 
   --surface-elevated: #ffffff;
 
   /* Feature Colors */
-  --accent: #16a34a;
-  /* Green 600 - Matches reference */
-  --accent-hover: #15803d;
-  /* Green 700 */
-  --accent-light: #dcfce7;
-  /* Green 100 */
+  --accent: #d4592a;
+  /* Burnt orange (ember-500) */
+  --accent-hover: #b94a1f;
+  --accent-light: #fbe2d5;
 
   /* Text Hierarchy */
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  /* Gray 600 */
-  --text-muted: #9ca3af;
-  /* Gray 400 */
-  --text-subtle: #d1d5db;
-  /* Gray 300 */
+  --text-primary: #161c2d;
+  --text-secondary: #4b5164;
+  --text-muted: #8b90a0;
+  --text-subtle: #c9ccd6;
 
   /* Borders - Very subtle */
-  --border: #e5e7eb;
-  /* Gray 200 */
-  --border-hover: #d1d5db;
-  --border-focus: #111827;
+  --border: #e3e4ea;
+  --border-hover: #d0d2da;
+  --border-focus: #161c2d;
 
   /* Belief/Tention Colors (Preserved) */
-  --belief-core: #16a34a;
-  --belief-overused: #f59e0b;
-  --belief-emerging: #3b82f6;
-  --belief-rejected: #ef4444;
+  --belief-core: #d4592a;
+  --belief-overused: #c49a62;
+  --belief-emerging: #7b93c4;
+  --belief-rejected: #b9473a;
 
-  --tension-inconsistency: #ef4444;
-  --tension-nuance: #16a34a;
-  --tension-explore: #3b82f6;
-  --tension-pending: #9ca3af;
+  --tension-inconsistency: #b9473a;
+  --tension-nuance: #5f9470;
+  --tension-explore: #7b93c4;
+  --tension-pending: #8b90a0;
 
   /* Spacing & Radius */
   --radius-sm: 4px;
@@ -76,29 +111,28 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Homepage Specific */
-  --paper: #fcfcfc;
+  --paper: #ecedf1;
   --charcoal: #09090b;
 }
 
 /* Homepage Custom Utilities */
 .paper-card {
-  background: white;
-  border: 1px solid #e4e4e7;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.02), 0 1px 2px -1px rgb(0 0 0 / 0.02);
+  background: var(--color-surface);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-card);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .paper-card:hover {
-  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.05);
-  border-color: #d4d4d8;
+  box-shadow: var(--shadow-float);
 }
 
 .hero-gradient {
-  background: radial-gradient(circle at 50% 0%, rgba(22, 163, 74, 0.04) 0%, rgba(252, 252, 252, 1) 100%);
+  background: radial-gradient(circle at 50% 0%, rgba(212, 89, 42, 0.06) 0%, var(--color-canvas) 70%);
 }
 
 .editorial-shadow {
-  box-shadow: 0 40px 100px -30px rgba(0, 0, 0, 0.08), 0 20px 40px -20px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-float);
 }
 
 /* Animations */
@@ -119,8 +153,8 @@
 }
 
 .selection-green::selection {
-  background-color: rgba(22, 163, 74, 0.2);
-  color: #16a34a;
+  background-color: rgba(212, 89, 42, 0.2);
+  color: var(--color-ember-700);
 }
 
 /* Base Reset */
@@ -140,7 +174,8 @@ h4,
 h5,
 h6 {
   font-family: var(--font-display);
-  color: var(--text-primary);
+  /* No colour here: unlayered rules beat Tailwind utilities, so a colour would
+     stop text-white and friends working on headings. Body colour (ink) inherits. */
   font-weight: 500;
   line-height: 1.2;
 }
@@ -162,80 +197,77 @@ h5 {
   padding: 0 24px;
 }
 
-/* Button Base - Minimalist */
+/* Buttons: pills on the neumorphic canvas */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  height: 44px;
+  padding: 0 20px;
   font-size: 14px;
   font-weight: 500;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   transition: all var(--transition-fast);
   cursor: pointer;
-  border: 1px solid transparent;
+  border: none;
   text-decoration: none;
 }
 
 .btn:active {
-  transform: scale(0.99);
+  box-shadow: var(--shadow-pressed);
 }
 
-/* Primary - Green, Solid */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-primary {
-  background: var(--accent);
+  background: var(--color-ember-500);
   color: white;
-  border-color: var(--accent);
+  box-shadow: var(--shadow-ember);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background: var(--color-ember-600);
 }
 
-/* Secondary - Outline */
 .btn-secondary {
-  background: white;
-  color: var(--foreground);
-  border-color: var(--border);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-raised);
 }
 
 .btn-secondary:hover {
-  border-color: var(--border-hover);
-  background: #f9fafb;
+  color: var(--color-ember-600);
 }
 
-/* Ghost - Text only */
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
 }
 
 .btn-ghost:hover {
-  background: #f3f4f6;
-  color: var(--foreground);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-raised);
 }
 
-/* Cards - Ultrathink Style */
+/* Cards: white, large radius, soft neumorphic lift */
 .card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-card);
   padding: 24px;
   transition: all var(--transition-fast);
 }
 
-/* The "Journal" active card style */
 .card-active {
-  border: 2px solid var(--accent);
-  /* Prominent green border */
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-float), inset 0 0 0 2px var(--color-ember-500);
 }
 
 .card:hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-float);
 }
 
 /* Utilities */
@@ -260,21 +292,22 @@ h5 {
   }
 }
 
-/* Inputs - Clean */
+/* Inputs: inset wells */
 .input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 15px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--shadow-well);
   color: var(--foreground);
-  transition: border-color var(--transition-fast);
+  transition: box-shadow var(--transition-fast);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--foreground);
+  box-shadow: var(--shadow-well), 0 0 0 2px var(--color-ember-200);
 }
 
 .input::placeholder {

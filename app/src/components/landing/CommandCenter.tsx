@@ -15,41 +15,41 @@ interface KanbanColumnProps {
 }
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, count, color, cards }) => (
-  <div className="flex-1 flex flex-col">
-    <div className="flex items-center justify-between mb-6 px-1">
+  <div className="flex-1 flex flex-col bg-canvas shadow-pressed rounded-card p-3">
+    <div className="flex items-center justify-between mb-4 px-2 pt-1">
       <div className="flex items-center gap-3">
         <div className={`w-2 h-2 rounded-full ${color}`}></div>
-        <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500">{title}</h3>
+        <h3 className="text-sm font-medium text-ink">{title}</h3>
       </div>
-      <span className="text-[10px] bg-zinc-100/80 text-zinc-500 font-bold px-2 py-1 rounded-md min-w-[20px] text-center">{count}</span>
+      <span className="w-8 h-8 rounded-full bg-canvas shadow-raised text-ink-soft text-xs font-medium flex items-center justify-center">{count}</span>
     </div>
 
-    <div className="space-y-4 flex-1">
+    <div className="space-y-3 flex-1">
       {cards.map((card, idx) => (
-        <div key={idx} className="group bg-white p-5 rounded-2xl border border-zinc-200/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.06)] hover:border-green-600/30 transition-all duration-300 cursor-pointer relative overflow-hidden">
+        <div key={idx} className="group bg-surface p-5 rounded-tile shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all duration-200 cursor-pointer relative overflow-hidden">
           {/* Hover Accent */}
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="absolute left-0 top-5 bottom-5 w-1 rounded-full bg-ember-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
           <div className="flex justify-between items-start mb-3">
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md ${card.tagColor} border border-opacity-10`}>{card.category}</span>
-            <svg className="w-4 h-4 text-zinc-300 group-hover:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+            <span className={`h-7 px-3 rounded-full text-xs font-medium flex items-center ${card.tagColor}`}>{card.category}</span>
+            <svg className="w-4 h-4 text-ink-muted group-hover:text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
           </div>
 
-          <h4 className="text-sm font-bold text-zinc-800 mb-4 leading-snug group-hover:text-green-700 transition-colors line-clamp-2">{card.title}</h4>
+          <h4 className="text-[15px] font-medium tracking-[-0.01em] text-ink mb-4 leading-snug group-hover:text-ember-700 transition-colors line-clamp-2">{card.title}</h4>
 
-          <div className="flex items-center justify-between mt-auto pt-3 border-t border-dashed border-zinc-100">
+          <div className="flex items-center justify-between mt-auto pt-1">
             <div className="flex -space-x-2">
-              <div className="w-6 h-6 rounded-full border-2 border-white bg-zinc-100 flex items-center justify-center text-[8px] font-black text-zinc-400">JD</div>
+              <div className="w-7 h-7 rounded-full bg-canvas shadow-well flex items-center justify-center text-[10px] font-medium text-ink-soft">JD</div>
             </div>
-            <span className="text-[10px] font-medium text-zinc-400">{card.date}</span>
+            <span className="text-xs text-ink-muted">{card.date}</span>
           </div>
         </div>
       ))}
 
       {/* "Add New" Placeholder for the first column */}
-      {title === "IDEAS" && (
-        <button className="w-full py-4 border border-dashed border-zinc-200 rounded-2xl text-zinc-400 text-xs font-bold hover:bg-zinc-50 hover:text-zinc-600 hover:border-zinc-300 transition-all flex items-center justify-center gap-2 group">
-          <div className="w-5 h-5 rounded-full bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200">
+      {title === "Ideas" && (
+        <button className="w-full h-12 rounded-full bg-canvas shadow-raised text-ink text-sm font-medium hover:text-ember-600 active:shadow-pressed transition-all flex items-center justify-center gap-2 group">
+          <div className="w-6 h-6 rounded-full bg-ember-500 text-white flex items-center justify-center">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
           </div>
           Capture Insight
@@ -62,60 +62,60 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, count, color, cards 
 export const CommandCenter: React.FC = () => {
   const columns = [
     {
-      title: "IDEAS",
+      title: "Ideas",
       count: 12,
-      color: "bg-zinc-300",
+      color: "bg-ember-500",
       cards: [
-        { title: "Why your LinkedIn posts aren't getting traction", category: "LinkedIn", tagColor: "bg-blue-50 text-blue-700 border-blue-100", date: "2m ago" },
-        { title: "5 lessons from my first 1,000 newsletter subscribers", category: "Substack", tagColor: "bg-orange-50 text-orange-700 border-orange-100", date: "4h ago" }
+        { title: "Why your LinkedIn posts aren't getting traction", category: "LinkedIn", tagColor: "bg-dusk-100 text-dusk-700", date: "2m ago" },
+        { title: "5 lessons from my first 1,000 newsletter subscribers", category: "Substack", tagColor: "bg-ember-100 text-ember-700", date: "4h ago" }
       ]
     },
     {
-      title: "DRAFTING",
+      title: "Drafting",
       count: 3,
-      color: "bg-amber-400",
+      color: "bg-sand-500",
       cards: [
-        { title: "How I structure a 2,000-word blog post in 30 minutes", category: "Blog", tagColor: "bg-purple-50 text-purple-700 border-purple-100", date: "1d ago" }
+        { title: "How I structure a 2,000-word blog post in 30 minutes", category: "Blog", tagColor: "bg-canvas shadow-well text-ink-soft", date: "1d ago" }
       ]
     },
     {
-      title: "REVIEW",
+      title: "Review",
       count: 1,
-      color: "bg-green-500",
+      color: "bg-dusk-500",
       cards: [
-        { title: "Client case study: B2B content that converts", category: "Portfolio", tagColor: "bg-green-50 text-green-700 border-green-100", date: "2d ago" }
+        { title: "Client case study: B2B content that converts", category: "Portfolio", tagColor: "bg-sage-100 text-sage-700", date: "2d ago" }
       ]
     },
     {
-      title: "PUBLISHED",
+      title: "Published",
       count: 84,
-      color: "bg-zinc-800",
+      color: "bg-ink",
       cards: [
-        { title: "Chapter 3: Finding your writing voice", category: "Book", tagColor: "bg-zinc-100 text-zinc-600 border-zinc-200", date: "Oct 24" }
+        { title: "Chapter 3: Finding your writing voice", category: "Book", tagColor: "bg-ink text-white", date: "Oct 24" }
       ]
     }
   ];
 
   return (
-    <div className="bg-zinc-50/50 rounded-3xl border border-zinc-200 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col min-h-[600px] animate-fade-in-up">
+    <div className="bg-canvas rounded-card shadow-float overflow-hidden flex flex-col min-h-[600px] animate-fade-in-up">
       {/* App Header */}
-      <div className="h-auto min-h-[4rem] bg-white border-b border-zinc-100 flex flex-wrap items-center justify-between px-4 md:px-6 py-2 gap-4 shrink-0">
+      <div className="h-auto min-h-[4.5rem] flex flex-wrap items-center justify-between px-4 md:px-6 pt-4 pb-2 gap-4 shrink-0">
         <div className="flex items-center gap-4 md:gap-8">
           <div className="flex gap-2">
-            <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-red-400"></div>
-            <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-amber-400"></div>
-            <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-green-400"></div>
+            <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-canvas shadow-raised"></div>
+            <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-canvas shadow-raised"></div>
+            <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-canvas shadow-raised"></div>
           </div>
-          <div className="h-6 w-px bg-zinc-100 hidden md:block"></div>
-          <div className="flex items-center gap-2 text-zinc-400 text-xs font-bold uppercase tracking-widest">
-            <svg className="w-4 h-4 text-zinc-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-            <span className="text-zinc-900 hidden sm:inline">Command Center</span>
-            <span className="text-zinc-900 sm:hidden">CMD</span>
+          <div className="h-6 w-px bg-line hidden md:block"></div>
+          <div className="flex items-center gap-2 text-ink text-lg md:text-xl font-medium tracking-[-0.02em]">
+            <svg className="w-5 h-5 text-ember-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <span className="text-ink hidden sm:inline">Command Center</span>
+            <span className="text-ink sm:hidden">CMD</span>
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
-          <button className="text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors hidden sm:block">Filter View</button>
-          <button className="bg-zinc-900 text-white text-[10px] md:text-xs font-bold px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-black transition-colors flex items-center gap-2">
+          <button className="h-10 px-4 rounded-full bg-canvas shadow-raised text-ink text-xs font-medium hover:text-ember-600 active:shadow-pressed transition-all hidden sm:block">Filter View</button>
+          <button className="h-10 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center gap-2">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
             New Logic
           </button>
@@ -124,7 +124,7 @@ export const CommandCenter: React.FC = () => {
 
       {/* Kanban Board - Responsive Grid */}
       <div className="flex-1 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 h-full">
           {columns.map((col, idx) => (
             <KanbanColumn key={idx} {...col} />
           ))}

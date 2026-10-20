@@ -127,16 +127,16 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
         <div className="flex flex-col h-full min-h-[500px]">
             {/* Mode Toggle */}
             <div className="flex justify-center mb-4">
-                <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
+                <div className="bg-canvas shadow-well rounded-full p-1 flex gap-1">
                     <button
                         onClick={() => { setMode('single'); setText(hook); }}
-                        className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${mode === 'single' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`h-9 px-4 rounded-full text-sm font-medium transition-all ${mode === 'single' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                     >
                         Single Post
                     </button>
                     <button
                         onClick={() => { setMode('carousel'); setText(content); }}
-                        className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all flex items-center gap-1.5 ${mode === 'carousel' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`h-9 px-4 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${mode === 'carousel' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
                     >
                         <Layers size={14} />
                         Auto-Carousel
@@ -145,10 +145,10 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
             </div>
 
             {/* Live Preview Canvas */}
-            <div className="flex-1 bg-gray-100 rounded-lg flex items-center justify-center p-4 relative overflow-hidden group min-h-[320px]">
+            <div className="flex-1 bg-canvas shadow-pressed rounded-card flex items-center justify-center p-4 relative overflow-hidden group min-h-[320px]">
                 {isLoading && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center">
-                        <Sparkles className="animate-spin text-purple-600" />
+                    <div className="absolute inset-0 bg-surface/50 backdrop-blur-sm z-10 flex items-center justify-center">
+                        <Sparkles className="animate-spin text-ember-500" />
                     </div>
                 )}
 
@@ -159,7 +159,7 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
                         width={600}
                         height={300}
                         unoptimized
-                        className="max-h-[300px] w-auto shadow-2xl rounded-sm transition-transform duration-500"
+                        className="max-h-[300px] w-auto shadow-float rounded-tile transition-transform duration-500"
                     />
                 )}
 
@@ -169,18 +169,18 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
                         <button
                             onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
                             disabled={currentSlideIndex === 0}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white disabled:opacity-0 transition-all"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed disabled:opacity-0 transition-all"
                         >
                             <ChevronLeft size={20} />
                         </button>
                         <button
                             onClick={() => setCurrentSlideIndex(Math.min(slides.length - 1, currentSlideIndex + 1))}
                             disabled={currentSlideIndex === slides.length - 1}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white disabled:opacity-0 transition-all"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed disabled:opacity-0 transition-all"
                         >
                             <ChevronRight size={20} />
                         </button>
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded-full">
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-ink text-white text-xs font-medium h-7 px-3 flex items-center rounded-full">
                             Slide {currentSlideIndex + 1} / {slides.length}
                         </div>
                     </>
@@ -190,18 +190,18 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
                 <div className="absolute top-4 right-4 flex gap-2">
                     <button
                         onClick={() => setTheme(prev => prev === 'cosmic' ? 'minimal' : prev === 'minimal' ? 'neon' : 'cosmic')}
-                        className="bg-white/90 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full shadow-lg hover:scale-105 transition-all flex items-center gap-1.5"
+                        className="h-8 px-3 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
-                        <Palette size={12} className="text-purple-600" />
+                        <Palette size={12} className="text-ember-500" />
                         Remix Vibe
                     </button>
                     {mode === 'single' && (
                         <button
                             onClick={handleShuffle}
                             disabled={extractedQuotes.length === 0}
-                            className="bg-white/90 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 disabled:opacity-70"
+                            className="h-8 px-3 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all flex items-center gap-1.5 disabled:opacity-70"
                         >
-                            <RefreshCw size={12} className={extractedQuotes.length === 0 ? "animate-spin text-gray-400" : "text-blue-600"} />
+                            <RefreshCw size={12} className={extractedQuotes.length === 0 ? "animate-spin text-ink-muted" : "text-ember-500"} />
                             Shuffle
                         </button>
                     )}
@@ -211,23 +211,23 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
             {/* Editor Controls */}
             <div className="mt-4 space-y-3">
                 <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">
+                    <label className="text-sm text-ink-muted mb-1.5 block">
                         {mode === 'single' ? 'Smart Text Content' : 'Full Carousel Source Text'}
                     </label>
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        className="w-full text-sm font-medium p-3 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none resize-none h-20"
+                        className="w-full text-sm bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 resize-none h-20"
                     />
                     <div className="flex justify-between items-center mt-1">
-                        <p className="text-[10px] text-gray-400">{text.length} chars</p>
-                        {mode === 'carousel' && <p className="text-[10px] text-purple-600 font-bold">{slides.length} Auto-Generated Slides</p>}
+                        <p className="text-xs text-ink-muted">{text.length} chars</p>
+                        {mode === 'carousel' && <p className="text-xs text-ember-600 font-medium">{slides.length} Auto-Generated Slides</p>}
                     </div>
                 </div>
 
                 <button
                     onClick={handleDownload}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-200 transition-all"
+                    className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center justify-center gap-2"
                 >
                     <Download size={18} />
                     {mode === 'carousel' ? `Download ${slides.length} Slides (ZIP)` : 'Download Image'}

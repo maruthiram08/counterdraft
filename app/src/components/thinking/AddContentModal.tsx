@@ -56,22 +56,22 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full shadow-2xl">
+        <div className="fixed inset-0 bg-ink/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-surface rounded-card max-w-2xl w-full shadow-float">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
+                <div className="flex items-center justify-between px-6 md:px-8 pt-6 md:pt-8 pb-2">
                     <div className="flex items-center gap-2">
-                        <Upload size={20} className="text-[var(--accent)]" />
-                        <h2 className="font-semibold">Add More Content</h2>
+                        <Upload size={20} className="text-ember-500" />
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">Add More Content</h2>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all">
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-4">
-                    <p className="text-sm text-[var(--text-muted)] mb-4">
+                <div className="px-6 md:px-8 py-4">
+                    <p className="text-sm text-ink-soft mb-4">
                         Paste additional posts, essays, or notes. We&apos;ll extract new beliefs and tensions.
                     </p>
 
@@ -79,16 +79,16 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         disabled={loading}
-                        className="w-full h-64 p-4 border border-[var(--border)] rounded-lg resize-none focus:ring-2 ring-[var(--accent)] outline-none font-mono text-sm"
+                        className="w-full h-64 bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 resize-none focus:outline-none focus:ring-2 focus:ring-ember-200 font-mono text-sm"
                         placeholder="Paste your content here..."
                     />
 
                     {error && (
-                        <p className="text-red-500 text-sm mt-2">{error}</p>
+                        <p className="text-rose-700 text-sm mt-2">{error}</p>
                     )}
 
                     {status && !error && (
-                        <p className="text-[var(--accent)] text-sm mt-2 flex items-center gap-2">
+                        <p className="text-ember-600 text-sm mt-2 flex items-center gap-2">
                             {loading && <Loader2 size={14} className="animate-spin" />}
                             {status}
                         </p>
@@ -96,14 +96,14 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-3 p-4 border-t border-[var(--border)] bg-[var(--surface)]">
-                    <button onClick={onClose} className="btn btn-secondary">
+                <div className="flex items-center justify-end gap-3 px-6 md:px-8 pt-2 pb-6 md:pb-8">
+                    <button onClick={onClose} className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all">
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={!content.trim() || loading}
-                        className="btn btn-primary flex items-center gap-2"
+                        className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center gap-2 disabled:opacity-50"
                     >
                         {loading ? (
                             <>

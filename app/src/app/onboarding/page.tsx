@@ -92,44 +92,44 @@ export default function OnboardingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#fcfcfc] flex items-center justify-center p-6 font-sans text-zinc-900">
+        <div className="min-h-screen bg-canvas flex items-center justify-center p-4 md:p-6 font-sans text-ink">
             <div className="w-full max-w-2xl animate-fade-in">
 
                 {/* --- Step 1: Screening --- */}
                 {step === 'screening' && (
                     <div className="space-y-8">
                         <div className="text-center space-y-4">
-                            <h1 className="text-4xl font-bold tracking-tight">How do you want to start?</h1>
-                            <p className="text-zinc-500 text-lg">We can build your Strategic Brain instantly if you have existing work.</p>
+                            <h1 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink">How do you want to start?</h1>
+                            <p className="text-ink-soft text-lg">We can build your Strategic Brain instantly if you have existing work.</p>
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-4">
                             <button
                                 onClick={() => setStep('ingest')}
-                                className="group relative p-8 rounded-2xl border-2 border-zinc-200 hover:border-black hover:shadow-xl transition-all text-left bg-white"
+                                className="group relative p-6 md:p-8 rounded-card bg-surface shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all text-left"
                             >
-                                <div className="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mb-6 group-hover:bg-black group-hover:text-white transition-colors">
+                                <div className="w-12 h-12 bg-canvas shadow-raised text-ember-500 rounded-full flex items-center justify-center mb-6 group-hover:bg-ink group-hover:text-white transition-colors">
                                     <FileText size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold mb-2">Import my Context</h3>
-                                <p className="text-zinc-500 text-sm leading-relaxed">
+                                <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Import my Context</h3>
+                                <p className="text-ink-soft text-sm leading-relaxed">
                                     I have articles, essays, or notes I can paste/upload to extract my beliefs.
                                 </p>
                             </button>
 
                             <button
                                 onClick={handleSkip}
-                                className="group relative p-8 rounded-2xl border-2 border-zinc-200 hover:border-green-600 hover:bg-green-50/50 transition-all text-left bg-white"
+                                className="group relative p-6 md:p-8 rounded-card bg-surface shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all text-left"
                             >
-                                <div className="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mb-6 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                                <div className="w-12 h-12 bg-canvas shadow-raised text-ember-500 rounded-full flex items-center justify-center mb-6 group-hover:bg-ember-500 group-hover:text-white transition-colors">
                                     <Zap size={24} />
                                 </div>
                                 {loading ? (
-                                    <Loader2 className="animate-spin text-zinc-400" />
+                                    <Loader2 className="animate-spin text-ink-muted" />
                                 ) : (
                                     <>
-                                        <h3 className="text-xl font-bold mb-2">Start Fresh</h3>
-                                        <p className="text-zinc-500 text-sm leading-relaxed">
+                                        <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Start Fresh</h3>
+                                        <p className="text-ink-soft text-sm leading-relaxed">
                                             I want to jump straight into the editor and build from scratch.
                                         </p>
                                     </>
@@ -141,13 +141,13 @@ export default function OnboardingPage() {
 
                 {/* --- Step 2: Ingest --- */}
                 {step === 'ingest' && (
-                    <div className="animate-slide-up bg-white p-8 rounded-3xl border border-zinc-200 shadow-xl">
+                    <div className="animate-slide-up bg-surface p-6 md:p-8 rounded-card shadow-card">
                         <div className="flex items-center justify-between mb-8">
                             <div>
-                                <h2 className="text-2xl font-bold mb-1">Upload your brain.</h2>
-                                <p className="text-zinc-500 text-sm">Paste text or upload .txt/.md files.</p>
+                                <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1">Upload your brain.</h2>
+                                <p className="text-ink-soft text-sm">Paste text or upload .txt/.md files.</p>
                             </div>
-                            <button onClick={handleSkip} className="text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-900 transition-colors">
+                            <button onClick={handleSkip} className="h-10 px-4 rounded-full text-sm font-medium text-ink-muted hover:text-ink active:shadow-pressed transition-all">
                                 Skip
                             </button>
                         </div>
@@ -157,13 +157,13 @@ export default function OnboardingPage() {
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
                                 placeholder="Paste your best essays, LinkedIn posts, or manifestos here..."
-                                className="w-full h-48 p-4 bg-zinc-50 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900 resize-none text-sm font-mono leading-relaxed"
+                                className="w-full h-48 bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 resize-none text-sm font-mono leading-relaxed"
                             />
 
                             <div className="flex items-center gap-4">
-                                <div className="h-px bg-zinc-100 flex-1"></div>
-                                <span className="text-xs text-zinc-400 font-bold uppercase">OR</span>
-                                <div className="h-px bg-zinc-100 flex-1"></div>
+                                <div className="h-px bg-line flex-1"></div>
+                                <span className="text-sm text-ink-muted">OR</span>
+                                <div className="h-px bg-line flex-1"></div>
                             </div>
 
                             <input
@@ -176,7 +176,7 @@ export default function OnboardingPage() {
                             />
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-full py-4 border-2 border-dashed border-zinc-200 rounded-xl hover:border-zinc-400 hover:bg-zinc-50 transition-all flex items-center justify-center gap-2 text-zinc-500 font-medium"
+                                className="w-full h-14 rounded-full bg-canvas shadow-raised active:shadow-pressed hover:text-ink transition-all flex items-center justify-center gap-2 text-ink-soft text-sm font-medium"
                             >
                                 <Upload size={18} />
                                 {files.length > 0 ? `${files.length} file(s) selected` : "Upload .txt or .md files"}
@@ -186,7 +186,7 @@ export default function OnboardingPage() {
                         <button
                             onClick={runIngest}
                             disabled={!text && files.length === 0}
-                            className="w-full py-4 bg-zinc-900 text-white rounded-xl font-bold text-lg hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             Analyze & Extract
                             <ArrowRight size={18} />
@@ -198,32 +198,32 @@ export default function OnboardingPage() {
                 {step === 'analyzing' && (
                     <div className="text-center py-20 animate-fade-in">
                         <div className="relative w-20 h-20 mx-auto mb-8">
-                            <div className="absolute inset-0 border-4 border-zinc-100 rounded-full"></div>
-                            <div className="absolute inset-0 border-4 border-green-500 rounded-full border-t-transparent animate-spin"></div>
+                            <div className="absolute inset-0 border-4 border-line rounded-full"></div>
+                            <div className="absolute inset-0 border-4 border-ember-500 rounded-full border-t-transparent animate-spin"></div>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <Zap className="text-green-500 fill-green-500" size={24} />
+                                <Zap className="text-ember-500 fill-ember-500" size={24} />
                             </div>
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">Deconstructing your expertise...</h2>
-                        <p className="text-zinc-500">Extracting core beliefs and strategic tensions.</p>
+                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Deconstructing your expertise...</h2>
+                        <p className="text-ink-soft">Extracting core beliefs and strategic tensions.</p>
                     </div>
                 )}
 
                 {/* --- Step 4: Complete --- */}
                 {step === 'complete' && (
-                    <div className="animate-slide-up bg-white p-8 rounded-3xl border border-zinc-200 shadow-xl text-center">
-                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="animate-slide-up bg-surface p-6 md:p-8 rounded-card shadow-card text-center">
+                        <div className="w-16 h-16 bg-sage-100 text-sage-700 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Check size={32} />
                         </div>
-                        <h2 className="text-3xl font-bold mb-4">You&apos;re ready.</h2>
-                        <p className="text-zinc-500 mb-8 max-w-md mx-auto">
+                        <h2 className="text-3xl font-medium tracking-[-0.03em] text-ink mb-4">You&apos;re ready.</h2>
+                        <p className="text-ink-soft mb-8 max-w-md mx-auto">
                             We&apos;ve extracted {analysisResult?.coreBeliefs?.length || 'several'} potential beliefs from your work.
                             Review them in your workspace.
                         </p>
 
                         <button
                             onClick={handleSkip} // Re-use handleSkip to redirect since it pushes to workspace
-                            className="w-full py-4 bg-green-600 text-white rounded-xl font-bold text-lg hover:bg-green-700 transition-all shadow-lg shadow-green-600/20"
+                            className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                         >
                             Enter Command Center
                         </button>

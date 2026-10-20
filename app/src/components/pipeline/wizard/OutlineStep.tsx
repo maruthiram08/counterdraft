@@ -46,12 +46,12 @@ function SortableOutlineItem({
             <div
                 {...attributes}
                 {...listeners}
-                className="mt-2.5 p-1 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded"
+                className="mt-2.5 p-1 text-ink-muted/60 hover:text-ink cursor-grab active:cursor-grabbing active:shadow-pressed rounded-full"
             >
                 <GripVertical size={14} />
             </div>
 
-            <span className="w-8 h-8 bg-[var(--accent)] text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0 shadow-sm mt-1">
+            <span className="w-8 h-8 bg-canvas text-ink text-xs font-medium rounded-full flex items-center justify-center shrink-0 shadow-raised mt-1">
                 {index + 1}
             </span>
             <div className="flex-1">
@@ -96,26 +96,26 @@ export function OutlineStep({
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center py-12 text-gray-400">
-                <Loader2 size={32} className="animate-spin mb-4" />
+            <div className="flex flex-col items-center py-12 text-ink-muted">
+                <Loader2 size={32} className="animate-spin mb-4 text-ember-500" />
                 <p>Generating outline...</p>
             </div>
         );
     }
 
     if (outline.length === 0) {
-        return <p className="text-gray-500">No outline generated.</p>;
+        return <p className="text-ink-soft">No outline generated.</p>;
     }
 
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-gray-900">Proposed Outline</h3>
+                <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Proposed Outline</h3>
                 <button
                     onClick={onAddOutlinePoint}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-100 shadow-sm"
+                    className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                 >
-                    <Plus size={14} />
+                    <Plus size={14} className="text-ember-500" />
                     Add Section
                 </button>
             </div>
@@ -144,8 +144,8 @@ export function OutlineStep({
                     </div>
                 </SortableContext>
             </DndContext>
-            <label className="flex items-center gap-2 mt-4 p-4 bg-green-50 rounded-lg border border-green-100 cursor-pointer hover:bg-green-100/50 transition-colors">
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${outlineApproved ? 'bg-green-500 border-green-500 text-white' : 'bg-white border-gray-300'}`}>
+            <label className="flex items-center gap-2 mt-4 p-4 bg-sage-100 rounded-tile shadow-raised cursor-pointer hover:bg-sage-100/70 transition-all">
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${outlineApproved ? 'bg-sage-500 text-white' : 'bg-canvas shadow-well'}`}>
                     {outlineApproved && <Check size={14} />}
                 </div>
                 <input
@@ -154,7 +154,7 @@ export function OutlineStep({
                     checked={outlineApproved}
                     onChange={(e) => onSetOutlineApproved(e.target.checked)}
                 />
-                <span className="text-sm text-green-900 select-none">I approve this outline structure</span>
+                <span className="text-sm font-medium text-sage-700 select-none">I approve this outline structure</span>
             </label>
         </div>
     );

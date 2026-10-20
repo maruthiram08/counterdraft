@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Home, Brain, Compass, Book, Settings, PenTool } from "lucide-react";
 import Image from "next/image";
 import { SignOutButton } from "@clerk/nextjs";
@@ -12,9 +12,14 @@ interface GlobalSidebarProps {
     onImport: () => void;
 }
 
+// Hover intent: a quick pass over the rail shouldn't open it.
+const OPEN_DELAY_MS = 150;
+const CLOSE_DELAY_MS = 100;
+
 export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps) {
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
+    const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const navItems = [
         { id: 'explore', label: 'Explore', icon: Compass },
@@ -24,101 +29,105 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
         { id: 'style', label: 'Your Voice', icon: PenTool },
     ];
 
-    // Responsive detection
     useEffect(() => {
-        const handleResize = () => {
-            const width = window.innerWidth;
-            const mobile = width < 768;
-            const tablet = width >= 768 && width < 1024;
-
-            setIsMobile(mobile);
-
-            // Auto-collapse on tablet if not already
-            if (tablet && !isCollapsed) {
-                setIsCollapsed(true);
-            }
-        };
-
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [isCollapsed]);
+    }, []);
+
+    useEffect(() => () => {
+        if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    }, []);
+
+    const scheduleCollapsed = (collapsed: boolean) => {
+        if (hoverTimer.current) clearTimeout(hoverTimer.current);
+        hoverTimer.current = setTimeout(
+            () => setIsCollapsed(collapsed),
+            collapsed ? CLOSE_DELAY_MS : OPEN_DELAY_MS
+        );
+    };
+
+    const navigate = (section: string) => {
+        if (hoverTimer.current) clearTimeout(hoverTimer.current);
+        setIsCollapsed(true);
+        onNavigate(section);
+    };
 
     // Mobile: Return null - MobileBottomNav handles navigation
     if (isMobile) {
         return null;
     }
 
+    // Labels only fade; icons and padding never move, so nothing jumps while the rail widens.
+    const labelClass = `transition-opacity duration-150 motion-reduce:transition-none ${isCollapsed ? 'opacity-0' : 'opacity-100 delay-75'}`;
+
     // Desktop/Tablet Sidebar
     return (
-        // Spacer Container: Maintains rigid layout width (w-16) so page content never shifts
-        <div className="relative h-full w-16 flex-none z-50">
+        // Spacer Container: Maintains rigid layout width so page content never shifts
+        <div className="relative h-full w-[72px] flex-none z-50 bg-canvas">
 
-            {/* Actual Sidebar: Positioned absolutely to expand FREELY over adjacent content */}
+            {/* Actual Sidebar: Positioned absolutely to expand over adjacent content */}
             <div
-                className={`absolute top-0 left-0 h-full bg-[#dfdfdf] text-gray-900 flex flex-col border-r border-gray-300 shadow-2xl transition-[width] duration-300 ease-in-out font-sans overflow-hidden ${isCollapsed ? 'w-16' : 'w-64'}`}
-                onMouseEnter={() => !isMobile && setIsCollapsed(false)}
-                onMouseLeave={() => !isMobile && setIsCollapsed(true)}
+                className={`absolute top-0 left-0 h-full bg-canvas text-ink flex flex-col transition-[width,box-shadow] duration-200 ease-out motion-reduce:transition-none font-sans overflow-hidden ${isCollapsed ? 'w-[72px] shadow-[inset_-1px_0_0_rgb(146_152_176/0.18)]' : 'w-60 shadow-float'}`}
+                onMouseEnter={() => scheduleCollapsed(false)}
+                onMouseLeave={() => scheduleCollapsed(true)}
             >
                 {/* Brand */}
-                <div className={`transition-all duration-300 ${isCollapsed ? 'p-4 pb-4' : 'p-6 pb-8'}`}>
+                <div className="px-5 pt-5 pb-4">
                     <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-                        <div className="w-8 h-8 flex items-center justify-center shrink-0 transition-transform duration-300">
+                        <div className="w-8 h-8 flex items-center justify-center shrink-0">
                             <Image src="/brand/logo-icon.png" alt="Icon" width={32} height={32} className="w-full h-full object-contain" />
                         </div>
-                        <div className={`transition-opacity duration-300 delay-100 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
-                            <Image src="/brand/logo-text.png" alt="CounterDraft" width={200} height={40} className="h-10 w-auto opacity-90" />
+                        <div className={labelClass}>
+                            <Image src="/brand/logo-text.png" alt="CounterDraft" width={200} height={40} className="h-8 w-auto opacity-90" />
                         </div>
                     </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className={`flex-1 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'} space-y-1 mt-6`}>
+                <nav className="flex-1 px-3.5 space-y-3 mt-6">
                     {navItems.map(item => (
                         <button
                             key={item.id}
-                            onClick={() => onNavigate(item.id)}
-                            className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium transition-all overflow-hidden whitespace-nowrap group relative ${isCollapsed
-                                ? 'w-10 h-10 p-0 justify-center mx-auto'
-                                : 'w-full px-4'
-                                } ${activeSection === item.id
-                                    ? 'bg-black/10 text-black shadow-sm ring-1 ring-black/5'
-                                    : 'text-gray-600 hover:text-black hover:bg-black/5'
+                            onClick={() => navigate(item.id)}
+                            className={`flex items-center gap-3 w-full h-11 pl-[13px] pr-4 rounded-full text-sm font-medium transition-[color,box-shadow] duration-150 overflow-hidden whitespace-nowrap group ${activeSection === item.id
+                                ? 'shadow-pressed text-ink'
+                                : 'text-ink-soft hover:text-ink hover:shadow-raised'
                                 }`}
                             title={isCollapsed ? item.label : undefined}
                         >
-                            <item.icon size={18} className={`shrink-0 transition-colors duration-200 ${activeSection === item.id ? 'text-black' : 'opacity-70 group-hover:opacity-100'}`} />
-                            <span className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 hidden' : 'opacity-100 delay-75'}`}>
-                                {item.label}
-                            </span>
+                            <item.icon size={18} className={`shrink-0 transition-colors duration-150 ${activeSection === item.id ? 'text-ember-500' : 'opacity-80 group-hover:opacity-100'}`} />
+                            <span className={labelClass}>{item.label}</span>
                         </button>
                     ))}
                 </nav>
 
                 {/* Footer / Settings */}
-                <div className={`border-t border-gray-300 transition-all duration-300 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+                <div className="px-3.5 pb-4 space-y-3">
                     <button
-                        onClick={() => onNavigate('settings')}
-                        className={`flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-black hover:bg-black/5 transition-all overflow-hidden whitespace-nowrap ${isCollapsed
-                            ? 'w-10 h-10 p-0 justify-center mx-auto'
-                            : 'w-full px-4'
+                        onClick={() => navigate('settings')}
+                        className={`flex items-center gap-3 w-full h-11 pl-[13px] pr-4 rounded-full text-sm font-medium transition-[color,box-shadow] duration-150 overflow-hidden whitespace-nowrap ${activeSection === 'settings'
+                            ? 'shadow-pressed text-ink'
+                            : 'text-ink-soft hover:text-ink hover:shadow-raised'
                             }`}
                         title={isCollapsed ? 'Settings' : undefined}
                     >
                         <Settings size={18} className="shrink-0" />
-                        <span className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0 hidden' : 'opacity-100 delay-75'}`}>
-                            Settings
-                        </span>
+                        <span className={labelClass}>Settings</span>
                     </button>
 
                     <SignOutButton>
-                        <button className={`w-full mt-4 pt-4 border-t border-gray-300 flex items-center gap-3 px-2 overflow-hidden whitespace-nowrap transition-all duration-300 hover:bg-black/5 rounded-lg cursor-pointer text-left group ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100 h-auto delay-100'}`}>
-                            <div className="w-8 h-8 rounded-full bg-gray-200 ring-2 ring-white shrink-0 flex items-center justify-center">
-                                <span className="font-bold text-xs text-gray-900">MV</span>
+                        <button
+                            className="w-full h-11 pl-1 pr-3 flex items-center gap-3 overflow-hidden whitespace-nowrap rounded-full cursor-pointer text-left hover:shadow-raised active:shadow-pressed transition-shadow duration-150"
+                            title={isCollapsed ? 'Sign out' : undefined}
+                        >
+                            <div className="w-9 h-9 rounded-full bg-ember-500 shrink-0 flex items-center justify-center">
+                                <span className="font-semibold text-xs text-white">MV</span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate group-hover:text-black transition-colors">Sign Out</p>
-                                <p className="text-xs text-gray-500 truncate">Pro Plan</p>
+                            <div className={`flex-1 min-w-0 ${labelClass}`}>
+                                <p className="text-sm font-medium text-ink truncate">Sign Out</p>
+                                <p className="text-xs text-ink-muted truncate">Pro Plan</p>
                             </div>
                         </button>
                     </SignOutButton>

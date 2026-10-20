@@ -217,38 +217,38 @@ export default function NewDraftModal({
 
             {/* Overlay */}
             <div
-                className="fixed inset-0 bg-black/50 z-40"
+                className="fixed inset-0 bg-ink/30 backdrop-blur-sm z-40"
                 onClick={handleClose}
             />
 
             {/* Modal */}
             <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div className="bg-canvas rounded-card shadow-float w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b">
+                    <div className="flex items-center justify-between px-6 pt-6 md:px-8 md:pt-8 pb-2">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="text-purple-600" size={24} />
-                            <h2 className="text-2xl font-bold font-serif text-gray-900">New Draft</h2>
+                            <Sparkles className="text-ember-500" size={22} />
+                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">New Draft</h2>
                         </div>
                         <button
                             onClick={handleClose}
-                            className="p-2 hover:bg-gray-100 rounded-full transition"
+                            className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
                         >
                             <X size={20} />
                         </button>
                     </div>
 
                     {/* Body */}
-                    <div className="p-6 space-y-8">
+                    <div className="p-6 md:px-8 space-y-8">
                         {/* Intro Text */}
-                        <p className="text-gray-500 -mt-4 mb-4">Define your intent, and the Brain will guide the rest.</p>
+                        <p className="text-ink-soft -mt-4 mb-4">Define your intent, and the Brain will guide the rest.</p>
                         {/* Errors */}
                         {errors.length > 0 && (
-                            <div className="bg-red-50 border border-red-200 rounded p-4">
-                                <p className="text-sm font-medium text-red-800 mb-2">
+                            <div className="bg-rose-100 rounded-tile p-4">
+                                <p className="text-sm font-medium text-rose-700 mb-2">
                                     Please fix the following errors:
                                 </p>
-                                <ul className="list-disc list-inside text-sm text-red-700">
+                                <ul className="list-disc list-inside text-sm text-rose-700">
                                     {errors.map((error, i) => (
                                         <li key={i}>{error}</li>
                                     ))}
@@ -258,7 +258,7 @@ export default function NewDraftModal({
 
                         {/* Section 1: Topic Input */}
                         <div className="relative">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-ink mb-2">
                                 What do you want to write about?
                             </label>
                             <div className="relative">
@@ -266,7 +266,7 @@ export default function NewDraftModal({
                                     value={hook}
                                     onChange={(e) => setHook(e.target.value)}
                                     placeholder="Type or paste your idea here..."
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none pr-10"
+                                    className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 resize-none pr-10"
                                     rows={4}
                                     maxLength={500}
                                 />
@@ -281,10 +281,10 @@ export default function NewDraftModal({
                                     </div>
                                 )}
                             </div>
-                            <p className="text-xs text-gray-500 mt-1 flex justify-between">
+                            <p className="text-xs text-ink-muted mt-2 flex justify-between">
                                 <span>{hook.length}/500 characters</span>
                                 {confidence && (
-                                    <span className="text-gray-400 italic text-xs">AI Confidence: {confidence.score}/100</span>
+                                    <span className="text-ink-muted italic text-xs">AI Confidence: {confidence.score}/100</span>
                                 )}
                             </p>
                         </div>
@@ -292,8 +292,8 @@ export default function NewDraftModal({
                         {/* Section 2: Outcome Picker (Pills) */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                    <span className="text-blue-500">◎</span> What is the goal? (The Outcome)
+                                <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                                    <span className="text-ember-500">◎</span> What is the goal? (The Outcome)
                                 </label>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -302,9 +302,9 @@ export default function NewDraftModal({
                                         <button
                                             key={opt}
                                             onClick={() => setOutcome(opt)}
-                                            className={`px-3 py-3 rounded-xl border transition-all text-sm font-medium capitalize ${outcome === opt
-                                                ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm ring-1 ring-blue-200'
-                                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                            className={`h-11 px-3 rounded-full transition-all text-sm font-medium capitalize ${outcome === opt
+                                                ? 'bg-canvas shadow-pressed text-ember-600'
+                                                : 'bg-canvas shadow-raised text-ink-soft hover:text-ink'
                                                 }`}
                                         >
                                             {opt}
@@ -319,8 +319,8 @@ export default function NewDraftModal({
 
                             {/* Section 3: Audience (Smart Fill) */}
                             <div className="space-y-3">
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                    <Users size={16} className="text-amber-500" /> Who is this for?
+                                <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                                    <Users size={16} className="text-ember-500" /> Who is this for?
                                 </label>
                                 <div className="space-y-3">
                                     <input
@@ -328,7 +328,7 @@ export default function NewDraftModal({
                                         value={audience}
                                         onChange={(e) => setAudience(e.target.value)}
                                         placeholder="e.g. Founders, Engineers..."
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none"
+                                        className="w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
                                         maxLength={100}
                                     />
                                     {/* Smart Audeince Pills */}
@@ -337,7 +337,7 @@ export default function NewDraftModal({
                                             <button
                                                 key={a}
                                                 onClick={() => setAudience(a)}
-                                                className="px-3 py-1.5 bg-gray-50 border border-gray-200 hover:border-amber-300 hover:bg-amber-50 text-xs font-medium text-gray-600 hover:text-amber-800 rounded-lg transition-colors"
+                                                className="h-7 px-3 rounded-full bg-canvas shadow-raised text-ink-soft text-xs font-medium hover:text-ember-600 active:shadow-pressed transition-all"
                                             >
                                                 {a}
                                             </button>
@@ -348,21 +348,21 @@ export default function NewDraftModal({
 
                             {/* Section 4: Stance Toggle */}
                             <div className="space-y-3">
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                    <Scale size={16} className="text-green-500" /> What&apos;s your stance?
+                                <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                                    <Scale size={16} className="text-ember-500" /> What&apos;s your stance?
                                 </label>
                                 <div className="flex flex-col gap-2">
                                     {(['supportive', 'contrarian', 'exploratory'] as Stance[]).map((opt) => (
                                         <button
                                             key={opt}
                                             onClick={() => setStance(opt)}
-                                            className={`w-full px-4 py-3 rounded-xl border text-left transition-all text-sm font-medium capitalize flex items-center justify-between ${stance === opt
-                                                ? 'bg-green-50 border-green-500 text-green-700 shadow-sm ring-1 ring-green-200'
-                                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                            className={`w-full h-11 px-4 rounded-full text-left transition-all text-sm font-medium capitalize flex items-center justify-between ${stance === opt
+                                                ? 'bg-canvas shadow-pressed text-ember-600'
+                                                : 'bg-canvas shadow-raised text-ink-soft hover:text-ink'
                                                 }`}
                                         >
                                             {opt}
-                                            {stance === opt && <div className="w-2 h-2 rounded-full bg-green-500" />}
+                                            {stance === opt && <div className="w-2 h-2 rounded-full bg-ember-500" />}
                                         </button>
                                     ))}
                                 </div>
@@ -370,7 +370,7 @@ export default function NewDraftModal({
                         </div>
 
                         {/* Section 5: References */}
-                        <div className="pt-2 border-t border-gray-100">
+                        <div className="pt-2">
                             <ReferenceSection
                                 references={references}
                                 onAdd={(ref) => setReferences(prev => [...prev, ref])}
@@ -380,11 +380,11 @@ export default function NewDraftModal({
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+                    <div className="flex items-center justify-between px-6 pb-6 pt-2 md:px-8 md:pb-8">
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="px-6 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition"
+                            className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                             disabled={isSubmitting}
                         >
                             Cancel
@@ -393,7 +393,7 @@ export default function NewDraftModal({
                             type="button"
                             onClick={handleSubmit}
                             disabled={isSubmitting}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                            className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                         >
                             {isSubmitting ? 'Creating...' : 'Start Research →'}
                         </button>
