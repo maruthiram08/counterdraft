@@ -61,7 +61,7 @@ export function DraftStep({
         <div className="flex-1 flex flex-col min-h-[600px] h-full">
             <div className="flex flex-1 gap-6">
                 {/* Editor Pane (Left) */}
-                <div className={`flex-1 flex flex-col transition-all duration-300 ${showContextPanel ? 'md:mr-0' : 'mx-auto max-w-3xl'}`}>
+                <div className={`flex-1 flex flex-col transition-all duration-300 ${showContextPanel ? 'md:mr-0' : 'w-full'}`}>
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-lg font-medium tracking-[-0.01em] text-ink">Draft</h3>
                         <div className="flex gap-2">
@@ -115,7 +115,7 @@ export function DraftStep({
                             <textarea
                                 value={draftContent}
                                 onChange={(e) => onUpdateDraft(e.target.value)}
-                                className="absolute inset-0 w-full h-full resize-none outline-none bg-surface text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:p-8"
+                                className="absolute inset-0 w-full h-full resize-none outline-none bg-surface text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:px-12 md:py-8"
                                 placeholder="Start writing..."
                             />
                         </div>

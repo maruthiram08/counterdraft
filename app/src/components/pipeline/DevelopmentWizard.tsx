@@ -637,7 +637,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-canvas">
-                    <div className="max-w-6xl mx-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 min-h-full flex flex-col">
+                    <div className="w-full max-w-[1600px] mx-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 min-h-full flex flex-col">
                         <BrainHeaderPanel
                             item={headerItem}
                             onUpdate={handleUpdateBrainMetadata}
