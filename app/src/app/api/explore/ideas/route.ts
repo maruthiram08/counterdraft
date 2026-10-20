@@ -112,9 +112,11 @@ Each post idea must:
 For each idea, include:
 - "hook": an opening line or framing that would stop the right reader
 - "angle": the specific point of view, argument, or tension the post would explore
-- "format": the structural approach (e.g., short insight, mini-essay, list, narrative, how-to, question-led)
+- "format": a short name (2-4 words) for the structure that best carries this angle on ${platformDesc}
 
-If writer context is given, build the angles from where this writer actually stands: agree with, push back on, or add nuance to the topic from their beliefs, and match their voice. Never invent beliefs they did not state.
+Formats are open: choose whatever fits the angle best, not a fixed menu. Possibilities include a personal story, contrarian take, data breakdown, framework, step-by-step how-to, myth vs reality, case study, before/after, prediction, lessons learned, carousel, poll, thread, open question or a short list, and anything else that suits the idea. Give every idea a different format.
+
+If writer context is given, match their voice, and where one of their beliefs genuinely bears on the topic, build from where they stand: agree with, push back on, or add nuance to it. Only use a belief when the connection is real and specific; most topics touch none of them, and stretching an unrelated belief to fit makes the idea worse. Never invent beliefs they did not state.
 
 Prioritize ideas that:
 - Reframe the trend from an unexpected or under-discussed angle
@@ -132,7 +134,7 @@ Quality over quantity: If you cannot find ${count} genuinely differentiated angl
 Output format:
 Return a JSON object with an "ideas" array.
 Each item must include "hook", "angle", and "format".
-If an idea draws on one of the writer's beliefs, add "belief" with that belief's statement, copied exactly.
+Only if an idea genuinely draws on one of the writer's beliefs, add "belief" with that belief's statement, copied exactly. Otherwise leave "belief" out.
 
 Think like an editor helping a creator stand out during a noisy moment — not an AI generating trend content.
 `;
