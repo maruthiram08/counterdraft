@@ -56,6 +56,17 @@ export function dropUnknownCitations(findings: string[], material: string): stri
     });
 }
 
+const STOP_WORDS = new Set(['about', 'their', 'there', 'these', 'those', 'which', 'what', 'where', 'while', 'with', 'would', 'could', 'should', 'other', 'being', 'they', 'this', 'that', 'from', 'have', 'into', 'more', 'than', 'them', 'when', 'your', 'does', 'help', 'need', 'understand']);
+function keyWords(text: string): string[] {
+    return [...new Set(text.toLowerCase().split(/[^a-z0-9-]+/).filter(w => w.length > 3 && !STOP_WORDS.has(w)).map(w => w.replace(/(?:'s|s)$/, '')))];
+}
+
+// True when a finding uses at least two of the question's key words (e.g. "parents" and "children" for a parenting question)
+export function sharesKeyWords(finding: string, question: string): boolean {
+    const findingWords = new Set(keyWords(finding));
+    return keyWords(question).filter(w => findingWords.has(w)).length >= 2;
+}
+
 export async function searchWeb(query: string, maxResults = 5, country?: string): Promise<WebSource[]> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) return [];
@@ -82,7 +93,9 @@ export async function gatherWebSources(queries: string[], limit = 12, country?: 
     const results = await Promise.all(queries.map(q => searchWeb(q, 5, country)));
     const seen = new Set<string>();
     const sources: WebSource[] = [];
-    for (const source of results.flat()) {
+    // Take results round-robin so every query (including each of the brief's asks) is represented under the limit
+    const interleaved = Array.from({ length: Math.max(0, ...results.map(r => r.length)) }, (_, i) => results.map(r => r[i]).filter(Boolean)).flat();
+    for (const source of interleaved) {
         if (seen.has(source.url)) continue;
         seen.add(source.url);
         sources.push(source);

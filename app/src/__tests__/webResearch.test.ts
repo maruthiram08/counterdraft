@@ -1,4 +1,4 @@
-import { anchorQueries, countLocalFindings, dropUnknownCitations, fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
+import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
 
 describe('webResearch', () => {
     const originalKey = process.env.TAVILY_API_KEY;
@@ -98,5 +98,28 @@ describe('dropUnknownCitations', () => {
             'Uncited claim',
             'Named source (source: economic times)',
         ]);
+    });
+});
+
+describe('gatherWebSources limit', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('keeps results from every query when the limit is hit', async () => {
+        process.env.TAVILY_API_KEY = 'test';
+        global.fetch = jest.fn().mockImplementation(async (_url: string, init: { body: string }) => {
+            const q = JSON.parse(init.body).query as string;
+            return { ok: true, json: async () => ({ results: [1, 2, 3].map(n => ({ title: `${q}${n}`, url: `https://${q}.com/${n}`, content: 'c' })) }) };
+        }) as unknown as typeof fetch;
+
+        const sources = await gatherWebSources(['a', 'b'], 2);
+        expect(sources.map(s => s.title)).toEqual(['a1', 'b1']);
+    });
+});
+
+describe('sharesKeyWords', () => {
+    it('treats a finding about parents and children as touching a parenting question', () => {
+        const q = 'How can parents help their Gen Z children who are fans of K-pop?';
+        expect(sharesKeyWords("Experts suggest parents engage in dialogues about their children's interests (source: x.com)", q)).toBe(true);
+        expect(sharesKeyWords('15 million Indians consume Korean content (source: statista.com)', q)).toBe(false);
     });
 });
