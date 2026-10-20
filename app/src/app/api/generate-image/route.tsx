@@ -5,6 +5,23 @@ import { calculateSmartTypography } from '@/lib/smart-engine/typography';
 
 export const runtime = 'edge';
 
+// IBM Plex Sans, subset to Latin + Latin Extended (see fonts/OFL.txt). Satori has no 800/900,
+// so the 800 "hook" weight from calculateSmartTypography renders with the closest face, Bold.
+const loadFont = (url: URL) => fetch(url).then((res) => res.arrayBuffer());
+const plexFonts = Promise.all([
+    loadFont(new URL('./fonts/IBMPlexSans-Regular.ttf', import.meta.url)),
+    loadFont(new URL('./fonts/IBMPlexSans-Medium.ttf', import.meta.url)),
+    loadFont(new URL('./fonts/IBMPlexSans-SemiBold.ttf', import.meta.url)),
+    loadFont(new URL('./fonts/IBMPlexSans-Bold.ttf', import.meta.url)),
+]).then((files) =>
+    files.map((data, i) => ({
+        name: 'IBM Plex Sans',
+        data,
+        weight: ([400, 500, 600, 700] as const)[i],
+        style: 'normal' as const,
+    }))
+);
+
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const text = searchParams.get('text') || 'Hello World';
@@ -20,6 +37,7 @@ export async function GET(req: NextRequest) {
     };
 
     const colors = themes[theme] || themes.cosmic;
+    const fonts = await plexFonts;
 
     return new ImageResponse(
         (
@@ -34,7 +52,7 @@ export async function GET(req: NextRequest) {
                     backgroundColor: colors.bg,
                     color: colors.text,
                     padding: '80px',
-                    fontFamily: 'sans-serif',
+                    fontFamily: 'IBM Plex Sans',
                 }}
             >
                 <div style={{
@@ -62,6 +80,7 @@ export async function GET(req: NextRequest) {
         {
             width: 1080,
             height: 1080,
+            fonts,
         }
     );
 }
