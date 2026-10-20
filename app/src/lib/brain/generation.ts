@@ -4,7 +4,7 @@ import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
-import { anchorQueries, countLocalFindings, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
+import { anchorQueries, countLocalFindings, dropUnknownCitations, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 type ResearchPlan = { queries: string[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
 
@@ -173,6 +173,7 @@ IMPORTANT: Return a valid JSON object with the following structure:
             return { content, result: JSON.parse(content) as DeepDiveResult };
         };
 
+        const sourceText = `${webSources}${referencesContext}${sourceMaterial}`;
         const first = await run();
         // The model drifts to generic advice when most sources are from elsewhere; one corrective pass if it did
         const terms = plan.place ? [plan.place, ...(plan.localTerms || [])] : [];
@@ -180,14 +181,55 @@ IMPORTANT: Return a valid JSON object with the following structure:
         const local = countLocalFindings(findings, terms);
         // A post wholly about the place needs half its findings there; one where the place is a side ask needs at least two
         const enough = plan.placeIsWholeBrief === false ? Math.min(2, findings.length) : Math.ceil(findings.length / 2);
-        if (!terms.length || !findings.length || local >= enough) return first.result;
+        if (!terms.length || !findings.length || local >= enough) return this.checkFindingsAgainstSources(first.result, sourceText);
 
         TraceLogger.log('deep_dive', 'Local retry', { place: plan.place, local, total: findings.length });
         messages.push(
             { role: 'assistant', content: first.content },
             { role: 'user', content: `Only ${local} of ${findings.length} findings are specific to ${plan.place}. Rewrite the research so ${plan.placeIsWholeBrief === false ? `the part of the brief about ${plan.place} has at least two findings of its own` : `most findings are about ${plan.place}`} (laws, policies, named companies and brands, family set-ups, work culture, prices), taken from the sources above. Replace generic material that would apply anywhere with ${plan.place}-specific findings, or with "Gap:" findings naming what the sources lack. Rewrite the insights to match. Same JSON format.` },
         );
-        return (await run().catch(() => first)).result;
+        return this.checkFindingsAgainstSources((await run().catch(() => first)).result, sourceText);
+    }
+
+    // Drops findings whose cited source isn't in the material, then has the model check each one against its source:
+    // supported claims stay, overstated ones are cut back to what the source says, unsupported ones go
+    private async checkFindingsAgainstSources(result: DeepDiveResult, sourceText: string): Promise<DeepDiveResult> {
+        const research = Array.isArray(result.research) ? result.research.map(String) : [];
+        if (!research.length || !sourceText.trim()) return result;
+
+        const cited = dropUnknownCitations(research, sourceText);
+        try {
+            const completion = await this.openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You fact-check research findings against the sources they cite. For each numbered finding, find the cited source in the material and decide:
+- "supported": the source says this.
+- "partial": the source supports part of it (e.g. the finding adds a country, number or claim the source doesn't have). Return "text": the finding cut back to only what the source says, keeping its "(source: ...)" ending.
+- "unsupported": the source doesn't say it, or no cited source is in the material.
+Findings starting with "Gap:" are always "supported".
+Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupported", "text": "..." }] }`
+                    },
+                    { role: 'user', content: `FINDINGS:\n${cited.map((f, i) => `${i}. ${f}`).join('\n')}\n\nMATERIAL:${sourceText}` }
+                ],
+                response_format: { type: 'json_object' },
+            });
+            const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { checks?: { i?: number; verdict?: string; text?: string }[] };
+            const checks = new Map((parsed.checks || []).map(c => [c.i, c]));
+            const verified = cited.flatMap((finding, i) => {
+                const check = checks.get(i);
+                if (!check) return [finding];
+                if (check.verdict === 'unsupported') return [];
+                if (check.verdict === 'partial' && check.text?.trim()) return [check.text.trim()];
+                return [finding];
+            });
+            TraceLogger.log('deep_dive', 'Source check', { before: research.length, cited: cited.length, after: verified.length });
+            return { ...result, research: verified.length ? verified : ['Gap: none of the findings could be confirmed against the sources found; add references or redo research.'] };
+        } catch (err) {
+            console.error('Source check failed:', err);
+            return { ...result, research: cited };
+        }
     }
 
     // Turns the topic and strategy into a few targeted web searches

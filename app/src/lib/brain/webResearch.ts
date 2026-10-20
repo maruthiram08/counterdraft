@@ -45,6 +45,17 @@ export function countLocalFindings(findings: string[], terms: string[]): number 
     return findings.filter(f => needles.some(n => f.toLowerCase().includes(n))).length;
 }
 
+// Drops findings that cite a website which appears nowhere in the research material (an invented or misremembered source).
+// Findings without a citation, Gap: findings and citations that aren't domains are left for the model check.
+export function dropUnknownCitations(findings: string[], material: string): string[] {
+    const haystack = material.toLowerCase();
+    return findings.filter(f => {
+        const cited = f.match(/\(source:\s*([^)]+)\)\s*\.?\s*$/i)?.[1]?.trim().toLowerCase();
+        if (!cited || !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(cited)) return true;
+        return haystack.includes(cited.replace(/^www\./, ''));
+    });
+}
+
 export async function searchWeb(query: string, maxResults = 5, country?: string): Promise<WebSource[]> {
     const apiKey = process.env.TAVILY_API_KEY;
     if (!apiKey) return [];

@@ -1,4 +1,4 @@
-import { anchorQueries, countLocalFindings, fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
+import { anchorQueries, countLocalFindings, dropUnknownCitations, fallbackQueries, formatWebSources, gatherWebSources } from '@/lib/brain/webResearch';
 
 describe('webResearch', () => {
     const originalKey = process.env.TAVILY_API_KEY;
@@ -79,5 +79,24 @@ describe('countLocalFindings', () => {
         const findings = ['Indian firms like Zomato give 26 weeks', 'Keep a dedicated workspace', 'Joint family help in Bengaluru'];
         expect(countLocalFindings(findings, ['India', 'Bengaluru'])).toBe(2);
         expect(countLocalFindings(findings, [])).toBe(0);
+    });
+});
+
+describe('dropUnknownCitations', () => {
+    it('drops findings citing a site that is not in the material', () => {
+        const material = '[1] Paternity leave (shrm.org)\nURL: https://www.shrm.org/x\n...';
+        const findings = [
+            'Only 7% have policies (source: shrm.org)',
+            'Indian tech firms offer flexi hours (source: india-today.in)',
+            'Gap: no data on joint families',
+            'Uncited claim',
+            'Named source (source: economic times)',
+        ];
+        expect(dropUnknownCitations(findings, material)).toEqual([
+            'Only 7% have policies (source: shrm.org)',
+            'Gap: no data on joint families',
+            'Uncited claim',
+            'Named source (source: economic times)',
+        ]);
     });
 });
