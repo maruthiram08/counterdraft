@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Check, X, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Check, X, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { BrainHeaderPanel } from "./BrainHeaderPanel";
 import { BrainMetadata } from "@/types";
@@ -22,7 +22,8 @@ import { StrategyAnalysis, toStrategyAnalysis } from "@/lib/brain/strategy";
 interface DevelopmentWizardProps {
     item: ContentItem;
     onClose: () => void;
-    onComplete: (draftContent: string) => void;
+    // Resolves true once the draft is saved; false when it was not (error, limit reached)
+    onComplete: (draftContent: string) => Promise<boolean>;
 }
 
 type DeepDiveListItem = string | ResearchPoint | { text: string; notes?: string[] };
@@ -32,6 +33,7 @@ type OutlineSection = string | ResearchPoint | { text: string; notes?: string[] 
 export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWizardProps) {
     const [step, setStep] = useState<WizardStep>('deep_dive');
     const [loading, setLoading] = useState(false);
+    const [completing, setCompleting] = useState(false);
 
     // Deep Dive state - Now using rich objects
     const [deepDive, setDeepDive] = useState<DeepDiveData | null>(null);
@@ -469,10 +471,17 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         else if (step === 'generate') setStep('outline');
     };
 
-    const handleComplete = () => {
-        if (draftContent) {
-            saveProgress({ dev_step: null });
-            onComplete(draftContent);
+    const handleComplete = async () => {
+        if (!draftContent || completing) return;
+        setCompleting(true);
+        try {
+            const saved = await onComplete(draftContent);
+            // On success the parent closes the wizard; otherwise let the user try again
+            if (!saved) setCompleting(false);
+        } catch (e) {
+            console.error("Failed to complete draft", e);
+            toast.error("Couldn't save your draft. Please try again.");
+            setCompleting(false);
         }
     };
 
@@ -608,11 +617,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         <button
+                            disabled={completing}
                             onClick={() => {
                                 saveProgress({ dev_step: step === 'deep_dive' ? 'deep_dive_in_progress' : step === 'outline' ? 'outline_in_progress' : 'draft_in_progress' });
                                 onClose();
                             }}
-                            className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                            className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                         >
                             Save & Exit <X size={14} className="text-ember-500" />
                         </button>
@@ -652,7 +662,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-canvas">
-                    <div className="max-w-6xl mx-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 min-h-full flex flex-col">
+                    <div className="w-full max-w-[1600px] mx-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 min-h-full flex flex-col">
                         <BrainHeaderPanel
                             item={headerItem}
                             onUpdate={handleUpdateBrainMetadata}
@@ -716,6 +726,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 brainMetadata={localBrainMetadata}
                                 outline={outline}
                                 deepDive={deepDive}
+                                readOnly={completing}
                                 onUpdateDraft={setDraftContent}
                                 onToggleContextPanel={() => setShowContextPanel(!showContextPanel)}
                                 onVerifyStrategy={handleVerifyStrategy}
@@ -750,7 +761,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                         {step !== 'deep_dive' && (
                             <button
                                 onClick={handleBack}
-                                disabled={loading}
+                                disabled={loading || completing}
                                 className="h-10 px-4 rounded-full bg-canvas text-ink-soft text-sm font-medium shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-1.5"
                             >
                                 <ArrowLeft size={14} className="text-ember-500" /> Back
@@ -775,10 +786,15 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                         {step === 'generate' ? (
                             <button
                                 onClick={handleComplete}
-                                disabled={!draftContent || loading}
-                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
+                                disabled={!draftContent || loading || completing}
+                                aria-busy={completing}
+                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-70 disabled:cursor-wait flex items-center gap-2"
                             >
-                                <CheckCircle2 size={16} /> Complete & Save
+                                {completing ? (
+                                    <><Loader2 size={16} className="animate-spin" /> Saving your draft...</>
+                                ) : (
+                                    <><CheckCircle2 size={16} /> Complete & Save</>
+                                )}
                             </button>
                         ) : (
                             <button

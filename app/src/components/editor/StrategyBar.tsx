@@ -240,12 +240,12 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
                     <button
                         onClick={() => setIsExpanded(true)}
                         title="Edit strategy"
-                        className="w-full text-left px-4 pt-6 pb-3 flex items-center gap-2 overflow-hidden [mask-image:linear-gradient(to_right,black_85%,transparent)]"
+                        className="w-full text-left px-4 pt-6 pb-3 flex flex-wrap items-center gap-2"
                     >
                         {filledFields.length ? filledFields.map(field => {
                             const Icon = field.icon;
                             return (
-                                <span key={field.key} className="shrink-0 flex items-center gap-1.5 h-7 px-3 rounded-full bg-canvas shadow-well text-xs font-medium text-ink">
+                                <span key={field.key} className="max-w-full flex items-center gap-1.5 h-7 px-3 rounded-full bg-canvas shadow-well text-xs font-medium text-ink">
                                     <Icon size={11} className={field.color} />
                                     <span className="text-ink-muted">{field.label}:</span>
                                     <span className="truncate max-w-[200px]">{getFieldValue(metadata, field.key)}</span>
