@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import {
-    Search, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X, ChevronDown, ChevronUp,
-    ChevronRight, ChevronLeft, Compass, RotateCcw, Layers,
+    Search, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X,
+    ChevronRight, ChevronLeft, Compass, RotateCcw, Layers, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
+import { FOR_YOU } from "@/lib/explore/trends";
 
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
@@ -95,7 +96,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const SESSION_KEY = 'cd-explore-workspace';
-const TRENDS_KEY = 'cd-explore-trends';
+const TRENDS_KEY = 'cd-explore-trends-v2';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_TRAIL = 8;
 const COMBINED_KEY = 'combined';
@@ -116,6 +117,14 @@ function writeStorage(key: string, value: unknown) {
     } catch {
         // Ignore quota or access errors
     }
+}
+
+// Swap in freshly fetched topics, keeping a category's current topics when nothing came back for it
+function mergeTrendGroups(prev: { label: string; trends: TrendGroup['trends'] }[], groups: TrendGroup[]) {
+    return prev.map(cat => {
+        const fresh = groups.find(g => g.category === cat.label);
+        return fresh && fresh.trends.length > 0 ? { ...cat, trends: fresh.trends } : cat;
+    });
 }
 
 function timeAgo(iso?: string): string | null {
@@ -164,9 +173,15 @@ export function ExploreWorkspace() {
     const [lens, setLens] = useState<'default' | 'beginner'>('default');
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [trendCategories, setTrendCategories] = useState(DEFAULT_CATEGORIES);
+    // "For you" is filled from the writer's profile and only shows once it has topics
+    const [trendCategories, setTrendCategories] = useState([{ label: FOR_YOU, trends: [] as TrendGroup['trends'] }, ...DEFAULT_CATEGORIES]);
     const [fetchingTrends, setFetchingTrends] = useState(false);
+    const [refreshingTopics, setRefreshingTopics] = useState(false);
 
+    const visibleCategories = trendCategories.filter(c => c.trends.length > 0);
+    const activeCategory = visibleCategories.some(c => c.label === selectedCategory)
+        ? selectedCategory!
+        : visibleCategories[0]?.label;
     const step = trail[activeStep];
     const stories = step?.stories ?? [];
     const selectedStories = stories.filter(s => selectedKeys.includes(s.sourceUrl));
@@ -174,20 +189,10 @@ export function ExploreWorkspace() {
     const showingCombined = focusKey === COMBINED_KEY && selectedStories.length >= 2;
 
     useEffect(() => {
-        // Merge fetched trends with existing structure
-        const applyTrendGroups = (groups: TrendGroup[]) => {
-            setTrendCategories(prev => prev.map(cat => {
-                const newGroup = groups.find(g => g.category === cat.label);
-                return newGroup && newGroup.trends.length > 0
-                    ? { ...cat, trends: newGroup.trends }
-                    : cat;
-            }));
-        };
-
         const fetchRealTrends = async () => {
             const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
             if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS) {
-                applyTrendGroups(cached.groups);
+                setTrendCategories(prev => mergeTrendGroups(prev, cached.groups));
                 return;
             }
 
@@ -196,11 +201,11 @@ export function ExploreWorkspace() {
                 const res = await fetch('/api/explore/trends', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ categories: DEFAULT_CATEGORIES.map(c => c.label) })
+                    body: JSON.stringify({ categories: [FOR_YOU, ...DEFAULT_CATEGORIES.map(c => c.label)] })
                 });
                 const data = await res.json();
                 if (data.groups && Array.isArray(data.groups)) {
-                    applyTrendGroups(data.groups);
+                    setTrendCategories(prev => mergeTrendGroups(prev, data.groups));
                     writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
                 }
             } catch (e) {
@@ -212,6 +217,40 @@ export function ExploreWorkspace() {
 
         fetchRealTrends();
     }, []);
+
+    // A fresh set of topics for the category being viewed, avoiding the ones already shown
+    const refreshTopics = async () => {
+        const category = trendCategories.find(c => c.label === activeCategory);
+        if (!category || refreshingTopics) return;
+        setRefreshingTopics(true);
+        try {
+            const res = await fetch('/api/explore/trends', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    categories: [category.label],
+                    refresh: true,
+                    exclude: category.trends.map(t => t.label),
+                }),
+            });
+            const data = await res.json();
+            const fresh: TrendGroup | undefined = data.groups?.find((g: TrendGroup) => g.category === category.label);
+            if (!res.ok || !fresh?.trends?.length) {
+                toast.error(data.error || "Couldn't find new topics right now. Try again in a bit.");
+                return;
+            }
+            setTrendCategories(prev => mergeTrendGroups(prev, [fresh]));
+            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
+            if (cached) {
+                const others = cached.groups.filter(g => g.category !== fresh.category);
+                writeStorage(TRENDS_KEY, { ...cached, groups: [...others, fresh] });
+            }
+        } catch {
+            toast.error("Couldn't refresh topics. Try again.");
+        } finally {
+            setRefreshingTopics(false);
+        }
+    };
 
     // Restore the last exploration so a refresh or tab switch doesn't lose it
     useEffect(() => {
@@ -542,104 +581,132 @@ export function ExploreWorkspace() {
         );
     };
 
+    const lensToggle = (
+        <div className="flex bg-canvas shadow-pressed p-1 rounded-full" role="group" aria-label="Lens">
+            <button
+                type="button"
+                onClick={() => setLens('default')}
+                aria-pressed={lens === 'default'}
+                className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'default' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
+            >
+                Professional
+            </button>
+            <button
+                type="button"
+                onClick={() => setLens('beginner')}
+                aria-pressed={lens === 'beginner'}
+                className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'beginner' ? 'bg-ember-500 text-white shadow-ember' : 'text-ink-muted hover:text-ink'}`}
+            >
+                Beginner&apos;s Lens
+            </button>
+        </div>
+    );
+
+    // Large: the centred starting composer. Compact: the bar above results, with the lens and New beside it.
+    const renderSearch = (size: 'large' | 'compact') => (
+        <div className="w-full">
+            <form onSubmit={handleSubmit} className="relative">
+                <Search size={size === 'large' ? 18 : 16} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+                <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Search a topic to explore..."
+                    disabled={loading}
+                    autoFocus={size === 'large'}
+                    className={`w-full ${size === 'large' ? 'h-14 pl-12 pr-16 text-base' : 'h-12 pl-11 pr-14'} bg-canvas shadow-well rounded-full text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all`}
+                />
+                <button
+                    type="submit"
+                    aria-label="Search"
+                    disabled={!input.trim() || loading}
+                    className={`absolute right-1.5 top-1/2 -translate-y-1/2 ${size === 'large' ? 'w-11 h-11' : 'w-9 h-9'} flex items-center justify-center rounded-full bg-ember-500 text-white shadow-ember hover:bg-ember-600 disabled:opacity-30 disabled:shadow-none transition-all`}
+                >
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : <ChevronRight size={16} />}
+                </button>
+            </form>
+            <div className={`mt-2 flex flex-wrap items-center gap-2 ${size === 'large' ? 'justify-center' : 'justify-between'}`}>
+                {lensToggle}
+                {size === 'compact' && (
+                    <button
+                        onClick={startOver}
+                        className="flex items-center gap-1 h-8 text-xs text-ink-muted hover:text-ink px-2"
+                    >
+                        <RotateCcw size={12} /> New
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <div className="flex flex-col h-full relative">
-            {/* Search and settings */}
-            <div className="px-4 md:px-6 pt-4 md:pt-6 pb-3 shrink-0">
-                <form onSubmit={handleSubmit} className="max-w-5xl mx-auto relative">
-                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Search a topic to explore..."
-                        disabled={loading}
-                        className="w-full h-12 pl-11 pr-14 bg-canvas shadow-well rounded-full text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
-                    />
-                    <button
-                        type="submit"
-                        aria-label="Search"
-                        disabled={!input.trim() || loading}
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-ember-500 text-white shadow-ember hover:bg-ember-600 disabled:opacity-30 disabled:shadow-none transition-all"
-                    >
-                        {loading ? <Loader2 size={16} className="animate-spin" /> : <ChevronRight size={16} />}
-                    </button>
-                </form>
-                <div className="max-w-5xl mx-auto mt-2 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex bg-canvas shadow-pressed p-1 rounded-full">
-                        <button
-                            onClick={() => setLens('default')}
-                            className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'default' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
-                        >
-                            Professional
-                        </button>
-                        <button
-                            onClick={() => setLens('beginner')}
-                            className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'beginner' ? 'bg-ember-500 text-white shadow-ember' : 'text-ink-muted hover:text-ink'}`}
-                        >
-                            Beginner&apos;s Lens
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {trail.length > 0 && (
-                            <button
-                                onClick={startOver}
-                                className="flex items-center gap-1 h-8 text-xs text-ink-muted hover:text-ink px-2"
-                            >
-                                <RotateCcw size={12} /> New
-                            </button>
+            {trail.length === 0 ? (
+                /* Starting point: the search sits right under the question, with ready-made starting topics below it */
+                <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-4 md:p-6">
+                    <div className="w-full max-w-2xl flex flex-col items-center text-center">
+                        <div className="w-12 h-12 mb-4 rounded-full bg-canvas shadow-raised flex items-center justify-center"><Sparkles size={20} className="text-ember-500" /></div>
+                        <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink mb-2">What would you like to explore?</h2>
+                        <p className="text-sm md:text-base text-ink-soft mb-6 max-w-md">
+                            Ask a question or name a topic. Each search suggests where to go next, so you can follow a thread to something worth writing.
+                        </p>
+                        {renderSearch('large')}
+                        <div className="w-full mt-8">
+                            <div className="flex items-center gap-1 justify-start md:justify-center">
+                                <div role="tablist" aria-label="Starting topics" className="flex gap-1 overflow-x-auto pb-1 -ml-4 pl-4 md:ml-0 md:pl-0">
+                                    {visibleCategories.map(cat => (
+                                        <button
+                                            key={cat.label}
+                                            role="tab"
+                                            aria-selected={activeCategory === cat.label}
+                                            onClick={() => setSelectedCategory(cat.label)}
+                                            className={`h-8 px-3 shrink-0 rounded-full text-xs font-medium transition-all ${activeCategory === cat.label
+                                                ? 'bg-surface shadow-raised text-ink'
+                                                : 'text-ink-muted hover:text-ink'
+                                                }`}
+                                        >
+                                            {cat.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={refreshTopics}
+                                    disabled={refreshingTopics || fetchingTrends}
+                                    aria-label={`Refresh topics in ${activeCategory}`}
+                                    title="Show different topics"
+                                    className="w-8 h-8 shrink-0 mb-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-canvas hover:shadow-raised active:shadow-pressed transition-all disabled:opacity-50"
+                                >
+                                    <RefreshCw size={14} className={refreshingTopics ? 'animate-spin' : ''} />
+                                </button>
+                            </div>
+                            <div role="tabpanel" aria-label={`Trending in ${activeCategory}`} className={`flex flex-wrap justify-center gap-2 mt-3 ${refreshingTopics ? 'opacity-50' : ''}`}>
+                                {trendCategories.find(c => c.label === activeCategory)?.trends.map(trend => (
+                                    <button
+                                        key={trend.label}
+                                        onClick={() => runSearch(trend.query)}
+                                        disabled={loading}
+                                        className="h-9 px-4 bg-canvas shadow-raised text-ink-soft rounded-full text-sm hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                                    >
+                                        {trend.label}
+                                    </button>
+                                ))}
+                            </div>
+                            {fetchingTrends && <p className="text-xs text-ink-muted mt-2">Finding topics for you...</p>}
+                        </div>
+                        {loading && (
+                            <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">
+                                <Loader2 size={16} className="animate-spin" /> Searching...
+                            </div>
                         )}
                     </div>
                 </div>
-            </div>
-
-            {trail.length === 0 ? (
-                /* Starting point */
-                <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center text-center p-6">
-                    <div className="w-14 h-14 mb-5 rounded-full bg-canvas shadow-raised flex items-center justify-center"><Sparkles size={24} className="text-ember-500" /></div>
-                    <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink mb-2">What would you like to explore?</h2>
-                    <p className="text-sm md:text-base text-ink-soft mb-6 max-w-md">
-                        Search a topic or pick a trend. Each search suggests where to go next, so you can follow a thread to something worth writing.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                        {trendCategories.map(cat => (
-                            <button
-                                key={cat.label}
-                                onClick={() => setSelectedCategory(prev => prev === cat.label ? null : cat.label)}
-                                className={`h-10 px-4 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${selectedCategory === cat.label
-                                    ? 'bg-ember-500 text-white shadow-ember'
-                                    : 'bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed'
-                                    }`}
-                            >
-                                {cat.label}
-                                {selectedCategory === cat.label ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                            </button>
-                        ))}
-                    </div>
-                    {selectedCategory && (
-                        <div className="flex flex-wrap justify-center gap-2 max-w-lg mt-5 p-4 bg-canvas shadow-pressed rounded-tile">
-                            <span className="w-full text-center text-xs font-medium text-ink-muted mb-1">
-                                {fetchingTrends ? "Updating trends..." : `Trending in ${selectedCategory}`}
-                            </span>
-                            {trendCategories.find(c => c.label === selectedCategory)?.trends.map(trend => (
-                                <button
-                                    key={trend.label}
-                                    onClick={() => runSearch(trend.query)}
-                                    className="h-8 px-3 bg-surface shadow-raised text-ink-soft rounded-full text-xs font-medium hover:text-ember-600 active:shadow-pressed transition-all"
-                                >
-                                    {trend.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                    {loading && (
-                        <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">
-                            <Loader2 size={16} className="animate-spin" /> Searching...
-                        </div>
-                    )}
-                </div>
             ) : (
                 <>
+                    {/* Once there are results the search docks to the top, next to the path it adds to */}
+                    <div className="px-4 md:px-6 pt-4 md:pt-6 pb-3 shrink-0">
+                        <div className="max-w-5xl mx-auto">{renderSearch('compact')}</div>
+                    </div>
+
                     {/* Exploration path */}
                     <nav aria-label="Exploration path" className="px-4 md:px-6 pb-3 shrink-0 overflow-x-auto">
                         <ol className="max-w-5xl mx-auto flex items-center gap-1 text-xs whitespace-nowrap">
