@@ -1,5 +1,5 @@
 import { BrainMetadata } from '@/types';
-import { extractOriginQuery } from './strategy';
+import { originAngle, originQuery } from './strategy';
 
 export interface WebSource {
     title: string;
@@ -8,13 +8,15 @@ export interface WebSource {
 }
 
 // Fallback search queries when the planner call fails: aim at where the topic meets the brief
-export function fallbackQueries(hook: string, meta?: Partial<BrainMetadata>): string[] {
+export function fallbackQueries(hook: string, meta?: Partial<BrainMetadata>, angle?: string): string[] {
     const audience = meta?.audience?.role;
     const pain = meta?.audience?.pain;
-    const origin = extractOriginQuery(meta?.sourceContext);
+    const origin = originQuery(meta);
+    const savedAngle = originAngle(angle, meta);
     const queries = [
         audience && pain ? `${audience} ${pain}` : '',
         origin && audience ? `${origin} ${audience}` : origin || '',
+        origin && savedAngle ? `${origin} ${savedAngle}` : '',
         audience ? `${hook} for ${audience}` : hook,
         meta?.brief?.trim().slice(0, 200) || '',
     ];

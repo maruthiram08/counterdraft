@@ -3,7 +3,7 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
-import { formatIdeaChain, formatStrategyContext, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
+import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
 import { fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 // Interfaces for standardized inputs/outputs
@@ -83,9 +83,13 @@ export class BrainGenerationService {
         const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
 
         // Ground research in live web results aimed at where the whole chain meets the brief
-        const queries = await this.planResearchQueries(hook, angle, `${ideaChain}${brainContext}`).catch(() => fallbackQueries(hook, brainMetadata));
+        const exploreSources = formatExploreSources(brainMetadata);
+        // Plan from the original search and saved angle first; the hook is only a working title
+        const origin = originQuery(brainMetadata);
+        const searchSeed = `${origin ? `\nOriginal search: ${origin}` : ''}\nSaved angle: ${originAngle(angle, brainMetadata) || 'None'}`;
+        const queries = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`).catch(() => fallbackQueries(hook, brainMetadata, angle));
         const sources = await gatherWebSources(queries);
-        const webSources = formatWebSources(sources);
+        const webSources = `${exploreSources}${formatWebSources(sources)}`;
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
             hook,
@@ -117,7 +121,7 @@ Your task is to provide:
 1. **Research findings**: The raw material the planned post needs. Choose WHAT to research from the strategic context and the creator's brief: what this audience would find credible, specifics about their pain points, anything the creator asked to include, and the material the format calls for (for a practical walkthrough or guide: concrete use cases, the steps or workflow, before/after comparisons, worked examples, and limitations or when NOT to use it).
    - Each finding must be a specific, checkable fact, example or step. Opinions, predictions and "this can help X" claims belong in Key insights, not here.
    - Never repeat the same point twice.
-   - Base findings on the WEB SOURCES, references and source material provided. End each sourced finding with its source in brackets, e.g. "(source: hbr.org)".
+   - Base findings on the EXPLORE SOURCES, WEB SOURCES, references and source material provided. End each sourced finding with its source in brackets, e.g. "(source: hbr.org)".
    - Never mention a study, statistic or institution that is not in the provided material. If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
@@ -160,17 +164,17 @@ IMPORTANT: Return a valid JSON object with the following structure:
     }
 
     // Turns the topic and strategy into a few targeted web searches
-    private async planResearchQueries(hook: string, angle: string | undefined, brainContext: string): Promise<string[]> {
+    private async planResearchQueries(hook: string, context: string): Promise<string[]> {
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
                 {
                     role: 'system',
                     content: `Write 3 web search queries that will find concrete, citable material for a post.
-The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Aim the queries at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract.
+The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
 Return JSON: { "queries": ["...", "...", "..."] }`
                 },
-                { role: 'user', content: `Topic: ${hook}\nAngle: ${angle || 'None'}${brainContext}` }
+                { role: 'user', content: `Working title: ${hook}${context}` }
             ],
             response_format: { type: 'json_object' },
         });

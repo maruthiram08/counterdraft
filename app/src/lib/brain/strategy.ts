@@ -116,20 +116,41 @@ export function sanitizeParsedStrategy(raw: unknown): ParsedStrategy {
     return result;
 }
 
-// Explore saves the user's original search at the top of sourceContext
+// Ideas saved from Explore carry the search in meta.explore; older ones only have it at the top of sourceContext
 export function extractOriginQuery(sourceContext?: string): string | undefined {
     const match = sourceContext?.match(/Original Search Query: "([^"]+)"/);
     return match?.[1]?.trim() || undefined;
+}
+
+export function originQuery(meta?: Partial<BrainMetadata>): string | undefined {
+    return meta?.explore?.query?.trim() || extractOriginQuery(meta?.sourceContext);
+}
+
+// The angle the idea was saved with in Explore, falling back to the item's own angle
+export function originAngle(angle?: string, meta?: Partial<BrainMetadata>): string | undefined {
+    return angle?.trim() || meta?.explore?.idea?.angle?.trim() || undefined;
+}
+
+// The Explore results the idea came from, as starting evidence for research
+export function formatExploreSources(meta?: Partial<BrainMetadata>): string {
+    const sources = meta?.explore?.sources?.filter(s => s.title && s.url) || [];
+    if (!sources.length) return '';
+    const list = sources.slice(0, 8).map((s, i) => {
+        const detail = [s.kind && `(${s.kind})`, s.takeaway || s.summary].filter(Boolean).join(' ');
+        return `[E${i + 1}] ${s.title} (${s.source || s.url})${detail ? `\n${detail}` : ''}`;
+    }).join('\n\n');
+    return `\n\nEXPLORE SOURCES (what the creator found before saving this idea; starting evidence, cite them):\n${list}`;
 }
 
 // The idea's whole history, oldest first, so each step builds on the ones before it.
 // Later steps refine earlier ones; the brief is the newest and most specific intent.
 export function formatIdeaChain({ hook, angle, meta }: { hook: string; angle?: string; meta?: Partial<BrainMetadata> }): string {
     const lines: string[] = [];
-    const origin = extractOriginQuery(meta?.sourceContext);
+    const origin = originQuery(meta);
     if (origin) lines.push(`1. What the creator was originally searching for: "${origin}"`);
-    if (meta?.sourceContext) lines.push(`${lines.length + 1}. The source material they picked (below)`);
-    lines.push(`${lines.length + 1}. The idea they saved: "${hook}"${angle ? ` (angle: ${angle})` : ''}`);
+    if (meta?.sourceContext || meta?.explore?.sources?.length) lines.push(`${lines.length + 1}. The source material they picked (below)`);
+    const savedAngle = originAngle(angle, meta);
+    lines.push(`${lines.length + 1}. The idea they saved: "${hook}"${savedAngle ? ` (angle: ${savedAngle})` : ''}`);
     if (meta?.brief?.trim()) lines.push(`${lines.length + 1}. Their brief for this post: "${meta.brief.trim()}"`);
     return `\n\nHOW THIS IDEA CAME TO BE (one connected chain, not separate inputs):\n${lines.join('\n')}`;
 }

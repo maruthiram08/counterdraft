@@ -219,6 +219,24 @@ export interface Audience {
 
 // Brain: Metadata structure (stored in content_items.brain_metadata)
 // Preset values stay as suggestions; users can describe anything in their own words
+// The Explore search, sources and idea a pipeline item started from
+export interface ExploreOrigin {
+  query: string; // What the writer typed
+  label?: string; // Short name for the search
+  intent?: 'learn' | 'news'; // Know-how search or news search
+  platform?: string;
+  tone?: string;
+  sources: Array<{
+    title: string;
+    url: string;
+    source?: string; // Outlet or site
+    summary?: string; // Snippet from the search result
+    takeaway?: string; // What a writer can use from it
+    kind?: string; // framework, case study, expert view, data or news
+  }>;
+  idea: { hook: string; angle: string; format: string; belief?: string };
+}
+
 export interface BrainMetadata {
   outcome: Outcome | (string & {});
   audience?: Audience;
@@ -240,6 +258,7 @@ export interface BrainMetadata {
   tags?: string[];
   entities?: string[];
   sourceContext?: string; // Content from source
+  explore?: ExploreOrigin; // Where an idea saved from Explore came from, so later steps stay on that topic
   inferred?: {
     outcome?: boolean;
     stance?: boolean;
