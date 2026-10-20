@@ -4,7 +4,7 @@ import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
-import { anchorQueries, countLocalFindings, dropUnknownCitations, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
+import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 type ResearchPlan = { queries: string[]; asks?: { question: string; query: string }[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
 
@@ -217,7 +217,7 @@ IMPORTANT: Return a valid JSON object with the following structure:
 - "partial": the source supports part of it (e.g. the finding adds a country, number or claim the source doesn't have). Return "text": the finding cut back to only what the source says, keeping its "(source: ...)" ending.
 - "unsupported": the source doesn't say it, or no cited source is in the material.
 Findings starting with "Gap:" are always "supported".
-Then, for each of the brief's questions, check whether any finding you kept answers it. List the ones none answers in "uncovered", word for word.
+Then, for each of the brief's questions, check whether any finding you kept answers it even partly. List in "uncovered", word for word, only the questions that no kept finding touches at all.
 Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupported", "text": "..." }], "uncovered": ["..."] }`
                     },
                     { role: 'user', content: `FINDINGS:\n${cited.map((f, i) => `${i}. ${f}`).join('\n')}${asks.length ? `\n\nTHE BRIEF'S QUESTIONS:\n${asks.map(a => `- ${a}`).join('\n')}` : ''}\n\nMATERIAL:${sourceText}` }
@@ -234,8 +234,9 @@ Return JSON: { "checks": [{ "i": 0, "verdict": "supported" | "partial" | "unsupp
                 return [finding];
             });
             const uncovered = Array.isArray(parsed.uncovered) ? parsed.uncovered.filter((q): q is string => typeof q === 'string' && !!q.trim()) : [];
+            // The checker over-reports; only call a question unanswered if no kept finding even touches its key words
             const gaps = uncovered
-                .filter(q => !verified.some(f => f.startsWith('Gap:') && f.includes(q)))
+                .filter(q => !verified.some(f => f.startsWith('Gap:') ? f.includes(q) : sharesKeyWords(f, q)))
                 .map(q => `Gap: the sources found don't answer "${q}". Add a reference or your own experience for this part.`);
             TraceLogger.log('deep_dive', 'Source check', { before: research.length, cited: cited.length, after: verified.length, gaps: gaps.length });
             const checked = [...verified, ...gaps];
