@@ -130,6 +130,19 @@ describe('ExploreWorkspace', () => {
         expect(within(path).getByRole('button', { name: 'B2C go-to-market strategy' })).toBeInTheDocument();
     });
 
+    it('starts with topics one tap away and moves the search above the results', async () => {
+        render(<ExploreWorkspace />);
+        expect(screen.getByRole('tab', { name: 'Technology & AI' })).toHaveAttribute('aria-selected', 'true');
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Culture & Society' }));
+        feeds['remote work and office trends'] = feeds['remote work'];
+        fireEvent.click(screen.getByRole('button', { name: 'Future of Work' }));
+
+        await screen.findByRole('region', { name: 'Story details' });
+        expect(screen.queryByRole('tablist', { name: 'Starting topics' })).not.toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search a topic to explore...')).toBeInTheDocument();
+    });
+
     it('restores the exploration after a remount and starts over with New', async () => {
         const { unmount } = render(<ExploreWorkspace />);
         search('remote work');
