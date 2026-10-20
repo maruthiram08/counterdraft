@@ -30,6 +30,7 @@ interface FeedItem {
     otherSources?: string[];
     relatedBeliefId?: string | null;
     relatedBelief?: string | null;
+    beliefStance?: 'supports' | 'challenges' | null;
 }
 
 interface PostIdea {
@@ -488,7 +489,11 @@ export function ExplorerChat() {
                                                                     )}
                                                                     {topic.relatedBelief && (
                                                                         <p className="text-xs text-[var(--accent)] mb-3 line-clamp-1" title={topic.relatedBelief}>
-                                                                            Touches your belief: &ldquo;{topic.relatedBelief}&rdquo;
+                                                                            {topic.beliefStance === 'supports'
+                                                                                ? 'Supports your belief'
+                                                                                : topic.beliefStance === 'challenges'
+                                                                                    ? 'Challenges your belief'
+                                                                                    : 'Touches your belief'}: &ldquo;{topic.relatedBelief}&rdquo;
                                                                         </p>
                                                                     )}
 

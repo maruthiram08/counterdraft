@@ -6,6 +6,7 @@ import { TraceLogger } from '@/lib/trace';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { buildFeed, dedupeItems, parseGoogleNewsRss, type RawFeedItem } from '@/lib/explore/feed';
 import { suggestRelatedTopics } from '@/lib/explore/related';
+import { annotateItems } from '@/lib/explore/annotate';
 
 // Mapping from our categories to Google News search terms
 const CATEGORY_TO_QUERY: Record<string, string> = {
@@ -160,18 +161,25 @@ export async function GET(req: Request) {
             });
         }
 
-        // 4. Get user beliefs for relatability, and related topics to branch into
-        const [{ data: beliefs }, related] = await Promise.all([
-            supabaseAdmin
-                .from('beliefs')
-                .select('id, statement')
-                .eq('user_id', userId)
-                .neq('belief_type', 'rejected')
-                .limit(50),
-            directQuery ? suggestRelatedTopics(directQuery, allItems.map(i => i.title)) : Promise.resolve([]),
+        // 4. Get user beliefs, then screen results and suggest related topics in parallel
+        const { data: beliefData } = await supabaseAdmin
+            .from('beliefs')
+            .select('id, statement')
+            .eq('user_id', userId)
+            .neq('belief_type', 'rejected')
+            .order('confidence', { ascending: false })
+            .limit(40);
+        const beliefs = beliefData || [];
+
+        // Screen at most 24 stories so the prompt stays small; the rest are rarely shown anyway
+        const candidates = allItems.slice(0, 24);
+        const searchLabel = directQuery || queries.join(', ');
+        const [annotations, related] = await Promise.all([
+            annotateItems(searchLabel, candidates, beliefs),
+            directQuery ? suggestRelatedTopics(directQuery, candidates.map(i => i.title)) : Promise.resolve([]),
         ]);
 
-        const feed = buildFeed(allItems, beliefs || [], lens).slice(0, 20);
+        const feed = buildFeed(candidates, beliefs, lens, Date.now(), annotations).slice(0, 20);
 
         return NextResponse.json({
             feed,

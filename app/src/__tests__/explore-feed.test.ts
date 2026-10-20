@@ -75,4 +75,33 @@ describe('explore feed helpers', () => {
         expect(feed[0].relatedBelief).toBe('Remote teams need a strong written culture');
         expect(feed[1].publishedAt).toBe('2026-10-19T20:00:00.000Z');
     });
+
+    it('does not link a belief on a single shared word', () => {
+        const beliefs = [{ id: 'a', statement: 'Linear time frameworks stifle creativity and personal well-being.' }];
+        expect(matchBelief('Acuity hires hint at a private-client push in personal lines', beliefs).belief).toBeNull();
+    });
+
+    it('uses screening results: drops off-topic stories and keeps the stance', () => {
+        const now = Date.parse('2026-10-20T00:00:00Z');
+        const beliefs = [{ id: 'a', statement: 'AI tools save product managers real time' }];
+        const items = Array.from({ length: 7 }, (_, i) => item({ title: `Story ${i}` }));
+        const annotations = items.map((_, i) => ({
+            relevant: i !== 0,
+            beliefId: i === 3 ? 'a' : null,
+            stance: i === 3 ? 'challenges' as const : null,
+        }));
+
+        const feed = buildFeed(items, beliefs, 'default', now, annotations);
+        expect(feed.map(f => f.title)).not.toContain('Story 0');
+        expect(feed[0]).toMatchObject({ title: 'Story 3', relatedBelief: beliefs[0].statement, beliefStance: 'challenges' });
+    });
+
+    it('keeps screened-out stories at the bottom when too few remain', () => {
+        const items = [item({ title: 'Off-topic' }), item({ title: 'On-topic' })];
+        const annotations = [
+            { relevant: false, beliefId: null, stance: null },
+            { relevant: true, beliefId: null, stance: null },
+        ];
+        expect(buildFeed(items, [], 'default', Date.now(), annotations).map(f => f.title)).toEqual(['On-topic', 'Off-topic']);
+    });
 });

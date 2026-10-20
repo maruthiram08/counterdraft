@@ -28,8 +28,19 @@ export interface FeedEntry {
     relatabilityScore: number;
     relatedBeliefId: string | null;
     relatedBelief: string | null;
+    beliefStance: 'supports' | 'challenges' | null;
     type: 'article' | 'question';
 }
+
+// What the LLM screen said about one item (see annotate.ts)
+export interface ItemAnnotation {
+    relevant: boolean;
+    beliefId: string | null;
+    stance: 'supports' | 'challenges' | null;
+}
+
+const MIN_KEYWORD_HITS = 2;
+const MIN_RELEVANT_RESULTS = 5;
 
 const ENTITIES: Record<string, string> = {
     '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&apos;': "'", '&nbsp;': ' ',
@@ -122,6 +133,7 @@ function keywords(text: string): Set<string> {
 }
 
 // Best keyword overlap between a story and the user's beliefs. Score is 0..1.
+// A single shared word ("personal", "growth") is too weak a link, so it takes at least two.
 export function matchBelief(text: string, beliefs: BeliefRef[]): { belief: BeliefRef | null; score: number } {
     const words = keywords(text);
     let best: BeliefRef | null = null;
@@ -131,7 +143,7 @@ export function matchBelief(text: string, beliefs: BeliefRef[]): { belief: Belie
         for (const w of keywords(belief.statement)) {
             if (words.has(w)) hits++;
         }
-        if (hits > bestHits) {
+        if (hits >= MIN_KEYWORD_HITS && hits > bestHits) {
             bestHits = hits;
             best = belief;
         }
@@ -145,11 +157,19 @@ export function buildFeed(
     items: RawFeedItem[],
     beliefs: BeliefRef[],
     lens: string,
-    now = Date.now()
+    now = Date.now(),
+    annotations?: ItemAnnotation[] | null
 ): FeedEntry[] {
-    const entries = items.map(item => {
+    const entries = items.map((item, index) => {
         const isQuestion = QUESTION_PATTERN.test(item.title) || item.title.includes('?');
-        const { belief, score } = matchBelief(`${item.title} ${item.summary || ''}`, beliefs);
+        const annotation = annotations?.[index];
+        const { belief, score } = annotation
+            ? {
+                belief: beliefs.find(b => b.id === annotation.beliefId) ?? null,
+                score: annotation.beliefId ? 0.6 : 0,
+            }
+            : matchBelief(`${item.title} ${item.summary || ''}`, beliefs);
+        const relevant = annotation?.relevant ?? true;
         const published = item.pubDate ? Date.parse(item.pubDate) : NaN;
 
         let relatabilityScore = score;
@@ -168,13 +188,23 @@ export function buildFeed(
                 relatabilityScore: Math.min(relatabilityScore, 1),
                 relatedBeliefId: belief?.id ?? null,
                 relatedBelief: belief?.statement ?? null,
+                beliefStance: belief ? annotation?.stance ?? null : null,
                 type: (isQuestion ? 'question' : 'article') as FeedEntry['type'],
             },
+            relevant,
             rank: rankScore(relatabilityScore, published, 1 + item.otherSources.length, now),
         };
     });
 
-    return entries.sort((a, b) => b.rank - a.rank).map(e => e.entry);
+    entries.sort((a, b) => b.rank - a.rank);
+
+    // Drop stories screened out as off-topic, unless that would leave too little to browse;
+    // then they go to the bottom instead.
+    const relevant = entries.filter(e => e.relevant);
+    const kept = relevant.length >= MIN_RELEVANT_RESULTS
+        ? relevant
+        : [...relevant, ...entries.filter(e => !e.relevant)];
+    return kept.map(e => e.entry);
 }
 
 // Belief match matters most, then freshness (halves every 2 days), then how widely the story is covered.
