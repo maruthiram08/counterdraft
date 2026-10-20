@@ -94,20 +94,6 @@ const DEFAULT_CATEGORIES = [
     },
 ];
 
-const PLATFORMS = [
-    { value: 'linkedin', label: 'LinkedIn' },
-    { value: 'twitter', label: 'X' },
-    { value: 'newsletter', label: 'Newsletter' },
-    { value: 'blog', label: 'Blog' },
-];
-
-const TONES = [
-    { value: 'provocative', label: 'Provocative' },
-    { value: 'educational', label: 'Educational' },
-    { value: 'balanced', label: 'Balanced' },
-    { value: 'storytelling', label: 'Storytelling' },
-];
-
 const SESSION_KEY = 'cd-explore-workspace';
 const TRENDS_KEY = 'cd-explore-trends';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
@@ -161,28 +147,6 @@ function beliefLabel(story: Story): string {
     return 'Touches your belief';
 }
 
-// A native select drawn as one pill: the browser's own arrow is hidden and ours sits inside the pill
-function PillSelect({ value, onChange, label, options }: {
-    value: string;
-    onChange: (value: string) => void;
-    label: string;
-    options: { value: string; label: string }[];
-}) {
-    return (
-        <div className="relative">
-            <select
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                aria-label={label}
-                className="appearance-none h-8 pl-3 pr-8 text-xs font-medium text-ink-soft bg-canvas shadow-raised rounded-full border-0 cursor-pointer hover:text-ink focus:outline-none focus:ring-2 focus:ring-ember-200"
-            >
-                {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <ChevronDown size={12} aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-        </div>
-    );
-}
-
 export function ExploreWorkspace() {
     const [trail, setTrail] = useState<ExploreStep[]>([]);
     const [activeStep, setActiveStep] = useState(0);
@@ -198,8 +162,6 @@ export function ExploreWorkspace() {
     const [generatingKey, setGeneratingKey] = useState<string | null>(null);
     const [savingIdea, setSavingIdea] = useState<string | null>(null);
     const [lens, setLens] = useState<'default' | 'beginner'>('default');
-    const [platform, setPlatform] = useState('linkedin');
-    const [tone, setTone] = useState('provocative');
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [trendCategories, setTrendCategories] = useState(DEFAULT_CATEGORIES);
@@ -345,8 +307,6 @@ export function ExploreWorkspace() {
                     titles: sources.map(s => s.title),
                     sources: sources.map(s => ({ title: s.title, summary: s.summary, takeaway: s.takeaway })),
                     context: step?.query,
-                    platform,
-                    tone,
                     relatedBeliefIds: sources.map(s => s.relatedBeliefId).filter(Boolean),
                 }),
             });
@@ -433,8 +393,6 @@ export function ExploreWorkspace() {
         query: step?.query ?? '',
         label: step?.label,
         intent: step?.intent,
-        platform,
-        tone,
         sources: sources.map(s => ({
             title: s.title,
             url: s.sourceUrl,
@@ -477,7 +435,7 @@ export function ExploreWorkspace() {
                         className="btn btn-primary w-full disabled:opacity-50"
                     >
                         {generating ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} />}
-                        {generating ? 'Finding angles...' : `Get ${PLATFORMS.find(p => p.value === platform)?.label} post ideas`}
+                        {generating ? 'Finding angles...' : 'Get post ideas'}
                     </button>
                 )}
 
@@ -623,18 +581,6 @@ export function ExploreWorkspace() {
                         </button>
                     </div>
                     <div className="flex items-center gap-2">
-                        <PillSelect
-                            value={platform}
-                            onChange={setPlatform}
-                            label="Platform for post ideas"
-                            options={PLATFORMS}
-                        />
-                        <PillSelect
-                            value={tone}
-                            onChange={setTone}
-                            label="Tone for post ideas"
-                            options={TONES}
-                        />
                         {trail.length > 0 && (
                             <button
                                 onClick={startOver}

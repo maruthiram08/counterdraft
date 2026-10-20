@@ -22,6 +22,7 @@ const TONE_GUIDANCE: Record<string, string> = {
     educational: "Be informative and helpful. Focus on teaching and explaining. Use clear examples.",
     balanced: "Be thoughtful and nuanced. Present multiple perspectives. Avoid extremes.",
     storytelling: "Use narrative techniques. Start with a personal anecdote. Make it relatable.",
+    mixed: "Give each idea a different tone (for example one bold and contrarian, one practical and teaching, one told as a story), so the writer can pick the voice that fits.",
 };
 
 export async function POST(req: Request) {
@@ -42,7 +43,8 @@ export async function POST(req: Request) {
 
         // P3: Extract personalization params with defaults
         const platform = body.platform || 'linkedin';
-        const tone = body.tone || 'provocative';
+        // Explore doesn't ask for a tone; the strategy step sets it later, so ideas offer a range
+        const tone = body.tone || 'mixed';
         const count = Math.min(Math.max(body.count || 3, 1), 10); // Clamp between 1-10
 
         // Support both single title and array of titles

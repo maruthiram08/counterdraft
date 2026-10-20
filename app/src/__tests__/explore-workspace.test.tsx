@@ -81,13 +81,12 @@ describe('ExploreWorkspace', () => {
         expect(within(details).getByText('Companies rethink remote work policies')).toBeInTheDocument();
     });
 
-    it('generates angles inside the story panel with platform, tone and the matched belief', async () => {
+    it('generates angles inside the story panel with the matched belief', async () => {
         render(<ExploreWorkspace />);
-        fireEvent.change(screen.getByLabelText('Tone for post ideas'), { target: { value: 'educational' } });
         search('remote work');
 
         const details = await screen.findByRole('region', { name: 'Story details' });
-        fireEvent.click(within(details).getByRole('button', { name: /Get LinkedIn post ideas/ }));
+        fireEvent.click(within(details).getByRole('button', { name: /Get post ideas/ }));
 
         expect(await within(details).findByText(/Write it down/)).toBeInTheDocument();
         expect(within(details).getByText(/Builds on your belief/)).toBeInTheDocument();
@@ -96,8 +95,6 @@ describe('ExploreWorkspace', () => {
         expect(JSON.parse(call[1].body)).toMatchObject({
             titles: ['Companies rethink remote work policies'],
             context: 'remote work',
-            platform: 'linkedin',
-            tone: 'educational',
             relatedBeliefIds: ['b1'],
             sources: [{ title: 'Companies rethink remote work policies', summary: 'Firms are loosening office mandates.' }],
         });
@@ -108,8 +105,6 @@ describe('ExploreWorkspace', () => {
         const save = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/content');
         expect(JSON.parse(save[1].body).brain_metadata.explore).toMatchObject({
             query: 'remote work',
-            platform: 'linkedin',
-            tone: 'educational',
             sources: [{ title: 'Companies rethink remote work policies', url: 'https://example.com/Companies%20rethink%20remote%20work%20policies', source: 'Reuters' }],
             idea: { hook: 'Write it down', angle: 'Docs beat meetings', format: 'list' },
         });
