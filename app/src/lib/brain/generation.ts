@@ -6,7 +6,7 @@ import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchIte
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy } from './strategy';
 import { anchorQueries, countLocalFindings, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
-type ResearchPlan = { queries: string[]; place?: string; country?: string; localTerms?: string[] };
+type ResearchPlan = { queries: string[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
 
 // Interfaces for standardized inputs/outputs
 export interface DeepDiveParams {
@@ -91,8 +91,10 @@ export class BrainGenerationService {
         const searchSeed = `${origin ? `\nOriginal search: ${origin}` : ''}\nSaved angle: ${originAngle(angle, brainMetadata) || 'None'}`;
         const plan = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`)
             .catch((): ResearchPlan => ({ queries: fallbackQueries(hook, brainMetadata, angle) }));
-        const queries = anchorQueries(plan.queries, brainMetadata, plan.place);
-        const sources = await gatherWebSources(queries, 12, plan.country);
+        // Each "must include" item gets its own search so the brief's extra asks aren't crowded out by the hook
+        const includeQueries = (brainMetadata?.include || []).slice(0, 2).map(item => plan.place && !item.toLowerCase().includes(plan.place.toLowerCase().slice(0, 4)) ? `${item} ${plan.place}` : item);
+        const queries = [...anchorQueries(plan.queries, brainMetadata, plan.place), ...includeQueries];
+        const sources = await gatherWebSources(queries, 15, plan.country);
         const webSources = `${exploreSources}${formatWebSources(sources)}`;
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
@@ -122,7 +124,9 @@ Your task is to provide:
 
 1. **Research findings**: The raw material the planned post needs. Choose WHAT to research from the strategic context and the creator's brief: what this audience would find credible, specifics about their pain points, anything the creator asked to include, and the material the format calls for (for a practical walkthrough or guide: concrete use cases, the steps or workflow, before/after comparisons, worked examples, and limitations or when NOT to use it).
    - Each finding must be a specific, checkable fact, example or step. Opinions, predictions and "this can help X" claims belong in Key insights, not here.
-   - If the brief names a country, region or culture, most findings must be about that place: its laws and policies, named local employers, family set-ups, work culture and costs. Advice that would apply to any parent anywhere (a dedicated workspace, exercise, a schedule, talking to your employer) does not count unless it is made specific to that place. If the sources have too little local material, add a "Gap:" finding naming what is missing instead of padding with generic advice.
+   - If the whole brief is about a country, region or culture, most findings must be about that place: its laws and policies, named local companies and brands, family set-ups, work culture, prices. Advice that would apply to anyone anywhere (a dedicated workspace, exercise, a schedule, "focus on authenticity") does not count unless it is made specific to that place. If the place is one part of the brief, that part still gets its own place-specific findings. If the sources have too little local material, add a "Gap:" finding naming what is missing instead of padding with generic material.
+   - Every "Must include" item and every extra ask in the brief (e.g. "also talk about how Indian D2C brands identify the shift and plan around it") gets at least two findings of its own with specifics: named companies or people, numbers, what they did and what happened. When the brief asks HOW someone does something, findings describe the method (what they track or measure, the steps they took, the result), not just that it happens.
+   - A statistic about one country or group must say which (e.g. "In South Korea, 92% of Gen Z..."); never present it as if it applied to the brief's audience or place.
    - Every finding must be specific to the brief's audience and any place or culture it names. A general finding counts only once it is made specific to them (for Indian dads: joint families, paternity leave at named companies, long workdays across time zones); otherwise drop it.
    - If the brief asks for tips, practical advice or a how-to, most findings must be concrete actions the reader can take this week: what to do, when, and how, with a real example where the sources give one (e.g. "Block 7 to 8pm as no-laptop time and tell your manager in writing", not "create an organized home office").
    - Never repeat the same point twice.
@@ -174,12 +178,14 @@ IMPORTANT: Return a valid JSON object with the following structure:
         const terms = plan.place ? [plan.place, ...(plan.localTerms || [])] : [];
         const findings = Array.isArray(first.result.research) ? first.result.research.map(String) : [];
         const local = countLocalFindings(findings, terms);
-        if (!terms.length || !findings.length || local * 2 >= findings.length) return first.result;
+        // A post wholly about the place needs half its findings there; one where the place is a side ask needs at least two
+        const enough = plan.placeIsWholeBrief === false ? Math.min(2, findings.length) : Math.ceil(findings.length / 2);
+        if (!terms.length || !findings.length || local >= enough) return first.result;
 
         TraceLogger.log('deep_dive', 'Local retry', { place: plan.place, local, total: findings.length });
         messages.push(
             { role: 'assistant', content: first.content },
-            { role: 'user', content: `Only ${local} of ${findings.length} findings are specific to ${plan.place}. Rewrite the research so most findings are about ${plan.place} (its laws, policies, named employers, family set-ups, work culture), taken from the sources above. Replace generic advice that would apply anywhere with ${plan.place}-specific findings, or with "Gap:" findings naming what the sources lack. Rewrite the insights to match. Same JSON format.` },
+            { role: 'user', content: `Only ${local} of ${findings.length} findings are specific to ${plan.place}. Rewrite the research so ${plan.placeIsWholeBrief === false ? `the part of the brief about ${plan.place} has at least two findings of its own` : `most findings are about ${plan.place}`} (laws, policies, named companies and brands, family set-ups, work culture, prices), taken from the sources above. Replace generic material that would apply anywhere with ${plan.place}-specific findings, or with "Gap:" findings naming what the sources lack. Rewrite the insights to match. Same JSON format.` },
         );
         return (await run().catch(() => first)).result;
     }
@@ -195,21 +201,21 @@ IMPORTANT: Return a valid JSON object with the following structure:
 The input describes how the idea came to be (original search, source, saved idea, brief) as one chain. Build the queries from the original search and the saved angle, not the hook alone (the hook is a working title). Aim them at where that whole chain meets the creator's brief and audience (their situation, pain points and the practical material the format needs), not at the topic in the abstract. Explore sources are already in hand, so search for what they don't cover.
 Every query must name the brief's audience and any country, region, culture or market the brief mentions (e.g. "Indian dads", "India"); a query about the general topic alone is wasted.
 If the brief asks for tips, practical advice or a how-to, search for concrete steps, routines, real examples and local specifics (laws, policies, workplace norms, family set-ups) for that audience, not for statistics or general studies.
-Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; and "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or [].
-Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "localTerms": ["..."] }`
+Also return "place": the country, region or culture the brief is about, in the words a search should use (e.g. "India"), or null; "country": that country's English name in lowercase if the brief is about one country (e.g. "india"), or null; "placeIsWholeBrief": true if the whole post is about that place, false if the place is only one part of it; and "localTerms": up to 8 words that show a sentence is about that place (e.g. ["Indian", "Bengaluru", "joint family", "lakh"]), or [].
+Return JSON: { "queries": ["...", "...", "..."], "place": "..." | null, "country": "..." | null, "placeIsWholeBrief": true | false, "localTerms": ["..."] }`
                 },
                 { role: 'user', content: `Working title: ${hook}${context}` }
             ],
             response_format: { type: 'json_object' },
         });
-        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown };
+        const parsed = JSON.parse(completion.choices[0].message.content || '{}') as { queries?: unknown; place?: unknown; country?: unknown; localTerms?: unknown; placeIsWholeBrief?: unknown };
         const queries = Array.isArray(parsed.queries)
             ? parsed.queries.filter((q): q is string => typeof q === 'string' && !!q.trim()).slice(0, 3)
             : [];
         if (!queries.length) throw new Error('No queries planned');
         const text = (v: unknown) => typeof v === 'string' && v.trim() ? v.trim() : undefined;
         const localTerms = Array.isArray(parsed.localTerms) ? parsed.localTerms.map(text).filter((t): t is string => !!t).slice(0, 8) : [];
-        return { queries, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms };
+        return { queries, place: text(parsed.place), country: text(parsed.country)?.toLowerCase(), localTerms, placeIsWholeBrief: parsed.placeIsWholeBrief !== false };
     }
 
     // --- 2. Refine Point ---
