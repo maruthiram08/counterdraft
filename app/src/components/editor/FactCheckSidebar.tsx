@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldAlert, ShieldCheck, ShieldQuestion, ExternalLink, RefreshCw, X, Search, FileCheck, Sparkles, MessageSquareX, BarChart3, Plus, Globe } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, ShieldQuestion, ExternalLink, RefreshCw, X, Search, FileCheck, MessageSquareX, BarChart3, Plus, Globe } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { RefreshCWIcon, ShieldCheckIcon, SparklesIcon } from "@/components/icons/animated";
 
 export interface VerificationResult {
     claim: string;
@@ -119,7 +121,7 @@ export function VerificationSidebar({
                     className={`flex-1 h-12 rounded-2xl text-[11px] font-medium flex flex-col items-center justify-center gap-0.5 transition-all ${activeTab === 'fact' ? 'bg-canvas shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink'
                         }`}
                 >
-                    <ShieldCheck size={14} /> Fact
+                    <AnimatedIcon icon={ShieldCheckIcon} size={14} /> Fact
                 </button>
                 <button
                     onClick={() => setActiveTab('plagiarism')}
@@ -133,7 +135,7 @@ export function VerificationSidebar({
                     className={`flex-1 h-12 rounded-2xl text-[11px] font-medium flex flex-col items-center justify-center gap-0.5 transition-all ${activeTab === 'style' ? 'bg-canvas shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink'
                         }`}
                 >
-                    <Sparkles size={14} /> Human
+                    <AnimatedIcon icon={SparklesIcon} size={14} /> Human
                 </button>
                 <button
                     onClick={() => setActiveTab('competitor')}
@@ -172,7 +174,7 @@ export function VerificationSidebar({
                                         {factResults.length} Claims Found
                                     </span>
                                     <button onClick={onFactVerify} className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink hover:text-ember-600 active:shadow-pressed flex items-center gap-1 font-medium transition-all">
-                                        <RefreshCw size={12} /> Re-run
+                                        <AnimatedIcon icon={RefreshCWIcon} size={12} /> Re-run
                                     </button>
                                 </div>
                                 {factResults.map((res, i) => (
@@ -209,7 +211,7 @@ export function VerificationSidebar({
                                                                 : 'bg-sand-100 hover:bg-sand-100/70 text-sand-700'
                                                             }`}
                                                     >
-                                                        <Sparkles size={12} />
+                                                        <AnimatedIcon icon={SparklesIcon} size={12} />
                                                         {normalizedStatus === 'disputed' ? 'Auto-Correct with Fact' : 'Auto-Fix (Clarify/Delete)'}
                                                     </button>
                                                 );
@@ -353,7 +355,7 @@ export function VerificationSidebar({
                                 </div>
 
                                 <button onClick={onSlopScan} className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink hover:text-ember-600 active:shadow-pressed flex items-center gap-1 font-medium ml-auto transition-all">
-                                    <RefreshCw size={12} /> Re-scan
+                                    <AnimatedIcon icon={RefreshCWIcon} size={12} /> Re-scan
                                 </button>
 
                                 <div className="space-y-3">
@@ -469,7 +471,7 @@ export function VerificationSidebar({
                                                                 className="mt-3 text-xs font-medium text-ember-600 hover:text-ember-700 flex items-center gap-1"
                                                                 onClick={() => alert("AI Gap Filling coming in next update!")}
                                                             >
-                                                                <Sparkles size={10} /> Fill this gap
+                                                                <AnimatedIcon icon={SparklesIcon} size={10} /> Fill this gap
                                                             </button>
                                                         )}
                                                     </div>

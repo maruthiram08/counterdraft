@@ -2,7 +2,8 @@
 
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
-import { Sparkles } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { SparklesIcon } from "@/components/icons/animated";
 import type { Draft, BrainMetadata } from "@/types";
 import { ContextualToolbar } from "./ContextualToolbar";
 import { PublishModal } from "./PublishModal";
@@ -224,7 +225,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                         <div className="mb-6 p-4 bg-dusk-100 rounded-tile shadow-raised flex flex-wrap gap-3 items-center justify-between group/banner animate-in fade-in slide-in-from-top-2 duration-500">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-surface text-dusk-700">
-                                    <Sparkles size={18} />
+                                    <AnimatedIcon icon={SparklesIcon} size={18} />
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-ink">This post is published</h4>

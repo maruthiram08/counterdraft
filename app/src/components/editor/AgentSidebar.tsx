@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Send, Bot, User, Wand2, Brain, Search, Copy, Check } from "lucide-react";
+import { Sparkles, Bot, User, Wand2, Brain, Search, Check } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { CopyIcon, SendIcon, SparklesIcon } from "@/components/icons/animated";
 import { Belief } from "@/types";
 import { LimitModal } from "../modal/LimitModal";
 
@@ -142,7 +144,7 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
                         : 'text-ink-muted hover:text-ink'
                         }`}
                 >
-                    <Sparkles size={14} />
+                    <AnimatedIcon icon={SparklesIcon} size={14} />
                     Assistant
                 </button>
                 <button
@@ -236,7 +238,7 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
                                 {msg.suggestion && (
                                     <div className="mt-2 bg-surface ring-2 ring-ember-100 rounded-tile p-4 shadow-card text-left">
                                         <div className="text-xs text-ember-600 font-medium mb-2 flex items-center gap-2">
-                                            <Sparkles size={10} />
+                                            <AnimatedIcon icon={SparklesIcon} size={10} />
                                             Suggestion
                                         </div>
                                         <p className="text-sm text-ink whitespace-pre-wrap mb-3 font-sans">
@@ -290,7 +292,7 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
                             disabled={!instruction || loading}
                             className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center bg-ember-500 text-white hover:bg-ember-600 shadow-ember active:shadow-pressed disabled:opacity-30 transition-all"
                         >
-                            <Send size={16} />
+                            <AnimatedIcon icon={SendIcon} size={16} />
                         </button>
                     </div>
                 </div>
@@ -333,7 +335,7 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
                                         className="w-7 h-7 rounded-full flex items-center justify-center text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all opacity-0 group-hover:opacity-100"
                                         title="Copy to clipboard"
                                     >
-                                        {copiedBeliefId === belief.id ? <Check size={14} /> : <Copy size={14} />}
+                                        {copiedBeliefId === belief.id ? <Check size={14} /> : <AnimatedIcon icon={CopyIcon} size={14} />}
                                     </button>
                                 </div>
                                 <p className="text-sm text-ink-soft leading-relaxed">

@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import {
-    Search, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X,
-    ChevronRight, ChevronLeft, Compass, RotateCcw, Layers, RefreshCw,
+    Search, Loader2, ExternalLink, Lightbulb, Check, X,
+    ChevronRight, ChevronLeft, RotateCcw, Layers,
 } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { CompassIcon, RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
 import { FOR_YOU, shuffle } from "@/lib/explore/trends";
@@ -647,7 +649,7 @@ export function ExploreWorkspace() {
                 /* Starting point: the search sits right under the question, with ready-made starting topics below it */
                 <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-4 md:p-6">
                     <div className="w-full max-w-2xl flex flex-col items-center text-center">
-                        <div className="w-12 h-12 mb-4 rounded-full bg-canvas shadow-raised flex items-center justify-center"><Sparkles size={20} className="text-ember-500" /></div>
+                        <div className="w-12 h-12 mb-4 rounded-full bg-canvas shadow-raised flex items-center justify-center"><AnimatedIcon icon={SparklesIcon} size={20} trigger="mount" className="text-ember-500" /></div>
                         <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink mb-2">What would you like to explore?</h2>
                         <p className="text-sm md:text-base text-ink-soft mb-6 max-w-md">
                             Ask a question or name a topic. Each search suggests where to go next, so you can follow a thread to something worth writing.
@@ -678,7 +680,7 @@ export function ExploreWorkspace() {
                                     title="Show different topics"
                                     className="w-8 h-8 shrink-0 mb-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-canvas hover:shadow-raised active:shadow-pressed transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
                                 >
-                                    <RefreshCw size={14} className={refreshingTopics ? 'animate-spin' : ''} />
+                                    <AnimatedIcon icon={RefreshCWIcon} size={14} className={refreshingTopics ? 'animate-spin' : ''} />
                                 </button>
                             </div>
                             <div role="tabpanel" aria-label={`Trending in ${activeCategory}`} className={`flex flex-wrap justify-center gap-2 mt-3 ${refreshingTopics ? 'opacity-50' : ''}`}>
@@ -737,7 +739,7 @@ export function ExploreWorkspace() {
                             {step?.related && step.related.length > 0 && (
                                 <div className="mb-4">
                                     <span className="text-xs font-medium text-ink-muted flex items-center gap-1 mb-2">
-                                        <Compass size={12} /> Explore next
+                                        <AnimatedIcon icon={CompassIcon} size={12} /> Explore next
                                     </span>
                                     <div className="flex flex-wrap gap-2">
                                         {step.related.map(r => (

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Edit2, Check, X, Trash2, RefreshCw, Loader2 } from "lucide-react";
+import { MessageSquare, Edit2, Check, X, Trash2, Loader2 } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { RefreshCWIcon } from "@/components/icons/animated";
 
 interface ResearchItemProps {
     text: string;
@@ -145,7 +147,7 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                                 className="p-1.5 rounded-full text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
                                 title="Regenerate this point"
                             >
-                                <RefreshCw size={14} />
+                                <AnimatedIcon icon={RefreshCWIcon} size={14} />
                             </button>
                         )}
                         <button

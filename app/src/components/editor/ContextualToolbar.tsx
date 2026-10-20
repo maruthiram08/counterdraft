@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Sparkles, Eraser } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { SparklesIcon } from "@/components/icons/animated";
 
 interface ContextualToolbarProps {
     position: { top: number; left: number } | null;
@@ -96,14 +98,14 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
                                 onClick={() => onOptionSelect("Remove AI-isms and corporate jargon, make it human and direct")}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-ember-50 rounded-2xl text-[15px] text-ink-soft hover:text-ember-700 transition-colors text-left group"
                             >
-                                <Sparkles size={16} className="text-ink-muted group-hover:text-ember-500 transition-colors" />
+                                <AnimatedIcon icon={SparklesIcon} size={16} className="text-ink-muted group-hover:text-ember-500 transition-colors" />
                                 <span className="font-medium">Remove AI-isms</span>
                             </button>
                             <button
                                 onClick={() => onOptionSelect("Rephrase this clearly and effectively")}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-muted rounded-2xl text-[15px] text-ink-soft hover:text-ink transition-colors text-left group"
                             >
-                                <Sparkles size={16} className="text-ink-muted group-hover:text-ember-500 transition-colors" />
+                                <AnimatedIcon icon={SparklesIcon} size={16} className="text-ink-muted group-hover:text-ember-500 transition-colors" />
                                 <span className="font-medium">Rephrase</span>
                             </button>
                             <button

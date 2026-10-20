@@ -1,7 +1,9 @@
 
 import { DeepDiveData, ResearchPoint } from "./types";
 import { ResearchItem } from "../ResearchItem";
-import { Download, RefreshCw, Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { RefreshCWIcon } from "@/components/icons/animated";
 
 interface DeepDiveStepProps {
     deepDive: DeepDiveData | null;
@@ -58,7 +60,7 @@ export function DeepDiveStep({
                         onClick={() => onRunDeepDive('reset')}
                         className="shrink-0 flex items-center gap-1.5 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                     >
-                        <RefreshCw size={14} /> Redo research
+                        <AnimatedIcon icon={RefreshCWIcon} size={14} /> Redo research
                     </button>
                 </div>
             )}
@@ -72,7 +74,7 @@ export function DeepDiveStep({
                         className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-rose-700 text-sm font-medium shadow-raised hover:text-rose-500 active:shadow-pressed transition-all"
                         title="Clear and restart research"
                     >
-                        <RefreshCw size={14} /> Reset
+                        <AnimatedIcon icon={RefreshCWIcon} size={14} /> Reset
                     </button>
                     <button
                         onClick={onExport}

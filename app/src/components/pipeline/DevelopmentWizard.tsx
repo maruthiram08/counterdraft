@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Check, X, ArrowLeft, ArrowRight, RefreshCw, CheckCircle2, Loader2 } from "lucide-react";
+import { Check, X, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { CircleCheckIcon, RefreshCWIcon } from "@/components/icons/animated";
 import { toast } from "sonner";
 import { BrainHeaderPanel } from "./BrainHeaderPanel";
 import { BrainMetadata } from "@/types";
@@ -779,7 +781,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 disabled={loading || !deepDive}
                                 className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
-                                <RefreshCw size={14} className="text-ember-500" /> Refine Research
+                                <AnimatedIcon icon={RefreshCWIcon} size={14} className="text-ember-500" /> Refine Research
                             </button>
                         )}
 
@@ -793,7 +795,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 {completing ? (
                                     <><Loader2 size={16} className="animate-spin" /> Saving your draft...</>
                                 ) : (
-                                    <><CheckCircle2 size={16} /> Complete & Save</>
+                                    <><AnimatedIcon icon={CircleCheckIcon} size={16} /> Complete & Save</>
                                 )}
                             </button>
                         ) : (

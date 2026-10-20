@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, Compass, Book, Brain, MoreHorizontal, Zap, Settings, X, PenTool } from "lucide-react";
+import { MoreHorizontal, X } from "lucide-react";
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { BookTextIcon, BrainIcon, CompassIcon, HomeIcon, PenToolIcon, SettingsIcon, ZapIcon } from "@/components/icons/animated";
 
 interface MobileBottomNavProps {
     activeSection: string;
@@ -25,16 +27,16 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
     if (!isMobile) return null;
 
     const primaryNavItems = [
-        { id: 'explore', label: 'Explore', icon: Compass },
-        { id: 'pipeline', label: 'Home', icon: Home },
-        { id: 'drafts', label: 'Your Post', icon: Book },
-        { id: 'mind', label: 'Mind', icon: Brain },
+        { id: 'explore', label: 'Explore', icon: CompassIcon },
+        { id: 'pipeline', label: 'Home', icon: HomeIcon },
+        { id: 'drafts', label: 'Your Post', icon: BookTextIcon },
+        { id: 'mind', label: 'Mind', icon: BrainIcon },
     ];
 
     const moreNavItems = [
-        { id: 'style', label: 'Your Voice', icon: PenTool },
-        { id: 'tensions', label: 'Tensions', icon: Zap },
-        { id: 'settings', label: 'Settings', icon: Settings },
+        { id: 'style', label: 'Your Voice', icon: PenToolIcon },
+        { id: 'tensions', label: 'Tensions', icon: ZapIcon },
+        { id: 'settings', label: 'Settings', icon: SettingsIcon },
     ];
 
     const handleNavigate = (section: string) => {
@@ -65,7 +67,7 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                                         : 'text-ink-soft hover:text-ink hover:shadow-raised'
                                         }`}
                                 >
-                                    <item.icon size={22} className={activeSection === item.id ? 'text-ember-500' : 'text-ink-muted'} />
+                                    <AnimatedIcon icon={item.icon} size={22} className={activeSection === item.id ? 'text-ember-500' : 'text-ink-muted'} />
                                     {item.label}
                                 </button>
                             ))}
@@ -86,10 +88,12 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                                 : 'text-ink-muted hover:text-ink'
                                 }`}
                         >
-                            <item.icon
+                            {/* Touch has no hover, so the icon plays as its tab becomes active. */}
+                            <AnimatedIcon
+                                icon={item.icon}
                                 size={20}
-                                className={activeSection === item.id ? 'text-ember-500' : ''}
-                                strokeWidth={activeSection === item.id ? 2.25 : 1.75}
+                                play={activeSection === item.id}
+                                className={activeSection === item.id ? 'text-ember-500 [&_svg]:[stroke-width:2.25]' : '[&_svg]:[stroke-width:1.75]'}
                             />
                             <span className={`text-[10px] font-medium ${activeSection === item.id ? 'text-ink' : 'text-ink-muted'}`}>
                                 {item.label}
