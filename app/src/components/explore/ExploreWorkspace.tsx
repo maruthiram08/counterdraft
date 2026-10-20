@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import {
     Search, Loader2, Sparkles, ExternalLink, Lightbulb, Check, X,
-    ChevronRight, ChevronLeft, Compass, RotateCcw, Layers,
+    ChevronRight, ChevronLeft, Compass, RotateCcw, Layers, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
+import { FOR_YOU } from "@/lib/explore/trends";
 
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
@@ -95,7 +96,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const SESSION_KEY = 'cd-explore-workspace';
-const TRENDS_KEY = 'cd-explore-trends';
+const TRENDS_KEY = 'cd-explore-trends-v2';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_TRAIL = 8;
 const COMBINED_KEY = 'combined';
@@ -116,6 +117,14 @@ function writeStorage(key: string, value: unknown) {
     } catch {
         // Ignore quota or access errors
     }
+}
+
+// Swap in freshly fetched topics, keeping a category's current topics when nothing came back for it
+function mergeTrendGroups(prev: { label: string; trends: TrendGroup['trends'] }[], groups: TrendGroup[]) {
+    return prev.map(cat => {
+        const fresh = groups.find(g => g.category === cat.label);
+        return fresh && fresh.trends.length > 0 ? { ...cat, trends: fresh.trends } : cat;
+    });
 }
 
 function timeAgo(iso?: string): string | null {
@@ -164,10 +173,15 @@ export function ExploreWorkspace() {
     const [lens, setLens] = useState<'default' | 'beginner'>('default');
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [trendCategories, setTrendCategories] = useState(DEFAULT_CATEGORIES);
+    // "For you" is filled from the writer's profile and only shows once it has topics
+    const [trendCategories, setTrendCategories] = useState([{ label: FOR_YOU, trends: [] as TrendGroup['trends'] }, ...DEFAULT_CATEGORIES]);
     const [fetchingTrends, setFetchingTrends] = useState(false);
+    const [refreshingTopics, setRefreshingTopics] = useState(false);
 
-    const activeCategory = selectedCategory ?? trendCategories[0]?.label;
+    const visibleCategories = trendCategories.filter(c => c.trends.length > 0);
+    const activeCategory = visibleCategories.some(c => c.label === selectedCategory)
+        ? selectedCategory!
+        : visibleCategories[0]?.label;
     const step = trail[activeStep];
     const stories = step?.stories ?? [];
     const selectedStories = stories.filter(s => selectedKeys.includes(s.sourceUrl));
@@ -175,20 +189,10 @@ export function ExploreWorkspace() {
     const showingCombined = focusKey === COMBINED_KEY && selectedStories.length >= 2;
 
     useEffect(() => {
-        // Merge fetched trends with existing structure
-        const applyTrendGroups = (groups: TrendGroup[]) => {
-            setTrendCategories(prev => prev.map(cat => {
-                const newGroup = groups.find(g => g.category === cat.label);
-                return newGroup && newGroup.trends.length > 0
-                    ? { ...cat, trends: newGroup.trends }
-                    : cat;
-            }));
-        };
-
         const fetchRealTrends = async () => {
             const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
             if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS) {
-                applyTrendGroups(cached.groups);
+                setTrendCategories(prev => mergeTrendGroups(prev, cached.groups));
                 return;
             }
 
@@ -197,11 +201,11 @@ export function ExploreWorkspace() {
                 const res = await fetch('/api/explore/trends', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ categories: DEFAULT_CATEGORIES.map(c => c.label) })
+                    body: JSON.stringify({ categories: [FOR_YOU, ...DEFAULT_CATEGORIES.map(c => c.label)] })
                 });
                 const data = await res.json();
                 if (data.groups && Array.isArray(data.groups)) {
-                    applyTrendGroups(data.groups);
+                    setTrendCategories(prev => mergeTrendGroups(prev, data.groups));
                     writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
                 }
             } catch (e) {
@@ -213,6 +217,40 @@ export function ExploreWorkspace() {
 
         fetchRealTrends();
     }, []);
+
+    // A fresh set of topics for the category being viewed, avoiding the ones already shown
+    const refreshTopics = async () => {
+        const category = trendCategories.find(c => c.label === activeCategory);
+        if (!category || refreshingTopics) return;
+        setRefreshingTopics(true);
+        try {
+            const res = await fetch('/api/explore/trends', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    categories: [category.label],
+                    refresh: true,
+                    exclude: category.trends.map(t => t.label),
+                }),
+            });
+            const data = await res.json();
+            const fresh: TrendGroup | undefined = data.groups?.find((g: TrendGroup) => g.category === category.label);
+            if (!res.ok || !fresh?.trends?.length) {
+                toast.error(data.error || "Couldn't find new topics right now. Try again in a bit.");
+                return;
+            }
+            setTrendCategories(prev => mergeTrendGroups(prev, [fresh]));
+            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
+            if (cached) {
+                const others = cached.groups.filter(g => g.category !== fresh.category);
+                writeStorage(TRENDS_KEY, { ...cached, groups: [...others, fresh] });
+            }
+        } catch {
+            toast.error("Couldn't refresh topics. Try again.");
+        } finally {
+            setRefreshingTopics(false);
+        }
+    };
 
     // Restore the last exploration so a refresh or tab switch doesn't lose it
     useEffect(() => {
@@ -614,23 +652,34 @@ export function ExploreWorkspace() {
                         </p>
                         {renderSearch('large')}
                         <div className="w-full mt-8">
-                            <div role="tablist" aria-label="Starting topics" className="flex gap-1 justify-start md:justify-center overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-                                {trendCategories.map(cat => (
-                                    <button
-                                        key={cat.label}
-                                        role="tab"
-                                        aria-selected={activeCategory === cat.label}
-                                        onClick={() => setSelectedCategory(cat.label)}
-                                        className={`h-8 px-3 shrink-0 rounded-full text-xs font-medium transition-all ${activeCategory === cat.label
-                                            ? 'bg-surface shadow-raised text-ink'
-                                            : 'text-ink-muted hover:text-ink'
-                                            }`}
-                                    >
-                                        {cat.label}
-                                    </button>
-                                ))}
+                            <div className="flex items-center gap-1 justify-start md:justify-center">
+                                <div role="tablist" aria-label="Starting topics" className="flex gap-1 overflow-x-auto pb-1 -ml-4 pl-4 md:ml-0 md:pl-0">
+                                    {visibleCategories.map(cat => (
+                                        <button
+                                            key={cat.label}
+                                            role="tab"
+                                            aria-selected={activeCategory === cat.label}
+                                            onClick={() => setSelectedCategory(cat.label)}
+                                            className={`h-8 px-3 shrink-0 rounded-full text-xs font-medium transition-all ${activeCategory === cat.label
+                                                ? 'bg-surface shadow-raised text-ink'
+                                                : 'text-ink-muted hover:text-ink'
+                                                }`}
+                                        >
+                                            {cat.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={refreshTopics}
+                                    disabled={refreshingTopics || fetchingTrends}
+                                    aria-label={`Refresh topics in ${activeCategory}`}
+                                    title="Show different topics"
+                                    className="w-8 h-8 shrink-0 mb-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-canvas hover:shadow-raised active:shadow-pressed transition-all disabled:opacity-50"
+                                >
+                                    <RefreshCw size={14} className={refreshingTopics ? 'animate-spin' : ''} />
+                                </button>
                             </div>
-                            <div role="tabpanel" aria-label={`Trending in ${activeCategory}`} className="flex flex-wrap justify-center gap-2 mt-3">
+                            <div role="tabpanel" aria-label={`Trending in ${activeCategory}`} className={`flex flex-wrap justify-center gap-2 mt-3 ${refreshingTopics ? 'opacity-50' : ''}`}>
                                 {trendCategories.find(c => c.label === activeCategory)?.trends.map(trend => (
                                     <button
                                         key={trend.label}
@@ -642,7 +691,7 @@ export function ExploreWorkspace() {
                                     </button>
                                 ))}
                             </div>
-                            {fetchingTrends && <p className="text-xs text-ink-muted mt-2">Updating trends...</p>}
+                            {fetchingTrends && <p className="text-xs text-ink-muted mt-2">Finding topics for you...</p>}
                         </div>
                         {loading && (
                             <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">

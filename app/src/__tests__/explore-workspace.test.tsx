@@ -143,6 +143,29 @@ describe('ExploreWorkspace', () => {
         expect(screen.getByPlaceholderText('Search a topic to explore...')).toBeInTheDocument();
     });
 
+    it('leads with topics for the writer and refreshes a category without repeating it', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/trends') {
+                const body = JSON.parse(String(init?.body));
+                const groups = body.refresh
+                    ? [{ category: 'For you', trends: [{ label: 'Paternity leave in India', query: 'paternity leave policies India companies' }] }]
+                    : [{ category: 'For you', trends: [{ label: 'Dads and remote work', query: 'remote work new fathers' }] }];
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ groups }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        expect(await screen.findByRole('tab', { name: 'For you' })).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('button', { name: 'Dads and remote work' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Refresh topics in For you' }));
+        expect(await screen.findByRole('button', { name: 'Paternity leave in India' })).toBeInTheDocument();
+        const refreshCall = (global.fetch as jest.Mock).mock.calls.find(([url, init]) => url === '/api/explore/trends' && JSON.parse(init.body).refresh);
+        expect(JSON.parse(refreshCall[1].body)).toEqual({ categories: ['For you'], refresh: true, exclude: ['Dads and remote work'] });
+    });
+
     it('restores the exploration after a remount and starts over with New', async () => {
         const { unmount } = render(<ExploreWorkspace />);
         search('remote work');
