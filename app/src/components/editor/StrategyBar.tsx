@@ -12,6 +12,8 @@ interface StrategyBarProps {
     enableCoach?: boolean;
     // Called after the user shapes or infers a strategy, e.g. so research can follow it
     onStrategyShaped?: () => void;
+    // Fold the panel down to one line, e.g. once a draft exists and needs the space
+    collapsed?: boolean;
 }
 
 type FieldKey = 'outcome' | 'audience' | 'pain' | 'stance' | 'format' | 'toneNotes' | 'cta' | 'length' | 'include' | 'avoid';
@@ -105,8 +107,12 @@ function rememberRecent(meta: Partial<BrainMetadata>) {
     }
 }
 
-export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategyShaped }: StrategyBarProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
+export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategyShaped, collapsed = false }: StrategyBarProps) {
+    const [isExpanded, setIsExpanded] = useState(!collapsed);
+
+    useEffect(() => {
+        if (collapsed) setIsExpanded(false);
+    }, [collapsed]);
     const [metadata, setMetadata] = useState<Partial<BrainMetadata>>(draft.brain_metadata || {});
     const [brief, setBrief] = useState(draft.brain_metadata?.brief || "");
     const [isParsing, setIsParsing] = useState(false);
@@ -217,7 +223,7 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
     const briefChanged = brief.trim() !== (metadata.brief || "");
 
     return (
-        <div className="mb-8">
+        <div className={isExpanded ? "mb-8" : "mb-5"}>
             <div className="relative bg-surface rounded-tile shadow-card transition-all duration-300">
                 <div className="absolute -top-3 left-4 z-10 flex gap-2">
                     <button
@@ -231,10 +237,23 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
                 </div>
 
                 {!isExpanded && (
-                    <button onClick={() => setIsExpanded(true)} className="w-full text-left px-5 pt-6 pb-4 text-xs text-ink-soft truncate">
-                        {filledFields.length
-                            ? filledFields.slice(0, 5).map(f => `${f.label}: ${getFieldValue(metadata, f.key)}`).join(' · ')
-                            : "No strategy yet. Claude will infer one from your topic."}
+                    <button
+                        onClick={() => setIsExpanded(true)}
+                        title="Edit strategy"
+                        className="w-full text-left px-4 pt-6 pb-3 flex items-center gap-2 overflow-hidden [mask-image:linear-gradient(to_right,black_85%,transparent)]"
+                    >
+                        {filledFields.length ? filledFields.map(field => {
+                            const Icon = field.icon;
+                            return (
+                                <span key={field.key} className="shrink-0 flex items-center gap-1.5 h-7 px-3 rounded-full bg-canvas shadow-well text-xs font-medium text-ink">
+                                    <Icon size={11} className={field.color} />
+                                    <span className="text-ink-muted">{field.label}:</span>
+                                    <span className="truncate max-w-[200px]">{getFieldValue(metadata, field.key)}</span>
+                                </span>
+                            );
+                        }) : (
+                            <span className="text-xs text-ink-soft">No strategy yet. Claude will infer one from your topic.</span>
+                        )}
                     </button>
                 )}
 

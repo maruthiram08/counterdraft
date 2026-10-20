@@ -62,13 +62,13 @@ export function DraftStep({
             <div className="flex flex-1 gap-6">
                 {/* Editor Pane (Left) */}
                 <div className={`flex-1 flex flex-col transition-all duration-300 ${showContextPanel ? 'md:mr-0' : 'mx-auto max-w-3xl'}`}>
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Draft Content</h3>
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-lg font-medium tracking-[-0.01em] text-ink">Draft</h3>
                         <div className="flex gap-2">
                             {hasContext && (
                                 <button
                                     onClick={onToggleContextPanel}
-                                    className={`flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-sm font-medium transition-all ${showContextPanel
+                                    className={`flex items-center gap-1.5 h-9 px-4 rounded-full bg-canvas text-sm font-medium transition-all ${showContextPanel
                                         ? 'shadow-pressed text-ember-600'
                                         : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'
                                         }`}

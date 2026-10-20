@@ -15,9 +15,10 @@ interface BrainHeaderPanelProps {
     };
     onUpdate?: (metadata: BrainMetadata) => void;
     onStrategyShaped?: () => void;
+    collapsed?: boolean;
 }
 
-export function BrainHeaderPanel({ item, onUpdate, onStrategyShaped }: BrainHeaderPanelProps) {
+export function BrainHeaderPanel({ item, onUpdate, onStrategyShaped, collapsed }: BrainHeaderPanelProps) {
     // derived metadata for stability
     const metadata = item.brain_metadata || item.brainMetadata;
 
@@ -45,6 +46,7 @@ export function BrainHeaderPanel({ item, onUpdate, onStrategyShaped }: BrainHead
                 draft={mockDraft}
                 onUpdate={handleUpdate}
                 onStrategyShaped={onStrategyShaped}
+                collapsed={collapsed}
             />
         </div>
     );
