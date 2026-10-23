@@ -3,6 +3,7 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { parseOutlineShapes, parseVariants, DraftVariant, OutlineShapeOption } from '@/lib/editor/draft-tools';
 import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditChecklist, PastPost } from './craft';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, outlineShape, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
@@ -413,18 +414,7 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
         const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY');
         const research = deep_dive ? `\n\n${this.formatDeepDive(deep_dive)}` : '';
 
-        // Voice Injection
-        let voiceContext = '';
-        try {
-            const profile = await voiceService.getProfile(userId);
-            if (profile && profile.is_active) {
-                const rulesList = profile.rules?.map(r => `- ${r}`).join('\n') || '';
-                const antiList = profile.anti_patterns?.map(r => `- AVOID: ${r}`).join('\n') || '';
-                voiceContext = `\n\nUSER WRITING STYLE GUIDELINES:\n- **Tone:** ${profile.voice_tone}\n- **Style Rules:**\n${rulesList}\n- **Anti-Patterns (Do Not Use):**\n${antiList}\n`;
-            }
-        } catch (e) {
-            console.warn("Failed to load voice profile:", e);
-        }
+        const voiceContext = await this.voiceContext(userId);
 
         // The writer's own posts, so the draft sounds like them and not like generic LinkedIn
         const styleExamples = formatStyleExamples(pickStyleExamples(
@@ -572,6 +562,127 @@ ${referencesContext}${sourceContext}${userContextString}`
 
         const draft = completion.choices[0].message.content || '';
         return draft ? this.selfEdit(draft, { stance: brainMetadata?.stance, voiceContext, styleExamples }) : '';
+    }
+
+    // The creator's voice profile as prompt guidelines; empty when they have none
+    private async voiceContext(userId: string): Promise<string> {
+        try {
+            const profile = await voiceService.getProfile(userId);
+            if (profile && profile.is_active) {
+                const rulesList = profile.rules?.map(r => `- ${r}`).join('\n') || '';
+                const antiList = profile.anti_patterns?.map(r => `- AVOID: ${r}`).join('\n') || '';
+                return `\n\nUSER WRITING STYLE GUIDELINES:\n- **Tone:** ${profile.voice_tone}\n- **Style Rules:**\n${rulesList}\n- **Anti-Patterns (Do Not Use):**\n${antiList}\n`;
+            }
+        } catch (e) {
+            console.warn("Failed to load voice profile:", e);
+        }
+        return '';
+    }
+
+    // --- 3b. Other outline shapes: the same research and strategy, a different skeleton ---
+    async outlineShapes({ hook, angle, deep_dive, brainMetadata, current }: Omit<OutlineParams, 'userId' | 'references' | 'userContext'> & { current: string[] }): Promise<OutlineShapeOption[]> {
+        const completion = await this.openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            temperature: 0.7,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: `A creator has an outline for one post and wants to see it built a different way before drafting. Propose 2 alternative outlines with clearly different skeletons from the current one and from each other, for example: a story told from one moment, a contrarian argument, a step-by-step guide, a list of lessons, a before-and-after, a myth-versus-reality.
+
+Each alternative:
+- Keeps the post's topic, audience and goal, and uses the same research.
+- Has 3-7 sections. Each section is one string: a specific heading, a colon, then what it does and the findings it uses, named briefly.
+- Gets a short name for its shape and one line on when it works better than the current outline.
+
+Return JSON: { "shapes": [ { "name": "...", "why": "...", "sections": ["...", "..."] } ] }`
+                },
+                {
+                    role: 'user',
+                    content: `Topic: ${hook}\nAngle: ${angle || 'General'}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}\n\nCurrent outline:\n${current.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n${this.formatDeepDive(deep_dive)}`
+                }
+            ],
+        });
+        let raw: unknown = {};
+        try {
+            raw = JSON.parse(completion.choices[0].message.content || '{}');
+        } catch {
+            raw = {};
+        }
+        return parseOutlineShapes(raw, current);
+    }
+
+    // --- 4c. Rewrite one paragraph of the draft, with the outline and research behind it ---
+    async rewriteSection({ userId, draft, section, instruction, outline, deep_dive, brainMetadata }: {
+        userId: string;
+        draft: string;
+        section: string;
+        instruction?: string;
+        outline?: OutlineItem[];
+        deep_dive?: DeepDiveData;
+        brainMetadata?: BrainMetadata;
+    }): Promise<string> {
+        const voiceContext = await this.voiceContext(userId);
+        const outlineText = outline?.map((s, i) => `${i + 1}. ${typeof s === 'string' ? s : s.text}`).join('\n') || '';
+        const completion = await this.openai.chat.completions.create({
+            model: WRITER_MODEL,
+            temperature: 0.6,
+            messages: [
+                {
+                    role: 'system',
+                    content: `${SAFETY_PREAMBLE}
+
+You rewrite one paragraph of a creator's LinkedIn post. The rest of the post stays as it is, so the new paragraph must fit between the text before and after it.
+${instruction ? `The creator asked: "${instruction}". Do that.` : 'Make it sharper, more specific and more like the creator, keeping its point.'}
+
+Rules:
+- Use the research below for specifics. Never invent a statistic, study, name or quote that isn't in it or the post.
+- Keep any [bracketed placeholder] unless the creator's instruction fills it.
+- Same role in the post as before; roughly the same length unless asked otherwise.
+- Match the voice of the rest of the post.${voiceContext}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}
+
+Return only the new paragraph.`
+                },
+                {
+                    role: 'user',
+                    content: `${outlineText ? `Outline:\n${outlineText}\n\n` : ''}${deep_dive ? `${this.formatDeepDive(deep_dive)}\n\n` : ''}Whole post:\n${draft}\n\nParagraph to rewrite:\n${section}`
+                }
+            ],
+        });
+        return (completion.choices[0].message.content || '').trim();
+    }
+
+    // --- 4d. Variants of a finished draft to compare: shorter, punchier, more personal ---
+    async draftVariants({ userId, draft, brainMetadata }: { userId: string; draft: string; brainMetadata?: BrainMetadata }): Promise<DraftVariant[]> {
+        const voiceContext = await this.voiceContext(userId);
+        const completion = await this.openai.chat.completions.create({
+            model: WRITER_MODEL,
+            temperature: 0.7,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: `${SAFETY_PREAMBLE}
+
+Rewrite a creator's LinkedIn post three ways so they can compare:
+- "shorter": about half the length. Keep the opening's hook, the main point and the ending; cut everything else.
+- "punchier": same content, tighter sentences, stronger verbs, more line breaks, a harder-hitting first line.
+- "personal": more first person: what the creator saw, did or felt. Where that needs a detail only they know, leave a short [bracketed placeholder] instead of inventing it.
+
+All three keep the post's argument, stance, facts and call to action, invent no facts, keep any existing [placeholders], and stay in the creator's voice. No markdown headers, no emoji.${voiceContext}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}
+
+Return JSON: { "shorter": "...", "punchier": "...", "personal": "..." }`
+                },
+                { role: 'user', content: draft }
+            ],
+        });
+        let raw: unknown = {};
+        try {
+            raw = JSON.parse(completion.choices[0].message.content || '{}');
+        } catch {
+            raw = {};
+        }
+        return parseVariants(raw, draft);
     }
 
     // The writer's LinkedIn posts and the Pipeline posts they finished, newest first
