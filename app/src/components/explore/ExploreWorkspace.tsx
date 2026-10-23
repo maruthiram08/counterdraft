@@ -54,6 +54,14 @@ interface AudienceQuestion {
     detail?: string;
 }
 
+interface DeepDive {
+    summary: string;
+    keyPoints: string[];
+    viewpoints: { who: string; view: string }[];
+    openQuestions: string[];
+    readFrom?: string;
+}
+
 interface PostIdea {
     hook: string;
     angle: string;
@@ -72,6 +80,7 @@ interface SavedSession {
     focusKey: string | null;
     ideasByKey: Record<string, PostIdea[]>;
     savedIdeas: string[];
+    divesByKey?: Record<string, DeepDive>;
 }
 
 const DEFAULT_CATEGORIES = [
@@ -184,6 +193,14 @@ function groupByTheme(questions: Story[]): [string, Story[]][] {
     return [...groups.entries()];
 }
 
+function hostOf(url: string): string {
+    try {
+        return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+        return url;
+    }
+}
+
 function beliefLabel(story: Story): string {
     if (story.beliefStance === 'supports') return 'Supports your belief';
     if (story.beliefStance === 'challenges') return 'Challenges your belief';
@@ -197,6 +214,7 @@ export function ExploreWorkspace() {
     const [showDetailOnMobile, setShowDetailOnMobile] = useState(false);
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [ideasByKey, setIdeasByKey] = useState<Record<string, PostIdea[]>>({});
+    const [divesByKey, setDivesByKey] = useState<Record<string, DeepDive | 'loading' | 'failed'>>({});
     const [savedIdeas, setSavedIdeas] = useState<Set<string>>(new Set());
     const [restored, setRestored] = useState(false);
 
@@ -297,6 +315,7 @@ export function ExploreWorkspace() {
             setFocusKey(saved.focusKey ?? null);
             setIdeasByKey(saved.ideasByKey ?? {});
             setSavedIdeas(new Set(saved.savedIdeas ?? []));
+            setDivesByKey(saved.divesByKey ?? {});
         }
         setRestored(true);
     }, []);
@@ -309,9 +328,34 @@ export function ExploreWorkspace() {
             focusKey: focusKey === COMBINED_KEY ? null : focusKey,
             ideasByKey,
             savedIdeas: [...savedIdeas],
+            divesByKey: Object.fromEntries(Object.entries(divesByKey).filter(([, d]) => typeof d === 'object')) as Record<string, DeepDive>,
         };
         writeStorage(SESSION_KEY, session);
-    }, [trail, activeStep, focusKey, ideasByKey, savedIdeas, restored]);
+    }, [trail, activeStep, focusKey, ideasByKey, savedIdeas, divesByKey, restored]);
+
+    // Read the open story once, so the panel can brief the writer on what it actually says
+    const focusedUrl = focusedStory?.sourceUrl;
+    useEffect(() => {
+        if (!restored || !focusedStory || divesByKey[focusedStory.sourceUrl]) return;
+        const story = focusedStory;
+        setDivesByKey(prev => ({ ...prev, [story.sourceUrl]: 'loading' }));
+        (async () => {
+            let result: DeepDive | 'failed' = 'failed';
+            try {
+                const res = await fetch('/api/explore/deep-dive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: story.sourceUrl, title: story.title, query: step?.query, kind: story.kind }),
+                });
+                const data = await res.json();
+                if (res.ok && data.dive?.summary) result = data.dive;
+            } catch {
+                // The snippet still shows; the deep dive is extra
+            }
+            setDivesByKey(prev => ({ ...prev, [story.sourceUrl]: result }));
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusedUrl, restored]);
 
     const runSearch = async (query: string) => {
         if (!query.trim() || loading) return;
@@ -376,6 +420,7 @@ export function ExploreWorkspace() {
         setSelectedKeys([]);
         setIdeasByKey({});
         setSavedIdeas(new Set());
+        setDivesByKey({});
     };
 
     const openStory = (story: Story) => {
@@ -389,6 +434,17 @@ export function ExploreWorkspace() {
             : [...prev, story.sourceUrl]);
     };
 
+    const diveOf = (story: Story): DeepDive | null => {
+        const dive = divesByKey[story.sourceUrl];
+        return typeof dive === 'object' ? dive : null;
+    };
+
+    // The fullest account of a story available: the deep dive when it has been read, else the snippet
+    const briefing = (story: Story): string | undefined => {
+        const dive = diveOf(story);
+        return dive ? [dive.summary, ...dive.keyPoints].join(' ') : story.summary;
+    };
+
     const generateIdeas = async (key: string, sources: Story[]) => {
         setGeneratingKey(key);
         try {
@@ -397,7 +453,7 @@ export function ExploreWorkspace() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     titles: sources.map(s => s.title),
-                    sources: sources.map(s => ({ title: s.title, summary: s.summary, takeaway: s.takeaway })),
+                    sources: sources.map(s => ({ title: s.title, summary: briefing(s), takeaway: s.takeaway })),
                     context: step?.query,
                     relatedBeliefIds: sources.map(s => s.relatedBeliefId).filter(Boolean),
                 }),
@@ -429,7 +485,7 @@ export function ExploreWorkspace() {
         if (step?.query) sourceContext += `Original Search Query: "${step.query}"\n\n`;
 
         if (sources.length > 0) {
-            sourceContext += `Source Topics:\n${sources.map(t => `- ${t.title} (${t.sourceUrl})${t.takeaway ? `\n  Takeaway: ${t.takeaway}` : ''}`).join('\n')}\n\n`;
+            sourceContext += `Source Topics:\n${sources.map(t => `- ${t.title} (${t.sourceUrl})${t.takeaway ? `\n  Takeaway: ${t.takeaway}` : ''}${diveOf(t) ? `\n  Deep dive: ${briefing(t)}` : ''}`).join('\n')}\n\n`;
 
             // Fetch Full Content for the primary source
             const primarySource = sources[0];
@@ -492,6 +548,7 @@ export function ExploreWorkspace() {
             summary: s.summary,
             takeaway: s.takeaway,
             kind: s.kind,
+            keyPoints: diveOf(s)?.keyPoints,
         })),
         idea: { hook: idea.hook, angle: idea.angle, format: idea.format, belief: idea.belief },
     });
@@ -610,6 +667,83 @@ export function ExploreWorkspace() {
         );
     };
 
+    // What the piece says, read in full: summary, key points, who thinks what, and what it leaves open
+    const renderDeepDive = (story: Story) => {
+        const dive = divesByKey[story.sourceUrl];
+        if (dive === 'loading') {
+            return (
+                <div className="mt-4" aria-live="polite">
+                    {story.summary && <p className="text-sm text-ink-soft leading-relaxed">{story.summary}</p>}
+                    <div className="mt-4 space-y-4 animate-pulse" aria-label={`Reading the full ${story.kind === 'question' ? 'discussion' : 'piece'}`}>
+                        {[['w-16', ['w-full', 'w-11/12', 'w-2/3']], ['w-20', ['w-full', 'w-5/6', 'w-3/4']]].map(([heading, lines], i) => (
+                            <div key={i} className="space-y-2">
+                                <div className={`h-3 ${heading} rounded-full bg-canvas shadow-well`} />
+                                {(lines as string[]).map(w => <div key={w} className={`h-3.5 ${w} rounded-full bg-canvas shadow-well`} />)}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+        if (typeof dive !== 'object') {
+            return story.summary ? <p className="text-sm text-ink-soft leading-relaxed mt-3">{story.summary}</p> : null;
+        }
+
+        return (
+            <div className="mt-4 space-y-4">
+                <div>
+                    <h4 className="text-xs font-medium text-ink-muted mb-1">{story.kind === 'question' ? 'The discussion' : 'In short'}</h4>
+                    <p className="text-sm text-ink leading-relaxed">{dive.summary}</p>
+                </div>
+                {dive.keyPoints.length > 0 && (
+                    <div>
+                        <h4 className="text-xs font-medium text-ink-muted mb-1">{story.kind === 'question' ? 'What people suggest' : 'Key points'}</h4>
+                        <ul className="space-y-1.5">
+                            {dive.keyPoints.map(point => (
+                                <li key={point} className="text-sm text-ink-soft leading-relaxed flex gap-2">
+                                    <span className="mt-2 w-1 h-1 rounded-full bg-ember-500 shrink-0" />{point}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                {dive.viewpoints.length > 0 && (
+                    <div>
+                        <h4 className="text-xs font-medium text-ink-muted mb-1">Viewpoints</h4>
+                        <ul className="space-y-2">
+                            {dive.viewpoints.map(v => (
+                                <li key={v.who + v.view} className="text-sm leading-relaxed">
+                                    <span className="font-medium text-ink">{v.who}:</span> <span className="text-ink-soft">{v.view}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                {dive.openQuestions.length > 0 && (
+                    <div>
+                        <h4 className="text-xs font-medium text-ink-muted mb-1.5">Left open</h4>
+                        <div className="flex flex-col items-start gap-2">
+                            {dive.openQuestions.map(q => (
+                                <button
+                                    key={q}
+                                    onClick={() => runSearch(q)}
+                                    disabled={loading}
+                                    title="Explore this question"
+                                    className="text-left text-sm px-3 py-2 rounded-tile bg-canvas shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-start gap-2"
+                                >
+                                    <AnimatedIcon icon={CompassIcon} size={14} className="mt-0.5 shrink-0" />{q}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {dive.readFrom && (
+                    <p className="text-xs text-ink-muted">Read from <a href={dive.readFrom} target="_blank" rel="noopener noreferrer" className="underline hover:text-ink">{hostOf(dive.readFrom)}</a>, which carries the same story.</p>
+                )}
+            </div>
+        );
+    };
+
     const renderDetail = () => {
         if (showingCombined) {
             return (
@@ -657,9 +791,7 @@ export function ExploreWorkspace() {
                         <p className="text-sm text-ink mt-1 leading-relaxed">{focusedStory.takeaway}</p>
                     </div>
                 )}
-                {focusedStory.summary && (
-                    <p className="text-sm text-ink-soft leading-relaxed mt-3">{focusedStory.summary}</p>
-                )}
+                {renderDeepDive(focusedStory)}
                 {focusedStory.relatedBelief && (
                     <p className="text-sm text-ember-700 mt-3">
                         {beliefLabel(focusedStory)}: &ldquo;{focusedStory.relatedBelief}&rdquo;
@@ -866,6 +998,15 @@ export function ExploreWorkspace() {
                                 )
                             ) : (
                                 <>
+                                    {step?.questionsLoading && (
+                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Finding what people ask">
+                                            <span className="text-xs font-medium text-ink-muted">People are asking</span>
+                                            <div className="mt-2.5 space-y-3">
+                                                {['w-11/12', 'w-4/5', 'w-2/3'].map(w => <div key={w} className={`h-3.5 ${w} rounded-full bg-canvas shadow-well`} />)}
+                                            </div>
+                                            <div className="mt-3 h-3 w-28 rounded-full bg-canvas shadow-well" />
+                                        </div>
+                                    )}
                                     {questions.length > 0 && (
                                         <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card">
                                             <span className="text-xs font-medium text-ink-muted">People are asking</span>

@@ -217,7 +217,42 @@ describe('ExploreWorkspace', () => {
         expect(JSON.parse(ideasCall[1].body).titles).toEqual(['How do you keep a remote team aligned without daily calls?']);
     });
 
-    it('restores the exploration after a remount and starts over with New', async () => {
+    it('reads the open story and briefs the writer, and feeds that into ideas', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/deep-dive') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ dive: {
+                    summary: 'Large firms are letting teams set their own office days.',
+                    keyPoints: ['Office attendance is flat at 3 days a week.', 'Two banks dropped mandates in March.'],
+                    viewpoints: [{ who: 'Landlords', view: 'Mandates will return within a year.' }],
+                    openQuestions: ['Who gets promoted in a hybrid team?'],
+                } }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        search('remote work');
+
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        expect(await within(details).findByText('Large firms are letting teams set their own office days.')).toBeInTheDocument();
+        expect(within(details).getByText('Two banks dropped mandates in March.')).toBeInTheDocument();
+        expect(within(details).getByText('Mandates will return within a year.')).toBeInTheDocument();
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/deep-dive');
+        expect(JSON.parse(call[1].body)).toMatchObject({ url: 'https://example.com/Companies%20rethink%20remote%20work%20policies', query: 'remote work' });
+
+        fireEvent.click(within(details).getByRole('button', { name: /Get post ideas/ }));
+        await within(details).findByText('Docs beat meetings');
+        const ideasCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ideas');
+        expect(JSON.parse(ideasCall[1].body).sources[0].summary).toContain('Two banks dropped mandates in March.');
+
+        // An open question becomes the next step of the exploration
+        feeds['Who gets promoted in a hybrid team?'] = { feed: [story('Promotion gaps in hybrid teams')], related: [] };
+        fireEvent.click(within(details).getByRole('button', { name: /Who gets promoted in a hybrid team/ }));
+        expect(await within(details).findByText('Promotion gaps in hybrid teams')).toBeInTheDocument();
+    });
+
+        it('restores the exploration after a remount and starts over with New', async () => {
         const { unmount } = render(<ExploreWorkspace />);
         search('remote work');
         await screen.findByRole('region', { name: 'Story details' });

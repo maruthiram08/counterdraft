@@ -233,6 +233,7 @@ export interface ExploreOrigin {
     summary?: string; // Snippet from the search result
     takeaway?: string; // What a writer can use from it
     kind?: string; // framework, case study, expert view, data or news
+    keyPoints?: string[]; // Facts and examples from reading the full piece (deep dive)
   }>;
   idea: { hook: string; angle: string; format: string; belief?: string };
 }

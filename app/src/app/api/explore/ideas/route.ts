@@ -98,7 +98,7 @@ export async function POST(req: Request) {
             .map(src => [
                 `- ${src.title}`,
                 typeof src.takeaway === 'string' && src.takeaway ? `  Takeaway: ${src.takeaway.slice(0, 300)}` : '',
-                typeof src.summary === 'string' && src.summary ? `  Snippet: ${src.summary.slice(0, 400)}` : '',
+                typeof src.summary === 'string' && src.summary ? `  Snippet: ${src.summary.slice(0, 900)}` : '',
             ].filter(Boolean).join('\n'))
             .join('\n');
         const userMessage = search
