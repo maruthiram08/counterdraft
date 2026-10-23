@@ -4,7 +4,8 @@ import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { parseDraftQuestions, parseOutlineShapes, parseVariants, DraftAnswer, DraftQuestion, DraftVariant, OutlineShapeOption } from '@/lib/editor/draft-tools';
-import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditChecklist, PastPost } from './craft';
+import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditChecklist, PastPost, SEE_MORE_CHARS } from './craft';
+import { CRAFT_CRITERIA, CraftKey, CraftScore, scoreCraft } from '@/lib/editor/craft-score';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, outlineShape, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
 import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
@@ -882,6 +883,77 @@ Output JSON:
         });
 
         return completion.choices[0].message.content || draft;
+    }
+
+    // --- 6b. Craft score: hook and specifics rated here, readability and rhythm measured from the text ---
+    async craftScore({ draft, previous }: { draft: string; previous?: { key?: unknown; rating?: unknown; note?: unknown }[] }): Promise<CraftScore> {
+        const judged = CRAFT_CRITERIA.filter(c => c.key === 'hook' || c.key === 'specifics');
+        const prev = (Array.isArray(previous) ? previous : []).filter(c => judged.some(k => k.key === c?.key));
+        const previousBlock = prev.length
+            ? `\n\nPREVIOUS CHECK (of an earlier version):\n${prev.map(c => `- ${String(c.key)}: ${Math.max(0, Math.min(5, Math.round(Number(c.rating)) || 0))}/5${c.note ? ` (${String(c.note).slice(0, 200)})` : ''}`).join('\n')}
+A criterion keeps its previous rating unless the part of the post it judges has changed.`
+            : '';
+        const completion = await this.openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            temperature: 0,
+            seed: 7,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are a LinkedIn writing editor rating the craft of a post, not its strategy. Use the fixed rubric so the same post always gets the same ratings.
+
+Rate each 0-5:
+${judged.map(c => `- "${c.key}": ${c.ask}`).join('\n')}
+For "hook", judge only the first ${SEE_MORE_CHARS} characters, which is what shows before "see more".
+
+Anchors: 5 = nothing worth changing, 4 = only a minor polish, 3 = one clear gap, 2 = weak and obvious to a reader, 1 = barely there, 0 = missing.
+[Bracketed placeholders] are details the creator will fill in; count them as specific.
+
+Return JSON:
+{
+  "hook": { "rating": 0-5, "note": "one short line on why", "fix": "one specific instruction that would raise it, quoting the line to change. Empty if 4 or 5." },
+  "specifics": { "rating": 0-5, "note": "...", "fix": "... name the vague claims to make concrete, using detail already in the post or a [placeholder] for detail only the creator knows. Empty if 4 or 5." }
+}`
+                },
+                { role: 'user', content: `${previousBlock}\n\nPOST:\n${draft}`.trim() }
+            ],
+        });
+        let raw: unknown = {};
+        try {
+            raw = JSON.parse(completion.choices[0].message.content || '{}');
+        } catch {
+            raw = {};
+        }
+        return scoreCraft(raw, draft);
+    }
+
+    // Fixes one part of the craft score and leaves the rest of the post as it was
+    async craftFix({ userId, draft, key, fix, brainMetadata }: { userId: string; draft: string; key: CraftKey; fix: string; brainMetadata?: BrainMetadata }): Promise<string> {
+        const criterion = CRAFT_CRITERIA.find(c => c.key === key)!;
+        const voiceContext = await this.voiceContext(userId);
+        const completion = await this.openai.chat.completions.create({
+            model: WRITER_MODEL,
+            temperature: 0.3,
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are the creator's editor improving one thing in their LinkedIn post: ${criterion.label.toLowerCase()} (${criterion.ask}).
+
+What to do: ${fix}
+
+Rules:
+- Change only what this needs. Copy every other line word for word.
+- Keep every fact, number, name and [bracketed placeholder] exactly as written. Invent no facts; where a concrete detail only the creator knows is needed, add a short [bracketed placeholder].
+- Keep the argument, stance, call to action and roughly the same length.
+- Stay in the creator's voice.${voiceContext}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}
+
+Return only the full post, with no comments or markdown fences.`
+                },
+                { role: 'user', content: draft }
+            ],
+        });
+        return acceptSelfEdit(draft, completion.choices[0].message.content);
     }
 
     // --- 7. Verify Facts ---
