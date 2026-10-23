@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
     Search, Loader2, ExternalLink, Lightbulb, Check, X,
-    ChevronRight, ChevronLeft, RotateCcw, Layers,
+    ChevronRight, ChevronLeft, RotateCcw, Layers, Bookmark,
 } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { CompassIcon, RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
@@ -193,6 +193,11 @@ function groupByTheme(questions: Story[]): [string, Story[]][] {
     return [...groups.entries()];
 }
 
+// Saved topics share the saved set with idea hooks, so they persist with the session
+function topicKey(story: Story): string {
+    return `topic:${story.sourceUrl}`;
+}
+
 function hostOf(url: string): string {
     try {
         return new URL(url).hostname.replace(/^www\./, '');
@@ -222,6 +227,9 @@ export function ExploreWorkspace() {
     const [loading, setLoading] = useState(false);
     const [generatingKey, setGeneratingKey] = useState<string | null>(null);
     const [savingIdea, setSavingIdea] = useState<string | null>(null);
+    // The story whose "Save topic" note box is open, and what has been typed in it
+    const [noteFor, setNoteFor] = useState<string | null>(null);
+    const [note, setNote] = useState("");
     const [paneView, setPaneView] = useState<'stories' | 'questions'>('stories');
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -477,10 +485,8 @@ export function ExploreWorkspace() {
         generateIdeas(COMBINED_KEY, selectedStories);
     };
 
-    const saveIdeaToPipeline = async (idea: PostIdea, sources: Story[]) => {
-        setSavingIdea(idea.hook);
-
-        // Construct rich context for the Development Wizard
+    // Everything the Development Wizard needs about where an idea or topic came from
+    const buildSourceContext = async (sources: Story[]): Promise<string> => {
         let sourceContext = "";
         if (step?.query) sourceContext += `Original Search Query: "${step.query}"\n\n`;
 
@@ -506,6 +512,12 @@ export function ExploreWorkspace() {
                 console.warn("Failed to scrape source context", e);
             }
         }
+        return sourceContext;
+    };
+
+    const saveIdeaToPipeline = async (idea: PostIdea, sources: Story[]) => {
+        setSavingIdea(idea.hook);
+        const sourceContext = await buildSourceContext(sources);
 
         try {
             const res = await fetch('/api/content', {
@@ -537,7 +549,42 @@ export function ExploreWorkspace() {
     };
 
     // Everything the idea came from, saved with it so research and drafting stay on the same topic
-    const exploreOrigin = (idea: PostIdea, sources: Story[]): ExploreOrigin => ({
+    // A topic worth keeping before there is a post idea for it; it lands in the Pipeline's Ideas, marked Topic
+    const saveTopic = async (story: Story, note: string) => {
+        const key = topicKey(story);
+        setSavingIdea(key);
+        const sourceContext = await buildSourceContext([story]);
+        const dive = diveOf(story);
+        try {
+            const res = await fetch('/api/content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    hook: story.title,
+                    angle: note.trim() || dive?.summary || story.takeaway || story.summary || '',
+                    source_type: 'explore',
+                    stage: 'idea',
+                    brain_metadata: {
+                        sourceContext,
+                        explore: { ...exploreOrigin(null, [story]), savedAs: 'topic', note: note.trim() || undefined },
+                    },
+                }),
+            });
+            if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+            setSavedIdeas(prev => new Set([...prev, key]));
+            setNoteFor(null);
+            toast.success("Topic saved to Pipeline", {
+                action: { label: "View Pipeline", onClick: () => window.location.href = "/workspace?tab=pipeline" },
+            });
+        } catch (err) {
+            console.error('Failed to save topic:', err);
+            toast.error("Couldn't save the topic. Try again.");
+        } finally {
+            setSavingIdea(null);
+        }
+    };
+
+    const exploreOrigin = (idea: PostIdea | null, sources: Story[]): ExploreOrigin => ({
         query: step?.query ?? '',
         label: step?.label,
         intent: step?.intent,
@@ -550,7 +597,7 @@ export function ExploreWorkspace() {
             kind: s.kind,
             keyPoints: diveOf(s)?.keyPoints,
         })),
-        idea: { hook: idea.hook, angle: idea.angle, format: idea.format, belief: idea.belief },
+        ...(idea ? { idea: { hook: idea.hook, angle: idea.angle, format: idea.format, belief: idea.belief }, savedAs: 'idea' as const } : {}),
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -797,16 +844,55 @@ export function ExploreWorkspace() {
                         {beliefLabel(focusedStory)}: &ldquo;{focusedStory.relatedBelief}&rdquo;
                     </p>
                 )}
-                <a
-                    href={focusedStory.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-4 h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink-soft hover:text-ink active:shadow-pressed transition-shadow"
-                >
-                    <ExternalLink size={12} /> {focusedStory.kind === 'question'
-                        ? `Read the discussion on ${focusedStory.source}`
-                        : focusedStory.kind && focusedStory.kind !== 'news' ? 'Read the full piece' : 'Read the full story'}
-                </a>
+                <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <a
+                        href={focusedStory.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink-soft hover:text-ink active:shadow-pressed transition-shadow"
+                    >
+                        <ExternalLink size={12} /> {focusedStory.kind === 'question'
+                            ? `Read the discussion on ${focusedStory.source}`
+                            : focusedStory.kind && focusedStory.kind !== 'news' ? 'Read the full piece' : 'Read the full story'}
+                    </a>
+                    {savedIdeas.has(topicKey(focusedStory)) ? (
+                        <span className="inline-flex items-center gap-1.5 h-8 px-3 text-xs text-sage-700"><Check size={12} /> Topic saved</span>
+                    ) : noteFor !== focusedStory.sourceUrl && (
+                        <button
+                            onClick={() => { setNoteFor(focusedStory.sourceUrl); setNote(""); }}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink-soft hover:text-ember-600 active:shadow-pressed transition-shadow"
+                        >
+                            <Bookmark size={12} /> Save topic
+                        </button>
+                    )}
+                </div>
+                {noteFor === focusedStory.sourceUrl && !savedIdeas.has(topicKey(focusedStory)) && (
+                    <form
+                        onSubmit={(e) => { e.preventDefault(); saveTopic(focusedStory, note); }}
+                        className="mt-3 p-3 rounded-tile bg-canvas shadow-well"
+                    >
+                        <label htmlFor="topic-note" className="text-xs font-medium text-ink-muted">Why keep this? (optional)</label>
+                        <textarea
+                            id="topic-note"
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            rows={2}
+                            autoFocus
+                            placeholder="e.g. Could pair this with my take on hiring juniors"
+                            className="mt-1 w-full bg-transparent text-sm text-ink placeholder:text-ink-muted resize-none focus:outline-none"
+                        />
+                        <div className="flex justify-end gap-2 mt-1">
+                            <button type="button" onClick={() => setNoteFor(null)} className="h-8 px-3 text-xs text-ink-muted hover:text-ink">Cancel</button>
+                            <button
+                                type="submit"
+                                disabled={savingIdea === topicKey(focusedStory)}
+                                className="h-8 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                                {savingIdea === topicKey(focusedStory) && <Loader2 size={12} className="animate-spin" />} Save to Pipeline
+                            </button>
+                        </div>
+                    </form>
+                )}
                 {renderIdeas(focusedStory.sourceUrl, [focusedStory])}
             </div>
         );

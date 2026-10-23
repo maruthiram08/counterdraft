@@ -235,7 +235,10 @@ export interface ExploreOrigin {
     kind?: string; // framework, case study, expert view, data or news
     keyPoints?: string[]; // Facts and examples from reading the full piece (deep dive)
   }>;
-  idea: { hook: string; angle: string; format: string; belief?: string };
+  // Absent when a topic was saved before any post idea was picked for it
+  idea?: { hook: string; angle: string; format: string; belief?: string };
+  savedAs?: 'idea' | 'topic';
+  note?: string; // The writer's own note on a saved topic
 }
 
 export interface BrainMetadata {

@@ -252,6 +252,23 @@ describe('ExploreWorkspace', () => {
         expect(await within(details).findByText('Promotion gaps in hybrid teams')).toBeInTheDocument();
     });
 
+        it('saves a topic with a note to the Pipeline before any idea is picked', async () => {
+        render(<ExploreWorkspace />);
+        search('remote work');
+
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        fireEvent.click(within(details).getByRole('button', { name: 'Save topic' }));
+        fireEvent.change(within(details).getByLabelText(/Why keep this/), { target: { value: 'Pair with my take on written culture' } });
+        fireEvent.click(within(details).getByRole('button', { name: /Save to Pipeline/ }));
+
+        expect(await within(details).findByText('Topic saved')).toBeInTheDocument();
+        const save = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/content');
+        const body = JSON.parse(save[1].body);
+        expect(body).toMatchObject({ hook: 'Companies rethink remote work policies', angle: 'Pair with my take on written culture', stage: 'idea', source_type: 'explore' });
+        expect(body.brain_metadata.explore).toMatchObject({ query: 'remote work', savedAs: 'topic', note: 'Pair with my take on written culture' });
+        expect(body.brain_metadata.explore.idea).toBeUndefined();
+    });
+
         it('restores the exploration after a remount and starts over with New', async () => {
         const { unmount } = render(<ExploreWorkspace />);
         search('remote work');
