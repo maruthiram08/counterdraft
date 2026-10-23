@@ -19,6 +19,9 @@ interface ExploreStep {
     stories: Story[];
     related: RelatedTopic[];
     message?: string;
+    // What people are asking about the search, loaded after the stories
+    questions?: Story[];
+    questionsLoading?: boolean;
 }
 
 interface RelatedTopic {
@@ -41,6 +44,14 @@ interface Story {
     beliefStance?: 'supports' | 'challenges' | null;
     kind?: string;
     takeaway?: string;
+}
+
+interface AudienceQuestion {
+    question: string;
+    theme: string;
+    url: string;
+    source: string;
+    detail?: string;
 }
 
 interface PostIdea {
@@ -154,6 +165,25 @@ function storyMeta(story: Story): string {
     ].filter(Boolean).join(' · ');
 }
 
+// Questions open in the same panel as stories, so ideas, combining and saving work on them too
+function questionToStory(q: AudienceQuestion): Story {
+    return {
+        title: q.question,
+        sourceUrl: q.url,
+        source: q.source,
+        category: q.theme,
+        kind: 'question',
+        summary: q.detail,
+    };
+}
+
+// Questions in the order of their first theme, grouped under it
+function groupByTheme(questions: Story[]): [string, Story[]][] {
+    const groups = new Map<string, Story[]>();
+    for (const q of questions) groups.set(q.category, [...(groups.get(q.category) ?? []), q]);
+    return [...groups.entries()];
+}
+
 function beliefLabel(story: Story): string {
     if (story.beliefStance === 'supports') return 'Supports your belief';
     if (story.beliefStance === 'challenges') return 'Challenges your belief';
@@ -174,7 +204,7 @@ export function ExploreWorkspace() {
     const [loading, setLoading] = useState(false);
     const [generatingKey, setGeneratingKey] = useState<string | null>(null);
     const [savingIdea, setSavingIdea] = useState<string | null>(null);
-    const [lens, setLens] = useState<'default' | 'beginner'>('default');
+    const [paneView, setPaneView] = useState<'stories' | 'questions'>('stories');
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     // "For you" is filled from the writer's profile and only shows once it has topics
@@ -188,8 +218,10 @@ export function ExploreWorkspace() {
         : visibleCategories[0]?.label;
     const step = trail[activeStep];
     const stories = step?.stories ?? [];
-    const selectedStories = stories.filter(s => selectedKeys.includes(s.sourceUrl));
-    const focusedStory = stories.find(s => s.sourceUrl === focusKey) ?? null;
+    const questions = step?.questions ?? [];
+    const allItems = [...stories, ...questions.filter(q => !stories.some(s => s.sourceUrl === q.sourceUrl))];
+    const selectedStories = allItems.filter(s => selectedKeys.includes(s.sourceUrl));
+    const focusedStory = allItems.find(s => s.sourceUrl === focusKey) ?? null;
     const showingCombined = focusKey === COMBINED_KEY && selectedStories.length >= 2;
 
     useEffect(() => {
@@ -260,7 +292,7 @@ export function ExploreWorkspace() {
     useEffect(() => {
         const saved = readStorage<SavedSession>(SESSION_KEY);
         if (saved?.trail?.length) {
-            setTrail(saved.trail);
+            setTrail(saved.trail.map(s => ({ ...s, questionsLoading: false })));
             setActiveStep(Math.min(saved.activeStep ?? 0, saved.trail.length - 1));
             setFocusKey(saved.focusKey ?? null);
             setIdeasByKey(saved.ideasByKey ?? {});
@@ -289,7 +321,7 @@ export function ExploreWorkspace() {
 
         let next: ExploreStep;
         try {
-            const res = await fetch(`/api/explore/feed?q=${encodeURIComponent(query)}&lens=${lens}`);
+            const res = await fetch(`/api/explore/feed?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             next = {
                 query,
@@ -298,6 +330,7 @@ export function ExploreWorkspace() {
                 stories: data.feed || [],
                 related: data.related || [],
                 message: data.feed?.length ? undefined : (data.message || data.error || `Nothing found for "${query}". Try a broader search.`),
+                questionsLoading: true,
             };
         } catch {
             next = { query, stories: [], related: [], message: "Something went wrong. Please try again." };
@@ -310,7 +343,22 @@ export function ExploreWorkspace() {
         setActiveStep(updated.length - 1);
         setFocusKey(next.stories[0]?.sourceUrl ?? null);
         setShowDetailOnMobile(false);
+        setPaneView('stories');
         setLoading(false);
+        loadQuestions(next);
+    };
+
+    // Fills in what people are asking once the stories are on screen
+    const loadQuestions = async (target: ExploreStep) => {
+        let found: Story[] = [];
+        try {
+            const res = await fetch(`/api/explore/questions?q=${encodeURIComponent(target.query)}`);
+            const data = await res.json();
+            if (res.ok && Array.isArray(data.questions)) found = data.questions.map(questionToStory);
+        } catch {
+            // Questions are extra; the stories stand on their own
+        }
+        setTrail(prev => prev.map(s => s === target ? { ...s, questions: found, questionsLoading: false } : s));
     };
 
     const goToStep = (index: number) => {
@@ -318,6 +366,7 @@ export function ExploreWorkspace() {
         setSelectedKeys([]);
         setFocusKey(trail[index]?.stories[0]?.sourceUrl ?? null);
         setShowDetailOnMobile(false);
+        setPaneView('stories');
     };
 
     const startOver = () => {
@@ -517,6 +566,50 @@ export function ExploreWorkspace() {
         );
     };
 
+    const renderItem = (story: Story) => {
+        const focused = story.sourceUrl === focusKey;
+        const selected = selectedKeys.includes(story.sourceUrl);
+        return (
+            <li key={story.sourceUrl}>
+                <div
+                    className={`flex items-start gap-3 p-3.5 rounded-tile bg-surface transition-all ${focused
+                        ? 'shadow-card ring-2 ring-ember-200'
+                        : 'shadow-card hover:shadow-float'
+                        }`}
+                >
+                    <button
+                        onClick={() => toggleSelected(story)}
+                        aria-label={selected ? 'Remove from combination' : 'Add to combination'}
+                        className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${selected
+                            ? 'bg-ember-500 text-white shadow-ember'
+                            : 'bg-canvas shadow-well hover:ring-2 hover:ring-ember-200'
+                            }`}
+                    >
+                        {selected && <Check size={10} />}
+                    </button>
+                    <button onClick={() => openStory(story)} className="flex-1 text-left">
+                        {story.type === 'question' && (
+                            <span className="text-xs font-medium text-sand-700">Question · </span>
+                        )}
+                        <span className="text-sm font-medium text-ink">{story.title}</span>
+                        {story.takeaway && (
+                            <span className="block text-xs text-ink-soft mt-1 line-clamp-2">{story.takeaway}</span>
+                        )}
+                        <span className="block text-xs text-ink-muted mt-1">
+                            {story.kind && <span className="text-ember-700 font-medium capitalize">{story.kind} · </span>}
+                            {storyMeta(story)}
+                        </span>
+                        {story.relatedBelief && (
+                            <span className="block text-xs text-ember-700 mt-1 line-clamp-1">
+                                {beliefLabel(story)}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </li>
+        );
+    };
+
     const renderDetail = () => {
         if (showingCombined) {
             return (
@@ -578,35 +671,16 @@ export function ExploreWorkspace() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 mt-4 h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink-soft hover:text-ink active:shadow-pressed transition-shadow"
                 >
-                    <ExternalLink size={12} /> {focusedStory.kind && focusedStory.kind !== 'news' ? 'Read the full piece' : 'Read the full story'}
+                    <ExternalLink size={12} /> {focusedStory.kind === 'question'
+                        ? `Read the discussion on ${focusedStory.source}`
+                        : focusedStory.kind && focusedStory.kind !== 'news' ? 'Read the full piece' : 'Read the full story'}
                 </a>
                 {renderIdeas(focusedStory.sourceUrl, [focusedStory])}
             </div>
         );
     };
 
-    const lensToggle = (
-        <div className="flex bg-canvas shadow-pressed p-1 rounded-full" role="group" aria-label="Lens">
-            <button
-                type="button"
-                onClick={() => setLens('default')}
-                aria-pressed={lens === 'default'}
-                className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'default' ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
-            >
-                Professional
-            </button>
-            <button
-                type="button"
-                onClick={() => setLens('beginner')}
-                aria-pressed={lens === 'beginner'}
-                className={`h-7 px-3 rounded-full text-xs font-medium transition-all ${lens === 'beginner' ? 'bg-ember-500 text-white shadow-ember' : 'text-ink-muted hover:text-ink'}`}
-            >
-                Beginner&apos;s Lens
-            </button>
-        </div>
-    );
-
-    // Large: the centred starting composer. Compact: the bar above results, with the lens and New beside it.
+    // Large: the centred starting composer. Compact: the bar above results, with New beside it.
     const renderSearch = (size: 'large' | 'compact') => (
         <div className="w-full">
             <form onSubmit={handleSubmit} className="relative">
@@ -629,17 +703,16 @@ export function ExploreWorkspace() {
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <ChevronRight size={16} />}
                 </button>
             </form>
-            <div className={`mt-2 flex flex-wrap items-center gap-2 ${size === 'large' ? 'justify-center' : 'justify-between'}`}>
-                {lensToggle}
-                {size === 'compact' && (
+            {size === 'compact' && (
+                <div className="mt-2 flex items-center justify-end">
                     <button
                         onClick={startOver}
                         className="flex items-center gap-1 h-8 text-xs text-ink-muted hover:text-ink px-2"
                     >
                         <RotateCcw size={12} /> New
                     </button>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 
@@ -758,51 +831,42 @@ export function ExploreWorkspace() {
 
                             {step?.message && <p className="text-sm text-ink-muted">{step.message}</p>}
 
-                            <ul className="space-y-2">
-                                {stories.map(story => {
-                                    const focused = story.sourceUrl === focusKey;
-                                    const selected = selectedKeys.includes(story.sourceUrl);
-                                    return (
-                                        <li key={story.sourceUrl}>
-                                            <div
-                                                className={`flex items-start gap-3 p-3.5 rounded-tile bg-surface transition-all ${focused
-                                                    ? 'shadow-card ring-2 ring-ember-200'
-                                                    : 'shadow-card hover:shadow-float'
-                                                    }`}
-                                            >
-                                                <button
-                                                    onClick={() => toggleSelected(story)}
-                                                    aria-label={selected ? 'Remove from combination' : 'Add to combination'}
-                                                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${selected
-                                                        ? 'bg-ember-500 text-white shadow-ember'
-                                                        : 'bg-canvas shadow-well hover:ring-2 hover:ring-ember-200'
-                                                        }`}
-                                                >
-                                                    {selected && <Check size={10} />}
-                                                </button>
-                                                <button onClick={() => openStory(story)} className="flex-1 text-left">
-                                                    {story.type === 'question' && (
-                                                        <span className="text-xs font-medium text-sand-700">Question · </span>
-                                                    )}
-                                                    <span className="text-sm font-medium text-ink">{story.title}</span>
-                                                    {story.takeaway && (
-                                                        <span className="block text-xs text-ink-soft mt-1 line-clamp-2">{story.takeaway}</span>
-                                                    )}
-                                                    <span className="block text-xs text-ink-muted mt-1">
-                                                        {story.kind && <span className="text-ember-700 font-medium capitalize">{story.kind} · </span>}
-                                                        {storyMeta(story)}
-                                                    </span>
-                                                    {story.relatedBelief && (
-                                                        <span className="block text-xs text-ember-700 mt-1 line-clamp-1">
-                                                            {beliefLabel(story)}
-                                                        </span>
-                                                    )}
-                                                </button>
+                            {(questions.length > 0 || step?.questionsLoading) && (
+                                <div role="tablist" aria-label="Results" className="flex gap-1 mb-3 p-1 bg-canvas shadow-pressed rounded-full w-fit">
+                                    {(['stories', 'questions'] as const).map(view => (
+                                        <button
+                                            key={view}
+                                            role="tab"
+                                            aria-selected={paneView === view}
+                                            onClick={() => setPaneView(view)}
+                                            className={`h-7 px-3 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200 ${paneView === view ? 'bg-surface shadow-raised text-ink' : 'text-ink-muted hover:text-ink'}`}
+                                        >
+                                            {view === 'stories' ? `Stories (${stories.length})` : 'Questions people ask'}
+                                            {view === 'questions' && (step?.questionsLoading
+                                                ? <Loader2 size={12} className="animate-spin" />
+                                                : <span>({questions.length})</span>)}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {paneView === 'questions' ? (
+                                step?.questionsLoading ? (
+                                    <p className="text-sm text-ink-muted flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Finding what people ask on Reddit, Quora and Hacker News...</p>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <p className="text-xs text-ink-muted">Real questions from community threads. Open one to get post ideas that answer it.</p>
+                                        {groupByTheme(questions).map(([theme, items]) => (
+                                            <div key={theme}>
+                                                <h4 className="text-xs font-medium text-ink-soft mb-2">{theme}</h4>
+                                                <ul className="space-y-2">{items.map(renderItem)}</ul>
                                             </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
+                                        ))}
+                                    </div>
+                                )
+                            ) : (
+                                <ul className="space-y-2">{stories.map(renderItem)}</ul>
+                            )}
                         </section>
 
                         {/* The story being looked at, with its angles */}

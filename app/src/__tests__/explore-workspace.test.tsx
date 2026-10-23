@@ -177,6 +177,41 @@ describe('ExploreWorkspace', () => {
         expect(JSON.parse(refreshCall[1].body)).toEqual({ mode: 'discover', refresh: true, exclude: ['Fatherhood'] });
     });
 
+    it('shows what people ask about a search and gets ideas for a question', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url.startsWith('/api/explore/questions')) {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ questions: [
+                    { question: 'How do you keep a remote team aligned without daily calls?', theme: 'Staying aligned', url: 'https://www.reddit.com/r/remotework/1', source: 'Reddit', detail: 'Our team is spread over 4 time zones.' },
+                    { question: 'Is async standup worth it for a team of five?', theme: 'Staying aligned', url: 'https://www.quora.com/async-standup', source: 'Quora' },
+                    { question: 'How do I ask my manager for full remote?', theme: 'Negotiating remote', url: 'https://www.reddit.com/r/cscareers/2', source: 'Reddit' },
+                ] }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        search('remote work');
+
+        const tab = await screen.findByRole('tab', { name: /Questions people ask \(3\)/ });
+        expect(screen.getByRole('tab', { name: 'Stories (2)' })).toHaveAttribute('aria-selected', 'true');
+        fireEvent.click(tab);
+
+        expect(screen.getByRole('heading', { name: 'Staying aligned' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Negotiating remote' })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /keep a remote team aligned/ }));
+
+        const details = screen.getByRole('region', { name: 'Story details' });
+        expect(within(details).getByRole('heading', { name: 'How do you keep a remote team aligned without daily calls?' })).toBeInTheDocument();
+        expect(within(details).getByText('Our team is spread over 4 time zones.')).toBeInTheDocument();
+        expect(within(details).getByRole('link', { name: /Read the discussion on Reddit/ })).toHaveAttribute('href', 'https://www.reddit.com/r/remotework/1');
+
+        fireEvent.click(within(details).getByRole('button', { name: /Get post ideas/ }));
+        await within(details).findByText('Docs beat meetings');
+        const ideasCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ideas');
+        expect(JSON.parse(ideasCall[1].body).titles).toEqual(['How do you keep a remote team aligned without daily calls?']);
+    });
+
     it('restores the exploration after a remount and starts over with New', async () => {
         const { unmount } = render(<ExploreWorkspace />);
         search('remote work');
