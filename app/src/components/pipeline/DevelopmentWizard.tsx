@@ -93,7 +93,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 body: JSON.stringify({
                     action: 'verify_strategy',
                     draft: textToVerify,
-                    brainMetadata: item.brain_metadata,
+                    brainMetadata: latestBrainMetadata.current,
                     previous
                 })
             });
@@ -129,7 +129,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     action: 'auto_fix_strategy',
                     draft: draftContent,
                     fix_instruction: instruction,
-                    brainMetadata: item.brain_metadata
+                    brainMetadata: latestBrainMetadata.current
                 })
             });
 
