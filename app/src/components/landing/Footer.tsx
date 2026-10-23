@@ -49,7 +49,7 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="text-ink text-sm font-medium mb-6">Legal</h4>
             <ul className="space-y-4 text-sm text-ink-soft">
-              <li><a href="#" className="hover:text-ember-600 transition-colors">Privacy</a></li>
+              <li><a href="/privacy" className="hover:text-ember-600 transition-colors">Privacy</a></li>
               <li><a href="#" className="hover:text-ember-600 transition-colors">Terms</a></li>
               <li><a href="#" className="hover:text-ember-600 transition-colors">Cookies</a></li>
             </ul>

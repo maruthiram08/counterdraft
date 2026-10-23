@@ -1,13 +1,12 @@
 {
     "manifest_version": 3,
     "name": "CounterDraft Lens",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "The Thinking Capture Layer for CounterDraft.",
     "permissions": [
         "activeTab",
         "scripting",
         "sidePanel",
-        "storage",
         "tabs",
         "cookies"
     ],

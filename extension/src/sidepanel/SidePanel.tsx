@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Camera, Scissors, MapPin, X, Check } from 'lucide-react';
 
+// The CounterDraft app this extension saves captures to. Set VITE_APP_URL at build time
+// (e.g. VITE_APP_URL=https://counterdraft.com npm run build); defaults to local dev.
+const APP_URL = (import.meta.env.VITE_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+
 interface SnipData {
     dataUrl: string;
     x: number;
@@ -212,7 +216,7 @@ export function SidePanel() {
         // Helper to get cookie
         const getAuthToken = async () => {
             try {
-                const cookie = await chrome.cookies.get({ url: 'http://localhost:3000', name: '__session' });
+                const cookie = await chrome.cookies.get({ url: APP_URL, name: '__session' });
                 return cookie?.value;
             } catch (e) {
                 console.error("Failed to get cookie", e);
@@ -223,7 +227,7 @@ export function SidePanel() {
         const token = await getAuthToken();
 
         try {
-            const API_URL = 'http://localhost:3000/api/brain/capture';
+            const API_URL = `${APP_URL}/api/brain/capture`;
 
             const headers: any = { 'Content-Type': 'application/json' };
             if (token) {
