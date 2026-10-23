@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { StyleAnalysisModal } from "@/components/modal/StyleAnalysisModal";
-import { PenTool, Wand2, RefreshCw, CheckCircle, XCircle, Plus, X, Save, Edit2, Trash2 } from "lucide-react";
+import { PenTool, Wand2, RefreshCw, CheckCircle, XCircle, Plus, X, Save, Edit2, Trash2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { TidyRulesPanel } from "@/components/voice/TidyRulesPanel";
+import { cleanOrigins, MAX_RULES, TidyProposal } from "@/lib/voice/rules";
 import { useRouter } from "next/navigation";
 
 interface VoiceProfile {
@@ -13,6 +16,7 @@ interface VoiceProfile {
     rules: string[];
     anti_patterns: string[];
     name: string;
+    workflow_preferences?: { rule_origins?: unknown };
 }
 
 export default function StylePage() {
@@ -26,6 +30,10 @@ export default function StylePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editedProfile, setEditedProfile] = useState<VoiceProfile | null>(null);
     const [saving, setSaving] = useState(false);
+
+    // Tidy-up proposal, shown for review before anything is saved
+    const [tidying, setTidying] = useState(false);
+    const [tidy, setTidy] = useState<TidyProposal | null>(null);
 
     // New Profile State
     const [isCreating, setIsCreating] = useState(false);
@@ -155,6 +163,47 @@ export default function StylePage() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleTidy = async () => {
+        setTidying(true);
+        try {
+            const res = await fetch('/api/user/style/tidy', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Could not tidy your rules');
+            setTidy(data);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Could not tidy your rules');
+        } finally {
+            setTidying(false);
+        }
+    };
+
+    const handleApplyTidy = async () => {
+        if (!tidy) return;
+        setSaving(true);
+        try {
+            const res = await fetch('/api/user/style', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rules: tidy.rules, anti_patterns: tidy.anti_patterns }),
+            });
+            if (!res.ok) throw new Error('Could not save');
+            setProfile(await res.json().then(d => d.profile));
+            setTidy(null);
+            toast.success('Rules tidied');
+        } catch {
+            toast.error('Could not save the tidied rules');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const ruleOrigins = cleanOrigins(profile?.workflow_preferences?.rule_origins);
+    const learnedOn = (rule: string) => {
+        const origin = ruleOrigins[rule];
+        if (origin?.source !== 'edit') return null;
+        return new Date(origin.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     };
 
     const handleDelete = async () => {
@@ -321,6 +370,17 @@ export default function StylePage() {
                                             <Trash2 size={18} />
                                         </button>
                                         <div className="w-px bg-line mx-1"></div>
+                                        {(profile.rules?.length || 0) + (profile.anti_patterns?.length || 0) >= 2 && (
+                                            <button
+                                                onClick={handleTidy}
+                                                disabled={tidying}
+                                                className="flex items-center gap-2 h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                                                title="Merge repeated rules and find ones that contradict each other"
+                                            >
+                                                {tidying ? <RefreshCw size={16} className="animate-spin text-ember-500" /> : <Sparkles size={16} className="text-ember-500" />}
+                                                Tidy up
+                                            </button>
+                                        )}
                                         <button
                                             onClick={handleStartEdit}
                                             className="flex items-center gap-2 h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
@@ -340,6 +400,16 @@ export default function StylePage() {
                             </>
                         )}
                     </div>
+
+                    {tidy && profile && !isEditing && (
+                        <TidyRulesPanel
+                            proposal={tidy}
+                            before={{ rules: profile.rules?.length || 0, anti_patterns: profile.anti_patterns?.length || 0 }}
+                            saving={saving}
+                            onApply={handleApplyTidy}
+                            onCancel={() => setTidy(null)}
+                        />
+                    )}
 
                     {/* Content Area */}
                     {loading ? (
@@ -392,6 +462,9 @@ export default function StylePage() {
                                     </div>
                                     <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Do&apos;s (Rules)</h3>
                                 </div>
+                                {(profile.rules?.length || 0) >= MAX_RULES - 2 && (
+                                    <p className="-mt-3 mb-4 text-xs text-ink-muted">{profile.rules.length} of {MAX_RULES}. New rules learned from your edits replace the oldest learned ones.</p>
+                                )}
                                 <div className="space-y-4 flex-1">
                                     {isEditing && editedProfile ? (
                                         <>
@@ -418,7 +491,14 @@ export default function StylePage() {
                                                 profile.rules.map((rule, i) => (
                                                     <li key={i} className="flex gap-3 text-ink-soft text-sm leading-relaxed">
                                                         <span className="text-sage-500 font-medium">•</span>
-                                                        {rule}
+                                                        <span>
+                                                            {rule}
+                                                            {learnedOn(rule) && (
+                                                                <span className="block text-xs text-ink-muted" title={ruleOrigins[rule]?.why}>
+                                                                    Learned from your edits, {learnedOn(rule)}
+                                                                </span>
+                                                            )}
+                                                        </span>
                                                     </li>
                                                 ))
                                             ) : (
