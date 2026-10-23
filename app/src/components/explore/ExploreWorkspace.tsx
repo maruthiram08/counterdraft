@@ -13,6 +13,7 @@ import { FOR_YOU, shuffle } from "@/lib/explore/trends";
 
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
+    id?: string; // Lets results that arrive later find their step
     query: string;
     label?: string; // Short name from the search planner, shown in the path
     intent?: 'learn' | 'news';
@@ -22,6 +23,14 @@ interface ExploreStep {
     // What people are asking about the search, loaded after the stories
     questions?: Story[];
     questionsLoading?: boolean;
+    // The takes the stories make, and the one nobody is making
+    debate?: Debate | null;
+    debateLoading?: boolean;
+}
+
+interface Debate {
+    takes: { take: string; stories: number[] }[];
+    gap: { take: string; why: string } | null;
 }
 
 interface RelatedTopic {
@@ -124,6 +133,7 @@ const MAX_TRAIL = 8;
 // Tabs shown beside "For you"; each visit picks a random few from the writer's saved set
 const TABS_SHOWN = 4;
 const COMBINED_KEY = 'combined';
+const GAP_KEY = 'gap';
 
 // Storage can be unavailable (private mode, blocked site data); Explore still works without it.
 function readStorage<T>(key: string): T | null {
@@ -249,6 +259,7 @@ export function ExploreWorkspace() {
     const selectedStories = allItems.filter(s => selectedKeys.includes(s.sourceUrl));
     const focusedStory = allItems.find(s => s.sourceUrl === focusKey) ?? null;
     const showingCombined = focusKey === COMBINED_KEY && selectedStories.length >= 2;
+    const showingGap = focusKey === GAP_KEY && Boolean(step?.debate?.gap);
 
     useEffect(() => {
         const fetchRealTrends = async () => {
@@ -318,7 +329,7 @@ export function ExploreWorkspace() {
     useEffect(() => {
         const saved = readStorage<SavedSession>(SESSION_KEY);
         if (saved?.trail?.length) {
-            setTrail(saved.trail.map(s => ({ ...s, questionsLoading: false })));
+            setTrail(saved.trail.map(s => ({ ...s, questionsLoading: false, debateLoading: false })));
             setActiveStep(Math.min(saved.activeStep ?? 0, saved.trail.length - 1));
             setFocusKey(saved.focusKey ?? null);
             setIdeasByKey(saved.ideasByKey ?? {});
@@ -333,7 +344,7 @@ export function ExploreWorkspace() {
         const session: SavedSession = {
             trail,
             activeStep,
-            focusKey: focusKey === COMBINED_KEY ? null : focusKey,
+            focusKey: focusKey === COMBINED_KEY || focusKey === GAP_KEY ? null : focusKey,
             ideasByKey,
             savedIdeas: [...savedIdeas],
             divesByKey: Object.fromEntries(Object.entries(divesByKey).filter(([, d]) => typeof d === 'object')) as Record<string, DeepDive>,
@@ -376,6 +387,7 @@ export function ExploreWorkspace() {
             const res = await fetch(`/api/explore/feed?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             next = {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                 query,
                 label: data.label,
                 intent: data.intent,
@@ -383,9 +395,10 @@ export function ExploreWorkspace() {
                 related: data.related || [],
                 message: data.feed?.length ? undefined : (data.message || data.error || `Nothing found for "${query}". Try a broader search.`),
                 questionsLoading: true,
+                debateLoading: (data.feed?.length ?? 0) >= 3,
             };
         } catch {
-            next = { query, stories: [], related: [], message: "Something went wrong. Please try again." };
+            next = { query, stories: [], related: [], message: "Something went wrong. Please try again.", questionsLoading: true };
         }
 
         // A new search branches from the step being viewed, so going back and searching again replaces what came after
@@ -398,6 +411,30 @@ export function ExploreWorkspace() {
         setPaneView('stories');
         setLoading(false);
         loadQuestions(next);
+        if (next.debateLoading) loadDebate(next);
+    };
+
+    const updateStep = (target: ExploreStep, patch: Partial<ExploreStep>) =>
+        setTrail(prev => prev.map(s => (s.id ? s.id === target.id : s === target) ? { ...s, ...patch } : s));
+
+    // Maps the takes the stories already make, once they are on screen
+    const loadDebate = async (target: ExploreStep) => {
+        let debate: Debate | null = null;
+        try {
+            const res = await fetch('/api/explore/debate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: target.query,
+                    stories: target.stories.map(s => ({ title: s.title, summary: s.takeaway || s.summary, source: s.source })),
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.debate) debate = data.debate;
+        } catch {
+            // The map is extra; the stories stand on their own
+        }
+        updateStep(target, { debate, debateLoading: false });
     };
 
     // Fills in what people are asking once the stories are on screen
@@ -410,7 +447,7 @@ export function ExploreWorkspace() {
         } catch {
             // Questions are extra; the stories stand on their own
         }
-        setTrail(prev => prev.map(s => s === target ? { ...s, questions: found, questionsLoading: false } : s));
+        updateStep(target, { questions: found, questionsLoading: false });
     };
 
     const goToStep = (index: number) => {
@@ -453,7 +490,7 @@ export function ExploreWorkspace() {
         return dive ? [dive.summary, ...dive.keyPoints].join(' ') : story.summary;
     };
 
-    const generateIdeas = async (key: string, sources: Story[]) => {
+    const generateIdeas = async (key: string, sources: Story[], context = step?.query) => {
         setGeneratingKey(key);
         try {
             const res = await fetch('/api/explore/ideas', {
@@ -462,7 +499,7 @@ export function ExploreWorkspace() {
                 body: JSON.stringify({
                     titles: sources.map(s => s.title),
                     sources: sources.map(s => ({ title: s.title, summary: briefing(s), takeaway: s.takeaway })),
-                    context: step?.query,
+                    context,
                     relatedBeliefIds: sources.map(s => s.relatedBeliefId).filter(Boolean),
                 }),
             });
@@ -605,7 +642,7 @@ export function ExploreWorkspace() {
         runSearch(input);
     };
 
-    const renderIdeas = (key: string, sources: Story[]) => {
+    const renderIdeas = (key: string, sources: Story[], context?: string) => {
         const ideas = ideasByKey[key];
         const generating = generatingKey === key;
 
@@ -615,7 +652,7 @@ export function ExploreWorkspace() {
                     <h4 className="text-sm font-medium text-ink">Post angles</h4>
                     {ideas && (
                         <button
-                            onClick={() => generateIdeas(key, sources)}
+                            onClick={() => generateIdeas(key, sources, context ?? step?.query)}
                             disabled={generatingKey !== null}
                             className="text-xs text-ink-muted hover:text-ink flex items-center gap-1 disabled:opacity-50"
                         >
@@ -626,7 +663,7 @@ export function ExploreWorkspace() {
 
                 {!ideas && (
                     <button
-                        onClick={() => generateIdeas(key, sources)}
+                        onClick={() => generateIdeas(key, sources, context ?? step?.query)}
                         disabled={generatingKey !== null}
                         className="btn btn-primary w-full disabled:opacity-50"
                     >
@@ -792,6 +829,26 @@ export function ExploreWorkspace() {
     };
 
     const renderDetail = () => {
+        if (showingGap && step?.debate?.gap) {
+            const { gap, takes } = step.debate;
+            return (
+                <div>
+                    <span className="inline-flex items-center h-6 px-2.5 mb-2 rounded-full bg-ember-50 text-ember-700 text-xs font-medium">The missing take</span>
+                    <h3 className="text-xl font-medium tracking-[-0.01em] text-ink leading-snug">{gap.take}</h3>
+                    {gap.why && <p className="text-sm text-ink-soft leading-relaxed mt-2">{gap.why}</p>}
+                    {takes.length > 0 && (
+                        <div className="mt-4 p-4 bg-canvas shadow-well rounded-tile">
+                            <span className="text-xs font-medium text-ink-muted">What the coverage already says</span>
+                            <ul className="mt-1.5 space-y-1">
+                                {takes.map(t => <li key={t.take} className="text-sm text-ink-soft">{t.take}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                    {renderIdeas(GAP_KEY, stories.slice(0, 6), `${step.query}. The angle to take, which the coverage is missing: ${gap.take}`)}
+                </div>
+            );
+        }
+
         if (showingCombined) {
             return (
                 <div>
@@ -1084,6 +1141,43 @@ export function ExploreWorkspace() {
                                 )
                             ) : (
                                 <>
+                                    {step?.debateLoading && (
+                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Mapping the takes">
+                                            <span className="text-xs font-medium text-ink-muted">The takes so far</span>
+                                            <div className="mt-2.5 space-y-3">
+                                                {['w-5/6', 'w-3/4'].map(w => <div key={w} className={`h-3.5 ${w} rounded-full bg-canvas shadow-well`} />)}
+                                            </div>
+                                            <div className="mt-3 h-10 w-full rounded-tile bg-canvas shadow-well" />
+                                        </div>
+                                    )}
+                                    {step?.debate && (
+                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card">
+                                            <span className="text-xs font-medium text-ink-muted">The takes so far</span>
+                                            <ul className="mt-1.5 space-y-1">
+                                                {step.debate.takes.map(t => (
+                                                    <li key={t.take}>
+                                                        <button
+                                                            onClick={() => { const first = stories[t.stories[0]]; if (first) openStory(first); }}
+                                                            className="w-full text-left text-sm leading-snug py-1 text-ink hover:text-ember-600 flex items-start justify-between gap-3"
+                                                        >
+                                                            <span>{t.take}</span>
+                                                            <span className="text-xs text-ink-muted whitespace-nowrap pt-0.5">{t.stories.length} {t.stories.length === 1 ? 'story' : 'stories'}</span>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            {step.debate.gap && (
+                                                <button
+                                                    onClick={() => { setFocusKey(GAP_KEY); setShowDetailOnMobile(true); }}
+                                                    className={`mt-2 w-full text-left p-3 rounded-tile bg-ember-50 hover:ring-2 hover:ring-ember-200 transition-all ${focusKey === GAP_KEY ? 'ring-2 ring-ember-200' : ''}`}
+                                                >
+                                                    <span className="block text-xs font-medium text-ember-700">Nobody&apos;s saying</span>
+                                                    <span className="block text-sm text-ink mt-0.5">{step.debate.gap.take}</span>
+                                                    <span className="mt-1 text-xs font-medium text-ember-700 flex items-center gap-0.5">Get ideas for this angle <ChevronRight size={12} /></span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                     {step?.questionsLoading && (
                                         <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Finding what people ask">
                                             <span className="text-xs font-medium text-ink-muted">People are asking</span>

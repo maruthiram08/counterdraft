@@ -269,6 +269,39 @@ describe('ExploreWorkspace', () => {
         expect(body.brain_metadata.explore.idea).toBeUndefined();
     });
 
+        it('maps the takes so far and gets ideas for the missing one', async () => {
+        feeds['ai tutors'] = {
+            feed: [story('Schools ban chatbots'), story('Districts restrict AI'), story('AI tutor lifts maths scores')],
+            related: [],
+        };
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/debate') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ debate: {
+                    takes: [{ take: 'Schools are restricting chatbots', stories: [0, 1] }, { take: 'AI tutors raise scores', stories: [2] }],
+                    gap: { take: 'Nobody asks what teachers stop doing', why: 'Coverage is all about students.' },
+                } }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        search('ai tutors');
+
+        expect(await screen.findByText('Schools are restricting chatbots')).toBeInTheDocument();
+        expect(screen.getByText('2 stories')).toBeInTheDocument();
+        const debateCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/debate');
+        expect(JSON.parse(debateCall[1].body).stories).toHaveLength(3);
+
+        fireEvent.click(screen.getByRole('button', { name: /Get ideas for this angle/ }));
+        const details = screen.getByRole('region', { name: 'Story details' });
+        expect(within(details).getByRole('heading', { name: 'Nobody asks what teachers stop doing' })).toBeInTheDocument();
+        fireEvent.click(within(details).getByRole('button', { name: /Get post ideas/ }));
+        await within(details).findByText('Docs beat meetings');
+        const ideasCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ideas');
+        expect(JSON.parse(ideasCall[1].body).context).toBe('ai tutors. The angle to take, which the coverage is missing: Nobody asks what teachers stop doing');
+    });
+
         it('restores the exploration after a remount and starts over with New', async () => {
         const { unmount } = render(<ExploreWorkspace />);
         search('remote work');
