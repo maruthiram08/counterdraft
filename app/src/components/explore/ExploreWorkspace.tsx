@@ -674,9 +674,14 @@ export function ExploreWorkspace() {
             return (
                 <div className="mt-4" aria-live="polite">
                     {story.summary && <p className="text-sm text-ink-soft leading-relaxed">{story.summary}</p>}
-                    <p className="mt-3 text-xs text-ink-muted flex items-center gap-2">
-                        <Loader2 size={12} className="animate-spin" /> Reading the full {story.kind === 'question' ? 'discussion' : 'piece'}...
-                    </p>
+                    <div className="mt-4 space-y-4 animate-pulse" aria-label={`Reading the full ${story.kind === 'question' ? 'discussion' : 'piece'}`}>
+                        {[['w-16', ['w-full', 'w-11/12', 'w-2/3']], ['w-20', ['w-full', 'w-5/6', 'w-3/4']]].map(([heading, lines], i) => (
+                            <div key={i} className="space-y-2">
+                                <div className={`h-3 ${heading} rounded-full bg-canvas shadow-well`} />
+                                {(lines as string[]).map(w => <div key={w} className={`h-3.5 ${w} rounded-full bg-canvas shadow-well`} />)}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }
@@ -993,6 +998,15 @@ export function ExploreWorkspace() {
                                 )
                             ) : (
                                 <>
+                                    {step?.questionsLoading && (
+                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Finding what people ask">
+                                            <span className="text-xs font-medium text-ink-muted">People are asking</span>
+                                            <div className="mt-2.5 space-y-3">
+                                                {['w-11/12', 'w-4/5', 'w-2/3'].map(w => <div key={w} className={`h-3.5 ${w} rounded-full bg-canvas shadow-well`} />)}
+                                            </div>
+                                            <div className="mt-3 h-3 w-28 rounded-full bg-canvas shadow-well" />
+                                        </div>
+                                    )}
                                     {questions.length > 0 && (
                                         <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card">
                                             <span className="text-xs font-medium text-ink-muted">People are asking</span>
