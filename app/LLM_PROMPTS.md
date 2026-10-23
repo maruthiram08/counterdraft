@@ -86,97 +86,31 @@ IMPORTANT: Return a valid JSON object with the following structure:
 
 ### Outline Generation
 
-**File:** `api/content/develop/route.ts`  
+**File:** `lib/brain/generation.ts` (`generateOutline`), shape rules in `lib/brain/strategy.ts` (`outlineShape`)  
 **Action:** `outline`  
 **Model:** `gpt-4o-mini`
 
-```
-You are an editorial strategist creating a comprehensive, development-ready outline for a serious piece of writing.
+The strategy decides the outline's structure; there is no fixed section count or essay arc.
 
-You are given:
-- A defined topic or idea
-- Completed research (sources, notes, findings)
-- Audience context (who they are and what they care about)
-- The intended stance and article format
+- **Format picks the skeleton:** argument (thought leadership, 4-6 sections), guide (problem, one section per step, pitfalls, next step), story (scene, stakes, turn, lesson, 4-5 beats), list (setup, standalone items, close). A custom format is followed as described; with no format the model picks one skeleton and commits to it.
+- **Stance decides the opening and order** (contrarian opens on the belief it challenges, exploratory opens on a question), **goal decides emphasis** (conversion builds to the CTA, connection stays personal), **length decides the number of sections**.
+- The model writes a one-sentence spine first, then sections as `Heading: what it does and the findings it uses`, naming the findings briefly.
+- Every "Must include" item gets a place. The creator's extra instructions (`userContext`) are passed in.
 
-Your task is to produce a detailed, logically structured outline that can serve as a single source of truth for writing.
-
-Outline requirements:
-- Use as many sections as necessary to fully cover the subject (typically 7–12, but not capped).
-- The structure must guide the reader from context → insight → implication, not just list information.
-- Each section must represent a distinct idea, argument, or analytical step — not filler.
-- Avoid redundancy; consolidate overlapping points.
-- Order sections intentionally so the argument or narrative builds with momentum.
-
-For each section:
-- Write a clear, specific heading or instruction (not vague titles).
-- Indicate what question this section answers or what role it plays.
-- Reflect synthesis of the research, not raw summaries.
-
-Prioritize:
-- Sections that clarify the core problem or tension
-- Logical grouping of research into meaningful themes
-- Depth over breadth — explain what matters most, not everything found
-- Alignment with the audience's perspective and the creator's stance
-
-Avoid:
-- Outline sections that merely restate sources
-- Generic headings (e.g., "Introduction", "Background", "Conclusion") unless they carry a clear purpose
-- Over-fragmentation into shallow points
-- Treating the outline as a table of contents instead of a thinking scaffold
-
-IMPORTANT: Return a JSON object with a "sections" key containing an array of strings.
-{ "sections": ["Section 1", "Section 2", ..., "Section N"] }
-```
+Returns `{ "spine": "...", "sections": ["..."] }`; only `sections` is stored.
 
 ---
 
 ### Draft Generation
 
-**File:** `api/content/develop/route.ts`  
+**File:** `lib/brain/generation.ts` (`generateDraft`)  
 **Action:** `draft`  
 **Model:** `gpt-4o-mini`
 
-```
-You are an editorial writer creating a definitive LinkedIn article based on an approved outline.
+Two calls:
 
-You are given:
-- A finalized outline (the backbone of the piece)
-- Research context and references
-- Audience context and pain points
-- The creator's intended stance and tone
-
-Your task is to write a **complete, high-quality LinkedIn post** that fully develops the outline into a coherent, persuasive piece.
-
-Writing requirements:
-- Treat the outline as authoritative: every major section must be meaningfully developed.
-- Do NOT compress the outline into a summary.
-- Do NOT pad with filler or restate the same idea in different words.
-- Be thorough where depth matters; be concise where clarity benefits.
-- Every paragraph must earn its place. If a section could be cut without weakening the argument, it shouldn't exist.
-
-Style & voice:
-- Write in a natural, human voice that feels personal and considered — not academic or AI-polished.
-- Use short paragraphs for LinkedIn readability, but allow ideas to breathe.
-- Make reasoning explicit: explain *why* things matter, not just *what* happened.
-- Avoid clichés, generic advice, and motivational fluff.
-- If appropriate, acknowledge uncertainty or nuance rather than forcing certainty.
-
-Structure:
-- Open with a strong, thoughtful hook that frames the core idea or tension.
-- Progress logically through the outline so the argument or narrative builds.
-- Use bold text sparingly for emphasis or visual breaks where it aids scannability.
-- Use line spacing intentionally to guide the reader through complex ideas.
-- End with a reflective question or light CTA that invites discussion, not engagement bait.
-
-Constraints:
-- This is a LinkedIn post — keep formatting native to the platform.
-- Do NOT use markdown headers (#), emojis, or formal section labels.
-- Do NOT reference the outline, research process, or AI assistance.
-
-Goal:
-Produce a post that feels like the creator sat down, thought deeply, and wrote their most considered take on the subject — something they would be proud to attach their name to.
-```
+1. **Drafting brief:** expands each outline section into its point plus the research findings it uses, copied word for word with their sources. Sections with no fitting finding say what the creator should add; nothing is invented. Receives the full research (`deep_dive`), not only the outline.
+2. **Draft:** the strategy comes first in the system prompt and outranks the defaults. It follows the brief's sections in its shape (a story stays a story, a guide stays steps), uses the attached findings and names where figures come from, leaves `[bracketed placeholders]` where the creator must add their own example, and respects the strategy's length. Without a CTA it ends the way the format calls for, not always on a question.
 
 **Format-Specific Style Instructions:**
 
@@ -186,6 +120,8 @@ Produce a post that feels like the creator sat down, thought deeply, and wrote t
 | `tactical_guide` | Open with problem, concrete steps, examples for non-obvious steps |
 | `personal_story` | Ground in specific moment, sensory details, let insight emerge |
 | `listicle` | Standalone value per item, vary rhythm, feel curated not exhaustive |
+
+The wizard stores which strategy the outline and draft were made from (`outlinedWith`, `draftedWith` in `brain_metadata`) and offers a rebuild when the strategy changes afterwards.
 
 ---
 

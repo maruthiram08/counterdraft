@@ -3,7 +3,7 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
-import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
+import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, outlineShape, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
 import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
 type ResearchPlan = { queries: string[]; asks?: { question: string; query: string }[]; place?: string; country?: string; localTerms?: string[]; placeIsWholeBrief?: boolean };
@@ -21,6 +21,7 @@ export interface DeepDiveParams {
 export interface DeepDiveResult {
     research: string[];
     insights: string[];
+    webSources?: number; // How many live web results the research had; 0 means it ran on the model's memory alone
 }
 
 export interface OutlineParams {
@@ -29,6 +30,7 @@ export interface OutlineParams {
     angle?: string;
     references?: ContentReference[];
     deep_dive?: DeepDiveData;
+    userContext?: string;
     brainMetadata?: BrainMetadata;
 }
 
@@ -37,6 +39,7 @@ export interface DraftParams {
     hook: string;
     angle?: string;
     outline?: OutlineItem[];
+    deep_dive?: DeepDiveData;
     references?: ContentReference[];
     userContext?: string;
     brainMetadata?: BrainMetadata;
@@ -195,14 +198,15 @@ IMPORTANT: Return a valid JSON object with the following structure:
         const local = countLocalFindings(findings, terms);
         // A post wholly about the place needs half its findings there; one where the place is a side ask needs at least two
         const enough = plan.placeIsWholeBrief === false ? Math.min(2, findings.length) : Math.ceil(findings.length / 2);
-        if (!terms.length || !findings.length || local >= enough) return this.checkFindingsAgainstSources(first.result, sourceText, asks);
+        const withSourceCount = (r: DeepDiveResult) => ({ ...r, webSources: sources.length });
+        if (!terms.length || !findings.length || local >= enough) return withSourceCount(await this.checkFindingsAgainstSources(first.result, sourceText, asks));
 
         TraceLogger.log('deep_dive', 'Local retry', { place: plan.place, local, total: findings.length });
         messages.push(
             { role: 'assistant', content: first.content },
             { role: 'user', content: `Only ${local} of ${findings.length} findings are specific to ${plan.place}. Rewrite the research so ${plan.placeIsWholeBrief === false ? `the part of the brief about ${plan.place} has at least two findings of its own` : `most findings are about ${plan.place}`} (laws, policies, named companies and brands, family set-ups, work culture, prices), taken from the sources above. Replace generic material that would apply anywhere with ${plan.place}-specific findings, or with "Gap:" findings naming what the sources lack. Rewrite the insights to match. Same JSON format.` },
         );
-        return this.checkFindingsAgainstSources((await run().catch(() => first)).result, sourceText, asks);
+        return withSourceCount(await this.checkFindingsAgainstSources((await run().catch(() => first)).result, sourceText, asks));
     }
 
     // Drops findings whose cited source isn't in the material, then has the model check each one against its source:
@@ -316,68 +320,56 @@ Example: { "text": "Updated research point..." }`
         return result.text || currentText;
     }
 
+    // Research findings and insights with the user's notes, shared by the outline and the draft
+    private formatDeepDive(deep_dive?: DeepDiveData): string {
+        const list = (items: (ResearchItem | InsightItem)[] | undefined) => items?.map(r => {
+            const text = typeof r === 'string' ? r : r.text;
+            const notes = typeof r !== 'string' && r.notes && r.notes.length ? `\n   > USER NOTES: ${r.notes.join('; ')}` : '';
+            return `- ${text}${notes}`;
+        }).join('\n') || 'None';
+        return `Research findings:\n${list(deep_dive?.research)}\n\nInsights:\n${list(deep_dive?.insights)}`;
+    }
+
     // --- 3. Outline ---
-    async generateOutline({ hook, angle, deep_dive, references, brainMetadata }: OutlineParams): Promise<string[]> {
-        const brainContext = `${formatIdeaChain({ hook, angle, meta: brainMetadata })}${formatStrategyContext(brainMetadata)}`;
+    async generateOutline({ hook, angle, deep_dive, references, userContext, brainMetadata }: OutlineParams): Promise<string[]> {
+        const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
+        const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY (this decides the outline)');
+        const shape = outlineShape(brainMetadata);
 
         const referencesContext = this.formatReferences(references);
+        const userContextString = userContext ? `\n\nCreator's extra instructions:\n${userContext}` : '';
         const sourceContext = brainMetadata?.sourceContext
             ? `\n\nOriginal Source Material:\n${brainMetadata.sourceContext.substring(0, 3000)}...`
             : '';
+
+        TraceLogger.log('outline', 'Outline shape', { format: brainMetadata?.format, stance: brainMetadata?.stance, outcome: brainMetadata?.outcome, length: brainMetadata?.length });
 
         const completion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
                 {
                     role: 'system',
-                    content: `You are an editorial strategist creating a comprehensive, development-ready outline for a serious piece of writing.
+                    content: `You plan the structure of one post for a creator. The strategy decides the structure: two posts on the same topic with different strategies must get visibly different outlines (different skeleton, opening, order and number of sections), not the same outline reworded.
 
-You are given:
-- A defined topic or idea
-- Completed research (sources, notes, findings)
-- Audience context (who they are and what they care about)
-- The intended stance and article format${brainContext}
+${shape}
 
-Your task is to produce a detailed, logically structured outline that can serve as a single source of truth for writing.
-
-Outline requirements:
-- Use as many sections as necessary to fully cover the subject (typically 7–12, but not capped).
-- The structure must guide the reader from context → insight → implication, not just list information.
-- Each section must represent a distinct idea, argument, or analytical step — not filler.
-- Avoid redundancy; consolidate overlapping points.
-- Order sections intentionally so the argument or narrative builds with momentum.
-
-For each section:
-- Write a clear, specific heading or instruction (not vague titles).
-- Indicate what question this section answers or what role it plays.
-- Reflect synthesis of the research, not raw summaries.
-
-Prioritize:
-- Sections that clarify the core problem or tension
-- Logical grouping of research into meaningful themes
-- Depth over breadth — explain what matters most, not everything found
-- Alignment with the audience's perspective and the creator's stance
+How to build it:
+1. First write the post's spine: one sentence saying what this post argues, shows or teaches, for this audience, in this stance.
+2. Then lay out the sections in the shape above. Every section serves the spine; drop research that doesn't.
+3. Each section is one string: a specific heading, a colon, then what the section does and the specific findings it uses, named briefly so the creator can recognise them (e.g. "Why the 9-to-9 day breaks new dads: uses the Naukri survey's 62% and the Infosys paternity-leave policy"). Never refer to findings by number.
+4. Every "Must include" item from the strategy gets a section or a named place in one.
+5. Where the creator's brief differs from the hook or angle, follow the brief.
 
 Avoid:
-- Outline sections that merely restate sources
-- Generic headings (e.g., "Introduction", "Background", "Conclusion") unless they carry a clear purpose
-- Over-fragmentation into shallow points
-- Treating the outline as a table of contents instead of a thinking scaffold
+- A generic essay arc (introduction, background, analysis, conclusion) unless the shape calls for it
+- Sections that restate a source instead of using it
+- Two sections making the same point
 
-IMPORTANT: Return a JSON object with a "sections" key containing an array of strings.
-{ "sections": ["Section 1", "Section 2", ..., "Section N"] }`
+Return JSON: { "spine": "...", "sections": ["...", "..."] }`
                 },
                 {
                     role: 'user',
-                    content: `Topic: ${hook}\nAngle: ${angle || 'General'}\n\nResearch:\n${deep_dive?.research?.map((r: ResearchItem) => {
-                        const text = typeof r === 'string' ? r : r.text;
-                        const notes = typeof r !== 'string' && r.notes && r.notes.length ? `\n   > USER NOTES: ${r.notes.join('; ')}` : '';
-                        return `- ${text}${notes}`;
-                    }).join('\n') || 'None'}\n\nInsights:\n${deep_dive?.insights?.map((i: InsightItem) => {
-                        const text = typeof i === 'string' ? i : i.text;
-                        const notes = typeof i !== 'string' && i.notes && i.notes.length ? `\n   > USER NOTES: ${i.notes.join('; ')}` : '';
-                        return `- ${text}${notes}`;
-                    }).join('\n') || 'None'}${referencesContext}${sourceContext}`
+                    content: `Topic: ${hook}\nAngle: ${angle || 'General'}${ideaChain}${strategy}${userContextString}\n\n${this.formatDeepDive(deep_dive)}${referencesContext}${sourceContext}`
                 }
             ],
             response_format: { type: 'json_object' },
@@ -410,9 +402,11 @@ IMPORTANT: Return a JSON object with a "sections" key containing an array of str
     }
 
     // --- 4. Draft ---
-    async generateDraft({ userId, hook, angle, outline, references, userContext, brainMetadata }: DraftParams): Promise<string> {
-        const format = normalizeFormat(brainMetadata?.format) || 'thought_leadership';
-        const brainContext = `${formatIdeaChain({ hook, angle, meta: brainMetadata })}${formatStrategyContext(brainMetadata)}`;
+    async generateDraft({ userId, hook, angle, outline, deep_dive, references, userContext, brainMetadata }: DraftParams): Promise<string> {
+        const format = normalizeFormat(brainMetadata?.format);
+        const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
+        const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY');
+        const research = deep_dive ? `\n\n${this.formatDeepDive(deep_dive)}` : '';
 
         // Voice Injection
         let voiceContext = '';
@@ -434,30 +428,27 @@ IMPORTANT: Return a JSON object with a "sections" key containing an array of str
             return `Section ${i + 1}: ${text} ${notes}`;
         }).join('\n');
 
+        // The brief attaches the research to each section, so the draft's specifics come from the findings, not the model's memory
         const briefCompletion = await this.openai.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
                 {
                     role: 'system',
-                    content: `You are an editorial architect. 
-The user has provided an outline for a post. Some sections might be vague or manually added.
-Your job is to expand each outline point into a "Key Argument & Depth" brief.
+                    content: `You are an editorial architect preparing a writer to draft one post.
+Expand each outline section into a short brief for the writer:
+1. The point this section makes, in one sentence, in the post's stance.
+2. The specific research it uses: copy the findings it needs word for word, numbers and "(source: ...)" included. Prefer findings the outline names; add others only if they fit the section.
+3. For a section with no fitting finding (e.g. one the creator added by hand), say what the creator should supply ("add your own example of ..."). Never invent a statistic, study, company or quote.
 
-For each section:
-1. Clarify the core argument (what are we saying?)
-2. Add 1-2 specific points of depth (examples, counter-arguments, or nuanced observations)
-3. Ensure manual sections (which might just be a title) get enough substance to fit the flow.
-
-Keep it concise but dense. This is for the writer, not the reader.`
+Keep the outline's order and shape. Do not add sections. This is for the writer, not the reader.`
                 },
                 {
                     role: 'user',
                     content: `Topic: ${hook}
-Angle: ${angle}
-Stance: ${brainMetadata?.stance || 'Opinionated'}${brainContext}
+Angle: ${angle || 'General'}${ideaChain}${strategy}
 
 Outline:
-${outlineContext}
+${outlineContext}${research}
 
 Expand this into a drafting brief.`
                 }
@@ -491,14 +482,19 @@ Expand this into a drafting brief.`
 - Vary rhythm: mix punchy one-liners with slightly developed points
 - Avoid padding; if an item is weak, cut it
 - The list should feel curated, not exhaustive`;
-        } else {
+        } else if (format) {
             styleInstruction = `Format: ${format}
 - Follow the structure this format implies, as the creator described it`;
+        } else {
+            styleInstruction = `Format: whatever the outline's shape is (argument, guide, story or list); write it as that`;
         }
 
         const closingInstruction = brainMetadata?.cta
             ? `End by steering the reader toward this call to action, in the creator's voice and without engagement bait: ${brainMetadata.cta}`
-            : 'End with a reflective question or light CTA that invites discussion, not engagement bait.';
+            : 'End the way this format and goal call for (a story on its lesson, a guide on the next step, an argument on its implication). No engagement bait.';
+        const lengthInstruction = brainMetadata?.length
+            ? `Length: ${brainMetadata.length}. This overrides everything else about length; cut sections short rather than run long.`
+            : 'Length: as long as the outline needs and no longer; a LinkedIn post, not an essay.';
 
         const referencesContext = this.formatReferences(references);
         const userContextString = userContext ? `\n\nUser's Special Instructions:\n${userContext}` : '';
@@ -509,10 +505,11 @@ Expand this into a drafting brief.`
         TraceLogger.log('draft', 'Draft Generation Context', {
             hook,
             angle: angle || 'None',
-            format,
+            format: format || 'none',
             hasUserContext: !!userContext,
             hasReferences: !!references?.length,
             hasSourceContext: !!brainMetadata?.sourceContext,
+            hasResearch: !!deep_dive?.research?.length,
             outlineSections: outline?.length || 0,
         });
 
@@ -523,54 +520,31 @@ Expand this into a drafting brief.`
                     role: 'system',
                     content: `${SAFETY_PREAMBLE}
 
-You are an editorial writer creating a definitive LinkedIn article.
+You are writing one LinkedIn post for a creator, from their drafting brief.
 
-You are given:
-- A "Drafting Brief" which expands the outline into key arguments (Use this as your roadmap)
-- Research context and references
-- Audience context and pain points
-- The creator's intended stance and tone
-${brainContext}
+THE STRATEGY DECIDES THE POST. Read it first; it outranks every default below.${ideaChain}${strategy}
 
-**CRITICAL STRATEGIC INSTRUCTION:**
-You must write specifically for the defined **Audience** (${brainMetadata?.audience?.role || 'Professionals'}) and address their specific **Pain Point** (${brainMetadata?.audience?.pain || 'Challenges'}).
-- If the stance is **Contrarian**, do not hedge. Be bold.
-- If the goal is **Trust**, rely on evidence, not hype.
-- **Fail Condition:** Do not write a generic "thought leadership" post. If the content could apply to anyone, it is a failure. It must feel specific to THIS audience.
+${styleInstruction}
+${lengthInstruction}
 
-Your task is to write a **complete, high-quality LinkedIn post** that fully develops the brief into a coherent, persuasive piece.
+Write for the defined audience (${brainMetadata?.audience?.role || 'the reader the brief describes'})${brainMetadata?.audience?.pain ? ` and their pain (${brainMetadata.audience.pain})` : ''}. Hold the stance${brainMetadata?.stance ? ` ("${brainMetadata.stance}")` : ''} from the first line to the last; a contrarian post does not hedge, an exploratory one does not pretend to certainty. If the post could apply to anyone, it has failed.
 
 Writing requirements:
-- Treat the Drafting Brief as authoritative: every major section must be meaningfully developed.
-- Do NOT compress the points into a summary.
-- Do NOT pad with filler or restate the same idea in different words.
-- Be thorough where depth matters; be concise where clarity benefits.
-- Every paragraph must earn its place. If a section could be cut without weakening the argument, it shouldn't exist.
+- Follow the Drafting Brief's sections in order and in its shape. A story reads as a story, a guide as steps, a list as items; do not turn them into an essay.
+- Use the research the brief attaches to each section: its numbers, names and examples. Name where a figure comes from in plain words ("a 2024 Naukri survey found..."). Never add a statistic, study or quote that isn't in the brief or the sources.
+- Where the brief says the creator should add their own example, leave a short [bracketed placeholder] instead of inventing one.
+- Every paragraph earns its place; no filler, no restating.
 
 Style & voice:
 - **ADOPT THE USER'S VOICE:** ${voiceContext ? 'Strictly follow the guidelines below.' : 'Write in a natural, human voice.'}
 ${voiceContext}
-- Use short paragraphs for LinkedIn readability, but allow ideas to breathe.
-- Make reasoning explicit: explain *why* things matter, not just *what* happened.
+- Short paragraphs for LinkedIn readability.
 - Avoid clichés, generic advice, and motivational fluff.
-- If appropriate, acknowledge uncertainty or nuance rather than forcing certainty.
-
-Structure:
-- Open with a strong, thoughtful hook that frames the core idea or tension.
-- Progress logically through the brief so the argument or narrative builds.
-- Use bold text sparingly for emphasis or visual breaks where it aids scannability.
-- Use line spacing intentionally to guide the reader through complex ideas.
 - ${closingInstruction}
 
 Constraints:
-- This is a LinkedIn post — keep formatting native to the platform.
-- Do NOT use markdown headers (#), emojis, or formal section labels.
-- Do NOT reference the outline, research process, or AI assistance.
-
-Goal:
-Produce a post that feels like the creator sat down, thought deeply, and wrote their most considered take on the subject — something they would be proud to attach their name to.
-
-${styleInstruction}`
+- Keep formatting native to LinkedIn: no markdown headers (#), no emojis, no formal section labels. Bold sparingly.
+- Do NOT reference the outline, research process, or AI assistance.`
                 },
                 {
                     role: 'user',

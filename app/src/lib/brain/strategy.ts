@@ -60,6 +60,39 @@ export function formatStrategyContext(meta?: Partial<BrainMetadata>, heading = '
     return `\n\n${heading}:\n${lines.join('\n')}${brief}`;
 }
 
+// Each format has its own skeleton, so a story and a guide on the same topic don't share one essay shape
+const FORMAT_SHAPES: Record<string, string> = {
+    thought_leadership: `ARGUMENT. Open on the claim or tension → why it matters to this audience now → the evidence that backs it → the strongest objection and the answer to it → what the reader should now think or do. Usually 4-6 sections.`,
+    tactical_guide: `GUIDE. The problem and who this is for, in one section → one section per step the reader takes, each naming the concrete action, when and how → the common mistake or when NOT to do this → the next step. Usually 5-8 sections, most of them steps.`,
+    personal_story: `STORY. One specific moment or scene → what was at stake → the turn: what happened or what the creator realised → the lesson, said once → what it means for the reader. Usually 4-5 beats. No analysis sections; the research appears as details inside the story.`,
+    listicle: `LIST. A one-line setup of why this list matters to this audience → one section per item, each a standalone point with one specific example or number → a short close. Usually 5-9 items. Items are parallel, not steps of an argument.`,
+};
+
+const GOAL_SHAPES: Record<string, string> = {
+    authority: 'Goal is authority: weight the outline toward evidence and the creator\'s own judgement on it.',
+    engagement: 'Goal is engagement: build toward an open question or a position readers will want to answer.',
+    conversion: 'Goal is conversion: every section must move the reader toward the call to action; the last section sets it up.',
+    connection: 'Goal is connection: lead with the creator\'s own experience and keep the outline personal, not analytical.',
+};
+
+// What the outline should look like for this strategy: the format picks the skeleton,
+// stance, goal and length decide the opening, the emphasis and how many sections
+export function outlineShape(meta?: Partial<BrainMetadata>): string {
+    const format = normalizeFormat(meta?.format);
+    const shape = format && FORMAT_SHAPES[format]
+        ? FORMAT_SHAPES[format]
+        : format
+            ? `Follow the structure the creator's format implies: "${format}". Pick the skeleton that format calls for, not a generic essay.`
+            : 'No format was chosen. Pick the one skeleton (argument, guide, story or list) that best serves the brief and the goal, and commit to it.';
+
+    const lines = [`SHAPE: ${shape}`];
+    if (meta?.stance) lines.push(`STANCE "${meta.stance}" decides the opening and the order. A contrarian post opens by naming the belief it challenges; an exploratory one opens with a question and may end without a verdict; a supportive one leads with what is working. Use the stance's own words if it is none of these.`);
+    const goal = meta?.outcome ? GOAL_SHAPES[meta.outcome.toLowerCase()] || `Goal: ${meta.outcome}. Order the sections so the post achieves it.` : '';
+    if (goal) lines.push(goal);
+    if (meta?.length) lines.push(`LENGTH "${meta.length}" decides the number of sections: a short post gets 3-4, a long article can take more.`);
+    return lines.join('\n');
+}
+
 function cleanString(value: unknown, max = 300): string | undefined {
     if (typeof value !== 'string') return undefined;
     const trimmed = value.trim();

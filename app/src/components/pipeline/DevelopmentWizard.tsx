@@ -188,6 +188,19 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const researchStrategy = formatStrategyContext(localBrainMetadata);
     const strategyChangedSinceResearch = !!deepDive && !!researchStrategy
         && (localBrainMetadata?.researchedWith ?? '') !== researchStrategy;
+    // Outlines and drafts made before these snapshots existed have none, so they never show as stale
+    const outlinedWith = localBrainMetadata?.outlinedWith;
+    const strategyChangedSinceOutline = outline.length > 0 && outlinedWith !== undefined && outlinedWith !== researchStrategy;
+    const draftedWith = localBrainMetadata?.draftedWith;
+    const strategyChangedSinceDraft = !!draftContent && draftedWith !== undefined && draftedWith !== researchStrategy;
+
+    // Saves which strategy a step was generated from, on top of the latest metadata
+    const markGeneratedWith = (key: 'outlinedWith' | 'draftedWith', snapshot: string, extra: Partial<ContentItem> = {}) => {
+        const brainMetadata = { ...latestBrainMetadata.current, [key]: snapshot } as BrainMetadata;
+        latestBrainMetadata.current = brainMetadata;
+        setLocalBrainMetadata(brainMetadata);
+        saveProgress({ ...extra, brain_metadata: brainMetadata });
+    };
 
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
 
@@ -289,6 +302,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
             const data = await res.json();
             const richData = normalizeDeepDive(data.deep_dive);
+            if (data.deep_dive?.webSources === 0) {
+                toast.warning("Web search returned nothing, so this research comes from the AI's own knowledge and has no live sources.");
+            }
 
             if (richData) {
                 if (mode === 'append' && deepDive) {
@@ -328,7 +344,13 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     // Shaping the strategy reruns research so it follows the brief, unless the user has
     // already annotated findings (then the stale-strategy banner lets them choose)
     const handleStrategyShaped = () => {
-        if (step !== 'deep_dive' || loading) return;
+        if (loading) return;
+        // On the outline step an untouched outline is rebuilt for the new strategy
+        if (step === 'outline') {
+            if (!outline.some(s => s.notes?.length)) generateOutline();
+            return;
+        }
+        if (step !== 'deep_dive') return;
         const hasNotes = !!deepDive && [...deepDive.research, ...deepDive.insights].some(p => p.notes?.length);
         if (hasNotes) return;
         runDeepDive(deepDive ? 'refresh' : 'initial');
@@ -372,6 +394,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const generateOutline = async () => {
         setLoading(true);
         saveProgress({ dev_step: 'outline_in_progress' });
+        const brainMetadataForRun = latestBrainMetadata.current;
+        const outlinedWith = formatStrategyContext(brainMetadataForRun);
         try {
             const res = await fetch('/api/content/develop', {
                 method: 'POST',
@@ -381,9 +405,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     hook: item.hook,
                     angle: item.angle,
                     deep_dive: deepDive,
-                    brainMetadata: localBrainMetadata,
+                    brainMetadata: brainMetadataForRun,
                     userContext: globalContext,
-                    references: localBrainMetadata?.references || [],
+                    references: brainMetadataForRun?.references || [],
                 }),
             });
             if (!res.ok) {
@@ -402,7 +426,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             const data = await res.json();
             const normalizedSections = normalizeOutline(data.outline);
             setOutline(normalizedSections);
-            saveProgress({
+            // A new outline needs a fresh look before it drives the draft
+            setOutlineApproved(false);
+            markGeneratedWith('outlinedWith', outlinedWith, {
                 outline: { sections: normalizedSections },
                 dev_step: 'outline_review'
             });
@@ -416,6 +442,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const generateDraft = async () => {
         setLoading(true);
         saveProgress({ dev_step: 'draft_in_progress' });
+        const brainMetadataForRun = latestBrainMetadata.current;
+        const draftedWith = formatStrategyContext(brainMetadataForRun);
         try {
             const res = await fetch('/api/content/develop', {
                 method: 'POST',
@@ -425,9 +453,10 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     hook: item.hook,
                     angle: item.angle,
                     outline: outline,
-                    brainMetadata: localBrainMetadata,
+                    deep_dive: deepDive,
+                    brainMetadata: brainMetadataForRun,
                     userContext: globalContext,
-                    references: localBrainMetadata?.references || [],
+                    references: brainMetadataForRun?.references || [],
                 }),
             });
 
@@ -448,6 +477,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
             const data = await res.json();
             setDraftContent(data.draft || '');
+            markGeneratedWith('draftedWith', draftedWith);
         } catch (err) {
             console.error('Draft generation failed:', err);
         } finally {
@@ -714,6 +744,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 onDeleteOutlinePoint={handleDeleteOutlinePoint}
                                 onSetOutlineApproved={setOutlineApproved}
                                 onDragEnd={handleDragEnd}
+                                strategyChanged={strategyChangedSinceOutline}
+                                onRebuild={generateOutline}
                             />
                         )}
 
@@ -733,6 +765,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 onToggleContextPanel={() => setShowContextPanel(!showContextPanel)}
                                 onVerifyStrategy={handleVerifyStrategy}
                                 onAutoFix={handleAutoFix}
+                                strategyChanged={strategyChangedSinceDraft}
+                                onRebuild={() => {
+                                    // The draft follows the outline, so a new strategy starts from a new outline
+                                    setStep('outline');
+                                    generateOutline();
+                                }}
                             />
                         )}
 

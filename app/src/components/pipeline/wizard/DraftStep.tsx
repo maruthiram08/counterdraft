@@ -5,6 +5,7 @@ import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
 import { hasStrategy, StrategyAnalysis } from "@/lib/brain/strategy";
 import { ResearchPoint, DeepDiveData } from "./types";
+import { StrategyChangedBanner } from "./StrategyChangedBanner";
 
 interface DraftStepProps {
     draftContent: string;
@@ -21,6 +22,8 @@ interface DraftStepProps {
     onToggleContextPanel: () => void;
     onVerifyStrategy: () => void;
     onAutoFix: (instruction: string) => void;
+    strategyChanged?: boolean;
+    onRebuild: () => void;
 }
 
 export function DraftStep({
@@ -37,7 +40,9 @@ export function DraftStep({
     onUpdateDraft,
     onToggleContextPanel,
     onVerifyStrategy,
-    onAutoFix
+    onAutoFix,
+    strategyChanged,
+    onRebuild
 }: DraftStepProps) {
 
     // Helper to check if context exists
@@ -61,6 +66,15 @@ export function DraftStep({
 
     return (
         <div className="flex-1 flex flex-col min-h-[600px] h-full">
+            {strategyChanged && !readOnly && (
+                <div className="mb-4">
+                    <StrategyChangedBanner
+                        message="Your strategy has changed since this draft was written. A new strategy starts from a new outline; this draft stays until you write the next one."
+                        action="Rebuild outline"
+                        onClick={onRebuild}
+                    />
+                </div>
+            )}
             <div className="flex flex-1 gap-6">
                 {/* Editor Pane (Left) */}
                 <div className={`flex-1 flex flex-col transition-all duration-300 ${showContextPanel ? 'md:mr-0' : 'w-full'}`}>

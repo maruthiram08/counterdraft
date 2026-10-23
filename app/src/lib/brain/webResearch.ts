@@ -69,7 +69,10 @@ export function sharesKeyWords(finding: string, question: string): boolean {
 
 export async function searchWeb(query: string, maxResults = 5, country?: string): Promise<WebSource[]> {
     const apiKey = process.env.TAVILY_API_KEY;
-    if (!apiKey) return [];
+    if (!apiKey) {
+        console.warn('Web research skipped: TAVILY_API_KEY is not set');
+        return [];
+    }
 
     try {
         const res = await fetch('https://api.tavily.com/search', {
@@ -77,7 +80,10 @@ export async function searchWeb(query: string, maxResults = 5, country?: string)
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: apiKey, query, topic: 'general', search_depth: 'advanced', max_results: maxResults, ...(country ? { country } : {}) }),
         });
-        if (!res.ok) return country ? searchWeb(query, maxResults) : [];
+        if (!res.ok) {
+            console.error(`Web research failed for "${query}": Tavily ${res.status}`);
+            return country ? searchWeb(query, maxResults) : [];
+        }
         const data = await res.json() as { results?: { title?: string; url?: string; content?: string }[] };
         return (data.results || [])
             .filter(r => r.title && r.url && r.content)
