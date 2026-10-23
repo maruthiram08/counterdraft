@@ -1,10 +1,27 @@
-import { FOR_YOU, GENERAL_CATEGORIES, buildTrendSearch, pickCategories } from '@/lib/explore/trends';
+import { FOR_YOU, GENERAL_CATEGORIES, buildTrendSearch, describeTrackRecord, exploreTrackRecord, pickCategories } from '@/lib/explore/trends';
 
 describe('explore starting topics', () => {
     it('searches what the writer works on for "For you", and skips it without a profile', () => {
         expect(buildTrendSearch(FOR_YOU, { role: 'Founder', context: 'Building a parenting app for Indian dads', beliefs: [] }))
             .toBe('news and debates this week for Founder: Building a parenting app for Indian dads');
         expect(buildTrendSearch(FOR_YOU, { beliefs: [] })).toBeNull();
+    });
+
+    it('learns from Explore topics that got written, published ones first', () => {
+        const wrote = exploreTrackRecord([
+            { hook: 'Docs beat meetings', stage: 'draft', brain_metadata: { explore: { query: 'remote work' } } },
+            { hook: 'Async hiring wins', stage: 'published', brain_metadata: { explore: { query: 'async hiring', label: 'Async hiring' } } },
+            { hook: 'Another remote post', stage: 'published', brain_metadata: { explore: { query: 'Remote work' } } },
+            { hook: 'No origin', stage: 'draft', brain_metadata: null },
+        ]);
+        expect(wrote).toEqual([
+            { topic: 'Async hiring', published: true },
+            { topic: 'Remote work', published: true },
+            { topic: 'No origin', published: false },
+        ]);
+        expect(describeTrackRecord(wrote)).toContain('- Async hiring (published)');
+        expect(describeTrackRecord([])).toBe('');
+        expect(buildTrendSearch(FOR_YOU, { beliefs: [], wrote })).toBe('news and debates this week on Async hiring, Remote work, No origin');
     });
 
     it('narrows a fixed category to the writer role when known', () => {

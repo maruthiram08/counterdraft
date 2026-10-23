@@ -6,7 +6,7 @@ import { UsageService } from '@/lib/billing/usage';
 import { rateLimit } from '@/lib/rate-limit';
 import { parseSurprise, type SurprisePick } from '@/lib/explore/surprise';
 import { cleanTaste, describeTaste, tasteKey, type Taste } from '@/lib/explore/taste';
-import { CATEGORIES_PER_SET, FOR_YOU, buildTrendSearch, pickCategories, type WriterProfile } from '@/lib/explore/trends';
+import { CATEGORIES_PER_SET, FOR_YOU, buildTrendSearch, describeTrackRecord, exploreTrackRecord, pickCategories, type WriterProfile } from '@/lib/explore/trends';
 
 export const maxDuration = 60; // Allow 1 minute for search + LLM
 
@@ -25,7 +25,7 @@ interface TrendGroup {
 }
 
 async function getWriterProfile(userId: string): Promise<WriterProfile> {
-    const [user, beliefs] = await Promise.all([
+    const [user, beliefs, written] = await Promise.all([
         supabaseAdmin.from('users').select('role, context').eq('id', userId).single(),
         supabaseAdmin
             .from('beliefs')
@@ -33,11 +33,21 @@ async function getWriterProfile(userId: string): Promise<WriterProfile> {
             .eq('user_id', userId)
             .eq('belief_type', 'core')
             .limit(5),
+        // What came out of Explore and actually got written: the results the topics learn from
+        supabaseAdmin
+            .from('content_items')
+            .select('hook, stage, brain_metadata')
+            .eq('user_id', userId)
+            .eq('source_type', 'explore')
+            .in('stage', ['draft', 'published'])
+            .order('updated_at', { ascending: false })
+            .limit(30),
     ]);
     return {
         role: user.data?.role || undefined,
         context: user.data?.context || undefined,
         beliefs: (beliefs.data || []).map(b => b.statement).filter(Boolean),
+        wrote: exploreTrackRecord(written.data || []),
     };
 }
 
@@ -46,6 +56,7 @@ function describeWriter(profile: WriterProfile, taste: Taste): string {
         profile.role ? `Role: ${profile.role}` : '',
         profile.context ? `What they write about: ${profile.context.slice(0, 400)}` : '',
         profile.beliefs.length ? `Views they hold:\n${profile.beliefs.map(b => `- ${b}`).join('\n')}` : '',
+        describeTrackRecord(profile.wrote),
         describeTaste(taste),
     ].filter(Boolean);
     return lines.length ? lines.join('\n') : '(no profile yet)';
@@ -53,7 +64,7 @@ function describeWriter(profile: WriterProfile, taste: Taste): string {
 
 // Topic areas this writer's audience follows, used as rotating Explore tabs
 async function nicheCategories(userId: string, profile: WriterProfile, taste: Taste): Promise<string[]> {
-    if (!profile.role && !profile.context && profile.beliefs.length === 0) return [];
+    if (!profile.role && !profile.context && profile.beliefs.length === 0 && !profile.wrote?.length) return [];
     const cacheKey = `${userId}:${tasteKey(taste)}`;
     const cached = nicheCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.value;

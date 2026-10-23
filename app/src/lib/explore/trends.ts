@@ -6,6 +6,36 @@ export interface WriterProfile {
     role?: string;
     context?: string;
     beliefs: string[];
+    // Explore topics they went on to draft or publish: the clearest sign of what works for them
+    wrote?: { topic: string; published: boolean }[];
+}
+
+interface ExploreItem {
+    hook?: string | null;
+    stage?: string | null;
+    brain_metadata?: { explore?: { query?: string; label?: string } } | null;
+}
+
+/** Explore topics that became drafts or posts, published first, one line each, without repeats. */
+export function exploreTrackRecord(items: ExploreItem[], max = 8): NonNullable<WriterProfile['wrote']> {
+    const seen = new Set<string>();
+    const record: NonNullable<WriterProfile['wrote']> = [];
+    const ordered = [...items].sort((a, b) => Number(b.stage === 'published') - Number(a.stage === 'published'));
+    for (const item of ordered) {
+        const origin = item.brain_metadata?.explore;
+        const topic = (origin?.label || origin?.query || item.hook || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+        const key = topic.toLowerCase();
+        if (!topic || seen.has(key)) continue;
+        seen.add(key);
+        record.push({ topic, published: item.stage === 'published' });
+        if (record.length >= max) break;
+    }
+    return record;
+}
+
+export function describeTrackRecord(wrote: WriterProfile['wrote']): string {
+    if (!wrote?.length) return '';
+    return `Topics from Explore they went on to write (lean toward topics like these):\n${wrote.map(w => `- ${w.topic}${w.published ? ' (published)' : ' (drafted)'}`).join('\n')}`;
 }
 
 /**
@@ -16,7 +46,10 @@ export interface WriterProfile {
 export function buildTrendSearch(category: string, profile: WriterProfile): string | null {
     if (category === FOR_YOU) {
         const about = [profile.role, profile.context?.slice(0, 160)].filter(Boolean).join(': ');
-        return about ? `news and debates this week for ${about}` : null;
+        if (about) return `news and debates this week for ${about}`;
+        // Without a profile, what they've written from Explore says what they care about
+        const written = profile.wrote?.slice(0, 3).map(w => w.topic).join(', ');
+        return written ? `news and debates this week on ${written}` : null;
     }
     return profile.role
         ? `news and debates this week in ${category} that matter to ${profile.role}`
