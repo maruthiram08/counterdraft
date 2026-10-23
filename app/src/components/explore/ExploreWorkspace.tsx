@@ -10,6 +10,7 @@ import { CompassIcon, RefreshCWIcon, SparklesIcon } from "@/components/icons/ani
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
 import { FOR_YOU, shuffle } from "@/lib/explore/trends";
+import { MOMENTUM_HINTS, MOMENTUM_LABELS, storyMomentum, topicMomentum, type Momentum } from "@/lib/explore/momentum";
 
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
@@ -184,6 +185,20 @@ function storyMeta(story: Story): string {
     ].filter(Boolean).join(' · ');
 }
 
+const MOMENTUM_STYLES: Record<Momentum, string> = {
+    rising: 'bg-ember-50 text-ember-700',
+    crowded: 'bg-sand-100 text-sand-700',
+    evergreen: 'bg-sage-100 text-sage-700',
+};
+
+function MomentumTag({ tag }: { tag: Momentum }) {
+    return (
+        <span title={MOMENTUM_HINTS[tag]} className={`inline-block px-1.5 py-px rounded-full text-[11px] font-medium mr-1.5 ${MOMENTUM_STYLES[tag]}`}>
+            {MOMENTUM_LABELS[tag]}
+        </span>
+    );
+}
+
 // Questions open in the same panel as stories, so ideas, combining and saving work on them too
 function questionToStory(q: AudienceQuestion): Story {
     return {
@@ -255,9 +270,11 @@ export function ExploreWorkspace() {
     const step = trail[activeStep];
     const stories = step?.stories ?? [];
     const questions = step?.questions ?? [];
+    const topic = topicMomentum(stories);
     const allItems = [...stories, ...questions.filter(q => !stories.some(s => s.sourceUrl === q.sourceUrl))];
     const selectedStories = allItems.filter(s => selectedKeys.includes(s.sourceUrl));
     const focusedStory = allItems.find(s => s.sourceUrl === focusKey) ?? null;
+    const focusedMomentum = focusedStory && focusedStory.kind !== 'question' ? storyMomentum(focusedStory) : null;
     const showingCombined = focusKey === COMBINED_KEY && selectedStories.length >= 2;
     const showingGap = focusKey === GAP_KEY && Boolean(step?.debate?.gap);
 
@@ -710,6 +727,7 @@ export function ExploreWorkspace() {
     const renderItem = (story: Story) => {
         const focused = story.sourceUrl === focusKey;
         const selected = selectedKeys.includes(story.sourceUrl);
+        const momentum = story.kind === 'question' ? null : storyMomentum(story);
         return (
             <li key={story.sourceUrl}>
                 <div
@@ -737,6 +755,7 @@ export function ExploreWorkspace() {
                             <span className="block text-xs text-ink-soft mt-1 line-clamp-2">{story.takeaway}</span>
                         )}
                         <span className="block text-xs text-ink-muted mt-1">
+                            {momentum && <MomentumTag tag={momentum} />}
                             {story.kind && <span className="text-ember-700 font-medium capitalize">{story.kind} · </span>}
                             {storyMeta(story)}
                         </span>
@@ -888,6 +907,12 @@ export function ExploreWorkspace() {
                 <p className="text-xs text-ink-muted mt-1">{storyMeta(focusedStory)}</p>
                 {focusedStory.otherSources && focusedStory.otherSources.length > 0 && (
                     <p className="text-xs text-ink-muted mt-1">Also covered by {focusedStory.otherSources.join(', ')}</p>
+                )}
+                {focusedMomentum && (
+                    <p className="text-xs text-ink-soft mt-2">
+                        <MomentumTag tag={focusedMomentum} />
+                        {MOMENTUM_HINTS[focusedMomentum]}
+                    </p>
                 )}
                 {focusedStory.takeaway && (
                     <div className="mt-4 p-4 bg-canvas shadow-well rounded-tile">
@@ -1141,6 +1166,12 @@ export function ExploreWorkspace() {
                                 )
                             ) : (
                                 <>
+                                    {topic && (
+                                        <p className="text-xs text-ink-muted mb-3" title={MOMENTUM_HINTS[topic.tag]}>
+                                            <MomentumTag tag={topic.tag} />
+                                            {topic.reason}
+                                        </p>
+                                    )}
                                     {step?.debateLoading && (
                                         <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Mapping the takes">
                                             <span className="text-xs font-medium text-ink-muted">The takes so far</span>
