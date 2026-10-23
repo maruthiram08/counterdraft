@@ -189,6 +189,25 @@ describe('ExploreWorkspace', () => {
         expect(JSON.parse(refreshCall[1].body)).toEqual({ mode: 'discover', refresh: true, exclude: ['Fatherhood'], taste: { more: [], less: ['Stay-at-home dads'] } });
     });
 
+    it('searches a surprise pick and says why it fits', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/trends' && JSON.parse(String(init?.body)).mode === 'surprise') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ pick: { label: 'Async hiring', query: 'async hiring', why: 'You argue for written culture; hiring is where it starts.' } }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        fireEvent.click(screen.getByRole('button', { name: 'Surprise me' }));
+
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        expect(within(details).getByText('Async interviews spread among startups')).toBeInTheDocument();
+        expect(screen.getByText(/hiring is where it starts/)).toBeInTheDocument();
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url, init]) => url === '/api/explore/trends' && JSON.parse(init.body).mode === 'surprise');
+        expect(JSON.parse(call[1].body)).toEqual({ mode: 'surprise', taste: { more: [], less: [] }, exclude: [] });
+    });
+
     it('tunes For you from a story with More like this and Not for me', async () => {
         render(<ExploreWorkspace />);
         search('remote work');

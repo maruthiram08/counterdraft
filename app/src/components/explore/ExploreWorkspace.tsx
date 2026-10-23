@@ -28,6 +28,8 @@ interface ExploreStep {
     // The takes the stories make, and the one nobody is making
     debate?: Debate | null;
     debateLoading?: boolean;
+    // Set when the search came from "Surprise me": why this writer could own the story
+    surprise?: string;
 }
 
 interface Debate {
@@ -260,6 +262,8 @@ export function ExploreWorkspace() {
     const [paneView, setPaneView] = useState<'stories' | 'questions'>('stories');
     // "More like this" and "Not for me", sent with every topics request
     const [taste, setTaste] = useState<Taste>(EMPTY_TASTE);
+    const [surprising, setSurprising] = useState(false);
+    const [surprisesSeen, setSurprisesSeen] = useState<string[]>([]);
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     // "For you" is filled from the writer's profile and only shows once it has topics
@@ -348,6 +352,30 @@ export function ExploreWorkspace() {
         toast.success("Got it. Fewer stories like this.");
     };
 
+    // One story from outside the writer's usual areas, searched straight away
+    const surpriseMe = async () => {
+        if (surprising || loading) return;
+        setSurprising(true);
+        try {
+            const res = await fetch('/api/explore/trends', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'surprise', taste, exclude: surprisesSeen }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.pick?.query) {
+                toast.error(data.error || "Couldn't find a surprise right now. Try again.");
+                return;
+            }
+            setSurprisesSeen(prev => [data.pick.label, ...prev].slice(0, 10));
+            await runSearch(data.pick.query, { surprise: data.pick.why });
+        } catch {
+            toast.error("Couldn't find a surprise right now. Try again.");
+        } finally {
+            setSurprising(false);
+        }
+    };
+
     // A new set of categories and topics, skipping the categories the writer has just seen
     const refreshTopics = async () => {
         if (refreshingTopics) return;
@@ -430,7 +458,7 @@ export function ExploreWorkspace() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [focusedUrl, restored]);
 
-    const runSearch = async (query: string) => {
+    const runSearch = async (query: string, extra?: Pick<ExploreStep, 'surprise'>) => {
         if (!query.trim() || loading) return;
         setInput("");
         setLoading(true);
@@ -450,6 +478,7 @@ export function ExploreWorkspace() {
                 message: data.feed?.length ? undefined : (data.message || data.error || `Nothing found for "${query}". Try a broader search.`),
                 questionsLoading: true,
                 debateLoading: (data.feed?.length ?? 0) >= 3,
+                ...extra,
             };
         } catch {
             next = { query, stories: [], related: [], message: "Something went wrong. Please try again.", questionsLoading: true };
@@ -1131,6 +1160,14 @@ export function ExploreWorkspace() {
                                 ))}
                             </div>
                             {fetchingTrends && <p className="text-xs text-ink-muted mt-2">Finding topics for you...</p>}
+                            <button
+                                onClick={surpriseMe}
+                                disabled={surprising || loading}
+                                className="mt-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-ember-700 hover:bg-ember-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                            >
+                                {surprising ? <Loader2 size={12} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={12} />}
+                                {surprising ? 'Finding something new...' : 'Surprise me'}
+                            </button>
                         </div>
                         {loading && (
                             <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">
@@ -1191,6 +1228,11 @@ export function ExploreWorkspace() {
                                 </div>
                             )}
 
+                            {step?.surprise && (
+                                <p className="mb-3 p-3 rounded-tile bg-ember-50 text-xs text-ember-700">
+                                    <span className="font-medium">Surprise pick.</span> {step.surprise}
+                                </p>
+                            )}
                             {step?.message && <p className="text-sm text-ink-muted">{step.message}</p>}
 
                             {(questions.length > 0 || step?.questionsLoading) && (

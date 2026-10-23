@@ -4,6 +4,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { UsageService } from '@/lib/billing/usage';
 import { rateLimit } from '@/lib/rate-limit';
+import { parseSurprise, type SurprisePick } from '@/lib/explore/surprise';
 import { cleanTaste, describeTaste, tasteKey, type Taste } from '@/lib/explore/taste';
 import { CATEGORIES_PER_SET, FOR_YOU, buildTrendSearch, pickCategories, type WriterProfile } from '@/lib/explore/trends';
 
@@ -150,6 +151,54 @@ ${exclude.length ? `- Do not repeat or rephrase these, which the writer has alre
     }
 }
 
+// A strong story from this week's wider news, away from the writer's usual areas but within reach of their views
+async function surprisePick(userId: string, profile: WriterProfile, taste: Taste, exclude: string[], apiKey: string): Promise<SurprisePick | null> {
+    const usual = [...await nicheCategories(userId, profile, taste), ...taste.more];
+    try {
+        const searchRes = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                api_key: apiKey,
+                query: 'most talked about stories this week across science, culture, business, sport and society',
+                search_depth: 'basic',
+                topic: 'news',
+                days: 7,
+                max_results: 15,
+            }),
+        });
+        const searchData = await searchRes.json() as { results?: { title?: string; content?: string }[] };
+        const news = (searchData.results || [])
+            .filter(r => r.title)
+            .map(r => `- ${r.title}${r.content ? `: ${r.content.slice(0, 160)}` : ''}`)
+            .join('\n');
+
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            temperature: 1,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: `You surprise a writer with one story to post about that they would never have searched for.
+Pick ONE story from this week's news that sits outside their usual areas, yet connects to their role or one of their views, so they could take a real position on it.
+${usual.length ? `Their usual areas, to stay away from: ${usual.join('; ')}` : ''}
+${exclude.length ? `Already suggested, pick something else: ${exclude.join('; ')}` : ''}
+Return JSON: { "label": "2-5 word name of the story", "query": "4-8 word search query for it", "why": "one sentence, to the writer as 'you', on the link between this story and their work or views" }`,
+                },
+                {
+                    role: 'user',
+                    content: `Writer:\n${describeWriter(profile, taste)}\n\nThis week's news:\n${news || '(none found; pick a specific, timely story you know of)'}`,
+                },
+            ],
+        });
+        return parseSurprise(JSON.parse(completion.choices[0].message.content || '{}'), usual);
+    } catch (e) {
+        console.error('Surprise pick failed:', e);
+        return null;
+    }
+}
+
 export async function POST(req: Request) {
     try {
         const userId = await getOrCreateUser();
@@ -158,6 +207,21 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
+        if (body.mode === 'surprise') {
+            const limit = rateLimit(`explore-surprise:${userId}`, { windowMs: 15 * 60 * 1000, max: 15 });
+            if (!limit.allowed) {
+                return NextResponse.json({ error: 'Too many surprises. Try again in a few minutes.' }, { status: 429 });
+            }
+            const apiKey = process.env.TAVILY_API_KEY;
+            if (!apiKey) return NextResponse.json({ error: 'Missing Tavily Key' }, { status: 500 });
+            const exclude: string[] = Array.isArray(body.exclude)
+                ? body.exclude.filter((e: unknown): e is string => typeof e === 'string').slice(0, 10)
+                : [];
+            const pick = await surprisePick(userId, await getWriterProfile(userId), cleanTaste(body.taste), exclude, apiKey);
+            return pick
+                ? NextResponse.json({ pick })
+                : NextResponse.json({ error: "Couldn't find a surprise right now. Try again." }, { status: 502 });
+        }
         // 'discover' picks a fresh, random set of categories for this writer and fetches their topics
         const discover = body.mode === 'discover';
         const categories: unknown = body.categories;
