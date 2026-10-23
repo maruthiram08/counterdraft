@@ -123,7 +123,7 @@ const PLATFORM_GROUPS = [
 interface RepurposeModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onRepurpose: (platform: string, options: Record<string, string | boolean>) => Promise<RepurposeResult>;
+    onRepurpose: (platform: string, options: Record<string, string | boolean>) => Promise<RepurposeResult | null>;
     isProcessing: boolean;
     onDesign?: (platform: string, content: string) => void;
     sourceContent?: string;
@@ -157,6 +157,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
     const [generatingField, setGeneratingField] = useState<string | null>(null);
     const [isSuccess, setIsSuccess] = useState(false);
     const [resultData, setResultData] = useState<RepurposeResult | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
 
@@ -194,14 +195,18 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
     };
 
     const handleConfirm = async () => {
+        setError(null);
         try {
             const data = await onRepurpose(selectedPlatformId, currentValues);
             if (data && data.id) {
                 setResultData(data);
                 setIsSuccess(true);
+            } else {
+                setError("Couldn't create the draft. Please try again.");
             }
         } catch (e) {
             console.error("Repurpose failed in modal", e);
+            setError(e instanceof Error ? e.message : "Couldn't create the draft. Please try again.");
         }
     };
 
@@ -461,7 +466,10 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
 
                     {/* Footer - Only for non-Smart Studio */}
                     {selectedPlatformId !== 'smart_studio' && (
-                        <div className="px-6 pb-6 pt-2 md:px-8 flex justify-end gap-3 shrink-0">
+                        <div className="px-6 pb-6 pt-2 md:px-8 flex items-center justify-end gap-3 shrink-0">
+                            {error && (
+                                <p role="alert" className="mr-auto text-sm text-ember-700">{error}</p>
+                            )}
                             <button onClick={onClose} className="h-12 px-5 rounded-full text-sm font-medium text-ink-soft hover:text-ink transition-colors">Cancel</button>
                             <button
                                 onClick={handleConfirm}
