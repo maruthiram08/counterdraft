@@ -3,13 +3,16 @@
 import { useState, useEffect } from "react";
 import {
     Search, Loader2, ExternalLink, Lightbulb, Check, X,
-    ChevronRight, ChevronLeft, RotateCcw, Layers, Bookmark,
+    ChevronRight, ChevronLeft, RotateCcw, Layers, Bookmark, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { CompassIcon, RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
 import { FOR_YOU, shuffle } from "@/lib/explore/trends";
+import type { WatchedTopic } from "@/lib/explore/watch";
+import type { ChatTurn } from "@/lib/explore/story-chat";
+import { EMPTY_TASTE, addToTaste, cleanTaste, tasteKey, type Taste, type TasteKind } from "@/lib/explore/taste";
 import { MOMENTUM_HINTS, MOMENTUM_LABELS, storyMomentum, topicMomentum, type Momentum } from "@/lib/explore/momentum";
 
 // One step of the user's exploration path: a search and what it found
@@ -27,6 +30,8 @@ interface ExploreStep {
     // The takes the stories make, and the one nobody is making
     debate?: Debate | null;
     debateLoading?: boolean;
+    // Why this search was suggested, from "Surprise me" or a watched topic
+    banner?: { label: string; text: string };
 }
 
 interface Debate {
@@ -129,6 +134,29 @@ const DEFAULT_CATEGORIES = [
 
 const SESSION_KEY = 'cd-explore-workspace';
 const TRENDS_KEY = 'cd-explore-trends-v3';
+const TASTE_KEY = 'cd-explore-taste';
+// The stance and platform last picked for post ideas
+const IDEA_PREFS_KEY = 'cd-explore-idea-prefs';
+
+const STANCES = [
+    { value: 'any', label: 'Any' },
+    { value: 'agree', label: 'Agree' },
+    { value: 'push_back', label: 'Push back' },
+    { value: 'nuance', label: 'Add nuance' },
+] as const;
+type Stance = typeof STANCES[number]['value'];
+
+const PLATFORMS = [
+    { value: 'linkedin', label: 'LinkedIn' },
+    { value: 'twitter', label: 'X' },
+    { value: 'newsletter', label: 'Newsletter' },
+    { value: 'blog', label: 'Blog' },
+    { value: 'medium', label: 'Medium' },
+] as const;
+type Platform = typeof PLATFORMS[number]['value'];
+
+// When the writer last opened each watched topic from Explore, by Pipeline item id
+const WATCH_SEEN_KEY = 'cd-explore-watch-seen';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_TRAIL = 8;
 // Tabs shown beside "For you"; each visit picks a random few from the writer's saved set
@@ -256,6 +284,16 @@ export function ExploreWorkspace() {
     const [noteFor, setNoteFor] = useState<string | null>(null);
     const [note, setNote] = useState("");
     const [paneView, setPaneView] = useState<'stories' | 'questions'>('stories');
+    // "More like this" and "Not for me", sent with every topics request
+    const [taste, setTaste] = useState<Taste>(EMPTY_TASTE);
+    const [surprising, setSurprising] = useState(false);
+    const [watched, setWatched] = useState<WatchedTopic[]>([]);
+    // Follow-up questions and answers about each story, by its link
+    const [chatsByKey, setChatsByKey] = useState<Record<string, ChatTurn[]>>({});
+    const [askingKey, setAskingKey] = useState<string | null>(null);
+    const [ideaPrefs, setIdeaPrefs] = useState<{ stance: Stance; platform: Platform }>({ stance: 'any', platform: 'linkedin' });
+    const [chatInput, setChatInput] = useState("");
+    const [surprisesSeen, setSurprisesSeen] = useState<string[]>([]);
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     // "For you" is filled from the writer's profile and only shows once it has topics
@@ -280,8 +318,11 @@ export function ExploreWorkspace() {
 
     useEffect(() => {
         const fetchRealTrends = async () => {
-            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
-            if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS) {
+            const savedTaste = cleanTaste(readStorage(TASTE_KEY));
+            setTaste(savedTaste);
+            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number; taste?: string }>(TRENDS_KEY);
+            // Topics fetched before the latest "More like this" or "Not for me" are fetched again
+            if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS && (cached.taste ?? '') === tasteKey(savedTaste)) {
                 const rotated = rotateTrendGroups(cached.groups);
                 if (rotated.length > 0) setTrendCategories(rotated);
                 return;
@@ -292,14 +333,14 @@ export function ExploreWorkspace() {
                 const res = await fetch('/api/explore/trends', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'discover' })
+                    body: JSON.stringify({ mode: 'discover', taste: savedTaste })
                 });
                 const data = await res.json();
                 if (Array.isArray(data.groups)) {
                     const rotated = rotateTrendGroups(data.groups);
                     if (rotated.length > 0) {
                         setTrendCategories(rotated);
-                        writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
+                        writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now(), taste: tasteKey(savedTaste) });
                     }
                 }
             } catch (e) {
@@ -311,6 +352,97 @@ export function ExploreWorkspace() {
 
         fetchRealTrends();
     }, []);
+
+    useEffect(() => {
+        const saved = readStorage<{ stance?: string; platform?: string }>(IDEA_PREFS_KEY);
+        const stance = STANCES.find(s => s.value === saved?.stance)?.value;
+        const platform = PLATFORMS.find(p => p.value === saved?.platform)?.value;
+        if (stance || platform) setIdeaPrefs(prev => ({ stance: stance ?? prev.stance, platform: platform ?? prev.platform }));
+    }, []);
+
+    const updateIdeaPrefs = (patch: Partial<typeof ideaPrefs>) => {
+        const next = { ...ideaPrefs, ...patch };
+        setIdeaPrefs(next);
+        writeStorage(IDEA_PREFS_KEY, next);
+    };
+
+    // Saved topics, with what has been published on each since the writer last looked
+    useEffect(() => {
+        fetch('/api/explore/watch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seen: readStorage<Record<string, string>>(WATCH_SEEN_KEY) ?? {} }),
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => { if (Array.isArray(data?.topics)) setWatched(data.topics); })
+            .catch(() => { /* Explore works without it */ });
+    }, []);
+
+    const openWatched = (topic: WatchedTopic) => {
+        writeStorage(WATCH_SEEN_KEY, { ...(readStorage<Record<string, string>>(WATCH_SEEN_KEY) ?? {}), [topic.id]: new Date().toISOString() });
+        setWatched(prev => prev.map(t => t.id === topic.id ? { ...t, newCount: 0, latest: [] } : t));
+        runSearch(topic.query, {
+            banner: {
+                label: 'Watching.',
+                text: topic.newCount > 0
+                    ? `${topic.newCount} new ${topic.newCount === 1 ? 'story' : 'stories'} on "${topic.title}" since you last looked.`
+                    : `Nothing new on "${topic.title}" since you last looked. Here's the latest coverage.`,
+            },
+        });
+    };
+
+    const tellTaste = (kind: TasteKind, signal: string) => {
+        const next = addToTaste(taste, kind, signal);
+        setTaste(next);
+        writeStorage(TASTE_KEY, next);
+    };
+
+    // A topic the writer doesn't want leaves now, and steers every later set of topics
+    const dismissTopic = (category: string, label: string) => {
+        tellTaste('less', label);
+        setTrendCategories(prev => prev.map(c => c.label === category ? { ...c, trends: c.trends.filter(t => t.label !== label) } : c));
+        toast.success("Got it. Fewer topics like this.");
+    };
+
+    const rateStory = (story: Story, kind: TasteKind) => {
+        tellTaste(kind, story.title);
+        if (kind === 'more') {
+            toast.success("Got it. You'll see more like this under For you.");
+            return;
+        }
+        if (step) {
+            const drop = (items?: Story[]) => items?.filter(s => s.sourceUrl !== story.sourceUrl);
+            const remaining = allItems.filter(s => s.sourceUrl !== story.sourceUrl);
+            updateStep(step, { stories: drop(step.stories) ?? [], questions: drop(step.questions) });
+            setSelectedKeys(prev => prev.filter(k => k !== story.sourceUrl));
+            if (focusKey === story.sourceUrl) setFocusKey(remaining[0]?.sourceUrl ?? null);
+        }
+        toast.success("Got it. Fewer stories like this.");
+    };
+
+    // One story from outside the writer's usual areas, searched straight away
+    const surpriseMe = async () => {
+        if (surprising || loading) return;
+        setSurprising(true);
+        try {
+            const res = await fetch('/api/explore/trends', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: 'surprise', taste, exclude: surprisesSeen }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.pick?.query) {
+                toast.error(data.error || "Couldn't find a surprise right now. Try again.");
+                return;
+            }
+            setSurprisesSeen(prev => [data.pick.label, ...prev].slice(0, 10));
+            await runSearch(data.pick.query, { banner: { label: 'Surprise pick.', text: data.pick.why } });
+        } catch {
+            toast.error("Couldn't find a surprise right now. Try again.");
+        } finally {
+            setSurprising(false);
+        }
+    };
 
     // A new set of categories and topics, skipping the categories the writer has just seen
     const refreshTopics = async () => {
@@ -324,6 +456,7 @@ export function ExploreWorkspace() {
                     mode: 'discover',
                     refresh: true,
                     exclude: trendCategories.map(c => c.label).filter(label => label !== FOR_YOU),
+                    taste,
                 }),
             });
             const data = await res.json();
@@ -334,7 +467,7 @@ export function ExploreWorkspace() {
             }
             setTrendCategories(rotated);
             setSelectedCategory(null);
-            writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
+            writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now(), taste: tasteKey(taste) });
         } catch {
             toast.error("Couldn't refresh topics. Try again.");
         } finally {
@@ -393,7 +526,7 @@ export function ExploreWorkspace() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [focusedUrl, restored]);
 
-    const runSearch = async (query: string) => {
+    const runSearch = async (query: string, extra?: Pick<ExploreStep, 'banner'>) => {
         if (!query.trim() || loading) return;
         setInput("");
         setLoading(true);
@@ -413,6 +546,7 @@ export function ExploreWorkspace() {
                 message: data.feed?.length ? undefined : (data.message || data.error || `Nothing found for "${query}". Try a broader search.`),
                 questionsLoading: true,
                 debateLoading: (data.feed?.length ?? 0) >= 3,
+                ...extra,
             };
         } catch {
             next = { query, stories: [], related: [], message: "Something went wrong. Please try again.", questionsLoading: true };
@@ -518,6 +652,8 @@ export function ExploreWorkspace() {
                     sources: sources.map(s => ({ title: s.title, summary: briefing(s), takeaway: s.takeaway })),
                     context,
                     relatedBeliefIds: sources.map(s => s.relatedBeliefId).filter(Boolean),
+                    platform: ideaPrefs.platform,
+                    ...(ideaPrefs.stance !== 'any' && { stance: ideaPrefs.stance }),
                 }),
             });
             const data = await res.json();
@@ -678,6 +814,37 @@ export function ExploreWorkspace() {
                     )}
                 </div>
 
+                <div className="mb-3 space-y-2">
+                    <div role="radiogroup" aria-label="Your stance" className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-ink-muted mr-1">Your stance</span>
+                        {STANCES.map(option => (
+                            <button
+                                key={option.value}
+                                role="radio"
+                                aria-checked={ideaPrefs.stance === option.value}
+                                onClick={() => updateIdeaPrefs({ stance: option.value })}
+                                className={`h-7 px-2.5 rounded-full text-xs transition-all ${ideaPrefs.stance === option.value ? 'bg-surface shadow-raised text-ink font-medium' : 'text-ink-muted hover:text-ink'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div role="radiogroup" aria-label="Write for" className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-ink-muted mr-1">Write for</span>
+                        {PLATFORMS.map(option => (
+                            <button
+                                key={option.value}
+                                role="radio"
+                                aria-checked={ideaPrefs.platform === option.value}
+                                onClick={() => updateIdeaPrefs({ platform: option.value })}
+                                className={`h-7 px-2.5 rounded-full text-xs transition-all ${ideaPrefs.platform === option.value ? 'bg-surface shadow-raised text-ink font-medium' : 'text-ink-muted hover:text-ink'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 {!ideas && (
                     <button
                         onClick={() => generateIdeas(key, sources, context ?? step?.query)}
@@ -771,6 +938,83 @@ export function ExploreWorkspace() {
     };
 
     // What the piece says, read in full: summary, key points, who thinks what, and what it leaves open
+    // A half-typed question belongs to the story it was typed for
+    useEffect(() => setChatInput(""), [focusKey]);
+
+    const askAboutStory = async (story: Story, question: string) => {
+        const key = story.sourceUrl;
+        if (!question.trim() || askingKey) return;
+        const history = chatsByKey[key] ?? [];
+        setChatsByKey(prev => ({ ...prev, [key]: [...history, { role: 'user', text: question.trim() }] }));
+        setChatInput("");
+        setAskingKey(key);
+        try {
+            const res = await fetch('/api/explore/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: story.sourceUrl, title: story.title, question: question.trim(), history, query: step?.query }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.answer) throw new Error(data.error || 'No answer');
+            setChatsByKey(prev => ({ ...prev, [key]: [...(prev[key] ?? []), { role: 'assistant', text: data.answer }] }));
+        } catch (err) {
+            // The question goes back in the box so it can be asked again
+            setChatsByKey(prev => ({ ...prev, [key]: history }));
+            setChatInput(question);
+            toast.error(err instanceof Error && err.message !== 'No answer' ? err.message : "Couldn't answer that right now. Try again.");
+        } finally {
+            setAskingKey(null);
+        }
+    };
+
+    // A short conversation about the open story, answered from its own text
+    const renderStoryChat = (story: Story) => {
+        const turns = chatsByKey[story.sourceUrl] ?? [];
+        const asking = askingKey === story.sourceUrl;
+        return (
+            <section aria-label="Ask about this story" className="mt-5">
+                <h4 className="text-xs font-medium text-ink-muted mb-2">Ask about this story</h4>
+                {turns.length > 0 && (
+                    <ul className="space-y-2 mb-3">
+                        {turns.map((turn, i) => (
+                            <li
+                                key={i}
+                                className={turn.role === 'user'
+                                    ? 'text-sm font-medium text-ink'
+                                    : 'text-sm text-ink-soft leading-relaxed p-3 rounded-tile bg-canvas shadow-well'}
+                            >
+                                {turn.text}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {asking && (
+                    <p className="mb-2 text-xs text-ink-muted flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" /> Checking the piece...</p>
+                )}
+                <form
+                    onSubmit={(e) => { e.preventDefault(); askAboutStory(story, chatInput); }}
+                    className="flex items-center gap-2 p-1 pl-3 rounded-full bg-canvas shadow-well"
+                >
+                    <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        aria-label="Your question about this story"
+                        placeholder={turns.length ? 'Ask a follow-up...' : 'e.g. What evidence do they give?'}
+                        className="flex-1 min-w-0 bg-transparent text-sm text-ink placeholder:text-ink-muted focus:outline-none"
+                    />
+                    <button
+                        type="submit"
+                        disabled={!chatInput.trim() || Boolean(askingKey)}
+                        className="h-8 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 transition-colors disabled:opacity-50"
+                    >
+                        Ask
+                    </button>
+                </form>
+            </section>
+        );
+    };
+
     const renderDeepDive = (story: Story) => {
         const dive = divesByKey[story.sourceUrl];
         if (dive === 'loading') {
@@ -895,6 +1139,7 @@ export function ExploreWorkspace() {
                 </div>
             );
         }
+        const likedStory = taste.more.some(t => t.toLowerCase() === focusedStory.title.toLowerCase());
 
         return (
             <div>
@@ -921,6 +1166,7 @@ export function ExploreWorkspace() {
                     </div>
                 )}
                 {renderDeepDive(focusedStory)}
+                {renderStoryChat(focusedStory)}
                 {focusedStory.relatedBelief && (
                     <p className="text-sm text-ember-700 mt-3">
                         {beliefLabel(focusedStory)}: &ldquo;{focusedStory.relatedBelief}&rdquo;
@@ -947,6 +1193,21 @@ export function ExploreWorkspace() {
                             <Bookmark size={12} /> Save topic
                         </button>
                     )}
+                    <span className="inline-flex items-center gap-1 ml-auto">
+                        <button
+                            onClick={() => rateStory(focusedStory, 'more')}
+                            aria-pressed={likedStory}
+                            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs transition-colors ${likedStory ? 'text-ember-700 bg-ember-50' : 'text-ink-muted hover:text-ink'}`}
+                        >
+                            <ThumbsUp size={12} /> More like this
+                        </button>
+                        <button
+                            onClick={() => rateStory(focusedStory, 'less')}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs text-ink-muted hover:text-ink transition-colors"
+                        >
+                            <ThumbsDown size={12} /> Not for me
+                        </button>
+                    </span>
                 </div>
                 {noteFor === focusedStory.sourceUrl && !savedIdeas.has(topicKey(focusedStory)) && (
                     <form
@@ -1058,17 +1319,60 @@ export function ExploreWorkspace() {
                             </div>
                             <div role="tabpanel" aria-label={`Trending in ${activeCategory}`} className={`flex flex-wrap justify-center gap-2 mt-3 ${refreshingTopics ? 'opacity-50' : ''}`}>
                                 {trendCategories.find(c => c.label === activeCategory)?.trends.map(trend => (
-                                    <button
-                                        key={trend.label}
-                                        onClick={() => runSearch(trend.query)}
-                                        disabled={loading}
-                                        className="h-9 px-4 bg-canvas shadow-raised text-ink-soft rounded-full text-sm hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
-                                    >
-                                        {trend.label}
-                                    </button>
+                                    <span key={trend.label} className="h-9 inline-flex items-center bg-canvas shadow-raised rounded-full">
+                                        <button
+                                            onClick={() => runSearch(trend.query)}
+                                            disabled={loading}
+                                            className="h-full pl-4 pr-1.5 text-ink-soft rounded-l-full text-sm hover:text-ember-600 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                                        >
+                                            {trend.label}
+                                        </button>
+                                        <button
+                                            onClick={() => dismissTopic(activeCategory!, trend.label)}
+                                            aria-label={`Not for me: ${trend.label}`}
+                                            title="Not for me"
+                                            className="h-full pl-1 pr-3 text-ink-muted rounded-r-full hover:text-ink transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </span>
                                 ))}
                             </div>
                             {fetchingTrends && <p className="text-xs text-ink-muted mt-2">Finding topics for you...</p>}
+                            <button
+                                onClick={surpriseMe}
+                                disabled={surprising || loading}
+                                className="mt-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-ember-700 hover:bg-ember-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                            >
+                                {surprising ? <Loader2 size={12} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={12} />}
+                                {surprising ? 'Finding something new...' : 'Surprise me'}
+                            </button>
+                            {watched.length > 0 && (
+                                <section aria-label="Topics you're watching" className="mt-6 w-full max-w-xl mx-auto text-left">
+                                    <h3 className="text-xs font-medium text-ink-muted mb-2">Topics you&apos;re watching</h3>
+                                    <ul className="space-y-1.5">
+                                        {watched.map(topic => (
+                                            <li key={topic.id}>
+                                                <button
+                                                    onClick={() => openWatched(topic)}
+                                                    disabled={loading}
+                                                    className="w-full flex items-center gap-3 p-2.5 rounded-tile bg-surface shadow-card hover:shadow-float text-left transition-all disabled:opacity-50"
+                                                >
+                                                    <span className="flex-1 min-w-0">
+                                                        <span className="block text-sm text-ink line-clamp-1">{topic.title}</span>
+                                                        {topic.latest[0] && (
+                                                            <span className="block text-xs text-ink-muted line-clamp-1">Latest: {topic.latest[0].title}</span>
+                                                        )}
+                                                    </span>
+                                                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium ${topic.newCount > 0 ? 'bg-ember-50 text-ember-700' : 'text-ink-muted'}`}>
+                                                        {topic.newCount > 0 ? `${topic.newCount} new` : 'Nothing new'}
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            )}
                         </div>
                         {loading && (
                             <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">
@@ -1129,6 +1433,11 @@ export function ExploreWorkspace() {
                                 </div>
                             )}
 
+                            {step?.banner && (
+                                <p className="mb-3 p-3 rounded-tile bg-ember-50 text-xs text-ember-700">
+                                    <span className="font-medium">{step.banner.label}</span> {step.banner.text}
+                                </p>
+                            )}
                             {step?.message && <p className="text-sm text-ink-muted">{step.message}</p>}
 
                             {(questions.length > 0 || step?.questionsLoading) && (

@@ -173,14 +173,122 @@ describe('ExploreWorkspace', () => {
         expect(screen.getByRole('tab', { name: 'Fatherhood' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Dads and remote work' })).toBeInTheDocument();
         const firstCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/trends');
-        expect(JSON.parse(firstCall[1].body)).toEqual({ mode: 'discover' });
+        expect(JSON.parse(firstCall[1].body)).toEqual({ mode: 'discover', taste: { more: [], less: [] } });
+
+        // "Not for me" removes the topic now and steers the next set
+        fireEvent.click(screen.getByRole('tab', { name: 'Fatherhood' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Not for me: Stay-at-home dads' }));
+        expect(screen.queryByRole('button', { name: 'Stay-at-home dads' })).not.toBeInTheDocument();
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-taste')!)).toEqual({ more: [], less: ['Stay-at-home dads'] });
 
         fireEvent.click(screen.getByRole('button', { name: 'Show different topics' }));
         expect(await screen.findByRole('tab', { name: 'School admissions' })).toBeInTheDocument();
         expect(screen.queryByRole('tab', { name: 'Fatherhood' })).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Paternity leave in India' })).toBeInTheDocument();
         const refreshCall = (global.fetch as jest.Mock).mock.calls.find(([url, init]) => url === '/api/explore/trends' && JSON.parse(init.body).refresh);
-        expect(JSON.parse(refreshCall[1].body)).toEqual({ mode: 'discover', refresh: true, exclude: ['Fatherhood'] });
+        expect(JSON.parse(refreshCall[1].body)).toEqual({ mode: 'discover', refresh: true, exclude: ['Fatherhood'], taste: { more: [], less: ['Stay-at-home dads'] } });
+    });
+
+    it('searches a surprise pick and says why it fits', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/trends' && JSON.parse(String(init?.body)).mode === 'surprise') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ pick: { label: 'Async hiring', query: 'async hiring', why: 'You argue for written culture; hiring is where it starts.' } }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        fireEvent.click(screen.getByRole('button', { name: 'Surprise me' }));
+
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        expect(within(details).getByText('Async interviews spread among startups')).toBeInTheDocument();
+        expect(screen.getByText(/hiring is where it starts/)).toBeInTheDocument();
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url, init]) => url === '/api/explore/trends' && JSON.parse(init.body).mode === 'surprise');
+        expect(JSON.parse(call[1].body)).toEqual({ mode: 'surprise', taste: { more: [], less: [] }, exclude: [] });
+    });
+
+    it('shows saved topics with what is new, and opens one as a search', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/watch') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ topics: [
+                    { id: 'c1', title: 'Async interviews spread among startups', query: 'async hiring', newCount: 3, latest: [{ title: 'Big tech tries async interviews', url: 'https://n.com/1', source: 'N' }] },
+                ] }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        const watching = await screen.findByRole('region', { name: "Topics you're watching" });
+        expect(within(watching).getByText('3 new')).toBeInTheDocument();
+        expect(within(watching).getByText('Latest: Big tech tries async interviews')).toBeInTheDocument();
+
+        fireEvent.click(within(watching).getByRole('button', { name: /Async interviews spread among startups/ }));
+        await screen.findByRole('region', { name: 'Story details' });
+        expect(screen.getByText(/3 new stories on "Async interviews spread among startups" since you last looked/)).toBeInTheDocument();
+        expect(Object.keys(JSON.parse(window.localStorage.getItem('cd-explore-watch-seen')!))).toEqual(['c1']);
+    });
+
+    it('answers follow-up questions about the open story from its text', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/ask') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ answer: 'They cite a survey of 2,000 firms.' }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        search('remote work');
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        const chat = within(details).getByRole('region', { name: 'Ask about this story' });
+        fireEvent.change(within(chat).getByLabelText('Your question about this story'), { target: { value: 'What evidence do they give?' } });
+        fireEvent.click(within(chat).getByRole('button', { name: 'Ask' }));
+
+        expect(await within(chat).findByText('They cite a survey of 2,000 firms.')).toBeInTheDocument();
+        expect(within(chat).getByText('What evidence do they give?')).toBeInTheDocument();
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ask');
+        expect(JSON.parse(call[1].body)).toMatchObject({
+            url: 'https://example.com/Companies%20rethink%20remote%20work%20policies',
+            question: 'What evidence do they give?',
+            history: [],
+            query: 'remote work',
+        });
+    });
+
+    it('asks for ideas from the stance and platform the writer picked, and remembers them', async () => {
+        render(<ExploreWorkspace />);
+        search('remote work');
+        const details = await screen.findByRole('region', { name: 'Story details' });
+
+        const stance = within(details).getByRole('radiogroup', { name: 'Your stance' });
+        expect(within(stance).getByRole('radio', { name: 'Any' })).toHaveAttribute('aria-checked', 'true');
+        fireEvent.click(within(stance).getByRole('radio', { name: 'Push back' }));
+        fireEvent.click(within(within(details).getByRole('radiogroup', { name: 'Write for' })).getByRole('radio', { name: 'Newsletter' }));
+        fireEvent.click(within(details).getByRole('button', { name: /Get post ideas/ }));
+
+        await within(details).findByText(/Write it down/);
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ideas');
+        expect(JSON.parse(call[1].body)).toMatchObject({ stance: 'push_back', platform: 'newsletter' });
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-idea-prefs')!)).toEqual({ stance: 'push_back', platform: 'newsletter' });
+    });
+
+    it('tunes For you from a story with More like this and Not for me', async () => {
+        render(<ExploreWorkspace />);
+        search('remote work');
+
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        const more = within(details).getByRole('button', { name: 'More like this' });
+        fireEvent.click(more);
+        expect(more).toHaveAttribute('aria-pressed', 'true');
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-taste')!).more).toEqual(['Companies rethink remote work policies']);
+
+        // Changing your mind moves it across, and the story leaves the results
+        fireEvent.click(within(details).getByRole('button', { name: 'Not for me' }));
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-taste')!)).toEqual({ more: [], less: ['Companies rethink remote work policies'] });
+        expect(screen.queryByText('Companies rethink remote work policies')).not.toBeInTheDocument();
+        expect(within(details).getByText('Office leases hit a record low')).toBeInTheDocument();
     });
 
     it('shows what people ask about a search and gets ideas for a question', async () => {
