@@ -5,6 +5,7 @@ import { UsageService } from '@/lib/billing/usage';
 import { brainGenerationService } from '@/lib/brain/generation';
 import { rateLimit } from '@/lib/rate-limit';
 import { cleanAnswers } from '@/lib/editor/draft-tools';
+import { cleanCraftFix } from '@/lib/editor/craft-score';
 
 export const dynamic = 'force-dynamic';
 
@@ -172,7 +173,7 @@ export async function POST(req: Request) {
             const result = await brainGenerationService.verifyFacts(textToVerify);
             return NextResponse.json(result);
 
-        } else if (action === 'outline_shapes' || action === 'draft_questions' || action === 'rewrite_section' || action === 'variants') {
+        } else if (action === 'outline_shapes' || action === 'draft_questions' || action === 'rewrite_section' || action === 'variants' || action === 'craft_score' || action === 'craft_fix') {
             // Small edits on work already made: rate limited, not counted as new drafts
             const limit = rateLimit(`develop-edit:${userId}`, { windowMs: 15 * 60 * 1000, max: 30 });
             if (!limit.allowed) {
@@ -195,6 +196,22 @@ export async function POST(req: Request) {
                 status = 'error';
                 errorDetails = 'Missing draft';
                 return NextResponse.json({ error: 'Missing draft' }, { status: 400 });
+            }
+
+            if (action === 'craft_score') {
+                const score = await brainGenerationService.craftScore({ draft, previous: Array.isArray(body.previous) ? body.previous.slice(0, 4) : undefined });
+                return NextResponse.json(score);
+            }
+
+            if (action === 'craft_fix') {
+                const fix = cleanCraftFix(body.fix);
+                if (!fix) {
+                    status = 'error';
+                    errorDetails = 'Missing fix';
+                    return NextResponse.json({ error: 'Missing fix' }, { status: 400 });
+                }
+                const fixed = await brainGenerationService.craftFix({ userId, draft, key: fix.key, fix: fix.fix, brainMetadata });
+                return NextResponse.json({ draft: fixed });
             }
 
             if (action === 'rewrite_section') {
