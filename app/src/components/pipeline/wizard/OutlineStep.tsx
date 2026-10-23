@@ -3,9 +3,12 @@ import { DndContext, closestCenter, DragEndEvent, SensorDescriptor, SensorOption
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Plus, Check } from 'lucide-react';
+import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
+import { RefreshCWIcon } from "@/components/icons/animated";
 import { ResearchPoint } from "./types";
 import { ResearchItem } from "../ResearchItem";
 import { Loader2 } from "lucide-react";
+import { StrategyChangedBanner } from "./StrategyChangedBanner";
 
 // Helper Sortable Component
 function SortableOutlineItem({
@@ -80,6 +83,8 @@ interface OutlineStepProps {
     onDeleteOutlinePoint: (index: number) => void;
     onSetOutlineApproved: (approved: boolean) => void;
     onDragEnd: (event: DragEndEvent) => void;
+    strategyChanged?: boolean;
+    onRebuild: () => void;
 }
 
 export function OutlineStep({
@@ -91,7 +96,9 @@ export function OutlineStep({
     onUpdateOutlinePoint,
     onDeleteOutlinePoint,
     onSetOutlineApproved,
-    onDragEnd
+    onDragEnd,
+    strategyChanged,
+    onRebuild
 }: OutlineStepProps) {
 
     if (loading) {
@@ -109,15 +116,34 @@ export function OutlineStep({
 
     return (
         <div className="space-y-4">
+            {strategyChanged && (
+                <StrategyChangedBanner
+                    message="Your strategy has changed since this outline was made. Its structure follows the strategy, so rebuild it to match."
+                    action="Rebuild outline"
+                    onClick={onRebuild}
+                />
+            )}
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Proposed Outline</h3>
-                <button
-                    onClick={onAddOutlinePoint}
-                    className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
-                >
-                    <Plus size={14} className="text-ember-500" />
-                    Add Section
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            if (confirm("Rebuild the outline from your current strategy? Your edits to this outline will be replaced.")) onRebuild();
+                        }}
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                        title="Rebuild the outline from the current strategy and research"
+                    >
+                        <AnimatedIcon icon={RefreshCWIcon} size={14} className="text-ember-500" />
+                        Rebuild
+                    </button>
+                    <button
+                        onClick={onAddOutlinePoint}
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                    >
+                        <Plus size={14} className="text-ember-500" />
+                        Add Section
+                    </button>
+                </div>
             </div>
             <DndContext
                 sensors={sensors}

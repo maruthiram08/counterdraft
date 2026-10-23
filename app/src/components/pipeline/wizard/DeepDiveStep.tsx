@@ -4,6 +4,7 @@ import { ResearchItem } from "../ResearchItem";
 import { Download, Search } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { RefreshCWIcon } from "@/components/icons/animated";
+import { StrategyChangedBanner } from "./StrategyChangedBanner";
 
 interface DeepDiveStepProps {
     deepDive: DeepDiveData | null;
@@ -54,15 +55,11 @@ export function DeepDiveStep({
     return (
         <div className="space-y-6">
             {strategyChanged && (
-                <div className="flex items-center justify-between gap-3 bg-ember-50 rounded-tile shadow-raised p-4 text-sm text-ember-700">
-                    <span>Your strategy has changed since this research ran, so it may not reflect it.</span>
-                    <button
-                        onClick={() => onRunDeepDive('reset')}
-                        className="shrink-0 flex items-center gap-1.5 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
-                    >
-                        <AnimatedIcon icon={RefreshCWIcon} size={14} /> Redo research
-                    </button>
-                </div>
+                <StrategyChangedBanner
+                    message="Your strategy has changed since this research ran, so it may not reflect it."
+                    action="Redo research"
+                    onClick={() => onRunDeepDive('reset')}
+                />
             )}
             <div className="flex flex-wrap justify-between items-center gap-3 px-1">
                 <p className="text-sm text-ink-muted">

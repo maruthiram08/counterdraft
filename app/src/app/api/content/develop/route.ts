@@ -94,6 +94,7 @@ export async function POST(req: Request) {
                 angle,
                 deep_dive,
                 references,
+                userContext,
                 brainMetadata
             });
 
@@ -117,6 +118,7 @@ export async function POST(req: Request) {
                 hook,
                 angle,
                 outline,
+                deep_dive,
                 references,
                 userContext,
                 brainMetadata

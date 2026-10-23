@@ -1,4 +1,4 @@
-import { extractOriginQuery, formatExploreSources, formatIdeaChain, formatStrategyContext, hasStrategy, normalizeFormat, originAngle, originQuery, sanitizeParsedStrategy } from '@/lib/brain/strategy';
+import { extractOriginQuery, formatExploreSources, formatIdeaChain, formatStrategyContext, hasStrategy, normalizeFormat, originAngle, outlineShape, originQuery, sanitizeParsedStrategy } from '@/lib/brain/strategy';
 
 describe('sanitizeParsedStrategy', () => {
     it('keeps free-text values and normalises presets', () => {
@@ -100,5 +100,33 @@ describe('explore origin', () => {
         expect(block).toContain('[E1] Agents in product work (Lenny)');
         expect(block).toContain('(case study) Use agents for discovery synthesis');
         expect(formatExploreSources({})).toBe('');
+    });
+});
+
+describe('outlineShape', () => {
+    it('gives each preset format its own skeleton', () => {
+        const shapes = ['thought_leadership', 'tactical_guide', 'personal_story', 'listicle'].map(format => outlineShape({ format }));
+        expect(new Set(shapes).size).toBe(4);
+        expect(outlineShape({ format: 'story' })).toContain('STORY');
+        expect(outlineShape({ format: 'tactical_guide' })).toContain('GUIDE');
+    });
+
+    it('follows a custom format in the creator\'s words', () => {
+        expect(outlineShape({ format: 'a teardown of one landing page' })).toContain('"a teardown of one landing page"');
+    });
+
+    it('asks the model to commit to one skeleton when no format is set', () => {
+        expect(outlineShape({})).toContain('commit to it');
+    });
+
+    it('lets stance, goal and length reshape the outline', () => {
+        const shape = outlineShape({ format: 'listicle', stance: 'contrarian', outcome: 'Conversion', length: 'short, under 150 words' });
+        expect(shape).toContain('STANCE "contrarian"');
+        expect(shape).toContain('Goal is conversion');
+        expect(shape).toContain('LENGTH "short, under 150 words"');
+    });
+
+    it('passes a free-text goal through', () => {
+        expect(outlineShape({ outcome: 'get invited to speak' })).toContain('Goal: get invited to speak');
     });
 });
