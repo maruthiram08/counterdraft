@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import {
     Search, Loader2, ExternalLink, Lightbulb, Check, X,
-    ChevronRight, ChevronLeft, RotateCcw, Layers, Bookmark,
+    ChevronRight, ChevronLeft, RotateCcw, Layers, Bookmark, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { CompassIcon, RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
 import { FOR_YOU, shuffle } from "@/lib/explore/trends";
+import { EMPTY_TASTE, addToTaste, cleanTaste, tasteKey, type Taste, type TasteKind } from "@/lib/explore/taste";
 import { MOMENTUM_HINTS, MOMENTUM_LABELS, storyMomentum, topicMomentum, type Momentum } from "@/lib/explore/momentum";
 
 // One step of the user's exploration path: a search and what it found
@@ -129,6 +130,7 @@ const DEFAULT_CATEGORIES = [
 
 const SESSION_KEY = 'cd-explore-workspace';
 const TRENDS_KEY = 'cd-explore-trends-v3';
+const TASTE_KEY = 'cd-explore-taste';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_TRAIL = 8;
 // Tabs shown beside "For you"; each visit picks a random few from the writer's saved set
@@ -256,6 +258,8 @@ export function ExploreWorkspace() {
     const [noteFor, setNoteFor] = useState<string | null>(null);
     const [note, setNote] = useState("");
     const [paneView, setPaneView] = useState<'stories' | 'questions'>('stories');
+    // "More like this" and "Not for me", sent with every topics request
+    const [taste, setTaste] = useState<Taste>(EMPTY_TASTE);
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     // "For you" is filled from the writer's profile and only shows once it has topics
@@ -280,8 +284,11 @@ export function ExploreWorkspace() {
 
     useEffect(() => {
         const fetchRealTrends = async () => {
-            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number }>(TRENDS_KEY);
-            if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS) {
+            const savedTaste = cleanTaste(readStorage(TASTE_KEY));
+            setTaste(savedTaste);
+            const cached = readStorage<{ groups: TrendGroup[]; savedAt: number; taste?: string }>(TRENDS_KEY);
+            // Topics fetched before the latest "More like this" or "Not for me" are fetched again
+            if (cached && Date.now() - cached.savedAt < TRENDS_TTL_MS && (cached.taste ?? '') === tasteKey(savedTaste)) {
                 const rotated = rotateTrendGroups(cached.groups);
                 if (rotated.length > 0) setTrendCategories(rotated);
                 return;
@@ -292,14 +299,14 @@ export function ExploreWorkspace() {
                 const res = await fetch('/api/explore/trends', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: 'discover' })
+                    body: JSON.stringify({ mode: 'discover', taste: savedTaste })
                 });
                 const data = await res.json();
                 if (Array.isArray(data.groups)) {
                     const rotated = rotateTrendGroups(data.groups);
                     if (rotated.length > 0) {
                         setTrendCategories(rotated);
-                        writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
+                        writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now(), taste: tasteKey(savedTaste) });
                     }
                 }
             } catch (e) {
@@ -311,6 +318,35 @@ export function ExploreWorkspace() {
 
         fetchRealTrends();
     }, []);
+
+    const tellTaste = (kind: TasteKind, signal: string) => {
+        const next = addToTaste(taste, kind, signal);
+        setTaste(next);
+        writeStorage(TASTE_KEY, next);
+    };
+
+    // A topic the writer doesn't want leaves now, and steers every later set of topics
+    const dismissTopic = (category: string, label: string) => {
+        tellTaste('less', label);
+        setTrendCategories(prev => prev.map(c => c.label === category ? { ...c, trends: c.trends.filter(t => t.label !== label) } : c));
+        toast.success("Got it. Fewer topics like this.");
+    };
+
+    const rateStory = (story: Story, kind: TasteKind) => {
+        tellTaste(kind, story.title);
+        if (kind === 'more') {
+            toast.success("Got it. You'll see more like this under For you.");
+            return;
+        }
+        if (step) {
+            const drop = (items?: Story[]) => items?.filter(s => s.sourceUrl !== story.sourceUrl);
+            const remaining = allItems.filter(s => s.sourceUrl !== story.sourceUrl);
+            updateStep(step, { stories: drop(step.stories) ?? [], questions: drop(step.questions) });
+            setSelectedKeys(prev => prev.filter(k => k !== story.sourceUrl));
+            if (focusKey === story.sourceUrl) setFocusKey(remaining[0]?.sourceUrl ?? null);
+        }
+        toast.success("Got it. Fewer stories like this.");
+    };
 
     // A new set of categories and topics, skipping the categories the writer has just seen
     const refreshTopics = async () => {
@@ -324,6 +360,7 @@ export function ExploreWorkspace() {
                     mode: 'discover',
                     refresh: true,
                     exclude: trendCategories.map(c => c.label).filter(label => label !== FOR_YOU),
+                    taste,
                 }),
             });
             const data = await res.json();
@@ -334,7 +371,7 @@ export function ExploreWorkspace() {
             }
             setTrendCategories(rotated);
             setSelectedCategory(null);
-            writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now() });
+            writeStorage(TRENDS_KEY, { groups: data.groups, savedAt: Date.now(), taste: tasteKey(taste) });
         } catch {
             toast.error("Couldn't refresh topics. Try again.");
         } finally {
@@ -895,6 +932,7 @@ export function ExploreWorkspace() {
                 </div>
             );
         }
+        const likedStory = taste.more.some(t => t.toLowerCase() === focusedStory.title.toLowerCase());
 
         return (
             <div>
@@ -947,6 +985,21 @@ export function ExploreWorkspace() {
                             <Bookmark size={12} /> Save topic
                         </button>
                     )}
+                    <span className="inline-flex items-center gap-1 ml-auto">
+                        <button
+                            onClick={() => rateStory(focusedStory, 'more')}
+                            aria-pressed={likedStory}
+                            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs transition-colors ${likedStory ? 'text-ember-700 bg-ember-50' : 'text-ink-muted hover:text-ink'}`}
+                        >
+                            <ThumbsUp size={12} /> More like this
+                        </button>
+                        <button
+                            onClick={() => rateStory(focusedStory, 'less')}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs text-ink-muted hover:text-ink transition-colors"
+                        >
+                            <ThumbsDown size={12} /> Not for me
+                        </button>
+                    </span>
                 </div>
                 {noteFor === focusedStory.sourceUrl && !savedIdeas.has(topicKey(focusedStory)) && (
                     <form
@@ -1058,14 +1111,23 @@ export function ExploreWorkspace() {
                             </div>
                             <div role="tabpanel" aria-label={`Trending in ${activeCategory}`} className={`flex flex-wrap justify-center gap-2 mt-3 ${refreshingTopics ? 'opacity-50' : ''}`}>
                                 {trendCategories.find(c => c.label === activeCategory)?.trends.map(trend => (
-                                    <button
-                                        key={trend.label}
-                                        onClick={() => runSearch(trend.query)}
-                                        disabled={loading}
-                                        className="h-9 px-4 bg-canvas shadow-raised text-ink-soft rounded-full text-sm hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
-                                    >
-                                        {trend.label}
-                                    </button>
+                                    <span key={trend.label} className="h-9 inline-flex items-center bg-canvas shadow-raised rounded-full">
+                                        <button
+                                            onClick={() => runSearch(trend.query)}
+                                            disabled={loading}
+                                            className="h-full pl-4 pr-1.5 text-ink-soft rounded-l-full text-sm hover:text-ember-600 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                                        >
+                                            {trend.label}
+                                        </button>
+                                        <button
+                                            onClick={() => dismissTopic(activeCategory!, trend.label)}
+                                            aria-label={`Not for me: ${trend.label}`}
+                                            title="Not for me"
+                                            className="h-full pl-1 pr-3 text-ink-muted rounded-r-full hover:text-ink transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </span>
                                 ))}
                             </div>
                             {fetchingTrends && <p className="text-xs text-ink-muted mt-2">Finding topics for you...</p>}

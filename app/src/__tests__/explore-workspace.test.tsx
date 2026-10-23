@@ -173,14 +173,37 @@ describe('ExploreWorkspace', () => {
         expect(screen.getByRole('tab', { name: 'Fatherhood' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Dads and remote work' })).toBeInTheDocument();
         const firstCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/trends');
-        expect(JSON.parse(firstCall[1].body)).toEqual({ mode: 'discover' });
+        expect(JSON.parse(firstCall[1].body)).toEqual({ mode: 'discover', taste: { more: [], less: [] } });
+
+        // "Not for me" removes the topic now and steers the next set
+        fireEvent.click(screen.getByRole('tab', { name: 'Fatherhood' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Not for me: Stay-at-home dads' }));
+        expect(screen.queryByRole('button', { name: 'Stay-at-home dads' })).not.toBeInTheDocument();
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-taste')!)).toEqual({ more: [], less: ['Stay-at-home dads'] });
 
         fireEvent.click(screen.getByRole('button', { name: 'Show different topics' }));
         expect(await screen.findByRole('tab', { name: 'School admissions' })).toBeInTheDocument();
         expect(screen.queryByRole('tab', { name: 'Fatherhood' })).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Paternity leave in India' })).toBeInTheDocument();
         const refreshCall = (global.fetch as jest.Mock).mock.calls.find(([url, init]) => url === '/api/explore/trends' && JSON.parse(init.body).refresh);
-        expect(JSON.parse(refreshCall[1].body)).toEqual({ mode: 'discover', refresh: true, exclude: ['Fatherhood'] });
+        expect(JSON.parse(refreshCall[1].body)).toEqual({ mode: 'discover', refresh: true, exclude: ['Fatherhood'], taste: { more: [], less: ['Stay-at-home dads'] } });
+    });
+
+    it('tunes For you from a story with More like this and Not for me', async () => {
+        render(<ExploreWorkspace />);
+        search('remote work');
+
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        const more = within(details).getByRole('button', { name: 'More like this' });
+        fireEvent.click(more);
+        expect(more).toHaveAttribute('aria-pressed', 'true');
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-taste')!).more).toEqual(['Companies rethink remote work policies']);
+
+        // Changing your mind moves it across, and the story leaves the results
+        fireEvent.click(within(details).getByRole('button', { name: 'Not for me' }));
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-taste')!)).toEqual({ more: [], less: ['Companies rethink remote work policies'] });
+        expect(screen.queryByText('Companies rethink remote work policies')).not.toBeInTheDocument();
+        expect(within(details).getByText('Office leases hit a record low')).toBeInTheDocument();
     });
 
     it('shows what people ask about a search and gets ideas for a question', async () => {

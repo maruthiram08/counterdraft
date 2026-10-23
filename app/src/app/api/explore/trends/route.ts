@@ -4,6 +4,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { UsageService } from '@/lib/billing/usage';
 import { rateLimit } from '@/lib/rate-limit';
+import { cleanTaste, describeTaste, tasteKey, type Taste } from '@/lib/explore/taste';
 import { CATEGORIES_PER_SET, FOR_YOU, buildTrendSearch, pickCategories, type WriterProfile } from '@/lib/explore/trends';
 
 export const maxDuration = 60; // Allow 1 minute for search + LLM
@@ -39,19 +40,21 @@ async function getWriterProfile(userId: string): Promise<WriterProfile> {
     };
 }
 
-function describeWriter(profile: WriterProfile): string {
+function describeWriter(profile: WriterProfile, taste: Taste): string {
     const lines = [
         profile.role ? `Role: ${profile.role}` : '',
         profile.context ? `What they write about: ${profile.context.slice(0, 400)}` : '',
         profile.beliefs.length ? `Views they hold:\n${profile.beliefs.map(b => `- ${b}`).join('\n')}` : '',
+        describeTaste(taste),
     ].filter(Boolean);
     return lines.length ? lines.join('\n') : '(no profile yet)';
 }
 
 // Topic areas this writer's audience follows, used as rotating Explore tabs
-async function nicheCategories(userId: string, profile: WriterProfile): Promise<string[]> {
+async function nicheCategories(userId: string, profile: WriterProfile, taste: Taste): Promise<string[]> {
     if (!profile.role && !profile.context && profile.beliefs.length === 0) return [];
-    const cached = nicheCache.get(userId);
+    const cacheKey = `${userId}:${tasteKey(taste)}`;
+    const cached = nicheCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.value;
 
     try {
@@ -66,7 +69,7 @@ async function nicheCategories(userId: string, profile: WriterProfile): Promise<
 Each is 1-3 words (e.g. "Fatherhood", "Indian workplace", "Remote work"), broad enough to have news every week, and distinct from the others.
 Return JSON: { "categories": ["..."] }`,
                 },
-                { role: 'user', content: describeWriter(profile) },
+                { role: 'user', content: describeWriter(profile, taste) },
             ],
         });
         const parsed = JSON.parse(completion.choices[0].message.content || '{}');
@@ -74,7 +77,7 @@ Return JSON: { "categories": ["..."] }`,
             .filter((c: unknown): c is string => typeof c === 'string' && c.trim().length > 0 && c.length <= 40)
             .map((c: string) => c.trim())
             .slice(0, 8);
-        nicheCache.set(userId, { value: categories, expiresAt: Date.now() + NICHE_TTL_MS });
+        nicheCache.set(cacheKey, { value: categories, expiresAt: Date.now() + NICHE_TTL_MS });
         return categories;
     } catch (e) {
         console.error('Niche categories failed:', e);
@@ -86,6 +89,7 @@ async function trendsForCategory(
     category: string,
     profile: WriterProfile,
     exclude: string[],
+    taste: Taste,
     apiKey: string
 ): Promise<TrendGroup> {
     const query = buildTrendSearch(category, profile);
@@ -121,6 +125,7 @@ async function trendsForCategory(
                     content: `You suggest starting topics for a writer looking for something to post about.
 From this week's news below, pick ${TOPICS_PER_CATEGORY} distinct topics that this particular writer could take a real position on.
 Prefer topics that touch their role, what they write about or the views they hold; skip ones they would have nothing to say about.
+Follow what they asked for more of, and leave out anything like what they marked "Not for me".
 Return JSON: { "trends": [ { "label": "2-4 word chip label", "query": "4-8 word search query a writer would type" } ] }
 Rules:
 - Labels name a specific story or debate (e.g. "Infosys 70-hour week", not "Work culture").
@@ -129,7 +134,7 @@ ${exclude.length ? `- Do not repeat or rephrase these, which the writer has alre
                 },
                 {
                     role: 'user',
-                    content: `Category: ${category === FOR_YOU ? 'Anything relevant to this writer' : category}\n\nWriter:\n${describeWriter(profile)}\n\nThis week's news:\n${context || '(none found)'}`,
+                    content: `Category: ${category === FOR_YOU ? 'Anything relevant to this writer' : category}\n\nWriter:\n${describeWriter(profile, taste)}\n\nThis week's news:\n${context || '(none found)'}`,
                 },
             ],
         });
@@ -164,9 +169,10 @@ export async function POST(req: Request) {
             ? body.exclude.filter((e: unknown): e is string => typeof e === 'string').slice(0, 20)
             : [];
 
-        const cacheKey = discover
+        const taste = cleanTaste(body.taste);
+        const cacheKey = (discover
             ? `${userId}:discover`
-            : `${userId}:${(categories as string[]).map(c => c.toLowerCase().trim()).sort().join('|')}`;
+            : `${userId}:${(categories as string[]).map(c => c.toLowerCase().trim()).sort().join('|')}`) + `:${tasteKey(taste)}`;
         if (!refresh) {
             const cached = trendsCache.get(cacheKey);
             if (cached && cached.expiresAt > Date.now()) {
@@ -199,11 +205,11 @@ export async function POST(req: Request) {
 
         const profile = await getWriterProfile(userId);
         const chosen = discover
-            ? [FOR_YOU, ...pickCategories(await nicheCategories(userId, profile), exclude, CATEGORIES_PER_SET)]
+            ? [FOR_YOU, ...pickCategories(await nicheCategories(userId, profile, taste), exclude, CATEGORIES_PER_SET)]
             : categories as string[];
         // In discover mode `exclude` lists categories, not topics, so topics start fresh
         const topicExclude = discover ? [] : exclude;
-        const results = (await Promise.all(chosen.map(cat => trendsForCategory(cat, profile, topicExclude, apiKey))))
+        const results = (await Promise.all(chosen.map(cat => trendsForCategory(cat, profile, topicExclude, taste, apiKey))))
             .filter(group => group.category === FOR_YOU || group.trends.length > 0);
 
         await UsageService.incrementSearchCount(userId);
