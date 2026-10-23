@@ -12,6 +12,7 @@ import type { ExploreOrigin } from "@/types";
 import { FOR_YOU, shuffle } from "@/lib/explore/trends";
 import type { WatchedTopic } from "@/lib/explore/watch";
 import type { ChatTurn } from "@/lib/explore/story-chat";
+import { monthLabel, type TopicHistory } from "@/lib/explore/history";
 import { EMPTY_TASTE, addToTaste, cleanTaste, tasteKey, type Taste, type TasteKind } from "@/lib/explore/taste";
 import { MOMENTUM_HINTS, MOMENTUM_LABELS, storyMomentum, topicMomentum, type Momentum } from "@/lib/explore/momentum";
 
@@ -30,6 +31,8 @@ interface ExploreStep {
     // The takes the stories make, and the one nobody is making
     debate?: Debate | null;
     debateLoading?: boolean;
+    // Whether the writer has written on this before, and what moved since
+    history?: TopicHistory | null;
     // Why this search was suggested, from "Surprise me" or a watched topic
     banner?: { label: string; text: string };
 }
@@ -163,6 +166,7 @@ const MAX_TRAIL = 8;
 const TABS_SHOWN = 4;
 const COMBINED_KEY = 'combined';
 const GAP_KEY = 'gap';
+const FOLLOW_UP_KEY = 'follow-up';
 
 // Storage can be unavailable (private mode, blocked site data); Explore still works without it.
 function readStorage<T>(key: string): T | null {
@@ -315,6 +319,7 @@ export function ExploreWorkspace() {
     const focusedMomentum = focusedStory && focusedStory.kind !== 'question' ? storyMomentum(focusedStory) : null;
     const showingCombined = focusKey === COMBINED_KEY && selectedStories.length >= 2;
     const showingGap = focusKey === GAP_KEY && Boolean(step?.debate?.gap);
+    const showingFollowUp = focusKey === FOLLOW_UP_KEY && Boolean(step?.history?.before);
 
     useEffect(() => {
         const fetchRealTrends = async () => {
@@ -494,7 +499,7 @@ export function ExploreWorkspace() {
         const session: SavedSession = {
             trail,
             activeStep,
-            focusKey: focusKey === COMBINED_KEY || focusKey === GAP_KEY ? null : focusKey,
+            focusKey: focusKey === COMBINED_KEY || focusKey === GAP_KEY || focusKey === FOLLOW_UP_KEY ? null : focusKey,
             ideasByKey,
             savedIdeas: [...savedIdeas],
             divesByKey: Object.fromEntries(Object.entries(divesByKey).filter(([, d]) => typeof d === 'object')) as Record<string, DeepDive>,
@@ -563,6 +568,7 @@ export function ExploreWorkspace() {
         setLoading(false);
         loadQuestions(next);
         if (next.debateLoading) loadDebate(next);
+        if (next.stories.length > 0) loadHistory(next);
     };
 
     const updateStep = (target: ExploreStep, patch: Partial<ExploreStep>) =>
@@ -586,6 +592,21 @@ export function ExploreWorkspace() {
             // The map is extra; the stories stand on their own
         }
         updateStep(target, { debate, debateLoading: false });
+    };
+
+    // Checks the writer's own posts and drafts for this topic once the stories are on screen
+    const loadHistory = async (target: ExploreStep) => {
+        try {
+            const res = await fetch('/api/explore/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: target.query, stories: target.stories.slice(0, 10).map(s => s.title) }),
+            });
+            const data = await res.json();
+            if (res.ok && data.history) updateStep(target, { history: data.history });
+        } catch {
+            // History is extra; the stories stand on their own
+        }
     };
 
     // Fills in what people are asking once the stories are on screen
@@ -1092,6 +1113,21 @@ export function ExploreWorkspace() {
     };
 
     const renderDetail = () => {
+        if (showingFollowUp && step?.history?.before) {
+            const before = step.history.before;
+            return (
+                <div>
+                    <span className="inline-flex items-center h-6 px-2.5 mb-2 rounded-full bg-sage-100 text-sage-700 text-xs font-medium">A follow-up post</span>
+                    <h3 className="text-xl font-medium tracking-[-0.01em] text-ink leading-snug">{before.changed}</h3>
+                    <div className="mt-4 p-4 bg-canvas shadow-well rounded-tile">
+                        <span className="text-xs font-medium text-ink-muted">What you wrote in {monthLabel(before.date)}</span>
+                        <p className="text-sm text-ink-soft mt-1">{before.gist}</p>
+                    </div>
+                    {renderIdeas(FOLLOW_UP_KEY, stories.slice(0, 6), `${step.query}. A follow-up to the writer's earlier ${before.kind} (${before.gist}), built on what has changed since: ${before.changed}`)}
+                </div>
+            );
+        }
+
         if (showingGap && step?.debate?.gap) {
             const { gap, takes } = step.debate;
             return (
@@ -1480,6 +1516,19 @@ export function ExploreWorkspace() {
                                             <MomentumTag tag={topic.tag} />
                                             {topic.reason}
                                         </p>
+                                    )}
+                                    {step?.history?.before ? (
+                                        <button
+                                            onClick={() => { setFocusKey(FOLLOW_UP_KEY); setShowDetailOnMobile(true); }}
+                                            className={`mb-4 w-full text-left p-3.5 rounded-tile bg-sage-100 hover:ring-2 hover:ring-sage-500/30 transition-all ${focusKey === FOLLOW_UP_KEY ? 'ring-2 ring-sage-500/30' : ''}`}
+                                        >
+                                            <span className="block text-xs font-medium text-sage-700">You wrote on this in {monthLabel(step.history.before.date)}</span>
+                                            <span className="block text-sm text-ink mt-0.5">{step.history.before.gist}</span>
+                                            <span className="block text-xs text-ink-soft mt-1">What&apos;s changed: {step.history.before.changed}</span>
+                                            <span className="mt-1 text-xs font-medium text-sage-700 flex items-center gap-0.5">Get follow-up ideas <ChevronRight size={12} /></span>
+                                        </button>
+                                    ) : step?.history?.newGround && (
+                                        <p className="text-xs text-ink-muted mb-3">New ground: you haven&apos;t written on this yet.</p>
                                     )}
                                     {step?.debateLoading && (
                                         <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Mapping the takes">
