@@ -20,6 +20,7 @@ import { DraftStep } from "./wizard/DraftStep";
 import { RefineContextPanel } from "./wizard/RefineContextPanel";
 import { ThinkingLoader } from "./wizard/ThinkingLoader";
 import { StrategyAnalysis, toStrategyAnalysis } from "@/lib/brain/strategy";
+import type { OutlineShapeOption } from "@/lib/editor/draft-tools";
 
 interface DevelopmentWizardProps {
     item: ContentItem;
@@ -48,6 +49,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     // Outline state - Now using rich objects
     const [outline, setOutline] = useState<ResearchPoint[]>([]);
     const [outlineApproved, setOutlineApproved] = useState(false);
+    const [outlineShapes, setOutlineShapes] = useState<OutlineShapeOption[] | null>(null);
+    const [findingShapes, setFindingShapes] = useState(false);
 
     // Draft state
     const [draftContent, setDraftContent] = useState('');
@@ -439,6 +442,41 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
     };
 
+    // Two other ways to build the same post, to compare before drafting
+    const findOutlineShapes = async () => {
+        setFindingShapes(true);
+        try {
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'outline_shapes',
+                    hook: item.hook,
+                    angle: item.angle,
+                    deep_dive: deepDive,
+                    brainMetadata: latestBrainMetadata.current,
+                    outline,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Could not find other shapes');
+            if (!data.shapes?.length) throw new Error('No other shapes came back. Try again.');
+            setOutlineShapes(data.shapes);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Could not find other shapes');
+        } finally {
+            setFindingShapes(false);
+        }
+    };
+
+    const applyOutlineShape = (shape: OutlineShapeOption) => {
+        const sections = shape.sections.map(text => ({ text, notes: [] }));
+        setOutline(sections);
+        setOutlineApproved(false);
+        setOutlineShapes(null);
+        saveProgress({ outline: { sections } });
+    };
+
     const generateDraft = async () => {
         setLoading(true);
         saveProgress({ dev_step: 'draft_in_progress' });
@@ -746,6 +784,10 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 onDragEnd={handleDragEnd}
                                 strategyChanged={strategyChangedSinceOutline}
                                 onRebuild={generateOutline}
+                                shapes={outlineShapes}
+                                findingShapes={findingShapes}
+                                onFindShapes={findOutlineShapes}
+                                onUseShape={applyOutlineShape}
                             />
                         )}
 

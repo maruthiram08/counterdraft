@@ -2,13 +2,14 @@
 import { DndContext, closestCenter, DragEndEvent, SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Plus, Check } from 'lucide-react';
+import { GripVertical, Plus, Check, Shapes } from 'lucide-react';
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { RefreshCWIcon } from "@/components/icons/animated";
 import { ResearchPoint } from "./types";
 import { ResearchItem } from "../ResearchItem";
 import { Loader2 } from "lucide-react";
 import { StrategyChangedBanner } from "./StrategyChangedBanner";
+import type { OutlineShapeOption } from "@/lib/editor/draft-tools";
 
 // Helper Sortable Component
 function SortableOutlineItem({
@@ -85,6 +86,10 @@ interface OutlineStepProps {
     onDragEnd: (event: DragEndEvent) => void;
     strategyChanged?: boolean;
     onRebuild: () => void;
+    shapes?: OutlineShapeOption[] | null;
+    findingShapes?: boolean;
+    onFindShapes?: () => void;
+    onUseShape?: (shape: OutlineShapeOption) => void;
 }
 
 export function OutlineStep({
@@ -98,7 +103,11 @@ export function OutlineStep({
     onSetOutlineApproved,
     onDragEnd,
     strategyChanged,
-    onRebuild
+    onRebuild,
+    shapes,
+    findingShapes,
+    onFindShapes,
+    onUseShape
 }: OutlineStepProps) {
 
     if (loading) {
@@ -125,7 +134,18 @@ export function OutlineStep({
             )}
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Proposed Outline</h3>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
+                    {onFindShapes && (
+                        <button
+                            onClick={onFindShapes}
+                            disabled={findingShapes}
+                            className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                            title="See this post built two other ways"
+                        >
+                            {findingShapes ? <Loader2 size={14} className="animate-spin text-ember-500" /> : <Shapes size={14} className="text-ember-500" />}
+                            Other shapes
+                        </button>
+                    )}
                     <button
                         onClick={() => {
                             if (confirm("Rebuild the outline from your current strategy? Your edits to this outline will be replaced.")) onRebuild();
@@ -145,6 +165,31 @@ export function OutlineStep({
                     </button>
                 </div>
             </div>
+            {shapes && shapes.length > 0 && onUseShape && (
+                <div className="grid gap-3 md:grid-cols-2">
+                    {shapes.map(shape => (
+                        <div key={shape.name} className="flex flex-col gap-3 bg-canvas shadow-well rounded-2xl p-4">
+                            <div>
+                                <p className="text-sm font-medium text-ink">{shape.name}</p>
+                                {shape.why && <p className="text-xs text-ink-soft mt-0.5">{shape.why}</p>}
+                            </div>
+                            <ol className="space-y-1 list-decimal pl-5 flex-1">
+                                {shape.sections.map((sec, i) => (
+                                    <li key={i} className="text-xs text-ink-soft">{sec.split(':')[0]}</li>
+                                ))}
+                            </ol>
+                            <button
+                                onClick={() => {
+                                    if (!outline.some(o => o.notes.length) || confirm("Use this shape? Your notes on the current outline will be replaced.")) onUseShape(shape);
+                                }}
+                                className="self-start h-8 px-3 rounded-full bg-surface shadow-raised text-xs font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all"
+                            >
+                                Use this shape
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}

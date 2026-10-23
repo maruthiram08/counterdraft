@@ -3,6 +3,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { moderateContent, getModerationErrorMessage } from '@/lib/moderation';
 import { UsageService } from '@/lib/billing/usage';
 import { brainGenerationService } from '@/lib/brain/generation';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
         actionType = action || 'unknown';
 
         // 🛡️ CONTENT MODERATION CHECK (on user-provided text fields)
-        const inputToModerate = [hook, angle, userContext, currentText, brief].filter(Boolean).join(' ');
+        const inputToModerate = [hook, angle, userContext, currentText, brief, typeof body.instruction === 'string' ? body.instruction : ''].filter(Boolean).join(' ');
         if (inputToModerate) {
             const modResult = await moderateContent(inputToModerate);
             if (modResult.flagged) {
@@ -168,6 +169,48 @@ export async function POST(req: Request) {
 
             const result = await brainGenerationService.verifyFacts(textToVerify);
             return NextResponse.json(result);
+
+        } else if (action === 'outline_shapes' || action === 'rewrite_section' || action === 'variants') {
+            // Small edits on work already made: rate limited, not counted as new drafts
+            const limit = rateLimit(`develop-edit:${userId}`, { windowMs: 15 * 60 * 1000, max: 30 });
+            if (!limit.allowed) {
+                status = 'rate_limited';
+                return NextResponse.json({ error: 'Too many requests. Try again in a few minutes.' }, { status: 429 });
+            }
+
+            if (action === 'outline_shapes') {
+                const current = Array.isArray(outline) ? outline.map((s: unknown) => typeof s === 'string' ? s : String((s as { text?: unknown })?.text ?? '')).filter(Boolean) : [];
+                const shapes = await brainGenerationService.outlineShapes({ hook, angle, deep_dive, brainMetadata, current });
+                return NextResponse.json({ shapes });
+            }
+
+            if (typeof draft !== 'string' || !draft.trim()) {
+                status = 'error';
+                errorDetails = 'Missing draft';
+                return NextResponse.json({ error: 'Missing draft' }, { status: 400 });
+            }
+
+            if (action === 'rewrite_section') {
+                const section = typeof body.section === 'string' ? body.section.trim() : '';
+                if (!section) {
+                    status = 'error';
+                    errorDetails = 'Missing section';
+                    return NextResponse.json({ error: 'Missing section' }, { status: 400 });
+                }
+                const rewritten = await brainGenerationService.rewriteSection({
+                    userId,
+                    draft,
+                    section,
+                    instruction: typeof body.instruction === 'string' ? body.instruction.trim().slice(0, 500) : undefined,
+                    outline,
+                    deep_dive,
+                    brainMetadata,
+                });
+                return NextResponse.json({ section: rewritten });
+            }
+
+            const variants = await brainGenerationService.draftVariants({ userId, draft, brainMetadata });
+            return NextResponse.json({ variants });
 
         } else if (action === 'parse_brief' || action === 'autofill_strategy') {
             const result = await brainGenerationService.parseBrief(userId, { brief, hook, draftText, current: brainMetadata });

@@ -15,6 +15,7 @@ import { RefinementFeedback } from "./RefinementFeedback";
 import { HookLab } from "./HookLab";
 import { LinkedInPreview } from "./LinkedInPreview";
 import { PlaceholderNotice } from "./PlaceholderNotice";
+import { VariantsPanel } from "./VariantsPanel";
 import { findPlaceholders, Placeholder } from "@/lib/editor/placeholders";
 
 // Refactored Hooks & Utils
@@ -46,7 +47,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
     // 2. Mode & UI State
     const [isPreview, setIsPreview] = useState(false);
     const [showPublishModal, setShowPublishModal] = useState(false);
-    const [postTool, setPostTool] = useState<'openings' | 'preview' | null>(null);
+    const [postTool, setPostTool] = useState<'openings' | 'variants' | 'preview' | null>(null);
 
     // 3. Selection
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -280,6 +281,15 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                                 Try other openings
                             </button>
                         )}
+                        {draft.status !== 'published' && (
+                            <button
+                                onClick={() => setPostTool(t => t === 'variants' ? null : 'variants')}
+                                aria-pressed={postTool === 'variants'}
+                                className={`h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'variants' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                            >
+                                Variants
+                            </button>
+                        )}
                         <button
                             onClick={() => setPostTool(t => t === 'preview' ? null : 'preview')}
                             aria-pressed={postTool === 'preview'}
@@ -290,9 +300,9 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                     </div>
                     {postTool && (
                         <div className="mb-6 bg-surface rounded-card shadow-card p-5 md:p-6">
-                            {postTool === 'openings'
-                                ? <HookLab content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />
-                                : <LinkedInPreview content={content} />}
+                            {postTool === 'openings' && <HookLab content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
+                            {postTool === 'variants' && <VariantsPanel content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
+                            {postTool === 'preview' && <LinkedInPreview content={content} />}
                         </div>
                     )}
 

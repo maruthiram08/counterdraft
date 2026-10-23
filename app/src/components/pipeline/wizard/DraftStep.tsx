@@ -1,6 +1,6 @@
 
 import { useMemo, useRef, useState } from "react";
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye } from "lucide-react";
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool } from "lucide-react";
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
@@ -11,6 +11,17 @@ import { HookLab } from "@/components/editor/HookLab";
 import { LinkedInPreview } from "@/components/editor/LinkedInPreview";
 import { PlaceholderNotice } from "@/components/editor/PlaceholderNotice";
 import { findPlaceholders, markPlaceholders, Placeholder } from "@/lib/editor/placeholders";
+import { VariantsPanel } from "@/components/editor/VariantsPanel";
+import { paragraphAt, replaceRange, Span } from "@/lib/editor/draft-tools";
+
+type DraftTool = 'openings' | 'preview' | 'rewrite' | 'variants';
+
+const TOOLS: { key: DraftTool; label: string; Icon: typeof Eye }[] = [
+    { key: 'openings', label: 'Openings', Icon: Wand2 },
+    { key: 'rewrite', label: 'Rewrite paragraph', Icon: PenTool },
+    { key: 'variants', label: 'Variants', Icon: Layers },
+    { key: 'preview', label: 'LinkedIn preview', Icon: Eye },
+];
 
 interface DraftStepProps {
     draftContent: string;
@@ -49,8 +60,13 @@ export function DraftStep({
     strategyChanged,
     onRebuild
 }: DraftStepProps) {
-    const [showOpenings, setShowOpenings] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
+    const [tool, setTool] = useState<DraftTool | null>(null);
+    // Rewrite one paragraph: the caret picks it, the writer can say what should change
+    const [caret, setCaret] = useState(0);
+    const [rewriteNote, setRewriteNote] = useState('');
+    const [rewriting, setRewriting] = useState(false);
+    const [rewrite, setRewrite] = useState<{ from: Span; text: string } | null>(null);
+    const target = useMemo(() => paragraphAt(draftContent, caret), [draftContent, caret]);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const backdropRef = useRef<HTMLDivElement>(null);
     const placeholders = useMemo(() => findPlaceholders(draftContent), [draftContent]);
@@ -64,6 +80,50 @@ export function DraftStep({
         area.focus({ preventScroll: true });
         area.setSelectionRange(p.start, p.end);
         if (backdropRef.current) backdropRef.current.scrollTop = area.scrollTop;
+    };
+
+    const runRewrite = async () => {
+        if (!target) return;
+        setRewriting(true);
+        try {
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'rewrite_section',
+                    draft: draftContent,
+                    section: target.text,
+                    instruction: rewriteNote.trim() || undefined,
+                    outline,
+                    deep_dive: deepDive,
+                    brainMetadata,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.section) throw new Error(data.error || 'Could not rewrite that paragraph');
+            setRewrite({ from: target, text: data.section });
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Could not rewrite that paragraph');
+        } finally {
+            setRewriting(false);
+        }
+    };
+
+    // Put the new paragraph where the old one is now, even if text around it moved since
+    const applyRewrite = () => {
+        if (!rewrite) return;
+        const at = draftContent.slice(rewrite.from.start, rewrite.from.end) === rewrite.from.text
+            ? rewrite.from.start
+            : draftContent.indexOf(rewrite.from.text);
+        if (at === -1) {
+            toast.error('That paragraph has changed since. Rewrite it again.');
+            setRewrite(null);
+            return;
+        }
+        onUpdateDraft(replaceRange(draftContent, at, at + rewrite.from.text.length, rewrite.text));
+        setRewrite(null);
+        setRewriteNote('');
+        toast.success('Paragraph replaced');
     };
 
     // Helper to check if context exists
@@ -117,7 +177,7 @@ export function DraftStep({
                     </div>
                     <div className="flex-1 bg-surface rounded-card shadow-card flex flex-col overflow-hidden">
                         {/* Mock Toolbar */}
-                        <div className="flex items-center gap-1 px-4 py-3 border-b border-line bg-surface">
+                        <div className="flex flex-wrap items-center gap-1 px-4 py-3 border-b border-line bg-surface">
                             <div className="flex gap-0.5">
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Bold size={14} /></button>
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Italic size={14} /></button>
@@ -137,20 +197,16 @@ export function DraftStep({
                                 {verifyingStrategy ? <Loader2 size={12} className="animate-spin" /> : <Target size={12} />}
                                 Check Strategy
                             </button>
-                            <button
-                                onClick={() => setShowOpenings(v => !v)}
-                                aria-pressed={showOpenings}
-                                className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-all ${showOpenings ? 'shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink active:shadow-pressed'}`}
-                            >
-                                <Wand2 size={12} /> Openings
-                            </button>
-                            <button
-                                onClick={() => setShowPreview(v => !v)}
-                                aria-pressed={showPreview}
-                                className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-all ${showPreview ? 'shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink active:shadow-pressed'}`}
-                            >
-                                <Eye size={12} /> LinkedIn preview
-                            </button>
+                            {TOOLS.map(({ key, label, Icon }) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setTool(t => t === key ? null : key)}
+                                    aria-pressed={tool === key}
+                                    className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-all ${tool === key ? 'shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink active:shadow-pressed'}`}
+                                >
+                                    <Icon size={12} /> {label}
+                                </button>
+                            ))}
                             <div className="flex-1" />
                             <button
                                 onClick={() => {
@@ -162,12 +218,56 @@ export function DraftStep({
                                 <Copy size={12} /> Copy
                             </button>
                         </div>
-                        {showOpenings && (
+                        {tool === 'openings' && (
                             <div className="px-4 py-4 md:px-6 border-b border-line">
                                 <HookLab content={draftContent} brainMetadata={brainMetadata} onApply={onUpdateDraft} disabled={readOnly} />
                             </div>
                         )}
-                        {showPreview && (
+                        {tool === 'variants' && (
+                            <div className="px-4 py-4 md:px-6 border-b border-line">
+                                <VariantsPanel content={draftContent} brainMetadata={brainMetadata} onApply={onUpdateDraft} disabled={readOnly} />
+                            </div>
+                        )}
+                        {tool === 'rewrite' && (
+                            <div className="px-4 py-4 md:px-6 border-b border-line space-y-3">
+                                {rewrite ? (
+                                    <>
+                                        <p className="text-xs text-ink-muted">New version of the paragraph</p>
+                                        <p className="text-sm text-ink whitespace-pre-wrap bg-canvas shadow-well rounded-2xl p-4">{rewrite.text}</p>
+                                        <div className="flex gap-2">
+                                            <button onClick={applyRewrite} disabled={readOnly} className="h-8 px-3 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50">Replace it</button>
+                                            <button onClick={runRewrite} disabled={rewriting} className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink-soft hover:text-ink active:shadow-pressed transition-all disabled:opacity-50">Try again</button>
+                                            <button onClick={() => setRewrite(null)} className="h-8 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-ink transition-all">Discard</button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xs text-ink-muted">Click into the paragraph you want rewritten. It uses your outline and research.</p>
+                                        {target && (
+                                            <p className="text-sm text-ink-soft line-clamp-2 border-l-2 border-ember-200 pl-3">{target.text}</p>
+                                        )}
+                                        <div className="flex flex-wrap gap-2">
+                                            <input
+                                                value={rewriteNote}
+                                                onChange={(e) => setRewriteNote(e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' && !rewriting) runRewrite(); }}
+                                                placeholder="What should change? (optional, e.g. add the survey number)"
+                                                className="flex-1 min-w-[220px] h-9 px-4 rounded-full bg-canvas shadow-well text-sm text-ink placeholder:text-ink-muted outline-none"
+                                            />
+                                            <button
+                                                onClick={runRewrite}
+                                                disabled={rewriting || !target || readOnly}
+                                                className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
+                                            >
+                                                {rewriting ? <Loader2 size={12} className="animate-spin" /> : <PenTool size={12} />}
+                                                Rewrite this paragraph
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                        {tool === 'preview' && (
                             <div className="px-4 py-5 md:px-6 border-b border-line bg-canvas">
                                 <LinkedInPreview content={draftContent} />
                             </div>
@@ -190,6 +290,7 @@ export function DraftStep({
                                 value={draftContent}
                                 readOnly={readOnly}
                                 onChange={(e) => onUpdateDraft(e.target.value)}
+                                onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
                                 onScroll={(e) => { if (backdropRef.current) backdropRef.current.scrollTop = e.currentTarget.scrollTop; }}
                                 className="absolute inset-0 w-full h-full resize-none outline-none overflow-y-scroll bg-transparent text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:px-12 md:py-8"
                                 placeholder="Start writing..."
