@@ -274,6 +274,31 @@ describe('ExploreWorkspace', () => {
         expect(JSON.parse(window.localStorage.getItem('cd-explore-idea-prefs')!)).toEqual({ stance: 'push_back', platform: 'newsletter' });
     });
 
+    it('says when the writer covered the topic before and offers a follow-up', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/history') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ history: {
+                    before: { id: 'p1', kind: 'post', date: '2026-03-12T10:00:00Z', gist: 'Docs beat meetings.', changed: 'Firms are now loosening office mandates.' },
+                    newGround: false,
+                } }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        search('remote work');
+        const followUp = await screen.findByRole('button', { name: /You wrote on this in March/ });
+        fireEvent.click(followUp);
+
+        const details = screen.getByRole('region', { name: 'Story details' });
+        expect(within(details).getByText('Docs beat meetings.')).toBeInTheDocument();
+        fireEvent.click(within(details).getByRole('button', { name: /Get post ideas/ }));
+        await within(details).findByText(/Write it down/);
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ideas');
+        expect(JSON.parse(call[1].body).context).toContain('A follow-up to the writer');
+    });
+
     it('tunes For you from a story with More like this and Not for me', async () => {
         render(<ExploreWorkspace />);
         search('remote work');
