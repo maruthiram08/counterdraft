@@ -10,6 +10,7 @@ import { CompassIcon, RefreshCWIcon, SparklesIcon } from "@/components/icons/ani
 import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
 import { FOR_YOU, shuffle } from "@/lib/explore/trends";
+import type { WatchedTopic } from "@/lib/explore/watch";
 import { EMPTY_TASTE, addToTaste, cleanTaste, tasteKey, type Taste, type TasteKind } from "@/lib/explore/taste";
 import { MOMENTUM_HINTS, MOMENTUM_LABELS, storyMomentum, topicMomentum, type Momentum } from "@/lib/explore/momentum";
 
@@ -28,8 +29,8 @@ interface ExploreStep {
     // The takes the stories make, and the one nobody is making
     debate?: Debate | null;
     debateLoading?: boolean;
-    // Set when the search came from "Surprise me": why this writer could own the story
-    surprise?: string;
+    // Why this search was suggested, from "Surprise me" or a watched topic
+    banner?: { label: string; text: string };
 }
 
 interface Debate {
@@ -133,6 +134,8 @@ const DEFAULT_CATEGORIES = [
 const SESSION_KEY = 'cd-explore-workspace';
 const TRENDS_KEY = 'cd-explore-trends-v3';
 const TASTE_KEY = 'cd-explore-taste';
+// When the writer last opened each watched topic from Explore, by Pipeline item id
+const WATCH_SEEN_KEY = 'cd-explore-watch-seen';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_TRAIL = 8;
 // Tabs shown beside "For you"; each visit picks a random few from the writer's saved set
@@ -263,6 +266,7 @@ export function ExploreWorkspace() {
     // "More like this" and "Not for me", sent with every topics request
     const [taste, setTaste] = useState<Taste>(EMPTY_TASTE);
     const [surprising, setSurprising] = useState(false);
+    const [watched, setWatched] = useState<WatchedTopic[]>([]);
     const [surprisesSeen, setSurprisesSeen] = useState<string[]>([]);
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -323,6 +327,31 @@ export function ExploreWorkspace() {
         fetchRealTrends();
     }, []);
 
+    // Saved topics, with what has been published on each since the writer last looked
+    useEffect(() => {
+        fetch('/api/explore/watch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seen: readStorage<Record<string, string>>(WATCH_SEEN_KEY) ?? {} }),
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => { if (Array.isArray(data?.topics)) setWatched(data.topics); })
+            .catch(() => { /* Explore works without it */ });
+    }, []);
+
+    const openWatched = (topic: WatchedTopic) => {
+        writeStorage(WATCH_SEEN_KEY, { ...(readStorage<Record<string, string>>(WATCH_SEEN_KEY) ?? {}), [topic.id]: new Date().toISOString() });
+        setWatched(prev => prev.map(t => t.id === topic.id ? { ...t, newCount: 0, latest: [] } : t));
+        runSearch(topic.query, {
+            banner: {
+                label: 'Watching.',
+                text: topic.newCount > 0
+                    ? `${topic.newCount} new ${topic.newCount === 1 ? 'story' : 'stories'} on "${topic.title}" since you last looked.`
+                    : `Nothing new on "${topic.title}" since you last looked. Here's the latest coverage.`,
+            },
+        });
+    };
+
     const tellTaste = (kind: TasteKind, signal: string) => {
         const next = addToTaste(taste, kind, signal);
         setTaste(next);
@@ -368,7 +397,7 @@ export function ExploreWorkspace() {
                 return;
             }
             setSurprisesSeen(prev => [data.pick.label, ...prev].slice(0, 10));
-            await runSearch(data.pick.query, { surprise: data.pick.why });
+            await runSearch(data.pick.query, { banner: { label: 'Surprise pick.', text: data.pick.why } });
         } catch {
             toast.error("Couldn't find a surprise right now. Try again.");
         } finally {
@@ -458,7 +487,7 @@ export function ExploreWorkspace() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [focusedUrl, restored]);
 
-    const runSearch = async (query: string, extra?: Pick<ExploreStep, 'surprise'>) => {
+    const runSearch = async (query: string, extra?: Pick<ExploreStep, 'banner'>) => {
         if (!query.trim() || loading) return;
         setInput("");
         setLoading(true);
@@ -1168,6 +1197,32 @@ export function ExploreWorkspace() {
                                 {surprising ? <Loader2 size={12} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={12} />}
                                 {surprising ? 'Finding something new...' : 'Surprise me'}
                             </button>
+                            {watched.length > 0 && (
+                                <section aria-label="Topics you're watching" className="mt-6 w-full max-w-xl mx-auto text-left">
+                                    <h3 className="text-xs font-medium text-ink-muted mb-2">Topics you&apos;re watching</h3>
+                                    <ul className="space-y-1.5">
+                                        {watched.map(topic => (
+                                            <li key={topic.id}>
+                                                <button
+                                                    onClick={() => openWatched(topic)}
+                                                    disabled={loading}
+                                                    className="w-full flex items-center gap-3 p-2.5 rounded-tile bg-surface shadow-card hover:shadow-float text-left transition-all disabled:opacity-50"
+                                                >
+                                                    <span className="flex-1 min-w-0">
+                                                        <span className="block text-sm text-ink line-clamp-1">{topic.title}</span>
+                                                        {topic.latest[0] && (
+                                                            <span className="block text-xs text-ink-muted line-clamp-1">Latest: {topic.latest[0].title}</span>
+                                                        )}
+                                                    </span>
+                                                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium ${topic.newCount > 0 ? 'bg-ember-50 text-ember-700' : 'text-ink-muted'}`}>
+                                                        {topic.newCount > 0 ? `${topic.newCount} new` : 'Nothing new'}
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            )}
                         </div>
                         {loading && (
                             <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">
@@ -1228,9 +1283,9 @@ export function ExploreWorkspace() {
                                 </div>
                             )}
 
-                            {step?.surprise && (
+                            {step?.banner && (
                                 <p className="mb-3 p-3 rounded-tile bg-ember-50 text-xs text-ember-700">
-                                    <span className="font-medium">Surprise pick.</span> {step.surprise}
+                                    <span className="font-medium">{step.banner.label}</span> {step.banner.text}
                                 </p>
                             )}
                             {step?.message && <p className="text-sm text-ink-muted">{step.message}</p>}

@@ -208,6 +208,28 @@ describe('ExploreWorkspace', () => {
         expect(JSON.parse(call[1].body)).toEqual({ mode: 'surprise', taste: { more: [], less: [] }, exclude: [] });
     });
 
+    it('shows saved topics with what is new, and opens one as a search', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/watch') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ topics: [
+                    { id: 'c1', title: 'Async interviews spread among startups', query: 'async hiring', newCount: 3, latest: [{ title: 'Big tech tries async interviews', url: 'https://n.com/1', source: 'N' }] },
+                ] }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        const watching = await screen.findByRole('region', { name: "Topics you're watching" });
+        expect(within(watching).getByText('3 new')).toBeInTheDocument();
+        expect(within(watching).getByText('Latest: Big tech tries async interviews')).toBeInTheDocument();
+
+        fireEvent.click(within(watching).getByRole('button', { name: /Async interviews spread among startups/ }));
+        await screen.findByRole('region', { name: 'Story details' });
+        expect(screen.getByText(/3 new stories on "Async interviews spread among startups" since you last looked/)).toBeInTheDocument();
+        expect(Object.keys(JSON.parse(window.localStorage.getItem('cd-explore-watch-seen')!))).toEqual(['c1']);
+    });
+
     it('tunes For you from a story with More like this and Not for me', async () => {
         render(<ExploreWorkspace />);
         search('remote work');
