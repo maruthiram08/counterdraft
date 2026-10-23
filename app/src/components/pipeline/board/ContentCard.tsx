@@ -32,11 +32,17 @@ function PrimaryAction({ label, icon, onClick, title }: { label: string; icon: R
 export function ContentCard({ item, onAction }: ContentCardProps) {
     const stage = item.stage;
     const confidence = item.brain_metadata?.confidence;
+    const isTopic = item.brain_metadata?.explore?.savedAs === 'topic';
 
     return (
         <div className="bg-surface p-4 rounded-tile shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-wrap gap-1.5">
+                    {isTopic && (
+                        <span className="h-7 px-3 rounded-full bg-ember-50 text-ember-700 text-xs font-medium flex items-center" title="Saved from Explore before picking a post idea">
+                            Topic
+                        </span>
+                    )}
                     {item.format && (
                         <span className="h-7 px-3 rounded-full bg-canvas shadow-well text-ink-soft text-xs font-medium flex items-center">
                             {sentenceCase(item.format)}
