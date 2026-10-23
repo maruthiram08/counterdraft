@@ -6,6 +6,23 @@ import { RepurposeOptions } from '@/types';
 
 import { UsageService } from '@/lib/billing/usage';
 import { getOrCreateUser } from '@/lib/user-sync';
+import crypto from 'crypto';
+
+// Article generation, a possible retry and a cover image run back to back.
+export const maxDuration = 120;
+
+// Store a generated image in the public references bucket and return its URL.
+async function storeImage(userId: string, image: Buffer): Promise<string | null> {
+    const path = `${userId}/generated/${crypto.randomUUID()}.jpg`;
+    const { error } = await supabase.storage
+        .from('references')
+        .upload(path, image, { contentType: 'image/jpeg', upsert: false });
+    if (error) {
+        console.error("Storing generated image failed:", error);
+        return null;
+    }
+    return supabase.storage.from('references').getPublicUrl(path).data.publicUrl;
+}
 
 export async function POST(req: Request) {
     try {
@@ -101,7 +118,7 @@ export async function POST(req: Request) {
         const titleForPrompt = newTitle || sourceHook;
 
         if (platform === 'medium' && options.generateCover) {
-            imagePrompt = `Minimalist editorial illustration for an article titled "${titleForPrompt}". Professional, abstract, high quality, 4k.`;
+            imagePrompt = `Minimalist editorial illustration for an article titled "${titleForPrompt}". Professional, abstract, high quality, wide landscape composition, no text.`;
         } else if (platform === 'instagram' && options.generateInfographic) {
             imagePrompt = `Infographic style illustration for a social media post about "${titleForPrompt}". Bold typography, clean lines, educational, 1080x1080 aspect ratio.`;
         }
@@ -120,7 +137,8 @@ export async function POST(req: Request) {
         let finalContent = generatedContent;
 
         if (imagePrompt) {
-            const imageUrl = await generateImage(imagePrompt);
+            const image = await generateImage(imagePrompt, platform === 'medium' ? '1536x1024' : '1024x1024');
+            const imageUrl = image ? await storeImage(userId, image) : null;
             if (imageUrl) {
                 // Increment Usage
                 await UsageService.incrementImageCount(userId);

@@ -785,19 +785,22 @@ ${brief?.trim() || '(empty: infer the strategy)'}${draftText?.trim() ? `\n\nDraf
     }
 
     // --- 9. Generate Image ---
-    async generateImage(prompt: string): Promise<string | null> {
+    // DALL-E 3 was shut down in May 2026; gpt-image models only return base64,
+    // so the caller stores the bytes and links to the stored copy.
+    async generateImage(prompt: string, size: ImageSize = '1024x1024'): Promise<Buffer | null> {
         try {
             const response = await this.openai.images.generate({
-                model: "dall-e-3",
+                model: "gpt-image-1-mini",
                 prompt: prompt,
                 n: 1,
-                size: "1024x1024",
-                quality: "standard",
-                response_format: "url",
+                size,
+                quality: "medium",
+                output_format: "jpeg",
+                output_compression: 85,
             });
 
-            if (!response.data || !response.data[0]) return null;
-            return response.data[0].url || null;
+            const b64 = response.data?.[0]?.b64_json;
+            return b64 ? Buffer.from(b64, 'base64') : null;
         } catch (error) {
             console.error("Image Generation Failed:", error);
             return null;
@@ -806,4 +809,5 @@ ${brief?.trim() || '(empty: infer the strategy)'}${draftText?.trim() ? `\n\nDraf
 }
 
 export const brainGenerationService = new BrainGenerationService();
-export const generateImage = (prompt: string) => brainGenerationService.generateImage(prompt);
+type ImageSize = '1024x1024' | '1536x1024';
+export const generateImage = (prompt: string, size?: ImageSize) => brainGenerationService.generateImage(prompt, size);

@@ -21,6 +21,8 @@ export function useRepurpose({
     const [showRepurposeModal, setShowRepurposeModal] = useState(false);
     const [isRepurposing, setIsRepurposing] = useState(false);
 
+    // Resolves with the new draft (id, content, platform_metadata, assets) so
+    // the modal can show its success view; throws with the server's message.
     const handleRepurpose = async (platform: string, options: RepurposeOptions) => {
         if (!draft) return null;
         setIsRepurposing(true);
@@ -37,16 +39,12 @@ export function useRepurpose({
                 })
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                return data.id || null;
-            } else {
-                console.error("Repurpose failed with status:", res.status);
-                return null;
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.id) {
+                console.error("Repurpose failed with status:", res.status, data);
+                throw new Error(data?.message || data?.error || `Repurpose failed (${res.status}). Please try again.`);
             }
-        } catch (e) {
-            console.error("Repurpose Error:", e);
-            return null;
+            return data;
         } finally {
             setIsRepurposing(false);
         }
