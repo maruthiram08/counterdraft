@@ -1,11 +1,14 @@
 
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
 import { hasStrategy, StrategyAnalysis } from "@/lib/brain/strategy";
 import { ResearchPoint, DeepDiveData } from "./types";
 import { StrategyChangedBanner } from "./StrategyChangedBanner";
+import { HookLab } from "@/components/editor/HookLab";
+import { LinkedInPreview } from "@/components/editor/LinkedInPreview";
 
 interface DraftStepProps {
     draftContent: string;
@@ -44,6 +47,8 @@ export function DraftStep({
     strategyChanged,
     onRebuild
 }: DraftStepProps) {
+    const [showOpenings, setShowOpenings] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
 
     // Helper to check if context exists
     const strategySet = hasStrategy(brainMetadata);
@@ -116,6 +121,20 @@ export function DraftStep({
                                 {verifyingStrategy ? <Loader2 size={12} className="animate-spin" /> : <Target size={12} />}
                                 Check Strategy
                             </button>
+                            <button
+                                onClick={() => setShowOpenings(v => !v)}
+                                aria-pressed={showOpenings}
+                                className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-all ${showOpenings ? 'shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink active:shadow-pressed'}`}
+                            >
+                                <Wand2 size={12} /> Openings
+                            </button>
+                            <button
+                                onClick={() => setShowPreview(v => !v)}
+                                aria-pressed={showPreview}
+                                className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-all ${showPreview ? 'shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink active:shadow-pressed'}`}
+                            >
+                                <Eye size={12} /> LinkedIn preview
+                            </button>
                             <div className="flex-1" />
                             <button
                                 onClick={() => {
@@ -127,7 +146,17 @@ export function DraftStep({
                                 <Copy size={12} /> Copy
                             </button>
                         </div>
-                        <div className="flex-1 relative">
+                        {showOpenings && (
+                            <div className="px-4 py-4 md:px-6 border-b border-line">
+                                <HookLab content={draftContent} brainMetadata={brainMetadata} onApply={onUpdateDraft} disabled={readOnly} />
+                            </div>
+                        )}
+                        {showPreview && (
+                            <div className="px-4 py-5 md:px-6 border-b border-line bg-canvas">
+                                <LinkedInPreview content={draftContent} />
+                            </div>
+                        )}
+                        <div className="flex-1 relative min-h-[320px]">
                             <textarea
                                 value={draftContent}
                                 readOnly={readOnly}
