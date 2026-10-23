@@ -865,7 +865,33 @@ export function ExploreWorkspace() {
                                     </div>
                                 )
                             ) : (
-                                <ul className="space-y-2">{stories.map(renderItem)}</ul>
+                                <>
+                                    {questions.length > 0 && (
+                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card">
+                                            <span className="text-xs font-medium text-ink-muted">People are asking</span>
+                                            <ul className="mt-1.5 space-y-1">
+                                                {questions.slice(0, 3).map(q => (
+                                                    <li key={q.sourceUrl}>
+                                                        <button
+                                                            onClick={() => openStory(q)}
+                                                            className={`w-full text-left text-sm leading-snug py-1 hover:text-ember-600 ${q.sourceUrl === focusKey ? 'text-ember-700 font-medium' : 'text-ink'}`}
+                                                        >
+                                                            {q.title}
+                                                            <span className="text-xs text-ink-muted"> · {q.source}</span>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <button
+                                                onClick={() => setPaneView('questions')}
+                                                className="mt-1.5 text-xs font-medium text-ember-700 hover:text-ember-600 flex items-center gap-0.5"
+                                            >
+                                                See all {questions.length} questions <ChevronRight size={12} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <ul className="space-y-2">{stories.map(renderItem)}</ul>
+                                </>
                             )}
                         </section>
 

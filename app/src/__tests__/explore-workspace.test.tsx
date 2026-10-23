@@ -193,9 +193,14 @@ describe('ExploreWorkspace', () => {
         render(<ExploreWorkspace />);
         search('remote work');
 
-        const tab = await screen.findByRole('tab', { name: /Questions people ask \(3\)/ });
+        await screen.findByRole('tab', { name: /Questions people ask \(3\)/ });
         expect(screen.getByRole('tab', { name: 'Stories (2)' })).toHaveAttribute('aria-selected', 'true');
-        fireEvent.click(tab);
+
+        // The top questions show above the stories, with a way to see them all
+        expect(screen.getByText('People are asking')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Is async standup worth it/ })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /See all 3 questions/ }));
+        expect(screen.getByRole('tab', { name: /Questions people ask/ })).toHaveAttribute('aria-selected', 'true');
 
         expect(screen.getByRole('heading', { name: 'Staying aligned' })).toBeInTheDocument();
         expect(screen.getByRole('heading', { name: 'Negotiating remote' })).toBeInTheDocument();
