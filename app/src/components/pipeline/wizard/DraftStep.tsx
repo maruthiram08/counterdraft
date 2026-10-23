@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
@@ -9,6 +9,8 @@ import { ResearchPoint, DeepDiveData } from "./types";
 import { StrategyChangedBanner } from "./StrategyChangedBanner";
 import { HookLab } from "@/components/editor/HookLab";
 import { LinkedInPreview } from "@/components/editor/LinkedInPreview";
+import { PlaceholderNotice } from "@/components/editor/PlaceholderNotice";
+import { findPlaceholders, markPlaceholders, Placeholder } from "@/lib/editor/placeholders";
 
 interface DraftStepProps {
     draftContent: string;
@@ -49,6 +51,20 @@ export function DraftStep({
 }: DraftStepProps) {
     const [showOpenings, setShowOpenings] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const backdropRef = useRef<HTMLDivElement>(null);
+    const placeholders = useMemo(() => findPlaceholders(draftContent), [draftContent]);
+
+    // Scroll the draft to a placeholder and select it, so typing replaces it
+    const jumpTo = (p: Placeholder) => {
+        const area = textareaRef.current;
+        if (!area) return;
+        const mark = backdropRef.current?.querySelector<HTMLElement>(`[data-placeholder="${p.index}"]`);
+        if (mark) area.scrollTop = Math.max(0, mark.offsetTop - area.clientHeight / 3);
+        area.focus({ preventScroll: true });
+        area.setSelectionRange(p.start, p.end);
+        if (backdropRef.current) backdropRef.current.scrollTop = area.scrollTop;
+    };
 
     // Helper to check if context exists
     const strategySet = hasStrategy(brainMetadata);
@@ -156,12 +172,26 @@ export function DraftStep({
                                 <LinkedInPreview content={draftContent} />
                             </div>
                         )}
-                        <div className="flex-1 relative min-h-[320px]">
+                        {placeholders.length > 0 && !readOnly && (
+                            <div className="px-4 pt-4 md:px-6">
+                                <PlaceholderNotice placeholders={placeholders} onJump={jumpTo} />
+                            </div>
+                        )}
+                        <div className="flex-1 relative min-h-[320px] bg-surface">
+                            {/* Highlight backdrop: same box and type as the textarea, so the marks sit under the placeholders */}
+                            <div
+                                ref={backdropRef}
+                                aria-hidden="true"
+                                className="absolute inset-0 overflow-y-scroll pointer-events-none whitespace-pre-wrap break-words text-lg leading-relaxed text-transparent p-6 md:px-12 md:py-8"
+                                dangerouslySetInnerHTML={{ __html: markPlaceholders(draftContent) }}
+                            />
                             <textarea
+                                ref={textareaRef}
                                 value={draftContent}
                                 readOnly={readOnly}
                                 onChange={(e) => onUpdateDraft(e.target.value)}
-                                className="absolute inset-0 w-full h-full resize-none outline-none bg-surface text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:px-12 md:py-8"
+                                onScroll={(e) => { if (backdropRef.current) backdropRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                                className="absolute inset-0 w-full h-full resize-none outline-none overflow-y-scroll bg-transparent text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:px-12 md:py-8"
                                 placeholder="Start writing..."
                             />
                         </div>

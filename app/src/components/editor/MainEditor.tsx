@@ -14,6 +14,8 @@ import { EditorCanvas } from "./EditorCanvas";
 import { RefinementFeedback } from "./RefinementFeedback";
 import { HookLab } from "./HookLab";
 import { LinkedInPreview } from "./LinkedInPreview";
+import { PlaceholderNotice } from "./PlaceholderNotice";
+import { findPlaceholders, Placeholder } from "@/lib/editor/placeholders";
 
 // Refactored Hooks & Utils
 import { useVerification } from "@/hooks/editor/useVerification";
@@ -136,6 +138,19 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
         } catch (e) {
             console.error("Failed to send feedback", e);
         }
+    };
+
+    // Spots the draft left for the writer, and taking them to one: scroll it into view and select it
+    const placeholders = findPlaceholders(content);
+    const jumpToPlaceholder = (p: Placeholder) => {
+        if (isPreview) setIsPreview(false);
+        requestAnimationFrame(() => {
+            const area = textareaRef.current;
+            if (!area) return;
+            area.parentElement?.querySelector<HTMLElement>(`[data-placeholder="${p.index}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            area.focus({ preventScroll: true });
+            area.setSelectionRange(p.start, p.end);
+        });
     };
 
     // Constant auto-resize to prevent scrolling issues
@@ -278,6 +293,12 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                             {postTool === 'openings'
                                 ? <HookLab content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />
                                 : <LinkedInPreview content={content} />}
+                        </div>
+                    )}
+
+                    {draft.status !== 'published' && placeholders.length > 0 && (
+                        <div className="mb-4">
+                            <PlaceholderNotice placeholders={placeholders} onJump={jumpToPlaceholder} />
                         </div>
                     )}
 

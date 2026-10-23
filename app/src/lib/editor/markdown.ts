@@ -1,4 +1,5 @@
 import DOMPurify from 'isomorphic-dompurify';
+import { findPlaceholders, markPlaceholders } from './placeholders';
 
 export interface VerificationResult {
     original_sentence?: string;
@@ -61,14 +62,12 @@ export const generateHighlights = (
         }
     }
 
-    // 2. Secondary: Show Validation Highlights (if no selection)
-    if (verifications.length === 0) return null;
+    // 2. Secondary: Show Validation Highlights and the spots left for the creator (if no selection)
+    const hasPlaceholders = findPlaceholders(content).length > 0;
+    if (verifications.length === 0 && !hasPlaceholders) return null;
 
-    // Escape HTML
-    let highlighted = content
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    // Escaped HTML, with placeholders already marked
+    let highlighted = markPlaceholders(content).replace(/<br\/>&nbsp;$/, '');
 
     // Highlight problematic claims (disputed/unverified)
     // Check for Markdown formatting in original sentences and normalize
