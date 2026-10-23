@@ -27,7 +27,7 @@ export interface DeepDiveInput {
 }
 
 const MIN_TEXT = 600;
-const MAX_TEXT = 12000;
+export const MAX_TEXT = 12000;
 
 function cleanList(value: unknown, max: number): string[] {
     if (!Array.isArray(value)) return [];
@@ -87,7 +87,19 @@ async function textFromSearch(title: string): Promise<{ text: string; url?: stri
     }
 }
 
-async function sourceText(url: string, title: string): Promise<{ text: string; readFrom?: string }> {
+const textCache = new Map<string, { value: { text: string; readFrom?: string }; expiresAt: number }>();
+const TEXT_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** The story's full text, read once and kept for a day so the brief and follow-up questions share it. */
+export async function sourceText(url: string, title: string): Promise<{ text: string; readFrom?: string }> {
+    const cached = textCache.get(url);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+    const value = await readSourceText(url, title);
+    if (value.text.length >= 200) textCache.set(url, { value, expiresAt: Date.now() + TEXT_TTL_MS });
+    return value;
+}
+
+async function readSourceText(url: string, title: string): Promise<{ text: string; readFrom?: string }> {
     let text = '';
     try {
         text = (await readPage(url)).content;

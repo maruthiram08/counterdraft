@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import type { ExploreOrigin } from "@/types";
 import { FOR_YOU, shuffle } from "@/lib/explore/trends";
 import type { WatchedTopic } from "@/lib/explore/watch";
+import type { ChatTurn } from "@/lib/explore/story-chat";
 import { EMPTY_TASTE, addToTaste, cleanTaste, tasteKey, type Taste, type TasteKind } from "@/lib/explore/taste";
 import { MOMENTUM_HINTS, MOMENTUM_LABELS, storyMomentum, topicMomentum, type Momentum } from "@/lib/explore/momentum";
 
@@ -267,6 +268,10 @@ export function ExploreWorkspace() {
     const [taste, setTaste] = useState<Taste>(EMPTY_TASTE);
     const [surprising, setSurprising] = useState(false);
     const [watched, setWatched] = useState<WatchedTopic[]>([]);
+    // Follow-up questions and answers about each story, by its link
+    const [chatsByKey, setChatsByKey] = useState<Record<string, ChatTurn[]>>({});
+    const [askingKey, setAskingKey] = useState<string | null>(null);
+    const [chatInput, setChatInput] = useState("");
     const [surprisesSeen, setSurprisesSeen] = useState<string[]>([]);
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -866,6 +871,83 @@ export function ExploreWorkspace() {
     };
 
     // What the piece says, read in full: summary, key points, who thinks what, and what it leaves open
+    // A half-typed question belongs to the story it was typed for
+    useEffect(() => setChatInput(""), [focusKey]);
+
+    const askAboutStory = async (story: Story, question: string) => {
+        const key = story.sourceUrl;
+        if (!question.trim() || askingKey) return;
+        const history = chatsByKey[key] ?? [];
+        setChatsByKey(prev => ({ ...prev, [key]: [...history, { role: 'user', text: question.trim() }] }));
+        setChatInput("");
+        setAskingKey(key);
+        try {
+            const res = await fetch('/api/explore/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: story.sourceUrl, title: story.title, question: question.trim(), history, query: step?.query }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.answer) throw new Error(data.error || 'No answer');
+            setChatsByKey(prev => ({ ...prev, [key]: [...(prev[key] ?? []), { role: 'assistant', text: data.answer }] }));
+        } catch (err) {
+            // The question goes back in the box so it can be asked again
+            setChatsByKey(prev => ({ ...prev, [key]: history }));
+            setChatInput(question);
+            toast.error(err instanceof Error && err.message !== 'No answer' ? err.message : "Couldn't answer that right now. Try again.");
+        } finally {
+            setAskingKey(null);
+        }
+    };
+
+    // A short conversation about the open story, answered from its own text
+    const renderStoryChat = (story: Story) => {
+        const turns = chatsByKey[story.sourceUrl] ?? [];
+        const asking = askingKey === story.sourceUrl;
+        return (
+            <section aria-label="Ask about this story" className="mt-5">
+                <h4 className="text-xs font-medium text-ink-muted mb-2">Ask about this story</h4>
+                {turns.length > 0 && (
+                    <ul className="space-y-2 mb-3">
+                        {turns.map((turn, i) => (
+                            <li
+                                key={i}
+                                className={turn.role === 'user'
+                                    ? 'text-sm font-medium text-ink'
+                                    : 'text-sm text-ink-soft leading-relaxed p-3 rounded-tile bg-canvas shadow-well'}
+                            >
+                                {turn.text}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {asking && (
+                    <p className="mb-2 text-xs text-ink-muted flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" /> Checking the piece...</p>
+                )}
+                <form
+                    onSubmit={(e) => { e.preventDefault(); askAboutStory(story, chatInput); }}
+                    className="flex items-center gap-2 p-1 pl-3 rounded-full bg-canvas shadow-well"
+                >
+                    <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        aria-label="Your question about this story"
+                        placeholder={turns.length ? 'Ask a follow-up...' : 'e.g. What evidence do they give?'}
+                        className="flex-1 min-w-0 bg-transparent text-sm text-ink placeholder:text-ink-muted focus:outline-none"
+                    />
+                    <button
+                        type="submit"
+                        disabled={!chatInput.trim() || Boolean(askingKey)}
+                        className="h-8 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 transition-colors disabled:opacity-50"
+                    >
+                        Ask
+                    </button>
+                </form>
+            </section>
+        );
+    };
+
     const renderDeepDive = (story: Story) => {
         const dive = divesByKey[story.sourceUrl];
         if (dive === 'loading') {
@@ -1017,6 +1099,7 @@ export function ExploreWorkspace() {
                     </div>
                 )}
                 {renderDeepDive(focusedStory)}
+                {renderStoryChat(focusedStory)}
                 {focusedStory.relatedBelief && (
                     <p className="text-sm text-ember-700 mt-3">
                         {beliefLabel(focusedStory)}: &ldquo;{focusedStory.relatedBelief}&rdquo;

@@ -230,6 +230,33 @@ describe('ExploreWorkspace', () => {
         expect(Object.keys(JSON.parse(window.localStorage.getItem('cd-explore-watch-seen')!))).toEqual(['c1']);
     });
 
+    it('answers follow-up questions about the open story from its text', async () => {
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/ask') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ answer: 'They cite a survey of 2,000 firms.' }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        search('remote work');
+        const details = await screen.findByRole('region', { name: 'Story details' });
+        const chat = within(details).getByRole('region', { name: 'Ask about this story' });
+        fireEvent.change(within(chat).getByLabelText('Your question about this story'), { target: { value: 'What evidence do they give?' } });
+        fireEvent.click(within(chat).getByRole('button', { name: 'Ask' }));
+
+        expect(await within(chat).findByText('They cite a survey of 2,000 firms.')).toBeInTheDocument();
+        expect(within(chat).getByText('What evidence do they give?')).toBeInTheDocument();
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ask');
+        expect(JSON.parse(call[1].body)).toMatchObject({
+            url: 'https://example.com/Companies%20rethink%20remote%20work%20policies',
+            question: 'What evidence do they give?',
+            history: [],
+            query: 'remote work',
+        });
+    });
+
     it('tunes For you from a story with More like this and Not for me', async () => {
         render(<ExploreWorkspace />);
         search('remote work');
