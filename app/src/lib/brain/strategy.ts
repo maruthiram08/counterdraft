@@ -137,7 +137,8 @@ export function formatExploreSources(meta?: Partial<BrainMetadata>): string {
     if (!sources.length) return '';
     const list = sources.slice(0, 8).map((s, i) => {
         const detail = [s.kind && `(${s.kind})`, s.takeaway || s.summary].filter(Boolean).join(' ');
-        return `[E${i + 1}] ${s.title} (${s.source || s.url})${detail ? `\n${detail}` : ''}`;
+        const points = s.keyPoints?.length ? `\n${s.keyPoints.map(p => `- ${p}`).join('\n')}` : '';
+        return `[E${i + 1}] ${s.title} (${s.source || s.url})${detail ? `\n${detail}` : ''}${points}`;
     }).join('\n\n');
     return `\n\nEXPLORE SOURCES (what the creator found before saving this idea; starting evidence, cite them):\n${list}`;
 }
