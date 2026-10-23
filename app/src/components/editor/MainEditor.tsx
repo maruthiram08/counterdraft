@@ -12,6 +12,8 @@ import { VerificationSidebar } from "./FactCheckSidebar";
 import { EditorHeader } from "./EditorHeader";
 import { EditorCanvas } from "./EditorCanvas";
 import { RefinementFeedback } from "./RefinementFeedback";
+import { HookLab } from "./HookLab";
+import { LinkedInPreview } from "./LinkedInPreview";
 
 // Refactored Hooks & Utils
 import { useVerification } from "@/hooks/editor/useVerification";
@@ -42,6 +44,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
     // 2. Mode & UI State
     const [isPreview, setIsPreview] = useState(false);
     const [showPublishModal, setShowPublishModal] = useState(false);
+    const [postTool, setPostTool] = useState<'openings' | 'preview' | null>(null);
 
     // 3. Selection
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -248,6 +251,33 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                                     Repurpose
                                 </button>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Opening and feed preview: how the post lands before "see more" */}
+                    <div className="mb-4 flex flex-wrap gap-2">
+                        {draft.status !== 'published' && (
+                            <button
+                                onClick={() => setPostTool(t => t === 'openings' ? null : 'openings')}
+                                aria-pressed={postTool === 'openings'}
+                                className={`h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'openings' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                            >
+                                Try other openings
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setPostTool(t => t === 'preview' ? null : 'preview')}
+                            aria-pressed={postTool === 'preview'}
+                            className={`h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'preview' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                        >
+                            LinkedIn preview
+                        </button>
+                    </div>
+                    {postTool && (
+                        <div className="mb-6 bg-surface rounded-card shadow-card p-5 md:p-6">
+                            {postTool === 'openings'
+                                ? <HookLab content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />
+                                : <LinkedInPreview content={content} />}
                         </div>
                     )}
 
