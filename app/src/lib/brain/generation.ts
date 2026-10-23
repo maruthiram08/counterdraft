@@ -3,7 +3,7 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { parseOutlineShapes, parseVariants, DraftVariant, OutlineShapeOption } from '@/lib/editor/draft-tools';
+import { parseDraftQuestions, parseOutlineShapes, parseVariants, DraftAnswer, DraftQuestion, DraftVariant, OutlineShapeOption } from '@/lib/editor/draft-tools';
 import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditChecklist, PastPost } from './craft';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, outlineShape, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
@@ -38,6 +38,7 @@ export interface OutlineParams {
 }
 
 export interface DraftParams {
+    answers?: DraftAnswer[]; // the creator's own answers to the questions asked before drafting
     userId: string;
     hook: string;
     angle?: string;
@@ -408,7 +409,7 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
     }
 
     // --- 4. Draft ---
-    async generateDraft({ userId, hook, angle, outline, deep_dive, references, userContext, brainMetadata }: DraftParams): Promise<string> {
+    async generateDraft({ userId, hook, angle, outline, deep_dive, references, userContext, brainMetadata, answers }: DraftParams): Promise<string> {
         const format = normalizeFormat(brainMetadata?.format);
         const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
         const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY');
@@ -421,6 +422,11 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
             await this.loadPastPosts(userId),
             [hook, angle, brainMetadata?.brief].filter(Boolean).join(' '),
         ));
+
+        // What the creator told us before drafting: their own stories and examples, which beat any placeholder
+        const ownMaterial = answers?.length
+            ? `\n\nTHE CREATOR'S OWN MATERIAL (their answers before drafting; use these as the post's real details, in their words where possible):\n${answers.map(a => `Q: ${a.question}\nA: ${a.answer}`).join('\n\n')}`
+            : '';
 
         // Expand Outline into Brief
         const outlineContext = outline?.map((s: OutlineItem, i: number) => {
@@ -449,9 +455,9 @@ Keep the outline's order and shape. Do not add sections. This is for the writer,
 Angle: ${angle || 'General'}${ideaChain}${strategy}
 
 Outline:
-${outlineContext}${research}
+${outlineContext}${research}${ownMaterial}
 
-Expand this into a drafting brief.`
+Expand this into a drafting brief. Where the creator's own material fits a section, attach it there instead of asking them to supply it.`
                 }
             ]
         });
@@ -533,7 +539,7 @@ Write for the defined audience (${brainMetadata?.audience?.role || 'the reader t
 Writing requirements:
 - Follow the Drafting Brief's sections in order and in its shape. A story reads as a story, a guide as steps, a list as items; do not turn them into an essay.
 - Use the research the brief attaches to each section: its numbers, names and examples. Name where a figure comes from in plain words ("a 2024 Naukri survey found..."). Never add a statistic, study or quote that isn't in the brief or the sources.
-- Where the brief says the creator should add their own example, leave a short [bracketed placeholder] instead of inventing one.
+- Use the creator's own material below wherever it fits; it outranks research for stories and examples. Where the brief still says the creator should add their own example and no answer covers it, leave a short [bracketed placeholder] instead of inventing one.
 - Every paragraph earns its place; no filler, no restating.
 
 Style & voice:
@@ -553,7 +559,7 @@ Constraints:
 Angle: ${angle || 'General exploration'}
 
 DRAFTING BRIEF (Follow this structure):
-${draftingBrief}
+${draftingBrief}${ownMaterial}
 
 ${referencesContext}${sourceContext}${userContextString}`
                 }
@@ -610,6 +616,38 @@ Return JSON: { "shapes": [ { "name": "...", "why": "...", "sections": ["...", ".
             raw = {};
         }
         return parseOutlineShapes(raw, current);
+    }
+
+    // --- 3c. Questions before drafting: the stories and examples only the creator has ---
+    async draftQuestions({ hook, angle, outline, brainMetadata }: { hook: string; angle?: string; outline?: OutlineItem[]; brainMetadata?: BrainMetadata }): Promise<DraftQuestion[]> {
+        const outlineText = outline?.map((s, i) => `${i + 1}. ${typeof s === 'string' ? s : s.text}`).join('\n') || '';
+        const completion = await this.openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            temperature: 0.4,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: `Before an AI drafts a creator's post, ask them 2 or 3 short questions whose answers only they can give, so the draft carries real detail instead of [placeholders]: a moment they lived, an example from their work, a number they know, what they actually think.
+
+Rules:
+- Each question points at a specific section of the outline that needs it. Ask about the most important gaps first.
+- Never ask for things research can answer, or for their opinion on the topic in general.
+- Plain words, under 20 words each, answerable in a sentence or two.
+- Each gets a hint on what helps (e.g. "one moment, with where you were").
+
+Return JSON: { "questions": [ { "question": "...", "hint": "..." } ] }`
+                },
+                { role: 'user', content: `Topic: ${hook}\nAngle: ${angle || 'General'}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}\n\nOutline:\n${outlineText}` }
+            ],
+        });
+        let raw: unknown = {};
+        try {
+            raw = JSON.parse(completion.choices[0].message.content || '{}');
+        } catch {
+            raw = {};
+        }
+        return parseDraftQuestions(raw);
     }
 
     // --- 4c. Rewrite one paragraph of the draft, with the outline and research behind it ---

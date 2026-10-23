@@ -20,7 +20,14 @@ import { DraftStep } from "./wizard/DraftStep";
 import { RefineContextPanel } from "./wizard/RefineContextPanel";
 import { ThinkingLoader } from "./wizard/ThinkingLoader";
 import { StrategyAnalysis, toStrategyAnalysis } from "@/lib/brain/strategy";
-import type { OutlineShapeOption } from "@/lib/editor/draft-tools";
+import type { DraftAnswer, DraftQuestion, OutlineShapeOption } from "@/lib/editor/draft-tools";
+import { DraftQuestionsStep } from "./wizard/DraftQuestionsStep";
+
+// Set when the writer ticks "Don't ask me before drafting"
+const SKIP_QUESTIONS_KEY = 'cd-skip-draft-questions';
+const readSkipQuestions = () => {
+    try { return localStorage.getItem(SKIP_QUESTIONS_KEY) === '1'; } catch { return false; }
+};
 
 interface DevelopmentWizardProps {
     item: ContentItem;
@@ -51,6 +58,11 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const [outlineApproved, setOutlineApproved] = useState(false);
     const [outlineShapes, setOutlineShapes] = useState<OutlineShapeOption[] | null>(null);
     const [findingShapes, setFindingShapes] = useState(false);
+    // Questions before drafting: shown between an approved outline and the draft
+    const [draftQuestions, setDraftQuestions] = useState<DraftQuestion[] | null>(null);
+    const [draftAnswers, setDraftAnswers] = useState<string[]>([]);
+    const [askingQuestions, setAskingQuestions] = useState(false);
+    const [skipQuestions, setSkipQuestions] = useState(false);
 
     // Draft state
     const [draftContent, setDraftContent] = useState('');
@@ -477,7 +489,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         saveProgress({ outline: { sections } });
     };
 
-    const generateDraft = async () => {
+    const generateDraft = async (answers: DraftAnswer[] = []) => {
         setLoading(true);
         saveProgress({ dev_step: 'draft_in_progress' });
         const brainMetadataForRun = latestBrainMetadata.current;
@@ -495,6 +507,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     brainMetadata: brainMetadataForRun,
                     userContext: globalContext,
                     references: brainMetadataForRun?.references || [],
+                    answers,
                 }),
             });
 
@@ -527,17 +540,61 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         if (step === 'deep_dive' && deepDive) {
             setStep('outline');
             generateOutline();
+        } else if (step === 'outline' && draftQuestions) {
+            writeDraft(draftQuestions.map((q, i) => ({ question: q.question, answer: draftAnswers[i] || '' })).filter(a => a.answer.trim()));
         } else if (step === 'outline' && outlineApproved) {
             checkLimit().then(allowed => {
                 if (!allowed) return;
-                setStep('generate');
-                generateDraft();
+                if (readSkipQuestions()) {
+                    writeDraft();
+                    return;
+                }
+                askBeforeDrafting();
             });
         }
     };
 
+    const writeDraft = (answers: DraftAnswer[] = []) => {
+        if (skipQuestions) {
+            try { localStorage.setItem(SKIP_QUESTIONS_KEY, '1'); } catch { /* private mode */ }
+        }
+        setDraftQuestions(null);
+        setStep('generate');
+        generateDraft(answers);
+    };
+
+    // Two or three questions only the writer can answer; if none come back, draft straight away
+    const askBeforeDrafting = async () => {
+        setAskingQuestions(true);
+        try {
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'draft_questions',
+                    hook: item.hook,
+                    angle: item.angle,
+                    outline,
+                    brainMetadata: latestBrainMetadata.current,
+                }),
+            });
+            const data = res.ok ? await res.json() : null;
+            if (!data?.questions?.length) {
+                writeDraft();
+                return;
+            }
+            setDraftAnswers([]);
+            setDraftQuestions(data.questions);
+        } catch {
+            writeDraft();
+        } finally {
+            setAskingQuestions(false);
+        }
+    };
+
     const handleBack = () => {
-        if (step === 'outline') setStep('deep_dive');
+        if (step === 'outline' && draftQuestions) setDraftQuestions(null);
+        else if (step === 'outline') setStep('deep_dive');
         else if (step === 'generate') setStep('outline');
     };
 
@@ -771,7 +828,18 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             )
                         )}
 
-                        {step === 'outline' && (
+                        {step === 'outline' && draftQuestions && (
+                            <DraftQuestionsStep
+                                questions={draftQuestions}
+                                answers={draftAnswers}
+                                onChange={(i, a) => setDraftAnswers(prev => { const next = [...prev]; next[i] = a; return next; })}
+                                dontAsk={skipQuestions}
+                                onDontAskChange={setSkipQuestions}
+                                onSkip={() => writeDraft()}
+                            />
+                        )}
+
+                        {step === 'outline' && !draftQuestions && (
                             <OutlineStep
                                 outline={outline}
                                 loading={loading}
@@ -881,10 +949,14 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                         ) : (
                             <button
                                 onClick={handleNext}
-                                disabled={loading || (step === 'outline' && !outlineApproved) || (step === 'deep_dive' && !deepDive)}
+                                disabled={loading || askingQuestions || (step === 'outline' && !outlineApproved) || (step === 'deep_dive' && !deepDive)}
                                 className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
-                                <ArrowRight size={16} /> Next Step
+                                {askingQuestions
+                                    ? <><Loader2 size={16} className="animate-spin" /> One moment...</>
+                                    : draftQuestions
+                                        ? <><ArrowRight size={16} /> Write the draft</>
+                                        : <><ArrowRight size={16} /> Next Step</>}
                             </button>
                         )}
                     </div>

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { openai } from "@/lib/openai";
+import { addRules, cleanOrigins, dedupeRules, parseTidy, ruleKey, RuleOrigin, TidyProposal } from "./rules";
 
 export interface VoiceProfile {
     id: string;
@@ -11,6 +12,7 @@ export interface VoiceProfile {
     workflow_preferences: {
         auto_ask_questions: boolean;
         interaction_model: 'interviewer' | 'ghostwriter' | 'devil_advocate';
+        rule_origins?: Record<string, RuleOrigin>; // where each rule came from, keyed by the rule's text
     };
     is_active: boolean;
 }
@@ -247,12 +249,19 @@ export class VoiceService {
             const profile = await this.getProfile(userId);
             const currentRules = profile.rules || [];
 
-            // Avoid duplicates
-            const uniqueNewRules = result.new_rules.filter((r: string) => !currentRules.includes(r));
+            // Skip repeats (even ones worded slightly differently), then cap the list
+            const uniqueNewRules = dedupeRules(result.new_rules.filter((r: unknown): r is string => typeof r === 'string'))
+                .filter(r => !currentRules.some(c => ruleKey(c) === ruleKey(r)));
 
             if (uniqueNewRules.length > 0) {
+                const origins = cleanOrigins(profile.workflow_preferences?.rule_origins);
+                const at = new Date().toISOString();
+                const why = typeof result.analysis === 'string' ? result.analysis.slice(0, 300) : undefined;
+                for (const r of uniqueNewRules) origins[r] = { source: 'edit', at, ...(why ? { why } : {}) };
+                const rules = addRules(currentRules, uniqueNewRules, origins);
                 await this.updateProfile(userId, {
-                    rules: [...currentRules, ...uniqueNewRules]
+                    rules,
+                    workflow_preferences: { ...profile.workflow_preferences, rule_origins: pickOrigins(origins, rules) },
                 });
 
                 return {
@@ -272,6 +281,48 @@ export class VoiceService {
         };
     }
     /**
+     * Proposes a tidier rule set: near-duplicates merged, contradictions flagged. Nothing is saved;
+     * the writer reviews it and saves it like any other edit.
+     */
+    async tidyRules(userId: string): Promise<TidyProposal> {
+        const profile = await this.getProfile(userId);
+        const original = { rules: profile.rules || [], anti_patterns: profile.anti_patterns || [] };
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            temperature: 0,
+            response_format: { type: "json_object" },
+            messages: [
+                {
+                    role: "system",
+                    content: `You tidy a writer's voice profile: the rules ("do") and anti-patterns ("don't") an AI follows when it writes as them. The lists have grown one rule at a time, so some say the same thing in different words and some contradict each other.
+
+1. Merge rules that say the same thing into one clear rule, in the writer's terms. Keep every distinct idea; never drop a rule because it seems unimportant.
+2. Find pairs that contradict each other (including a rule and an anti-pattern), and say why in one line. Keep both in the lists; the writer decides.
+3. Keep each rule short and specific.
+
+Return JSON:
+{
+  "rules": ["..."],
+  "anti_patterns": ["..."],
+  "merged": [ { "into": "the merged rule", "from": ["original 1", "original 2"] } ],
+  "conflicts": [ { "a": "one rule", "b": "the other", "why": "..." } ]
+}`
+                },
+                { role: "user", content: `Rules:\n${original.rules.map(r => `- ${r}`).join('\n') || '(none)'}\n\nAnti-patterns:\n${original.anti_patterns.map(r => `- ${r}`).join('\n') || '(none)'}` }
+            ],
+        });
+
+        let raw: unknown = {};
+        try {
+            raw = JSON.parse(completion.choices[0].message.content || '{}');
+        } catch {
+            raw = {};
+        }
+        return parseTidy(raw, original);
+    }
+
+    /**
      * Delete the active voice profile for a user.
      */
     async deleteProfile(userId: string) {
@@ -284,6 +335,11 @@ export class VoiceService {
         if (error) throw error;
         return true;
     }
+}
+
+// Origins only for rules still in the list, so the map doesn't outgrow it
+function pickOrigins(origins: Record<string, RuleOrigin>, rules: string[]): Record<string, RuleOrigin> {
+    return Object.fromEntries(rules.filter(r => origins[r]).map(r => [r, origins[r]]));
 }
 
 export const voiceService = new VoiceService();

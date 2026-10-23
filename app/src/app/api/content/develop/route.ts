@@ -4,6 +4,7 @@ import { moderateContent, getModerationErrorMessage } from '@/lib/moderation';
 import { UsageService } from '@/lib/billing/usage';
 import { brainGenerationService } from '@/lib/brain/generation';
 import { rateLimit } from '@/lib/rate-limit';
+import { cleanAnswers } from '@/lib/editor/draft-tools';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
         actionType = action || 'unknown';
 
         // 🛡️ CONTENT MODERATION CHECK (on user-provided text fields)
-        const inputToModerate = [hook, angle, userContext, currentText, brief, typeof body.instruction === 'string' ? body.instruction : ''].filter(Boolean).join(' ');
+        const inputToModerate = [hook, angle, userContext, currentText, brief, typeof body.instruction === 'string' ? body.instruction : '', ...cleanAnswers(body.answers).map(a => a.answer)].filter(Boolean).join(' ');
         if (inputToModerate) {
             const modResult = await moderateContent(inputToModerate);
             if (modResult.flagged) {
@@ -122,7 +123,8 @@ export async function POST(req: Request) {
                 deep_dive,
                 references,
                 userContext,
-                brainMetadata
+                brainMetadata,
+                answers: cleanAnswers(body.answers),
             });
 
             return NextResponse.json({ draft: generatedDraft });
@@ -170,7 +172,7 @@ export async function POST(req: Request) {
             const result = await brainGenerationService.verifyFacts(textToVerify);
             return NextResponse.json(result);
 
-        } else if (action === 'outline_shapes' || action === 'rewrite_section' || action === 'variants') {
+        } else if (action === 'outline_shapes' || action === 'draft_questions' || action === 'rewrite_section' || action === 'variants') {
             // Small edits on work already made: rate limited, not counted as new drafts
             const limit = rateLimit(`develop-edit:${userId}`, { windowMs: 15 * 60 * 1000, max: 30 });
             if (!limit.allowed) {
@@ -182,6 +184,11 @@ export async function POST(req: Request) {
                 const current = Array.isArray(outline) ? outline.map((s: unknown) => typeof s === 'string' ? s : String((s as { text?: unknown })?.text ?? '')).filter(Boolean) : [];
                 const shapes = await brainGenerationService.outlineShapes({ hook, angle, deep_dive, brainMetadata, current });
                 return NextResponse.json({ shapes });
+            }
+
+            if (action === 'draft_questions') {
+                const questions = await brainGenerationService.draftQuestions({ hook, angle, outline, brainMetadata });
+                return NextResponse.json({ questions });
             }
 
             if (typeof draft !== 'string' || !draft.trim()) {
