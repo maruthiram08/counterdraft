@@ -57,7 +57,7 @@ export function dropUnknownCitations(findings: string[], material: string): stri
 }
 
 const STOP_WORDS = new Set(['about', 'their', 'there', 'these', 'those', 'which', 'what', 'where', 'while', 'with', 'would', 'could', 'should', 'other', 'being', 'they', 'this', 'that', 'from', 'have', 'into', 'more', 'than', 'them', 'when', 'your', 'does', 'help', 'need', 'understand']);
-function keyWords(text: string): string[] {
+export function keyWords(text: string): string[] {
     return [...new Set(text.toLowerCase().split(/[^a-z0-9-]+/).filter(w => w.length > 3 && !STOP_WORDS.has(w)).map(w => w.replace(/(?:'s|s)$/, '')))];
 }
 

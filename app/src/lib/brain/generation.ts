@@ -2,6 +2,8 @@ import { openai } from '@/lib/openai';
 import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditChecklist, PastPost } from './craft';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, outlineShape, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
 import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
@@ -68,6 +70,9 @@ export interface FactCheckResult {
         sourceSnippet?: string;
     }>;
 }
+
+// Research and outlines run on the fast model; the words a reader sees are written by the stronger one
+const WRITER_MODEL = 'gpt-4o';
 
 export class BrainGenerationService {
     // Shared client: a missing key fails at request time, not at import time
@@ -421,6 +426,12 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
             console.warn("Failed to load voice profile:", e);
         }
 
+        // The writer's own posts, so the draft sounds like them and not like generic LinkedIn
+        const styleExamples = formatStyleExamples(pickStyleExamples(
+            await this.loadPastPosts(userId),
+            [hook, angle, brainMetadata?.brief].filter(Boolean).join(' '),
+        ));
+
         // Expand Outline into Brief
         const outlineContext = outline?.map((s: OutlineItem, i: number) => {
             const text = typeof s === 'string' ? s : s.text;
@@ -514,7 +525,7 @@ Expand this into a drafting brief.`
         });
 
         const completion = await this.openai.chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: WRITER_MODEL,
             messages: [
                 {
                     role: 'system',
@@ -536,8 +547,8 @@ Writing requirements:
 - Every paragraph earns its place; no filler, no restating.
 
 Style & voice:
-- **ADOPT THE USER'S VOICE:** ${voiceContext ? 'Strictly follow the guidelines below.' : 'Write in a natural, human voice.'}
-${voiceContext}
+- **ADOPT THE USER'S VOICE:** ${voiceContext ? 'Strictly follow the guidelines below.' : 'Write in a natural, human voice.'}${styleExamples ? ' Their past posts below show how they really write; when a guideline and the posts disagree, follow the posts.' : ''}
+${voiceContext}${styleExamples}
 - Short paragraphs for LinkedIn readability.
 - Avoid clichés, generic advice, and motivational fluff.
 - ${closingInstruction}
@@ -559,7 +570,70 @@ ${referencesContext}${sourceContext}${userContextString}`
             ],
         });
 
-        return completion.choices[0].message.content || '';
+        const draft = completion.choices[0].message.content || '';
+        return draft ? this.selfEdit(draft, { stance: brainMetadata?.stance, voiceContext, styleExamples }) : '';
+    }
+
+    // The writer's LinkedIn posts and the Pipeline posts they finished, newest first
+    private async loadPastPosts(userId: string): Promise<PastPost[]> {
+        try {
+            const [posts, published] = await Promise.all([
+                supabaseAdmin
+                    .from('raw_posts')
+                    .select('content, posted_at, created_at')
+                    .eq('user_id', userId)
+                    .eq('is_inspiration', false)
+                    .order('created_at', { ascending: false })
+                    .limit(60),
+                supabaseAdmin
+                    .from('content_items')
+                    .select('draft_content, published_at, updated_at')
+                    .eq('user_id', userId)
+                    .eq('stage', 'published')
+                    .order('updated_at', { ascending: false })
+                    .limit(20),
+            ]);
+            return [
+                ...(published.data || []).map(p => ({ text: p.draft_content || '', date: p.published_at || p.updated_at })),
+                ...(posts.data || []).map(p => ({ text: p.content || '', date: p.posted_at || p.created_at })),
+            ];
+        } catch (e) {
+            console.warn('Failed to load past posts for style examples:', e);
+            return [];
+        }
+    }
+
+    // --- 4b. Self-edit: an editor's pass over the draft before the creator sees it ---
+    private async selfEdit(draft: string, { stance, voiceContext, styleExamples }: { stance?: string; voiceContext: string; styleExamples: string }): Promise<string> {
+        try {
+            const completion = await this.openai.chat.completions.create({
+                model: WRITER_MODEL,
+                temperature: 0.3,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are the creator's editor doing one tightening pass on their LinkedIn draft before they see it. Fix only what this checklist catches; leave every line that already works exactly as it is.
+
+Checklist:
+${selfEditChecklist(draft)}
+
+Keep:
+- The structure, order, argument${stance ? ` and stance ("${stance}")` : ''}.
+- Every fact, number, name and source exactly as written. Add none.
+- Every [bracketed placeholder] exactly as written.
+- The creator's voice.${voiceContext}${styleExamples}
+- Roughly the same length; cutting is fine, padding is not.
+
+Return only the edited post, with no comments or markdown fences.`
+                    },
+                    { role: 'user', content: draft }
+                ],
+            });
+            return acceptSelfEdit(draft, completion.choices[0].message.content);
+        } catch (e) {
+            console.warn('Self-edit pass failed, keeping the first draft:', e);
+            return draft;
+        }
     }
 
     // --- 5. Verify Strategy ---
