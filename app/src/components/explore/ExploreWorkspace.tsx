@@ -135,6 +135,26 @@ const DEFAULT_CATEGORIES = [
 const SESSION_KEY = 'cd-explore-workspace';
 const TRENDS_KEY = 'cd-explore-trends-v3';
 const TASTE_KEY = 'cd-explore-taste';
+// The stance and platform last picked for post ideas
+const IDEA_PREFS_KEY = 'cd-explore-idea-prefs';
+
+const STANCES = [
+    { value: 'any', label: 'Any' },
+    { value: 'agree', label: 'Agree' },
+    { value: 'push_back', label: 'Push back' },
+    { value: 'nuance', label: 'Add nuance' },
+] as const;
+type Stance = typeof STANCES[number]['value'];
+
+const PLATFORMS = [
+    { value: 'linkedin', label: 'LinkedIn' },
+    { value: 'twitter', label: 'X' },
+    { value: 'newsletter', label: 'Newsletter' },
+    { value: 'blog', label: 'Blog' },
+    { value: 'medium', label: 'Medium' },
+] as const;
+type Platform = typeof PLATFORMS[number]['value'];
+
 // When the writer last opened each watched topic from Explore, by Pipeline item id
 const WATCH_SEEN_KEY = 'cd-explore-watch-seen';
 const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
@@ -271,6 +291,7 @@ export function ExploreWorkspace() {
     // Follow-up questions and answers about each story, by its link
     const [chatsByKey, setChatsByKey] = useState<Record<string, ChatTurn[]>>({});
     const [askingKey, setAskingKey] = useState<string | null>(null);
+    const [ideaPrefs, setIdeaPrefs] = useState<{ stance: Stance; platform: Platform }>({ stance: 'any', platform: 'linkedin' });
     const [chatInput, setChatInput] = useState("");
     const [surprisesSeen, setSurprisesSeen] = useState<string[]>([]);
 
@@ -331,6 +352,19 @@ export function ExploreWorkspace() {
 
         fetchRealTrends();
     }, []);
+
+    useEffect(() => {
+        const saved = readStorage<{ stance?: string; platform?: string }>(IDEA_PREFS_KEY);
+        const stance = STANCES.find(s => s.value === saved?.stance)?.value;
+        const platform = PLATFORMS.find(p => p.value === saved?.platform)?.value;
+        if (stance || platform) setIdeaPrefs(prev => ({ stance: stance ?? prev.stance, platform: platform ?? prev.platform }));
+    }, []);
+
+    const updateIdeaPrefs = (patch: Partial<typeof ideaPrefs>) => {
+        const next = { ...ideaPrefs, ...patch };
+        setIdeaPrefs(next);
+        writeStorage(IDEA_PREFS_KEY, next);
+    };
 
     // Saved topics, with what has been published on each since the writer last looked
     useEffect(() => {
@@ -618,6 +652,8 @@ export function ExploreWorkspace() {
                     sources: sources.map(s => ({ title: s.title, summary: briefing(s), takeaway: s.takeaway })),
                     context,
                     relatedBeliefIds: sources.map(s => s.relatedBeliefId).filter(Boolean),
+                    platform: ideaPrefs.platform,
+                    ...(ideaPrefs.stance !== 'any' && { stance: ideaPrefs.stance }),
                 }),
             });
             const data = await res.json();
@@ -776,6 +812,37 @@ export function ExploreWorkspace() {
                             <RotateCcw size={12} /> Regenerate
                         </button>
                     )}
+                </div>
+
+                <div className="mb-3 space-y-2">
+                    <div role="radiogroup" aria-label="Your stance" className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-ink-muted mr-1">Your stance</span>
+                        {STANCES.map(option => (
+                            <button
+                                key={option.value}
+                                role="radio"
+                                aria-checked={ideaPrefs.stance === option.value}
+                                onClick={() => updateIdeaPrefs({ stance: option.value })}
+                                className={`h-7 px-2.5 rounded-full text-xs transition-all ${ideaPrefs.stance === option.value ? 'bg-surface shadow-raised text-ink font-medium' : 'text-ink-muted hover:text-ink'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div role="radiogroup" aria-label="Write for" className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-ink-muted mr-1">Write for</span>
+                        {PLATFORMS.map(option => (
+                            <button
+                                key={option.value}
+                                role="radio"
+                                aria-checked={ideaPrefs.platform === option.value}
+                                onClick={() => updateIdeaPrefs({ platform: option.value })}
+                                className={`h-7 px-2.5 rounded-full text-xs transition-all ${ideaPrefs.platform === option.value ? 'bg-surface shadow-raised text-ink font-medium' : 'text-ink-muted hover:text-ink'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {!ideas && (

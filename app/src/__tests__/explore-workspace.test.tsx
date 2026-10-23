@@ -257,6 +257,23 @@ describe('ExploreWorkspace', () => {
         });
     });
 
+    it('asks for ideas from the stance and platform the writer picked, and remembers them', async () => {
+        render(<ExploreWorkspace />);
+        search('remote work');
+        const details = await screen.findByRole('region', { name: 'Story details' });
+
+        const stance = within(details).getByRole('radiogroup', { name: 'Your stance' });
+        expect(within(stance).getByRole('radio', { name: 'Any' })).toHaveAttribute('aria-checked', 'true');
+        fireEvent.click(within(stance).getByRole('radio', { name: 'Push back' }));
+        fireEvent.click(within(within(details).getByRole('radiogroup', { name: 'Write for' })).getByRole('radio', { name: 'Newsletter' }));
+        fireEvent.click(within(details).getByRole('button', { name: /Get post ideas/ }));
+
+        await within(details).findByText(/Write it down/);
+        const call = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ideas');
+        expect(JSON.parse(call[1].body)).toMatchObject({ stance: 'push_back', platform: 'newsletter' });
+        expect(JSON.parse(window.localStorage.getItem('cd-explore-idea-prefs')!)).toEqual({ stance: 'push_back', platform: 'newsletter' });
+    });
+
     it('tunes For you from a story with More like this and Not for me', async () => {
         render(<ExploreWorkspace />);
         search('remote work');

@@ -25,6 +25,13 @@ const TONE_GUIDANCE: Record<string, string> = {
     mixed: "Give each idea a different tone (for example one bold and contrarian, one practical and teaching, one told as a story), so the writer can pick the voice that fits.",
 };
 
+// Where the writer stands on the material, picked before asking for ideas
+const STANCE_GUIDANCE: Record<string, string> = {
+    agree: "The writer agrees with the material. Every idea backs it up and takes it further: why it's right, what follows from it, who should act on it.",
+    push_back: "The writer disagrees with the material. Every idea pushes back on it: what it gets wrong, what it misses, or who it fails.",
+    nuance: "The writer partly agrees. Every idea adds nuance: where the material holds, where it breaks, and the condition that decides which.",
+};
+
 export async function POST(req: Request) {
     try {
         const userId = await getOrCreateUser();
@@ -46,6 +53,7 @@ export async function POST(req: Request) {
         // Explore doesn't ask for a tone; the strategy step sets it later, so ideas offer a range
         const tone = body.tone || 'mixed';
         const count = Math.min(Math.max(body.count || 3, 1), 10); // Clamp between 1-10
+        const stanceDesc = typeof body.stance === 'string' && Object.hasOwn(STANCE_GUIDANCE, body.stance) ? STANCE_GUIDANCE[body.stance] : undefined;
 
         // Support both single title and array of titles
         let titles: string[] = [];
@@ -122,7 +130,7 @@ You are given:
 - The topic the writer is exploring, and material (articles, guides, case studies) they picked for it
 - Optional audience context (who they are and what they care about)
 - Tone guidance: ${toneDesc}
-${writerContext ? `- What the writer believes and how they write:\n${writerContext}\n` : ''}
+${stanceDesc ? `- The writer's stance, which every idea must hold: ${stanceDesc}\n` : ''}${writerContext ? `- What the writer believes and how they write:\n${writerContext}\n` : ''}
 Your task is to generate up to ${count} post ideas that are worth writing — not just reacting.
 
 Each post idea must:
@@ -171,7 +179,7 @@ Think like an editor helping a creator stand out during a noisy moment — not a
         });
 
         const result = completion.choices[0].message.content;
-        TraceLogger.log('explore', 'Generated Ideas', { platform, tone, count, result });
+        TraceLogger.log('explore', 'Generated Ideas', { platform, tone, stance: body.stance, count, result });
 
         if (!result) throw new Error("No response from OpenAI");
 
