@@ -72,6 +72,12 @@ describe('ExploreWorkspace', () => {
         // Old items read as relative dates like everything else
         expect(screen.getByText('Reuters · 1y ago')).toBeInTheDocument();
 
+        // Momentum: a fresh story several outlets picked up is rising, a year-old one is evergreen
+        expect(within(details).getByText(/Early enough to be one of the first takes/)).toBeInTheDocument();
+        const results = screen.getByText('Reuters · 1y ago').closest('ul')!;
+        expect(within(results).getByText('Rising')).toBeInTheDocument();
+        expect(within(results).getByText('Evergreen')).toBeInTheDocument();
+
         fireEvent.click(screen.getByRole('button', { name: 'Async hiring' }));
         expect(await within(details).findByText('Async interviews spread among startups')).toBeInTheDocument();
 
