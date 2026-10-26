@@ -16,7 +16,7 @@ export const FloatingFeedbackButton = () => {
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
     // These pages have the phone bottom nav, whose More menu opens feedback instead of a floating bubble
-    const inMoreMenuOnPhones = /^\/(workspace|style)(\/|$)/.test(pathname || '');
+    const inMoreMenuOnPhones = /^\/(workspace|style|settings)(\/|$)/.test(pathname || '');
 
     useEffect(() => {
         const open = () => setIsOpen(true);
