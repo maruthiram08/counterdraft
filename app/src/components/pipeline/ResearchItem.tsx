@@ -51,8 +51,8 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
 
     return (
         <div className={`group bg-surface rounded-tile shadow-card p-4 hover:shadow-float transition-all ${loading ? 'opacity-70' : ''} ${isNew ? 'ring-1 ring-ember-200 bg-ember-50/40' : ''}`}>
-            {/* Content Area */}
-            <div className="flex items-start gap-3">
+            {/* Content Area: on phones the actions drop to their own row so the text keeps the full width */}
+            <div className="flex flex-wrap md:flex-nowrap items-start gap-x-3 gap-y-1">
                 {isNew ? (
                     <span className="text-ember-500 mt-1 animate-pulse scale-110" title="New finding">✨</span>
                 ) : showBullet ? (
@@ -106,7 +106,7 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                                     <span>{note}</span>
                                     <button
                                         onClick={() => onDeleteNote(idx)}
-                                        className="text-ink-muted hover:text-rose-500 opacity-0 group-hover/note:opacity-100 transition-opacity"
+                                        className="text-ink-muted hover:text-rose-500 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/note:opacity-100 transition-opacity"
                                     >
                                         <X size={12} />
                                     </button>
@@ -140,7 +140,7 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
 
                 {/* Actions Toolbar */}
                 {!loading && (
-                    <div className="flex flex-row gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="w-full md:w-auto flex flex-row justify-end gap-0.5 -mb-1.5 md:mb-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity shrink-0">
                         {onRefine && (
                             <button
                                 onClick={onRefine}

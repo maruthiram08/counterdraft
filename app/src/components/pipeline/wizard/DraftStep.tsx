@@ -178,23 +178,23 @@ export function DraftStep({
                         </div>
                     </div>
                     <div className="flex-1 bg-surface rounded-card shadow-card flex flex-col overflow-hidden">
-                        {/* Mock Toolbar */}
-                        <div className="flex flex-wrap items-center gap-1 px-4 py-3 border-b border-line bg-surface">
-                            <div className="flex gap-0.5">
+                        {/* Toolbar: one swipeable row on phones, where the formatting mocks are hidden */}
+                        <div className="flex flex-nowrap md:flex-wrap items-center gap-1 px-3 md:px-4 py-2 md:py-3 border-b border-line bg-surface overflow-x-auto scrollbar-none">
+                            <div className="hidden md:flex gap-0.5">
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Bold size={14} /></button>
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Italic size={14} /></button>
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Underline size={14} /></button>
                             </div>
-                            <div className="w-px h-4 bg-line mx-1" />
-                            <div className="flex gap-0.5">
+                            <div className="hidden md:block w-px h-4 bg-line mx-1" />
+                            <div className="hidden md:flex gap-0.5">
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><AlignLeft size={14} /></button>
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><AlignCenter size={14} /></button>
                             </div>
-                            <div className="w-px h-4 bg-line mx-1" />
+                            <div className="hidden md:block w-px h-4 bg-line mx-1" />
                             <button
                                 onClick={() => onVerifyStrategy()}
                                 disabled={verifyingStrategy}
-                                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-ember-100 text-ember-700 text-xs font-medium hover:bg-ember-200 active:shadow-pressed transition-all disabled:opacity-50"
+                                className="shrink-0 whitespace-nowrap flex items-center gap-1.5 h-8 px-3 rounded-full bg-ember-100 text-ember-700 text-xs font-medium hover:bg-ember-200 active:shadow-pressed transition-all disabled:opacity-50"
                             >
                                 {verifyingStrategy ? <Loader2 size={12} className="animate-spin" /> : <Target size={12} />}
                                 Check Strategy
@@ -204,18 +204,18 @@ export function DraftStep({
                                     key={key}
                                     onClick={() => setTool(t => t === key ? null : key)}
                                     aria-pressed={tool === key}
-                                    className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-all ${tool === key ? 'shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink active:shadow-pressed'}`}
+                                    className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-all ${tool === key ? 'shadow-pressed text-ember-600' : 'text-ink-muted hover:text-ink active:shadow-pressed'}`}
                                 >
                                     <Icon size={12} /> {label}
                                 </button>
                             ))}
-                            <div className="flex-1" />
+                            <div className="flex-1 min-w-0" />
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(draftContent);
                                     toast.success('Copied to clipboard');
                                 }}
-                                className="flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-ink active:shadow-pressed transition-all"
+                                className="shrink-0 whitespace-nowrap flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                             >
                                 <Copy size={12} /> Copy
                             </button>

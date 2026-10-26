@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MoreHorizontal, X } from "lucide-react";
+import { MessageSquare, MoreHorizontal, X } from "lucide-react";
+import { OPEN_FEEDBACK_EVENT } from "@/components/shared/FloatingFeedbackButton";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { BookTextIcon, BrainIcon, CompassIcon, HomeIcon, PenToolIcon, SettingsIcon, ZapIcon } from "@/components/icons/animated";
 
@@ -71,6 +72,16 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                                     {item.label}
                                 </button>
                             ))}
+                            <button
+                                onClick={() => {
+                                    setShowMoreMenu(false);
+                                    window.dispatchEvent(new Event(OPEN_FEEDBACK_EVENT));
+                                }}
+                                className="w-full flex items-center gap-3 px-4 h-12 rounded-full text-base font-medium transition-all text-ink-soft hover:text-ink hover:shadow-raised"
+                            >
+                                <MessageSquare size={22} strokeWidth={1.75} className="text-ink-muted" />
+                                Send feedback
+                            </button>
                         </div>
                     </div>
                 </div>

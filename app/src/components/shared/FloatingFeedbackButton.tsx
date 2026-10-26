@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+
+export const OPEN_FEEDBACK_EVENT = 'cd:open-feedback';
 
 export const FloatingFeedbackButton = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +15,14 @@ export const FloatingFeedbackButton = () => {
 
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
+    // These pages have the phone bottom nav, whose More menu opens feedback instead of a floating bubble
+    const inMoreMenuOnPhones = /^\/(workspace|style)(\/|$)/.test(pathname || '');
+
+    useEffect(() => {
+        const open = () => setIsOpen(true);
+        window.addEventListener(OPEN_FEEDBACK_EVENT, open);
+        return () => window.removeEventListener(OPEN_FEEDBACK_EVENT, open);
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -108,7 +118,8 @@ export const FloatingFeedbackButton = () => {
             {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`h-12 w-12 rounded-full flex items-center justify-center transition-all
+                className={`h-12 w-12 rounded-full items-center justify-center transition-all
+                    ${inMoreMenuOnPhones && !isOpen ? 'hidden md:flex' : 'flex'}
                     ${isOpen ? 'bg-canvas shadow-pressed text-ember-600' : 'bg-canvas shadow-raised text-ink hover:text-ember-600 active:shadow-pressed'}
                 `}
             >
