@@ -36,7 +36,9 @@ export default clerkMiddleware(async (auth, req) => {
     }
 
     // 2.1 Basic CSRF Protection for API POST/PUT/PATCH/DELETE
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && req.nextUrl.pathname.startsWith('/api')) {
+    // Webhooks are server-to-server (no Origin/Referer) and verify their own signatures
+    const isWebhook = req.nextUrl.pathname.startsWith('/api/webhooks/');
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && req.nextUrl.pathname.startsWith('/api') && !isWebhook) {
         const rejection = checkWriteOrigin({
             origin,
             referer: req.headers.get('referer'),
