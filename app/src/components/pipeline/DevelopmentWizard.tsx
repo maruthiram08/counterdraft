@@ -68,6 +68,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     // Draft state
     const [draftContent, setDraftContent] = useState('');
+    const [draftError, setDraftError] = useState<string | null>(null);
     const [workingInNotes, setWorkingInNotes] = useState(false);
 
     // Strategy Verification State
@@ -312,7 +313,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 }),
             });
             if (!res.ok) {
-                const errData = await res.json();
+                // A timeout or gateway error comes back as a page, not JSON
+                const errData = await res.json().catch(() => ({}));
                 if (res.status === 403) {
                     setLimitState({
                         tier: errData.usage?.tier || 'free',
@@ -502,6 +504,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     const generateDraft = async (answers: DraftAnswer[] = []) => {
         setLoading(true);
+        setDraftError(null);
         saveProgress({ dev_step: 'draft_in_progress' });
         // Today's answers join the notes from earlier runs, so nothing the writer told us is lost on a redraft
         const notes = mergeNotes(latestBrainMetadata.current?.draftNotes, answers);
@@ -537,14 +540,21 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     setLoading(false);
                     return;
                 }
-                throw new Error(errData.error || `Server Error ${res.status}`);
+                throw new Error(res.status === 504 ? 'Writing took too long and was cut off.' : errData.error || `Server error ${res.status}.`);
             }
 
             const data = await res.json();
-            setDraftContent(data.draft || '');
+            if (!data.draft?.trim()) throw new Error('The writer came back empty.');
+            setDraftContent(data.draft);
             updateMetadata({ draftedWith, draftSuggestions: Array.isArray(data.suggestions) ? data.suggestions : [] });
         } catch (err) {
             console.error('Draft generation failed:', err);
+            // Offline, a dropped connection, or a phone that put the page to sleep mid-request all land here
+            const reason = err instanceof Error && err.message && err.message !== 'Failed to fetch' && err.message !== 'Load failed'
+                ? err.message
+                : 'The connection dropped before it finished.';
+            setDraftError(reason);
+            toast.error("Couldn't write the draft. Tap Try again.");
         } finally {
             setLoading(false);
         }
@@ -927,6 +937,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 workingInNotes={workingInNotes}
                                 suggestions={localBrainMetadata?.draftSuggestions || []}
                                 onKeepSuggestion={(text) => updateMetadata({ draftSuggestions: liveSuggestions(draftContent, localBrainMetadata?.draftSuggestions).filter(s => s !== text) })}
+                                draftError={draftError}
+                                onWriteDraft={() => checkLimit().then(allowed => { if (allowed) generateDraft(); })}
                                 onRebuild={() => {
                                     // The draft follows the outline, so a new strategy starts from a new outline
                                     setStep('outline');
