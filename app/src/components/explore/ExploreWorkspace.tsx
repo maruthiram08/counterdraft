@@ -1447,7 +1447,7 @@ export function ExploreWorkspace() {
                         {/* Stories for the current step */}
                         <section
                             aria-label="Stories"
-                            className={`w-full md:w-[45%] overflow-y-auto p-4 md:p-4 pb-28 md:pb-4 md:bg-canvas md:shadow-pressed md:rounded-card ${showDetailOnMobile ? 'hidden md:block' : ''}`}
+                            className={`w-full md:w-[45%] overflow-y-auto p-4 md:p-4 ${selectedStories.length >= 2 ? 'pb-48' : 'pb-28'} md:pb-4 md:bg-canvas md:shadow-pressed md:rounded-card ${showDetailOnMobile ? 'hidden md:block' : ''}`}
                         >
                             {step?.related && step.related.length > 0 && (
                                 <div className="mb-4">
@@ -1622,19 +1622,19 @@ export function ExploreWorkspace() {
                 </>
             )}
 
-            {/* Combine several stories into one set of angles */}
+            {/* Combine several stories into one set of angles. On phones it is a full-width bar docked above the bottom nav; on desktop a centred pill */}
             {selectedStories.length >= 2 && !showingCombined && (
-                <div className="absolute bottom-28 md:bottom-10 left-1/2 -translate-x-1/2 bg-ink text-white pl-5 pr-2 h-12 rounded-full shadow-float flex items-center gap-3">
-                    <span className="text-sm">{selectedStories.length} stories selected</span>
+                <div className="absolute z-20 bottom-28 md:bottom-10 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 bg-surface shadow-float rounded-full h-14 pl-2 pr-2 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <button onClick={() => setSelectedKeys([])} aria-label="Clear selection" className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all">
+                        <X size={18} />
+                    </button>
+                    <span className="flex-1 md:flex-none min-w-0 text-sm font-medium text-ink whitespace-nowrap md:pr-2">{selectedStories.length} selected</span>
                     <button
                         onClick={combineSelected}
                         disabled={generatingKey !== null}
-                        className="flex items-center gap-1.5 h-9 px-4 bg-ember-500 text-white rounded-full text-sm font-medium hover:bg-ember-600 transition-colors disabled:opacity-50"
+                        className="shrink-0 whitespace-nowrap flex items-center gap-1.5 h-10 px-5 bg-ember-500 text-white rounded-full text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                     >
-                        <Layers size={14} /> Combine into ideas
-                    </button>
-                    <button onClick={() => setSelectedKeys([])} aria-label="Clear selection" className="w-8 h-8 flex items-center justify-center hover:bg-white/15 rounded-full">
-                        <X size={16} />
+                        <Layers size={16} /> Combine into ideas
                     </button>
                 </div>
             )}
