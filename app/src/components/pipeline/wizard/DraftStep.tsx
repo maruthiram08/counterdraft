@@ -178,8 +178,8 @@ export function DraftStep({
                         </div>
                     </div>
                     <div className="flex-1 bg-surface rounded-card shadow-card flex flex-col overflow-hidden">
-                        {/* Toolbar: one swipeable row on phones, where the formatting mocks are hidden */}
-                        <div className="flex flex-nowrap md:flex-wrap items-center gap-1 px-3 md:px-4 py-2 md:py-3 border-b border-line bg-surface overflow-x-auto scrollbar-none">
+                        {/* Toolbar: one swipeable row on phones, where the formatting mocks are hidden; the fade on the right edge says there is more */}
+                        <div className="flex flex-nowrap md:flex-wrap items-center gap-1 px-3 md:px-4 py-2 md:py-3 border-b border-line bg-surface overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_80%,transparent)] md:[mask-image:none]">
                             <div className="hidden md:flex gap-0.5">
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Bold size={14} /></button>
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Italic size={14} /></button>
