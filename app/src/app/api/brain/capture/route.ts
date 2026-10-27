@@ -54,7 +54,8 @@ Your goal is to extract structured intelligence that can be added to a personal 
 Your tasks:
 
 1. **Text Extraction**
-- Reconstruct the readable text as accurately as possible (store in "ocr_text").
+- Transcribe every word of the visible text exactly as written, from the first line to the last, in "ocr_text".
+- Never summarise, shorten, reword or finish a sentence yourself. If a word is unreadable, write [unclear] instead of guessing.
 - Clean up OCR noise, broken words, or layout artifacts (store in "cleaned_text").
 - Preserve the original wording and meaning — do NOT rewrite.
 
@@ -121,7 +122,8 @@ Think like a careful analyst preparing material for long-term thinking, not a co
                                 type: "text" as const,
                                 text: `Text copied from the captured part of the page. Treat it as the exact wording for ocr_text and cleaned_text, and use the image for layout and visuals:\n---\n${pageText}\n---`
                             }] : []),
-                            { type: "image_url", image_url: { url: imageBase64 } }
+                            // "high" reads the image in full; "auto" can shrink it so far that the model guesses at the words
+                            { type: "image_url", image_url: { url: imageBase64, detail: "high" } }
                         ]
                     }
                 ],
