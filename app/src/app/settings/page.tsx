@@ -5,7 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon, Puzzle, Download } from "lucide-react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
-import { RazorpayButton } from "@/components/billing/RazorpayButton";
+import Link from "next/link";
 import { useRouter } from 'next/navigation';
 
 interface IntegrationStatus {
@@ -497,12 +497,12 @@ function UsageSection() {
                             <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink capitalize">{usage.tier} Plan</h3>
                             {usage.tier === 'free' && (
                                 <div className="flex gap-2 items-center">
-                                    <RazorpayButton
-                                        planId="pro_monthly"
-                                        buttonText="Upgrade to Pro (₹29)"
-                                        className="text-xs h-8 px-3 rounded-full bg-ember-500 text-white font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
-                                        onSuccess={() => window.location.reload()}
-                                    />
+                                    <Link
+                                        href="/pricing"
+                                        className="text-xs h-8 px-3 inline-flex items-center rounded-full bg-ember-500 text-white font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                                    >
+                                        Upgrade to Pro
+                                    </Link>
                                 </div>
                             )}
                         </div>

@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Script from 'next/script';
+import { useAuth } from '@clerk/nextjs';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 
@@ -27,7 +30,7 @@ type RazorpayOptions = {
 };
 
 type RazorpayConstructor = new (options: RazorpayOptions) => { open: () => void };
-type RazorpayWindow = Window & { Razorpay: RazorpayConstructor };
+type RazorpayWindow = Window & { Razorpay?: RazorpayConstructor };
 
 export default function PricingClient({ initialCountry }: PricingClientProps) {
     const [isIndia, setIsIndia] = useState(initialCountry === 'IN');
@@ -62,7 +65,20 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
     const currentRegion = isIndia ? plans.india : plans.global;
     const currentPlan = billingCycle === 'monthly' ? currentRegion.monthly : currentRegion.yearly;
 
-    const handleRazorpaySubscription = async (planId: string) => {
+    const { isLoaded: authLoaded, isSignedIn } = useAuth();
+    const [checkingOut, setCheckingOut] = useState(false);
+
+    // Same Razorpay checkout for both regions: INR plans for India, USD plans (international cards) elsewhere
+    const handleSubscribe = async (planId: string) => {
+        if (checkingOut) return;
+
+        // Paying needs an account to attach Pro to: sign up first, then come back here
+        if (authLoaded && !isSignedIn) {
+            window.location.assign(`/sign-up?redirect_url=${encodeURIComponent('/pricing')}`);
+            return;
+        }
+
+        setCheckingOut(true);
         try {
             // 1. Create Order
             const res = await fetch('/api/billing/razorpay/order', {
@@ -70,9 +86,16 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ planId })
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
 
-            if (data.error) throw new Error(data.error);
+            if (res.status === 401) {
+                window.location.assign(`/sign-up?redirect_url=${encodeURIComponent('/pricing')}`);
+                return;
+            }
+            if (!res.ok || data.error) throw new Error(data.error || `Could not start the payment (${res.status})`);
+
+            const RazorpayCtor = (window as RazorpayWindow).Razorpay;
+            if (!RazorpayCtor) throw new Error('The payment window is still loading. Please try again in a moment.');
 
             // 2. Open Modal
             const options = {
@@ -84,6 +107,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 order_id: data.orderId,
                 handler: async function (response: RazorpayResponse) {
                     // 3. Verify Payment
+                    const toastId = toast.loading('Confirming your payment...');
                     try {
                         const verifyRes = await fetch('/api/billing/razorpay/verify', {
                             method: 'POST',
@@ -95,61 +119,27 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                         });
                         const verifyData = await verifyRes.json();
                         if (verifyData.success) {
+                            toast.success('Payment confirmed. Welcome to Pro.', { id: toastId });
                             window.location.href = verifyData.redirectUrl;
                         } else {
-                            alert("Payment verification failed. Please contact support.");
+                            toast.error('We could not confirm your payment. If you were charged, email us and we will sort it out.', { id: toastId, duration: 10000 });
                         }
                     } catch (e) {
                         console.error(e);
-                        alert("Verification error.");
+                        toast.error('We could not confirm your payment. If you were charged, email us and we will sort it out.', { id: toastId, duration: 10000 });
                     }
                 },
                 theme: { color: "#d4592a" }
             };
 
-            const RazorpayCtor = (window as RazorpayWindow).Razorpay;
             const rzp = new RazorpayCtor(options);
             rzp.open();
 
         } catch (e: unknown) {
             console.error("Razorpay Error:", e);
-            const message = e instanceof Error ? e.message : "Unknown error";
-            alert("Payment failed: " + message);
-        }
-    };
-
-    const handleSubscribe = async (planId: string) => {
-        if (isIndia) {
-            await handleRazorpaySubscription(planId);
-            return;
-        }
-
-        try {
-            const res = await fetch('/api/billing/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: planId,
-                    billingCycle,
-                    country: isIndia ? 'IN' : 'US'
-                })
-            });
-
-            const data = await res.json();
-            if (data.error) {
-                alert('Checkout Error: ' + data.error);
-                return;
-            }
-
-            if (data.checkoutUrl) {
-                window.location.href = data.checkoutUrl;
-            } else {
-                console.warn('No checkout URL returned', data);
-                alert('Payment provider did not return a checkout URL. Please try again.');
-            }
-        } catch (e) {
-            console.error(e);
-            alert('Failed to initiate checkout.');
+            toast.error(e instanceof Error ? e.message : 'Could not start the payment.');
+        } finally {
+            setCheckingOut(false);
         }
     };
 
@@ -286,8 +276,10 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
 
                         <button
                             onClick={() => handleSubscribe(currentPlan.id)}
-                            className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all mb-10 flex items-center justify-center gap-2 relative z-10"
+                            disabled={checkingOut}
+                            className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all mb-10 flex items-center justify-center gap-2 relative z-10 disabled:opacity-70"
                         >
+                            {checkingOut && <Loader2 size={16} className="animate-spin" />}
                             Upgrade to Pro
                             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                         </button>
@@ -351,7 +343,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
 
                 <div className="mt-8 md:mt-12 mb-8 md:mb-16 text-center">
                     <p className="text-xs text-ink-muted font-medium">
-                        {isIndia ? "🇮🇳 Localized pricing for India applied." : "Secure payments via Dodo Payments."} • Protected by 256-bit encryption.
+                        {isIndia ? "🇮🇳 Localized pricing for India applied." : "Secure payments via Razorpay. International cards accepted."} • Protected by 256-bit encryption.
                     </p>
                 </div>
             </main>

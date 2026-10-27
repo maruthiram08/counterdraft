@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { PRICING_CONFIG, Tier } from '@/lib/constants/pricing';
+import { isSubscriptionLive } from '@/lib/billing/plans';
 
 export class UsageService {
 
@@ -53,8 +54,8 @@ export class UsageService {
         let effectiveTier: Tier = PRICING_CONFIG.TIERS.FREE;
 
         // V2 Check
-        const { data: sub } = await supabase.from('subscriptions').select('plan_id, status').eq('user_id', userId).eq('status', 'active').maybeSingle();
-        if (sub && sub.plan_id.includes('pro')) {
+        const { data: sub } = await supabase.from('subscriptions').select('plan_id, status, current_period_end').eq('user_id', userId).eq('status', 'active').maybeSingle();
+        if (isSubscriptionLive(sub)) {
             effectiveTier = PRICING_CONFIG.TIERS.PRO;
         }
         // V1 Fallback
