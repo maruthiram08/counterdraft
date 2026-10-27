@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { capturedPost, isCaptureIntent, isCaptureKind } from '@/lib/brain/captures';
-import { storeCaptureImage } from '@/lib/brain/capture-images';
+import { removeCaptureImage, storeCaptureImage } from '@/lib/brain/capture-images';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { getOpenAI } from '@/lib/openai';
 
@@ -45,8 +45,10 @@ export async function POST(req: NextRequest) {
         let aiMetadata = {};
 
         if (imageBase64) {
-            const openai = getOpenAI();
-            const systemPrompt = `
+            // A failed or slow model call must not lose the capture: it is saved with the page text it has
+            try {
+                const openai = getOpenAI();
+                const systemPrompt = `
 You are an analytical reading assistant processing a user-captured snippet from the web.
 
 The user classified this capture as: "${intentType || 'general'}"
@@ -117,31 +119,36 @@ Return a JSON object with these fields:
 
 Think like a careful analyst preparing material for long-term thinking, not a content summarizer.
 `;
-            const captureModel = process.env.CAPTURE_MODEL || "gpt-4o-mini";
-            const response = await openai.chat.completions.create({
-                model: captureModel,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: `User Note: "${userNote}". Context: ${pageTitle}` },
-                            ...(pageText ? [{
-                                type: "text" as const,
-                                text: `Text copied from the captured part of the page. Treat it as the exact wording for ocr_text and cleaned_text, and use the image for layout and visuals:\n---\n${pageText}\n---`
-                            }] : []),
-                            // "high" reads the image in full; "auto" can shrink it so far that the model guesses at the words
-                            { type: "image_url", image_url: { url: imageBase64, detail: "high" } }
-                        ]
-                    }
-                ],
-                response_format: { type: "json_object" }
-            });
+                const captureModel = process.env.CAPTURE_MODEL || "gpt-4o-mini";
+                const response = await openai.chat.completions.create({
+                    model: captureModel,
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: `User Note: "${userNote}". Context: ${pageTitle}` },
+                                ...(pageText ? [{
+                                    type: "text" as const,
+                                    text: `Text copied from the captured part of the page. Treat it as the exact wording for ocr_text and cleaned_text, and use the image for layout and visuals:\n---\n${pageText}\n---`
+                                }] : []),
+                                // "high" reads the image in full; "auto" can shrink it so far that the model guesses at the words
+                                { type: "image_url", image_url: { url: imageBase64, detail: "high" } }
+                            ]
+                        }
+                    ],
+                    response_format: { type: "json_object" }
+                }, { timeout: 40_000 }); // Leaves time to save before the 60s limit
 
-            const aiResult = JSON.parse(response.choices[0].message.content || "{}");
-            // The model rewords and cuts long text even when given the exact copy, so keep the page's own words
-            ocrText = pageText || aiResult.ocr_text || "";
-            aiMetadata = { ...(pageText ? { ...aiResult, ocr_text: pageText } : aiResult), kind };
+                const aiResult = JSON.parse(response.choices[0].message.content || "{}");
+                // The model rewords and cuts long text even when given the exact copy, so keep the page's own words
+                ocrText = pageText || aiResult.ocr_text || "";
+                aiMetadata = { ...(pageText ? { ...aiResult, ocr_text: pageText } : aiResult), kind };
+            } catch (aiError) {
+                console.error('[POST /api/brain/capture] Reading the image failed, saving without it:', aiError);
+                ocrText = pageText;
+                aiMetadata = { kind, analysis_failed: true };
+            }
         } else {
             // Bookmark: Lens 1.0.3 sends the article text read in the browser, so it is ready for ideas and drafting
             ocrText = pageText;
@@ -184,7 +191,11 @@ Think like a careful analyst preparing material for long-term thinking, not a co
             ({ data: artifact, error: dbError } = await supabase.from('thinking_artifacts').insert({ ...row, intent_type: null }).select().single());
         }
 
-        if (dbError) throw dbError;
+        if (dbError) {
+            // Nothing points at the image now, so don't leave it in storage
+            await removeCaptureImage(imagePath);
+            throw dbError;
+        }
 
         return NextResponse.json({ success: true, artifact });
 

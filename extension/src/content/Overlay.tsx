@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { textInRect } from './textInRect';
 
 interface Selection {
     startX: number;
@@ -92,12 +93,22 @@ export function Overlay() {
 
         // Don't capture tiny clicks
         if (finalSelection.width > 5 && finalSelection.height > 5) {
+            // The page's own words in the box; the image alone is read by a model and can get small text wrong
+            let pageText = '';
+            try {
+                pageText = textInRect(finalSelection);
+            } catch (err) {
+                console.warn('[CounterDraft] Could not read the text in the snip:', err);
+            }
             chrome.runtime.sendMessage({
                 type: 'SNIP_COMPLETED',
                 payload: {
                     ...finalSelection,
                     pageUrl: window.location.href,
-                    pageTitle: document.title
+                    pageTitle: document.title,
+                    kind: 'snip',
+                    // A few stray words (a button label) say less than the image does
+                    pageText: pageText.length >= 20 ? pageText : undefined
                 }
             });
         }

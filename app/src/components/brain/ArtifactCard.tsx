@@ -1,13 +1,13 @@
 "use strict";
 
-import { useMemo } from 'react';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Trash2, Lightbulb, Copy, Check, MessageSquareQuote } from 'lucide-react';
+import { ExternalLink, Trash2, Lightbulb, Copy, Check, MessageSquareQuote, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import type { Artifact } from '@/types';
 import { captureAuthor, captureIntent, captureKind } from '@/lib/brain/captures';
 import { canReframe } from '@/lib/brain/reframe';
+import { INTENT_LABELS, intentChipClass } from './intentChip';
 
 const KIND_LABELS = { bookmark: 'Bookmark', snip: 'Snip', frame: 'Frame' } as const;
 
@@ -16,25 +16,22 @@ interface ArtifactCardProps {
     onDelete: (id: string) => void;
     onFindIdeas: (artifact: Artifact) => void;
     onReframe: (artifact: Artifact) => void;
+    // Picking several for Find ideas: the whole card is the tap target and its own buttons step aside
+    selecting?: boolean;
+    selected?: boolean;
 }
 
-export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: ArtifactCardProps) {
+// Past this, the text is clamped and "Show all" opens it in place
+const LONG_TEXT = 320;
+
+export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, selecting, selected }: ArtifactCardProps) {
     const kind = captureKind(artifact);
     const author = captureAuthor(artifact);
     const reframable = canReframe(artifact);
     const intent = captureIntent(artifact);
     const [copied, setCopied] = useState(false);
-
-    const intentColor = useMemo(() => {
-        switch (intent) {
-            case 'agree': return 'bg-sage-100 text-sage-700';
-            case 'counter': return 'bg-rose-100 text-rose-700';
-            case 'evidence': return 'bg-dusk-100 text-dusk-700';
-            case 'style':
-            case 'framing': return 'bg-ember-100 text-ember-700';
-            default: return 'bg-canvas shadow-well text-ink-soft';
-        }
-    }, [intent]);
+    const [expanded, setExpanded] = useState(false);
+    const isLong = (artifact.ocr_text?.length || 0) > LONG_TEXT || (artifact.ocr_text?.split('\n').length || 0) > 8;
 
     const handleCopy = () => {
         const text = artifact.ocr_text || artifact.user_note || "";
@@ -44,7 +41,7 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: Art
     };
 
     return (
-        <div className="bg-surface rounded-tile shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col mb-4 break-inside-avoid">
+        <div className={`bg-surface rounded-tile shadow-card transition-all duration-200 overflow-hidden flex flex-col mb-4 break-inside-avoid ${selected ? 'ring-2 ring-ember-400' : ''} ${selecting ? '' : 'hover:shadow-float hover:-translate-y-0.5'}`}>
             {/* Header */}
             <div className="px-5 pt-5 pb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2 overflow-hidden">
@@ -75,12 +72,22 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: Art
                         </span>
                     </div>
                 </div>
-                <button
-                    onClick={() => onDelete(artifact.id)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-ink-muted hover:text-rose-700 active:shadow-pressed transition-all"
-                >
-                    <Trash2 size={14} />
-                </button>
+                {selecting ? (
+                    <span
+                        aria-hidden="true"
+                        className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center transition-all ${selected ? 'bg-ember-500 text-white shadow-ember' : 'bg-canvas shadow-well'}`}
+                    >
+                        {selected && <Check size={16} strokeWidth={3} />}
+                    </span>
+                ) : (
+                    <button
+                        onClick={() => onDelete(artifact.id)}
+                        aria-label="Delete capture"
+                        className="w-11 h-11 -mr-2 flex items-center justify-center rounded-full text-ink-muted hover:text-rose-700 active:shadow-pressed transition-all"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                )}
             </div>
 
             {/* Note (if exists) */}
@@ -94,19 +101,41 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: Art
             <div className="flex-1 relative group">
                 <div className="px-5 py-2 flex flex-col gap-2">
                     {artifact.imageUrl && (
-                        <a href={artifact.imageUrl} target="_blank" rel="noopener noreferrer" className="block rounded-2xl overflow-hidden bg-surface-muted max-h-64" title="Open the full image">
+                        <a
+                            href={artifact.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`block rounded-2xl overflow-hidden bg-surface-muted max-h-64 ${selecting ? 'pointer-events-none' : ''}`}
+                            tabIndex={selecting ? -1 : undefined}
+                            title="Open the full image"
+                        >
                             {/* eslint-disable-next-line @next/next/no-img-element -- stored capture, any size */}
                             <img src={artifact.imageUrl} alt={`Capture from ${artifact.source_domain || 'a page'}`} loading="lazy" className="w-full h-auto object-cover object-top" />
                         </a>
                     )}
                     {artifact.ocr_text ? (
-                        <p className={`text-sm text-ink-soft leading-relaxed bg-surface-muted p-3 rounded-2xl whitespace-pre-line ${artifact.imageUrl ? 'line-clamp-4' : 'line-clamp-[10]'}`}>
-                            {artifact.ocr_text}
-                        </p>
+                        <div className="bg-surface-muted rounded-2xl flex flex-col">
+                            <p className={`text-sm text-ink-soft leading-relaxed p-3 whitespace-pre-line ${expanded ? '' : artifact.imageUrl ? 'line-clamp-4' : 'line-clamp-[10]'}`}>
+                                {artifact.ocr_text}
+                            </p>
+                            {isLong && !selecting && (
+                                <button
+                                    onClick={() => setExpanded(e => !e)}
+                                    aria-expanded={expanded}
+                                    className="self-start h-11 px-3 -mt-1 flex items-center gap-1 text-xs font-medium text-ink-soft hover:text-ember-600"
+                                >
+                                    {expanded ? 'Show less' : 'Show all'}
+                                    <ChevronDown size={14} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                                </button>
+                            )}
+                        </div>
                     ) : (
                         <div className="text-sm bg-surface-muted p-3 rounded-2xl flex flex-col gap-1">
                             <p className="text-ink-soft">{artifact.source_title || 'No text saved.'}</p>
                             {kind === 'bookmark' && <p className="text-xs text-ink-muted">The page is read when you find ideas.</p>}
+                            {kind !== 'bookmark' && artifact.ai_metadata?.analysis_failed && (
+                                <p className="text-xs text-ink-muted">The text in this image couldn&apos;t be read when it was saved. The image is kept.</p>
+                            )}
                         </div>
                     )}
                 </div>
@@ -121,8 +150,8 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: Art
                         </span>
                     )}
                     {intent && (
-                        <span className={`inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium lowercase first-letter:uppercase ${intentColor}`}>
-                            {intent}
+                        <span className={`inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium ${intentChipClass(intent)}`}>
+                            {INTENT_LABELS[intent]}
                         </span>
                     )}
                     {!!artifact.usedIn && (
@@ -132,7 +161,7 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: Art
                     )}
                 </div>
 
-                <div className="flex items-center gap-1">
+                {!selecting && <div className="flex items-center gap-1">
                     <button
                         onClick={handleCopy}
                         className="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-ink rounded-full active:shadow-pressed transition-all"
@@ -171,7 +200,7 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: Art
                             Reframe
                         </button>
                     )}
-                </div>
+                </div>}
             </div>
         </div>
     );

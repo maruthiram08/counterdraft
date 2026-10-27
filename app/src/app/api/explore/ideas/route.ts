@@ -7,7 +7,8 @@ import { UsageService } from '@/lib/billing/usage';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { readPage } from '@/lib/read-page';
-import { captureToSource, formatCapturesForIdeas, stanceFromIntents, CaptureRow, CaptureSource } from '@/lib/brain/captures';
+import { captureImageUrl } from '@/lib/brain/capture-images';
+import { captureDomain, captureToSource, formatCapturesForIdeas, stanceFromIntents, CaptureRow, CaptureSource, SAVED_TEXT_LIMIT } from '@/lib/brain/captures';
 
 // Platform-specific guidance
 const PLATFORM_GUIDANCE: Record<string, string> = {
@@ -56,8 +57,24 @@ export async function POST(req: Request) {
         const tone = body.tone || 'mixed';
         const count = Math.min(Math.max(body.count || 3, 1), 10); // Clamp between 1-10
 
+        // Checked before any page is read, so a writer over the limit doesn't wait on reads for nothing
+        const limitCheck = await UsageService.checkSearchLimit(userId);
+        if (!limitCheck.allowed) {
+            return NextResponse.json(
+                {
+                    error: 'Limit Reached',
+                    message: limitCheck.reason,
+                    tier: limitCheck.tier,
+                    upgradeUrl: '/pricing'
+                },
+                { status: 403 }
+            );
+        }
+
         // Ideas from the writer's own Lens captures, read here so their full text and intent are used
-        const captures = Array.isArray(body.captureIds) ? await loadCaptures(userId, body.captureIds) : [];
+        const { sources: captures, unread } = Array.isArray(body.captureIds)
+            ? await loadCaptures(userId, body.captureIds)
+            : { sources: [] as CaptureSource[], unread: [] as string[] };
         if (Array.isArray(body.captureIds) && !captures.length) {
             return NextResponse.json({ error: 'Those captures could not be found' }, { status: 404 });
         }
@@ -90,19 +107,6 @@ export async function POST(req: Request) {
                 flagged: true,
                 categories: modResult.categories
             }, { status: 400 });
-        }
-
-        const limitCheck = await UsageService.checkSearchLimit(userId);
-        if (!limitCheck.allowed) {
-            return NextResponse.json(
-                {
-                    error: 'Limit Reached',
-                    message: limitCheck.reason,
-                    tier: limitCheck.tier,
-                    upgradeUrl: '/pricing'
-                },
-                { status: 403 }
-            );
         }
 
         const subject = titles.length > 1
@@ -208,6 +212,8 @@ Think like an editor helping a creator stand out during a noisy moment — not a
             ideas: parsed.ideas || [],
             // The sources each saved idea carries, so research and drafting see the same captures
             ...(captures.length ? { captureSources: captures } : {}),
+            // Bookmarks whose page couldn't be read, so the writer knows those ideas come from the title and note only
+            ...(unread.length ? { unreadCaptures: unread } : {}),
             config: { platform, tone, count } // Return config for transparency
         });
     } catch (err: unknown) {
@@ -259,23 +265,40 @@ async function getWriterContext(userId: string, relatedBeliefIds: unknown): Prom
     return lines.join('\n');
 }
 
-// The writer's captures, in the order asked. A bookmark saved without page text is read now.
-async function loadCaptures(userId: string, ids: unknown[]): Promise<CaptureSource[]> {
+// The writer's captures, in the order asked. A bookmark saved without page text is read now, and the text
+// is kept on the capture so it is read only once (and can then be reframed).
+async function loadCaptures(userId: string, ids: unknown[]): Promise<{ sources: CaptureSource[]; unread: string[] }> {
     const wanted = ids.filter((id): id is string => typeof id === 'string').slice(0, 6);
-    if (!wanted.length) return [];
+    if (!wanted.length) return { sources: [], unread: [] };
     const { data } = await supabaseAdmin
         .from('thinking_artifacts')
-        .select('id, source_url, source_title, source_domain, ocr_text, user_note, intent_type, ai_metadata')
+        .select('id, source_url, source_title, source_domain, ocr_text, user_note, intent_type, image_path, ai_metadata')
         .eq('user_id', userId)
         .in('id', wanted);
-    const rows = (data || []) as CaptureRow[];
+    const rows = ((data || []) as CaptureRow[]).map(r => ({ ...r, imageUrl: captureImageUrl(r.image_path) }));
     const byId = new Map(rows.map(r => [r.id, r]));
-    return Promise.all(wanted.filter(id => byId.has(id)).map(async id => {
+    const unread: string[] = [];
+    const sources = await Promise.all(wanted.filter(id => byId.has(id)).map(async id => {
         const row = byId.get(id)!;
         let pageText: string | undefined;
         if (!row.ocr_text?.trim() && row.source_url) {
-            pageText = await readPage(row.source_url).then(p => p.content).catch(() => undefined);
+            const content = await readPage(row.source_url).then(p => p.content.trim()).catch(() => '');
+            // A login wall or an empty JavaScript shell gives a few words, not an article
+            if (content.length >= MIN_PAGE_TEXT) {
+                pageText = content.slice(0, SAVED_TEXT_LIMIT);
+                const { error } = await supabaseAdmin
+                    .from('thinking_artifacts')
+                    .update({ ocr_text: pageText })
+                    .eq('id', row.id)
+                    .eq('user_id', userId);
+                if (error) console.error('Saving the bookmark text failed:', error);
+            } else {
+                unread.push(row.source_title?.trim() || captureDomain(row) || 'A bookmark');
+            }
         }
         return captureToSource(row, pageText);
     }));
+    return { sources, unread };
 }
+
+const MIN_PAGE_TEXT = 200;
