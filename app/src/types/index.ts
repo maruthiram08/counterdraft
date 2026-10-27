@@ -438,7 +438,8 @@ export interface InstagramSlide {
 }
 
 export interface RepurposeOptions {
-  length?: 'short' | 'medium' | 'long'; // For Medium
+  length?: 'short' | 'medium' | 'long'; // For Medium, X threads and newsletters
+  numbered?: boolean;                  // For X threads: "1/7" at the end of each post
   format?: 'single' | 'carousel';      // For Instagram
   generateCover?: boolean;
   generateInfographic?: boolean;
@@ -448,6 +449,9 @@ export interface RepurposedExtraData {
   slides?: InstagramSlide[];
   hashtags?: string[] | string;
   caption?: string;
+  numbered?: boolean;
+  subject?: string;
+  previewText?: string;
 }
 
 export interface RepurposedContent {

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { X, Loader2, ExternalLink, Check, AlertCircle, Copy } from 'lucide-react';
 import { AnimatedIcon } from '@/components/icons/AnimatedIcon';
 import { SendIcon } from '@/components/icons/animated';
-import { POST_PLATFORMS, postUrl, isManualRecord } from '@/lib/posts/posted';
+import { POST_PLATFORMS, postUrl, isManualRecord, postPlatformFor } from '@/lib/posts/posted';
+import { ThreadPreview } from './ThreadPreview';
+import { NewsletterPreview } from './NewsletterPreview';
 import type { Draft } from '@/types';
 import type { PostedDetails } from '@/hooks/useDrafts';
 
@@ -40,6 +42,8 @@ const toDateInput = (iso?: string) => {
  */
 export function PostSheet({ isOpen, onClose, draft, content, mode, onMarkPosted, onLinkedInPosted }: PostSheetProps) {
     const manual = draft.published_posts?.find(isManualRecord);
+    // Threads and newsletters copy in parts, and never go to LinkedIn as they are
+    const format = draft.platform === 'x_thread' || draft.platform === 'newsletter' ? draft.platform : null;
     const [platform, setPlatform] = useState<string | null>(null);
     const [date, setDate] = useState(today());
     const [link, setLink] = useState('');
@@ -54,7 +58,7 @@ export function PostSheet({ isOpen, onClose, draft, content, mode, onMarkPosted,
     // Start from what we already know each time the sheet opens
     useEffect(() => {
         if (!isOpen) return;
-        setPlatform(manual?.platform && manual.platform !== 'other' ? manual.platform : (draft.labels?.platform || null));
+        setPlatform(manual?.platform && manual.platform !== 'other' ? manual.platform : postPlatformFor(draft.labels?.platform || draft.platform));
         setDate(toDateInput(manual?.published_at));
         setLink(manual ? postUrl(manual) || '' : '');
         setCopied(false);
@@ -63,14 +67,14 @@ export function PostSheet({ isOpen, onClose, draft, content, mode, onMarkPosted,
     }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (!isOpen || mode !== 'post' || linkedIn !== 'unknown') return;
+        if (!isOpen || mode !== 'post' || format || linkedIn !== 'unknown') return;
         let cancelled = false;
         fetch('/api/linkedin/status')
             .then(r => r.ok ? r.json() : null)
             .then(s => { if (!cancelled) setLinkedIn(s?.connected && !s?.tokenExpired ? 'connected' : 'off'); })
             .catch(() => { if (!cancelled) setLinkedIn('off'); });
         return () => { cancelled = true; };
-    }, [isOpen, mode, linkedIn]);
+    }, [isOpen, mode, format, linkedIn]);
 
     if (!isOpen) return null;
 
@@ -162,7 +166,21 @@ export function PostSheet({ isOpen, onClose, draft, content, mode, onMarkPosted,
                         </div>
                     ) : (
                         <>
-                            {mode === 'post' && (
+                            {mode === 'post' && format && (
+                                <>
+                                    <p className="text-sm text-ink-soft mb-4">
+                                        {format === 'x_thread'
+                                            ? 'Copy each post into X as a reply to the one before, then mark it here so it moves to Posted.'
+                                            : 'Copy it into your newsletter tool, then mark it here so it moves to Posted.'}
+                                    </p>
+                                    <div className="mb-5">
+                                        {format === 'x_thread'
+                                            ? <ThreadPreview content={content} numbered={draft.platform_metadata?.numbered !== false} />
+                                            : <NewsletterPreview content={content} title={draft.belief_text} compact />}
+                                    </div>
+                                </>
+                            )}
+                            {mode === 'post' && !format && (
                                 <>
                                     <p className="text-sm text-ink-soft mb-4">
                                         Post it wherever you like, then mark it here so it moves to Posted and CounterDraft learns from your final version.
@@ -221,7 +239,7 @@ export function PostSheet({ isOpen, onClose, draft, content, mode, onMarkPosted,
                                 </label>
                             </div>
 
-                            {mode === 'post' && linkedIn === 'connected' && (
+                            {mode === 'post' && !format && linkedIn === 'connected' && (
                                 <div className="mt-2 mb-2 pt-4 border-t border-line">
                                     <p className="text-sm text-ink-soft mb-3">Or let CounterDraft post it to your LinkedIn now.</p>
                                     <button

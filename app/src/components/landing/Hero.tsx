@@ -20,7 +20,7 @@ export const Hero: React.FC = () => {
           Write content that <span className="text-ember-500">sounds like you</span>.
         </h1>
         <p className="text-ink-soft text-lg md:text-xl max-w-2xl mx-auto mb-8 md:mb-12 leading-relaxed animate-fade-in-up [&_strong]:font-medium [&_strong]:text-ink" style={{ animationDelay: '0.2s' }}>
-          LinkedIn posts first, then Medium articles and Instagram carousels from them. Counterdraft helps you <strong>find your angle, organize your ideas, and publish without sounding generic</strong>.
+          LinkedIn posts first, then Medium articles, Instagram carousels, X threads and newsletters from them. Counterdraft helps you <strong>find your angle, organize your ideas, and publish without sounding generic</strong>.
         </p>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 mb-16 md:mb-28 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>

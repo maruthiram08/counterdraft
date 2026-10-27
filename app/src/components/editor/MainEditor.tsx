@@ -12,6 +12,8 @@ import { EditorCanvas } from "./EditorCanvas";
 import { RefinementFeedback } from "./RefinementFeedback";
 import { HookLab } from "./HookLab";
 import { LinkedInPreview } from "./LinkedInPreview";
+import { ThreadPreview } from "./ThreadPreview";
+import { NewsletterPreview } from "./NewsletterPreview";
 import { PlaceholderNotice } from "./PlaceholderNotice";
 import { VariantsPanel } from "./VariantsPanel";
 import { CraftScorePanel } from "./CraftScorePanel";
@@ -58,6 +60,14 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
     const [isPreview, setIsPreview] = useState(false);
     const [postSheet, setPostSheet] = useState<'post' | 'details' | null>(null);
     const [postTool, setPostTool] = useState<'craft' | 'openings' | 'variants' | 'preview' | null>(null);
+    // X threads and newsletters get their own preview with copy buttons; the LinkedIn tools would break their shape
+    const format = draft?.platform === 'x_thread' || draft?.platform === 'newsletter' ? draft.platform : null;
+    const previewLabel = format === 'x_thread' ? 'Thread preview' : format === 'newsletter' ? 'Email preview' : 'LinkedIn preview';
+
+    // Open a thread or newsletter on its preview, where its copy buttons are
+    useEffect(() => {
+        setPostTool(format ? 'preview' : null);
+    }, [draft?.id, format]);
 
     // 3. Selection
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -333,7 +343,7 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
 
                     {/* Opening and feed preview: how the post lands before "see more" */}
                     <div className="mb-4 flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto scrollbar-none p-2 -m-2">
-                        {draft.status !== 'published' && (
+                        {draft.status !== 'published' && !format && (
                             <button
                                 onClick={() => setPostTool(t => t === 'craft' ? null : 'craft')}
                                 aria-pressed={postTool === 'craft'}
@@ -342,7 +352,7 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
                                 Craft score
                             </button>
                         )}
-                        {draft.status !== 'published' && (
+                        {draft.status !== 'published' && !format && (
                             <button
                                 onClick={() => setPostTool(t => t === 'openings' ? null : 'openings')}
                                 aria-pressed={postTool === 'openings'}
@@ -351,7 +361,7 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
                                 Try other openings
                             </button>
                         )}
-                        {draft.status !== 'published' && (
+                        {draft.status !== 'published' && !format && (
                             <button
                                 onClick={() => setPostTool(t => t === 'variants' ? null : 'variants')}
                                 aria-pressed={postTool === 'variants'}
@@ -365,7 +375,7 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
                             aria-pressed={postTool === 'preview'}
                             className={`shrink-0 whitespace-nowrap h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'preview' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
                         >
-                            LinkedIn preview
+                            {previewLabel}
                         </button>
                     </div>
                     {postTool && (
@@ -373,7 +383,11 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
                             {postTool === 'craft' && <CraftScorePanel content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
                             {postTool === 'openings' && <HookLab content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
                             {postTool === 'variants' && <VariantsPanel content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
-                            {postTool === 'preview' && <LinkedInPreview content={content} />}
+                            {postTool === 'preview' && (format === 'x_thread'
+                                ? <ThreadPreview key={draft.id} content={content} numbered={draft.platform_metadata?.numbered !== false} />
+                                : format === 'newsletter'
+                                    ? <NewsletterPreview content={content} title={beliefText} />
+                                    : <LinkedInPreview content={content} />)}
                         </div>
                     )}
 

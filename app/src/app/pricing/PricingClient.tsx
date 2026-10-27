@@ -36,7 +36,7 @@ const PRO_FEATURES = [
     { title: 'Unlimited Drafts & Revisions', detail: 'From brief to outline to finished LinkedIn post.' },
     { title: 'Explore and Web Research', detail: 'Find what to write about, with sources behind each draft.' },
     { title: 'Craft Score and Strategy Check', detail: 'Scores for every draft, with a Fix for each weak part.' },
-    { title: 'Medium and Instagram Versions', detail: 'Turn a post into an article or a carousel, with images.' },
+    { title: 'Repurpose into Four Formats', detail: 'Turn a post into a Medium article or Instagram carousel (with images), an X thread or a newsletter issue.' },
     { title: 'Belief & Tension Tracking', detail: 'Your Mind keeps learning from everything you add and write.' },
 ];
 

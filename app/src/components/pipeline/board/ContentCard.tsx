@@ -12,7 +12,7 @@ const CONFIDENCE_STYLES: Record<string, string> = {
     low: 'bg-canvas shadow-well text-ink-muted',
 };
 
-const PLATFORM_LABELS: Record<string, string> = { linkedin: 'LinkedIn', twitter: 'X', x: 'X', substack: 'Substack', medium: 'Medium', instagram: 'Instagram' };
+const PLATFORM_LABELS: Record<string, string> = { linkedin: 'LinkedIn', twitter: 'X', x: 'X', substack: 'Substack', medium: 'Medium', instagram: 'Instagram', x_thread: 'X thread', newsletter: 'Newsletter' };
 
 const sentenceCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ComponentType } from "react";
-import { X, ArrowLeft, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette } from "lucide-react";
+import { X, ArrowLeft, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette, MessagesSquare, Mail } from "lucide-react";
 import { SmartStudioPanel } from "./SmartStudioPanel";
 import type { SlideContent } from "@/lib/pptx-generator";
 
@@ -20,6 +20,8 @@ interface PlatformOption {
     placeholder?: string;
     defaultValue?: string | boolean;
     allowAutoGenerate?: boolean;
+    // Checkbox only: the line under the label
+    hint?: string;
 }
 
 interface PlatformConfig {
@@ -30,6 +32,8 @@ interface PlatformConfig {
     bgClass: string;
     textClass: string;
     description: string;
+    // The create button, when "Create <first word of label> Draft" doesn't read right
+    cta?: string;
     options: PlatformOption[];
 }
 
@@ -98,6 +102,59 @@ const PLATFORMS: PlatformConfig[] = [
         ]
     },
     {
+        id: 'x_thread',
+        label: 'X Thread',
+        description: 'A strong first post, each post under 280',
+        cta: 'Create X Thread',
+        icon: MessagesSquare,
+        colorClass: 'ring-ink',
+        bgClass: 'bg-surface-muted',
+        textClass: 'text-ink',
+        options: [
+            {
+                id: 'length',
+                label: 'Thread Length',
+                type: 'select',
+                defaultValue: 'medium',
+                choices: [
+                    { value: 'short', label: 'Short (3-5 posts)' },
+                    { value: 'medium', label: 'Standard (6-8 posts)' },
+                    { value: 'long', label: 'Long (9-12 posts)' }
+                ]
+            },
+            {
+                id: 'numbered',
+                label: 'Number the posts',
+                type: 'checkbox',
+                defaultValue: true,
+                hint: 'Ends each post with 1/7, 2/7 and so on'
+            }
+        ]
+    },
+    {
+        id: 'newsletter',
+        label: 'Newsletter Issue',
+        description: 'Subject line, preview text & sections',
+        cta: 'Create Newsletter',
+        icon: Mail,
+        colorClass: 'ring-ember-500',
+        bgClass: 'bg-ember-50',
+        textClass: 'text-ember-700',
+        options: [
+            {
+                id: 'length',
+                label: 'Issue Length',
+                type: 'select',
+                defaultValue: 'medium',
+                choices: [
+                    { value: 'short', label: 'Short (~300 words)' },
+                    { value: 'medium', label: 'Standard (~600 words)' },
+                    { value: 'long', label: 'Long (~1000 words)' }
+                ]
+            }
+        ]
+    },
+    {
         id: 'smart_studio',
         label: 'Smart Studio',
         description: 'Instant ready-to-post visuals',
@@ -112,7 +169,7 @@ const PLATFORMS: PlatformConfig[] = [
 const PLATFORM_GROUPS = [
     {
         title: "Strategy & Text",
-        items: ['medium', 'instagram']
+        items: ['medium', 'instagram', 'x_thread', 'newsletter']
     },
     {
         title: "Visual Production",
@@ -153,7 +210,9 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
     const [phoneShowsOptions, setPhoneShowsOptions] = useState(false);
     const [optionsValues, setOptionsValues] = useState<Record<string, Record<string, string | boolean>>>({
         medium: { length: 'medium', generateCover: true },
-        instagram: { format: 'carousel', labels: '', generateInfographic: true }
+        instagram: { format: 'carousel', labels: '', generateInfographic: true },
+        x_thread: { length: 'medium', numbered: true },
+        newsletter: { length: 'medium' }
     });
 
     const [generatingField, setGeneratingField] = useState<string | null>(null);
@@ -267,7 +326,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                         </div>
                         <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Draft Created!</h2>
                         <p className="text-ink-soft mb-8">
-                            Your content is ready.{selectedPlatformId === 'instagram' && " Export to Canva to design."}
+                            Your content is ready.{selectedPlatformId === 'instagram' && " Export to Canva to design."}{(selectedPlatformId === 'x_thread' || selectedPlatformId === 'newsletter') && " Open it to check it over and copy it."}
                         </p>
                         <div className="space-y-3">
                             {selectedPlatformId === 'instagram' && (
@@ -463,9 +522,9 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                 />
                                                 <div className="flex-1">
                                                     <span className="text-sm font-medium text-ink block">{opt.label}</span>
-                                                    <span className="text-xs text-ink-soft">Includes AI suggestions</span>
+                                                    <span className="block text-xs text-ink-soft leading-snug">{opt.hint ?? 'Includes AI suggestions'}</span>
                                                 </div>
-                                                <Palette size={20} className="text-ink-muted" />
+                                                {opt.id === 'numbered' ? <Hash size={20} className="text-ink-muted" /> : <Palette size={20} className="text-ink-muted" />}
                                             </label>
                                         )}
                                     </div>
@@ -493,7 +552,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                     </>
                                 ) : (
                                     <>
-                                        Create {currentPlatform.label.split(' ')[0]} Draft
+                                        {currentPlatform.cta ?? `Create ${currentPlatform.label.split(' ')[0]} Draft`}
                                         <Sparkles size={16} className="text-white" />
                                     </>
                                 )}
