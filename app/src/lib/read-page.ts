@@ -72,7 +72,9 @@ async function validateUrlForSSRF(url: string) {
 async function fetchWithSafeRedirects(url: string, maxRedirects = 3) {
     let currentUrl = url;
     const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9'
     };
 
     for (let i = 0; i <= maxRedirects; i++) {
@@ -107,33 +109,67 @@ export async function readPage(url: string): Promise<PageText> {
         throw new Error(`Failed to fetch URL: ${response.status}`);
     }
 
-    const html = await response.text();
+    return extractPageText(await response.text());
+}
+
+// Page furniture that is never the article: menus, sidebars, forms, dialogs
+const JUNK = [
+    'script', 'style', 'noscript', 'template', 'iframe', 'svg', 'canvas', 'form', 'button', 'select', 'input',
+    'nav', 'footer', 'aside', 'dialog',
+    '[role="banner"]', '[role="navigation"]', '[role="complementary"]', '[role="contentinfo"]', '[role="dialog"]',
+    '[aria-hidden="true"]', '[hidden]',
+].join(',');
+
+// Cookie, share and sign-up bars, comments and related links. Matched by class name, which can also hit a
+// wrapper around the whole article ("shared-layout"), so only short blocks are removed.
+const LIKELY_JUNK = [
+    'header',
+    '[class*="cookie" i]', '[id*="cookie" i]', '[class*="newsletter" i]', '[class*="subscribe" i]',
+    '[class*="share" i]', '[class*="social" i]', '[class*="related" i]', '[class*="comment" i]', '[id*="comment" i]',
+    '[class*="sidebar" i]', '[class*="advert" i]', '[class*="promo" i]', '[class*="popup" i]', '[class*="modal" i]',
+].join(',');
+const SHORT_BLOCK = 1500;
+
+const BLOCKS = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, figcaption, td';
+
+const squash = (text: string) => text.replace(/\s+/g, ' ').trim();
+
+// The article's own text, one paragraph per line, so headings, paragraphs and lists survive
+export function extractPageText(html: string): PageText {
     const $ = cheerio.load(html);
+    const title = squash($('meta[property="og:title"]').attr('content') || $('title').first().text() || '');
 
-    // Extract Title
-    const title = $('title').text().trim() || $('meta[property="og:title"]').attr('content') || "";
+    $(JUNK).remove();
+    $(LIKELY_JUNK).each((_, el) => {
+        if (squash($(el).text()).length < SHORT_BLOCK) $(el).remove();
+    });
 
-    // Remove junk
-    $('script').remove();
-    $('style').remove();
-    $('nav').remove();
-    $('header').remove();
-    $('footer').remove();
-    $('noscript').remove();
-    $('iframe').remove();
-    $('[role="banner"]').remove();
-    $('[role="navigation"]').remove();
+    // The biggest of the usual article containers; fall back to the whole body
+    const candidates = ['article', 'main', '[role="main"]', '[itemprop="articleBody"]', '.post-content', '.entry-content']
+        .flatMap(sel => $(sel).toArray());
+    const lengthOf = (el: Parameters<typeof $>[0]) => squash($(el).text()).length;
+    const best = candidates.sort((a, b) => lengthOf(b) - lengthOf(a))[0];
+    const root = best && lengthOf(best) >= 200 ? $(best) : $('body');
 
-    // Extract Text (prioritize article/main)
-    let content = $('article').text().trim();
-    if (!content || content.length < 200) {
-        content = $('main').text().trim();
-    }
-    if (!content || content.length < 200) {
-        content = $('body').text().trim();
-    }
+    const paragraphs: string[] = [];
+    const seen = new Set<string>();
+    root.find(BLOCKS).each((_, el) => {
+        // A block inside another block (a <p> in a <li>) is read with its parent
+        if ($(el).parents(BLOCKS).length) return;
+        const text = squash($(el).text());
+        if (!text || seen.has(text)) return;
+        seen.add(text);
+        const tag = el.tagName?.toLowerCase() || '';
+        if (/^h[1-6]$/.test(tag)) paragraphs.push(`## ${text}`);
+        else if (tag === 'li') paragraphs.push(`- ${text}`);
+        else if (tag === 'blockquote') paragraphs.push(`> ${text}`);
+        else paragraphs.push(text);
+    });
 
-    // Cleanup whitespace
-    const cleanContent = content.replace(/\s+/g, ' ').trim();
-    return { title, content: cleanContent };
+    let content = paragraphs.join('\n\n');
+    // Pages that put text straight into divs have few blocks; take the container's text instead
+    const plain = squash(root.text());
+    if (content.length < plain.length * 0.4) content = plain;
+
+    return { title, content };
 }

@@ -166,7 +166,8 @@ export function originAngle(angle?: string, meta?: Partial<BrainMetadata>): stri
 
 // The Explore results the idea came from, as starting evidence for research
 export function formatExploreSources(meta?: Partial<BrainMetadata>): string {
-    const sources = meta?.explore?.sources?.filter(s => s.title && s.url) || [];
+    // Lens captures are listed by formatCaptureSources, with what the creator thinks of each
+    const sources = meta?.explore?.sources?.filter(s => s.title && s.url && !s.captureId) || [];
     if (!sources.length) return '';
     const list = sources.slice(0, 8).map((s, i) => {
         const detail = [s.kind && `(${s.kind})`, s.takeaway || s.summary].filter(Boolean).join(' ');
@@ -182,7 +183,9 @@ export function formatIdeaChain({ hook, angle, meta }: { hook: string; angle?: s
     const lines: string[] = [];
     const origin = originQuery(meta);
     if (origin) lines.push(`1. What the creator was originally searching for: "${origin}"`);
-    if (meta?.sourceContext || meta?.explore?.sources?.length) lines.push(`${lines.length + 1}. The source material they picked (below)`);
+    const captured = meta?.explore?.sources?.some(s => s.captureId);
+    if (captured) lines.push(`${lines.length + 1}. The captures they saved while reading, and what they think of each (below)`);
+    else if (meta?.sourceContext || meta?.explore?.sources?.length) lines.push(`${lines.length + 1}. The source material they picked (below)`);
     const savedAngle = originAngle(angle, meta);
     lines.push(`${lines.length + 1}. The idea they saved: "${hook}"${savedAngle ? ` (angle: ${savedAngle})` : ''}`);
     if (meta?.brief?.trim()) lines.push(`${lines.length + 1}. Their brief for this post: "${meta.brief.trim()}"`);

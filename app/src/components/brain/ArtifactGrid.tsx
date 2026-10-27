@@ -3,22 +3,34 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getArtifacts, deleteArtifact } from '@/app/brain/actions';
 import { ArtifactCard } from './ArtifactCard';
+import { CaptureIdeasModal } from './CaptureIdeasModal';
 import { Loader2, Search, MousePointerClick } from 'lucide-react';
+import { captureKind } from '@/lib/brain/captures';
 
-import { Artifact } from '@/types';
+import { Artifact, CaptureKind } from '@/types';
 
 interface ArtifactGridProps {
-    onDraft: (artifact: Artifact) => void;
-    onSynthesize?: (artifacts: Artifact[]) => void;
+    // Opens a saved idea in the writing wizard
+    onOpenItem?: (itemId: string) => void;
 }
 
-export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
+const KIND_FILTERS: Array<{ id: CaptureKind | 'all'; label: string }> = [
+    { id: 'all', label: 'All' },
+    { id: 'frame', label: 'Frames' },
+    { id: 'snip', label: 'Snips' },
+    { id: 'bookmark', label: 'Bookmarks' },
+];
+
+export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [kindFilter, setKindFilter] = useState<CaptureKind | 'all'>('all');
+    // The captures post ideas are being found for
+    const [ideasFor, setIdeasFor] = useState<Artifact[] | null>(null);
 
-    const fetchArtifacts = useCallback(async () => {
-        setLoading(true);
+    const fetchArtifacts = useCallback(async (quiet = false) => {
+        if (!quiet) setLoading(true);
         try {
             const data = await getArtifacts({ search: search || undefined });
             setArtifacts(data || []);
@@ -47,30 +59,14 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
         setSelectedIds(newSet);
     };
 
-    const handleSynthesize = () => {
-        const selectedArtifacts = artifacts.filter(a => selectedIds.has(a.id));
-
-        if (onSynthesize) {
-            onSynthesize(selectedArtifacts);
-        } else {
-            // Fallback: Synthesis logic (combine text)
-            const combinedText = selectedArtifacts.map(a => a.ocr_text || a.user_note).join("\n\n---\n\n");
-            const allTags = selectedArtifacts.flatMap(a => a.ai_metadata?.tags || []);
-
-            onDraft({
-                id: 'synthesis', // Mock ID
-                user_note: `Synthesis of ${selectedIds.size} artifacts`,
-                ocr_text: combinedText,
-                urls: selectedArtifacts.map(a => a.source_url).filter((url): url is string => !!url), // Collect URLs
-                ai_metadata: { tags: Array.from(new Set(allTags)) }, // Dedupe tags
-                userId: 'user', // Mock for synthesis
-                createdAt: new Date()
-            });
-        }
-
+    // Several captures go to the idea step together; the server reads at most six
+    const handleFindIdeasForSelection = () => {
+        setIdeasFor(artifacts.filter(a => selectedIds.has(a.id)).slice(0, 6));
         setIsSelectMode(false);
         setSelectedIds(new Set());
     };
+
+    const shown = kindFilter === 'all' ? artifacts : artifacts.filter(a => captureKind(a) === kindFilter);
 
     const handleDelete = async (id: string) => {
         if (!confirm("Delete this snippet?")) return;
@@ -84,7 +80,7 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                 {isSelectMode ? (
                     <div className="flex items-center gap-3 w-full bg-ember-50 p-2 rounded-full shadow-raised animate-slide-in">
-                        <span className="text-sm font-medium text-ember-700 ml-3">{selectedIds.size} Selected</span>
+                        <span className="text-sm font-medium text-ember-700 ml-3">{selectedIds.size > 6 ? '6 max' : `${selectedIds.size} selected`}</span>
                         <div className="flex-1" />
                         <button
                             onClick={() => { setIsSelectMode(false); setSelectedIds(new Set()); }}
@@ -93,11 +89,11 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
                             Cancel
                         </button>
                         <button
-                            onClick={handleSynthesize}
-                            disabled={selectedIds.size < 2}
-                            className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={handleFindIdeasForSelection}
+                            disabled={selectedIds.size < 1 || selectedIds.size > 6}
+                            className="h-11 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Synthesize
+                            Find ideas
                         </button>
                     </div>
                 ) : (
@@ -116,14 +112,30 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
                         <div className="flex gap-2 w-full sm:w-auto items-center">
                             <button
                                 onClick={() => setIsSelectMode(true)}
-                                className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all"
-                                title="Select Multiple"
+                                className="h-11 pl-3 pr-4 rounded-full flex items-center gap-2 bg-canvas shadow-raised text-sm font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all"
+                                title="Pick several captures and find ideas that connect them"
                             >
                                 <MousePointerClick size={18} />
+                                Select several
                             </button>
                         </div>
                     </>
                 )}
+            </div>
+
+            {/* Kind filter */}
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1" role="tablist" aria-label="Capture type">
+                {KIND_FILTERS.map(f => (
+                    <button
+                        key={f.id}
+                        role="tab"
+                        aria-selected={kindFilter === f.id}
+                        onClick={() => setKindFilter(f.id)}
+                        className={`h-11 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${kindFilter === f.id ? 'bg-surface shadow-raised text-ink' : 'bg-canvas text-ink-muted hover:text-ink'}`}
+                    >
+                        {f.label}
+                    </button>
+                ))}
             </div>
 
             {/* Grid */}
@@ -131,13 +143,13 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
                 <div className="py-20 flex justify-center">
                     <Loader2 className="animate-spin text-ember-500" />
                 </div>
-            ) : artifacts.length === 0 ? (
+            ) : shown.length === 0 ? (
                 <div className="py-20 text-center bg-canvas shadow-pressed rounded-card">
-                    <p className="text-ink-muted">No artifacts found.</p>
+                    <p className="text-ink-muted">{artifacts.length ? 'Nothing of this type yet.' : 'No captures yet. Save one with CounterDraft Lens.'}</p>
                 </div>
             ) : (
                 <div className="columns-1 md:columns-2 lg:columns-3 gap-5 space-y-5">
-                    {artifacts.map(artifact => (
+                    {shown.map(artifact => (
                         <div key={artifact.id} className="relative group break-inside-avoid mb-4">
                             {isSelectMode && (
                                 <div
@@ -158,11 +170,20 @@ export function ArtifactGrid({ onDraft, onSynthesize }: ArtifactGridProps) {
                             <ArtifactCard
                                 artifact={artifact}
                                 onDelete={handleDelete}
-                                onCreateDraft={onDraft}
+                                onFindIdeas={a => setIdeasFor([a])}
                             />
                         </div>
                     ))}
                 </div>
+            )}
+
+            {ideasFor && (
+                <CaptureIdeasModal
+                    captures={ideasFor}
+                    onClose={() => setIdeasFor(null)}
+                    onOpenItem={onOpenItem}
+                    onSaved={() => fetchArtifacts(true)}
+                />
             )}
         </div>
     );
