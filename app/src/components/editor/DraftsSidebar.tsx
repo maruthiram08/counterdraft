@@ -61,7 +61,7 @@ export function DraftsSidebar({
     return (
         <div className="flex flex-col h-full bg-canvas">
             {/* Header + Search Combined */}
-            <div className="p-4 pr-14 shrink-0 flex items-center gap-2">
+            <div className="p-4 md:pr-14 shrink-0 flex items-center gap-2">
                 <div className="relative flex-1 group">
                     <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted group-focus-within:text-ember-600 transition-colors" />
                     <input
@@ -69,7 +69,7 @@ export function DraftsSidebar({
                         placeholder={placeholder}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full h-10 pl-10 pr-4 text-sm bg-canvas shadow-well rounded-full text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
+                        className="w-full h-11 md:h-10 pl-10 pr-4 text-sm bg-canvas shadow-well rounded-full text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 transition-all"
                     />
                 </div>
             </div>

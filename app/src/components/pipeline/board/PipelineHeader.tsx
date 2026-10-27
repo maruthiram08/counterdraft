@@ -50,18 +50,18 @@ export function PipelineHeader({ loading, counts, onSuggest, onNewDraft }: Pipel
                 })}
             </div>
 
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
                 <button
                     onClick={onSuggest}
                     disabled={loading}
-                    className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 h-11 sm:h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                 >
                     <Wand2 size={15} className="text-ember-500" />
                     Suggest ideas
                 </button>
                 <button
                     onClick={onNewDraft}
-                    className="flex items-center gap-1.5 h-10 pl-3 pr-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-11 sm:h-10 pl-3 pr-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                 >
                     <Plus size={16} />
                     New draft

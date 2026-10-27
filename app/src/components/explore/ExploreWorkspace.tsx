@@ -1327,14 +1327,14 @@ export function ExploreWorkspace() {
                         {renderSearch('large')}
                         <div className="w-full mt-8">
                             <div className="flex items-center gap-1 justify-start md:justify-center">
-                                <div role="tablist" aria-label="Starting topics" className="flex gap-1 overflow-x-auto pb-1 -ml-4 pl-4 md:ml-0 md:pl-0">
+                                <div role="tablist" aria-label="Starting topics" className="flex gap-1 min-w-0 overflow-x-auto scrollbar-none pb-1 -ml-4 pl-4 md:ml-0 md:pl-0">
                                     {visibleCategories.map(cat => (
                                         <button
                                             key={cat.label}
                                             role="tab"
                                             aria-selected={activeCategory === cat.label}
                                             onClick={() => setSelectedCategory(cat.label)}
-                                            className={`h-8 px-3 shrink-0 rounded-full text-xs font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200 ${activeCategory === cat.label
+                                            className={`h-10 md:h-8 px-3 shrink-0 rounded-full text-sm md:text-xs font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200 ${activeCategory === cat.label
                                                 ? 'bg-surface shadow-raised text-ink'
                                                 : 'text-ink-muted hover:text-ink'
                                                 }`}
@@ -1348,14 +1348,14 @@ export function ExploreWorkspace() {
                                     disabled={refreshingTopics || fetchingTrends}
                                     aria-label="Show different topics"
                                     title="Show different topics"
-                                    className="w-8 h-8 shrink-0 mb-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-canvas hover:shadow-raised active:shadow-pressed transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                                    className="w-10 h-10 md:w-8 md:h-8 shrink-0 mb-1 flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-canvas hover:shadow-raised active:shadow-pressed transition-all disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
                                 >
                                     <AnimatedIcon icon={RefreshCWIcon} size={14} className={refreshingTopics ? 'animate-spin' : ''} />
                                 </button>
                             </div>
                             <div role="tabpanel" aria-label={`Trending in ${activeCategory}`} className={`flex flex-wrap justify-center gap-2 mt-3 ${refreshingTopics ? 'opacity-50' : ''}`}>
                                 {trendCategories.find(c => c.label === activeCategory)?.trends.map(trend => (
-                                    <span key={trend.label} className="h-9 inline-flex items-center bg-canvas shadow-raised rounded-full">
+                                    <span key={trend.label} className="h-10 md:h-9 inline-flex items-center bg-canvas shadow-raised rounded-full">
                                         <button
                                             onClick={() => runSearch(trend.query)}
                                             disabled={loading}
@@ -1378,7 +1378,7 @@ export function ExploreWorkspace() {
                             <button
                                 onClick={surpriseMe}
                                 disabled={surprising || loading}
-                                className="mt-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium text-ember-700 hover:bg-ember-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                                className="mt-4 inline-flex items-center gap-1.5 h-10 md:h-8 px-4 md:px-3 rounded-full text-sm md:text-xs font-medium text-ember-700 hover:bg-ember-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
                             >
                                 {surprising ? <Loader2 size={12} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={12} />}
                                 {surprising ? 'Finding something new...' : 'Surprise me'}
