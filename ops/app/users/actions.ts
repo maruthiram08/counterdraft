@@ -3,7 +3,25 @@
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 
-export async function approveRequest(id: string) {
+// Approving a beta request mints a single-use free invite and returns its link to send
+export async function approveRequest(id: string): Promise<{ code: string; link: string }> {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const random = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => alphabet[b % alphabet.length]).join('');
+    const code = `BETA-${random}`;
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error: couponError } = await supabase
+        .from('coupons')
+        .insert({
+            code,
+            plan_id: 'pro_beta_2026',
+            max_redemptions: 1,
+            redemptions_count: 0,
+            discount_percent: 100,
+            expires_at: expiresAt,
+        });
+    if (couponError) throw new Error(couponError.message);
+
     const { error } = await supabase
         .from('beta_requests')
         .update({ status: 'approved' })
@@ -11,6 +29,7 @@ export async function approveRequest(id: string) {
 
     if (error) throw new Error(error.message);
     revalidatePath('/users');
+    return { code, link: `https://counterdraft.com/invite/${code}` };
 }
 
 export async function rejectRequest(id: string) {

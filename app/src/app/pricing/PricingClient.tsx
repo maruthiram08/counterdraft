@@ -233,7 +233,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                         <div className={`w-6 h-6 rounded-full bg-surface shadow-raised transform transition-transform duration-300 ${billingCycle === 'yearly' ? 'translate-x-6' : ''}`}></div>
                     </button>
                     <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-ink' : 'text-ink-muted'}`}>
-                        Yearly <span className="text-xs text-ember-600 font-medium ml-1">(SAVE 20%)</span>
+                        Yearly <span className="text-xs text-ember-600 font-medium ml-1">(SAVE {currentRegion.yearly.save})</span>
                     </span>
                 </div>
 
@@ -252,12 +252,12 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 {/* TIERS GRID */}
                 <div className="grid md:grid-cols-2 gap-5 md:gap-8 max-w-5xl mx-auto mb-10 md:mb-20 items-stretch">
 
-                    {/* TIER 1: STARTER (TRIAL) */}
+                    {/* TIER 1: STARTER (FREE) */}
                     <div className="bg-surface rounded-card shadow-card p-6 md:p-10 flex flex-col items-start text-left hover:shadow-float transition-all">
                         <div className="mb-6">
-                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">🧪 Starter (Trial)</h3>
+                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">🧪 Starter</h3>
                             <p className="text-sm text-ink-soft leading-relaxed">
-                                Experience the system, not just the output. Understand how Counterdraft thinks before you commit.
+                                Look around before you commit. Set up your voice and see how Counterdraft works.
                             </p>
                         </div>
 
@@ -265,33 +265,36 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                             <div className="flex items-baseline mb-1">
                                 <span className="text-5xl font-medium tracking-[-0.03em] text-ink">$0</span>
                             </div>
-                            <p className="text-sm text-ink-muted">Use Forever</p>
+                            <p className="text-sm text-ink-muted">No card needed</p>
                         </div>
 
-                        <button className="w-full h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all mb-10 flex items-center justify-center gap-2">
-                            Start with Starter
-                        </button>
+                        <a
+                            href={isSignedIn ? '/workspace' : '/sign-up'}
+                            className="w-full h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all mb-10 flex items-center justify-center gap-2"
+                        >
+                            {isSignedIn ? 'Go to your workspace' : 'Create a free account'}
+                        </a>
 
                         <div className="space-y-5 w-full">
                             <p className="text-sm text-ink-muted">You Get</p>
                             <div className="flex items-start gap-4">
                                 <span className="text-ember-500 mt-1">●</span>
-                                <span className="text-ink-soft text-sm">Limited access to <span className="font-medium text-ink">Studio</span></span>
+                                <span className="text-ink-soft text-sm">Set up your <span className="font-medium text-ink">voice and writing style</span></span>
                             </div>
                             <div className="flex items-start gap-4">
                                 <span className="text-ember-500 mt-1">●</span>
-                                <span className="text-ink-soft text-sm">1 complete strategic analysis from <span className="font-medium text-ink">The Brain</span></span>
+                                <span className="text-ink-soft text-sm">Explore the workspace and how The Brain works</span>
                             </div>
                             <div className="flex items-start gap-4">
                                 <span className="text-ember-500 mt-1">●</span>
-                                <span className="text-ink-soft text-sm">Basic syntax & clarity checks</span>
+                                <span className="text-ink-soft text-sm">Upgrade any time, or use an invite code</span>
                             </div>
 
                             <div className="border-t border-dashed border-line my-4"></div>
 
                             <div className="flex items-start gap-4 opacity-50">
                                 <span className="text-ink-muted mt-1">○</span>
-                                <span className="text-ink-muted text-sm">Strategy depth is capped</span>
+                                <span className="text-ink-muted text-sm">Drafting, research and images need Pro</span>
                             </div>
                             <div className="flex items-start gap-4 opacity-50">
                                 <span className="text-ink-muted mt-1">○</span>

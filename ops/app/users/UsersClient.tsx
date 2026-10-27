@@ -10,8 +10,13 @@ export default function UsersClient({ requests, subscriptions, userMap }: { requ
 
     // Actions
     const handleApprove = async (id: string) => {
-        if (!confirm('Approve this request? This will eventually trigger an invite email.')) return;
-        try { await approveRequest(id); } catch (e: any) { alert(e.message); }
+        if (!confirm('Approve this request? This creates a single-use invite (free Pro for a month, link valid 14 days).')) return;
+        try {
+            const { link } = await approveRequest(id);
+            // No email provider yet: hand the link over to send by hand
+            try { await navigator.clipboard.writeText(link); } catch { /* clipboard blocked */ }
+            prompt('Approved. Send this invite link to them (already copied):', link);
+        } catch (e: any) { alert(e.message); }
     };
 
     const handleReject = async (id: string) => {

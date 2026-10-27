@@ -58,7 +58,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="flex flex-col md:flex-row items-center justify-between border-t border-line pt-8 md:pt-10 text-xs text-ink-muted">
-          <p>© 2025 Counterdraft Inc. — Write like you.</p>
+          <p>© {new Date().getFullYear()} Counterdraft Inc. — Write like you.</p>
           <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 mt-6 md:mt-0">
             <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-sage-500"></div> System Operational</span>
             <span>Build_v4.1.2</span>
