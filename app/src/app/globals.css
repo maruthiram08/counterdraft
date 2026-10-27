@@ -158,7 +158,33 @@
 }
 
 /* Base Reset */
+html {
+  /* Keep our type sizes when an iPhone rotates to landscape */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Taps press the control (shadow-pressed); no grey flash box on top of it */
+a,
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS Safari zooms the page into any field under 16px when it gets focus, and
+   doesn't zoom back out. Phones get 16px fields; larger text classes are kept. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]):not([class*="text-lg"], [class*="text-xl"], [class*="text-2xl"], [class*="text-3xl"], [class*="text-4xl"]),
+  textarea:not([class*="text-lg"], [class*="text-xl"], [class*="text-2xl"], [class*="text-3xl"], [class*="text-4xl"]),
+  select {
+    font-size: 16px;
+  }
+}
+
 body {
+  /* viewport-fit=cover lets pages reach the edges; keep content clear of the notch in landscape */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   background: var(--color-paper);
   color: var(--foreground);
   font-family: var(--font-sans);

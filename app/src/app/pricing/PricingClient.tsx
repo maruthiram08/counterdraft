@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Script from 'next/script';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 
@@ -154,6 +155,8 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
 
     return (
         <div className="min-h-screen bg-canvas font-sans text-ink selection:bg-ember-100 selection:text-ember-700 flex flex-col">
+            {/* Checkout is only needed here, so other pages don't download it */}
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
             <Navbar isScrolled={scrolled} />
 
             {/* Main Content with Massive Top Padding - Inline style to force fix */}

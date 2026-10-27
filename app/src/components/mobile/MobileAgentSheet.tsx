@@ -18,7 +18,7 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
     // Collapsed shows the pill instead of the sheet
     const heights: Record<Exclude<SheetState, 'collapsed'>, string> = {
         half: '50vh',
-        full: 'calc(100vh - 120px)'
+        full: 'calc(100dvh - 120px)'
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {

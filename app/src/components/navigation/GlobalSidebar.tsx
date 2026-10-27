@@ -19,7 +19,6 @@ const CLOSE_DELAY_MS = 100;
 
 export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps) {
     const [isCollapsed, setIsCollapsed] = useState(true);
-    const [isMobile, setIsMobile] = useState(false);
     const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const navItems = [
@@ -29,13 +28,6 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
         { id: 'mind', label: 'Your Mind', icon: BrainIcon },
         { id: 'style', label: 'Your Voice', icon: PenToolIcon },
     ];
-
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     useEffect(() => () => {
         if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -55,18 +47,14 @@ export function GlobalSidebar({ activeSection, onNavigate }: GlobalSidebarProps)
         onNavigate(section);
     };
 
-    // Mobile: Return null - MobileBottomNav handles navigation
-    if (isMobile) {
-        return null;
-    }
-
     // Labels only fade; icons and padding never move, so nothing jumps while the rail widens.
     const labelClass = `transition-opacity duration-150 motion-reduce:transition-none ${isCollapsed ? 'opacity-0' : 'opacity-100 delay-75'}`;
 
-    // Desktop/Tablet Sidebar
+    // Desktop/Tablet Sidebar. Phones use MobileBottomNav; hiding with CSS rather than
+    // after a width check means a phone never paints the sidebar first.
     return (
         // Spacer Container: Maintains rigid layout width so page content never shifts
-        <div className="relative h-full w-[72px] flex-none z-50 bg-canvas">
+        <div className="relative h-full w-[72px] flex-none z-50 bg-canvas hidden md:block">
 
             {/* Actual Sidebar: Positioned absolutely to expand over adjacent content */}
             <div

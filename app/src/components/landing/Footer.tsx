@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import { FeedbackLink } from '@/components/shared/FloatingFeedbackButton';
 
 export const Footer: React.FC = () => {
   return (
@@ -61,6 +62,7 @@ export const Footer: React.FC = () => {
           <div className="flex gap-10 mt-6 md:mt-0">
             <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-sage-500"></div> System Operational</span>
             <span>Build_v4.1.2</span>
+            <FeedbackLink className="hover:text-ember-600 transition-colors md:hidden" />
           </div>
         </div>
       </div>

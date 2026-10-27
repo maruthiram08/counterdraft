@@ -45,7 +45,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
 
     if (showLoading(isLoaded, checking)) {
         return (
-            <div className="h-screen flex items-center justify-center bg-canvas">
+            <div className="h-dvh flex items-center justify-center bg-canvas">
                 <Loader2 className="animate-spin text-ember-500" size={32} />
             </div>
         );

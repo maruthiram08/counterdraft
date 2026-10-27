@@ -15,8 +15,6 @@ export const FloatingFeedbackButton = () => {
 
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
-    // These pages have the phone bottom nav, whose More menu opens feedback instead of a floating bubble
-    const inMoreMenuOnPhones = /^\/(workspace|style|settings)(\/|$)/.test(pathname || '');
 
     useEffect(() => {
         const open = () => setIsOpen(true);
@@ -115,11 +113,12 @@ export const FloatingFeedbackButton = () => {
                 </div>
             )}
 
-            {/* Toggle Button */}
+            {/* Toggle Button. Phones don't get a bubble floating over the content: the app
+                opens feedback from More in the bottom nav, public pages from the footer link. */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`h-12 w-12 rounded-full items-center justify-center transition-all
-                    ${inMoreMenuOnPhones && !isOpen ? 'hidden md:flex' : 'flex'}
+                    ${isOpen ? 'flex' : 'hidden md:flex'}
                     ${isOpen ? 'bg-canvas shadow-pressed text-ember-600' : 'bg-canvas shadow-raised text-ink hover:text-ember-600 active:shadow-pressed'}
                 `}
             >
@@ -128,3 +127,10 @@ export const FloatingFeedbackButton = () => {
         </div>
     );
 };
+
+/** Opens the feedback form; the phone stand-in for the floating bubble. */
+export const FeedbackLink = ({ className }: { className?: string }) => (
+    <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_FEEDBACK_EVENT))} className={className}>
+        Send feedback
+    </button>
+);
