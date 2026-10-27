@@ -25,7 +25,7 @@ const CONFIDENCE_COLORS = {
 
 const CHIP_BASE = 'inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium lowercase first-letter:uppercase';
 const CHIP = `${CHIP_BASE} bg-canvas shadow-well text-ink-soft`;
-const ACTION = 'h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-ink hover:bg-surface-muted active:shadow-pressed flex items-center gap-1.5 transition-all';
+const ACTION = 'h-10 md:h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-ink hover:bg-surface-muted active:shadow-pressed flex items-center gap-1.5 transition-all';
 
 export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback, onWriteAbout, confidenceLevel = 'medium', isStable = false, evidenceCount = 1, context }: BeliefCardProps) {
     const [expanded, setExpanded] = useState(true);

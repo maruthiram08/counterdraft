@@ -191,7 +191,7 @@ function WorkspaceContent() {
     const publishedItems = drafts.filter(d => d.status === 'published');
 
     return (
-        <div className="flex h-screen bg-canvas overflow-hidden">
+        <div className="flex h-dvh bg-canvas overflow-hidden">
             <GlobalSidebar
                 activeSection={effectiveSection}
                 onNavigate={(section) => {
@@ -511,8 +511,8 @@ function WorkspaceContent() {
 
                 {effectiveSection === 'drafts' && (
                     <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-canvas">
-                        {/* Sub-Tabs for Posts */}
-                        <div className="flex items-center gap-3 px-4 md:px-6 py-3 bg-canvas">
+                        {/* Sub-Tabs for Posts. On phones an open draft has its own back button, so the tabs step aside for the text */}
+                        <div className={`items-center gap-3 px-4 md:px-6 py-3 bg-canvas ${activeDraftId ? 'hidden md:flex' : 'flex'}`}>
                             <button
                                 onClick={() => {
                                     setPostsTab('drafts');
@@ -549,7 +549,8 @@ function WorkspaceContent() {
                                                 <div className="flex items-center gap-3 px-4 py-3 bg-canvas shrink-0">
                                                     <button
                                                         onClick={() => selectDraft(null)}
-                                                        className="w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
+                                                        aria-label="Back to drafts"
+                                                        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
                                                     >
                                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                             <path d="M19 12H5M12 19l-7-7 7-7" />

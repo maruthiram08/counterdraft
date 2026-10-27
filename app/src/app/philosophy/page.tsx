@@ -7,15 +7,15 @@ export default function PhilosophyPage() {
         <div className="min-h-screen bg-canvas">
             <Navbar />
 
-            <main className="pt-32 pb-24 md:pt-48 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-                <div className="text-center mb-20 animate-fade-in-up">
+            <main className="pt-28 pb-16 md:pt-48 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+                <div className="text-center mb-10 md:mb-20 animate-fade-in-up">
                     <div className="inline-flex items-center h-7 px-3 rounded-full bg-ink text-xs font-medium text-white mb-8">
                         THE MANIFESTO
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-medium tracking-[-0.03em] text-ink mb-8 leading-[1.05]">
+                    <h1 className="text-4xl md:text-7xl font-medium tracking-[-0.03em] text-ink mb-6 md:mb-8 leading-[1.05]">
                         The Age of <span className="text-ember-500">Generated Noise</span> requires a new kind of signal.
                     </h1>
-                    <p className="text-xl text-ink-soft max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-lg md:text-xl text-ink-soft max-w-2xl mx-auto leading-relaxed">
                         We are drowning in average. The next era of thought leadership belongs to those who refuse to outsource their conviction.
                     </p>
                 </div>

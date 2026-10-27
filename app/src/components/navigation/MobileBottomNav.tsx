@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MessageSquare, MoreHorizontal, X } from "lucide-react";
 import { OPEN_FEEDBACK_EVENT } from "@/components/shared/FloatingFeedbackButton";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
@@ -12,20 +12,7 @@ interface MobileBottomNavProps {
 }
 
 export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavProps) {
-    const [isMobile, setIsMobile] = useState(false);
     const [showMoreMenu, setShowMoreMenu] = useState(false);
-
-    // Only show on mobile
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    if (!isMobile) return null;
 
     const primaryNavItems = [
         { id: 'explore', label: 'Explore', icon: CompassIcon },
@@ -45,8 +32,10 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
         setShowMoreMenu(false);
     };
 
+    // Phones only (md:hidden). Hidden with CSS, not a width check, so it is in the
+    // first paint instead of popping in after the page loads.
     return (
-        <>
+        <div className="md:hidden">
             {/* More Menu Overlay */}
             {showMoreMenu && (
                 <div className="fixed inset-0 z-40 flex items-end justify-center">
@@ -106,7 +95,7 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                                 play={activeSection === item.id}
                                 className={activeSection === item.id ? 'text-ember-500 [&_svg]:[stroke-width:2.25]' : '[&_svg]:[stroke-width:1.75]'}
                             />
-                            <span className={`text-[10px] font-medium ${activeSection === item.id ? 'text-ink' : 'text-ink-muted'}`}>
+                            <span className={`text-[11px] font-medium ${activeSection === item.id ? 'text-ink' : 'text-ink-muted'}`}>
                                 {item.label}
                             </span>
                         </button>
@@ -128,13 +117,13 @@ export function MobileBottomNav({ activeSection, onNavigate }: MobileBottomNavPr
                                 strokeWidth={moreNavItems.some(i => i.id === activeSection) ? 2.25 : 1.75}
                             />
                         )}
-                        <span className={`text-[10px] font-medium ${showMoreMenu || moreNavItems.some(i => i.id === activeSection) ? 'text-ink' : 'text-ink-muted'
+                        <span className={`text-[11px] font-medium ${showMoreMenu || moreNavItems.some(i => i.id === activeSection) ? 'text-ink' : 'text-ink-muted'
                             }`}>
                             More
                         </span>
                     </button>
                 </div>
             </nav>
-        </>
+        </div>
     );
 }

@@ -253,7 +253,7 @@ export default function StylePage() {
     };
 
     return (
-        <div className="flex h-screen bg-canvas overflow-hidden">
+        <div className="flex h-dvh bg-canvas overflow-hidden">
             <GlobalSidebar
                 activeSection="style"
                 onNavigate={(section) => {

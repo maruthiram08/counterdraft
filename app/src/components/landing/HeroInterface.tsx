@@ -46,15 +46,15 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                             Most creators chase viral moments. But the real growth comes from showing up consistently with ideas that resonate with your specific reader...
                         </p>
 
-                        <div className="mt-auto flex items-center gap-4">
-                            <button className="h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
+                        <div className="mt-auto flex flex-wrap items-center gap-3 md:gap-4">
+                            <button className="h-10 px-4 whitespace-nowrap rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                                 Continue Writing
                             </button>
                             <div className="flex -space-x-2">
                                 <div className="w-8 h-8 rounded-full border-2 border-surface bg-ink flex items-center justify-center text-[10px] font-medium text-white">AI</div>
                                 <div className="w-8 h-8 rounded-full border-2 border-surface bg-ember-100 flex items-center justify-center text-[10px] font-medium text-ember-700">ME</div>
                             </div>
-                            <span className="text-xs text-ink-muted ml-2">AI assists, you&apos;re in control</span>
+                            <span className="hidden sm:inline text-xs text-ink-muted ml-2">AI assists, you&apos;re in control</span>
                         </div>
                     </div>
 

@@ -19,12 +19,12 @@ export default function PrivacyPage() {
         <div className="min-h-screen bg-canvas">
             <Navbar />
 
-            <main className="pt-32 pb-24 md:pt-48 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-                <div className="text-center mb-16">
+            <main className="pt-28 pb-16 md:pt-48 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+                <div className="text-center mb-10 md:mb-16">
                     <div className="inline-flex items-center h-7 px-3 rounded-full bg-ink text-xs font-medium text-white mb-8">
                         LEGAL
                     </div>
-                    <h1 className="text-5xl md:text-6xl font-medium tracking-[-0.03em] text-ink mb-6 leading-[1.05]">
+                    <h1 className="text-4xl md:text-6xl font-medium tracking-[-0.03em] text-ink mb-6 leading-[1.05]">
                         Privacy Policy
                     </h1>
                     <p className="text-sm text-ink-muted">Last updated {LAST_UPDATED}</p>
