@@ -76,10 +76,10 @@ export default function Home() {
               </p>
               <div className="space-y-6">
                 {[
-                  { label: "LinkedIn posts that stand out", desc: "Not another generic hot take. Post straight to LinkedIn or copy it." },
+                  { label: "LinkedIn posts that stand out", desc: "Not another generic hot take. Connect LinkedIn to post from the app, or copy it." },
                   { label: "Medium articles", desc: "A longer article from your post, with a cover image." },
                   { label: "Instagram carousels and captions", desc: "Slide-by-slide scripts, hashtags and a matching image." },
-                  { label: "X threads and newsletters", desc: "Multi-part threads and newsletter issues from your posts.", soon: true }
+                  { label: "X threads and newsletters", desc: "Threads and newsletter issues written from your posts, ready to copy.", soon: true }
                 ].map((item, i) => (
                   <div key={i} className="group cursor-default">
                     <div className={`flex flex-wrap items-center gap-3 text-[17px] font-medium tracking-[-0.01em] mb-1 ${item.soon ? 'text-ink-soft' : 'text-ink'}`}>
