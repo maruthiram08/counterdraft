@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
+import { linkOrCreateUser, pickVerifiedEmail } from '@/lib/user-sync';
 
 export async function POST(req: Request) {
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -53,48 +54,33 @@ export async function POST(req: Request) {
     console.log(`Webhook with and ID of ${evt.data.id} and type of ${eventType}`);
 
     if (eventType === 'user.created' || eventType === 'user.updated') {
-        const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-        const email = email_addresses && email_addresses.length > 0 ? email_addresses[0].email_address : null;
+        const { id, email_addresses, primary_email_address_id, first_name, last_name, image_url } = evt.data;
+        const email = pickVerifiedEmail(
+            (email_addresses || []).map(e => ({ id: e.id, email: e.email_address, verified: e.verification?.status === 'verified' })),
+            primary_email_address_id
+        );
         const fullName = `${first_name || ''} ${last_name || ''}`.trim();
 
-        // Check if user exists by clerk_id
-        const { data: existingUser } = await supabaseAdmin
+        // Finds the row by clerk_id, or re-links an existing row with the same verified email
+        // (Clerk ids change between instances), or creates one
+        const userId = await linkOrCreateUser({ clerkId: id, email, name: fullName, avatarUrl: image_url });
+        if (!userId) {
+            return new NextResponse('Error syncing user', { status: 500 });
+        }
+
+        const { error } = await supabaseAdmin
             .from('users')
-            .select('id')
-            .eq('clerk_id', id)
-            .single();
+            .update({
+                ...(email ? { email } : {}),
+                full_name: fullName,
+                avatar_url: image_url,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
 
-        if (existingUser) {
-            // Update existing user (don't touch id)
-            const { error } = await supabaseAdmin
-                .from('users')
-                .update({
-                    email: email,
-                    full_name: fullName,
-                    avatar_url: image_url,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('clerk_id', id);
-
-            if (error) {
-                console.error('Error updating user in Supabase:', error);
-                return new NextResponse('Error updating user', { status: 500 });
-            }
-        } else {
-            // Create new user (let Supabase generate id, set clerk_id)
-            const { error } = await supabaseAdmin
-                .from('users')
-                .insert({
-                    clerk_id: id,
-                    email: email,
-                    name: fullName || 'Counterdraft User',
-                    avatar_url: image_url,
-                });
-
-            if (error) {
-                console.error('Error creating user in Supabase:', error);
-                return new NextResponse('Error creating user', { status: 500 });
-            }
+        if (error) {
+            console.error('Error updating user in Supabase:', error);
+            return new NextResponse('Error updating user', { status: 500 });
         }
     } else if (eventType === 'user.deleted') {
         const { id } = evt.data;
