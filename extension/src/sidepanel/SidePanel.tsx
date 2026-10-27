@@ -250,8 +250,18 @@ export function SidePanel() {
             });
 
             if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Failed to save');
+                // The server may answer with plain text (or an HTML error page), so don't assume JSON
+                const text = await response.text();
+                let message = '';
+                try {
+                    message = JSON.parse(text).error || '';
+                } catch {
+                    message = text.trim().startsWith('<') ? '' : text.trim().slice(0, 200);
+                }
+                if (response.status === 401) {
+                    message = message || 'Please log in to CounterDraft and try again.';
+                }
+                throw new Error(message || `Failed to save (error ${response.status})`);
             }
 
             setStatus("Success");
