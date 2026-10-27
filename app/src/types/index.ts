@@ -241,6 +241,7 @@ export interface ExploreOrigin {
     intent?: CaptureIntent; // What the writer thinks of it
     note?: string; // The writer's own note on the capture
     text?: string; // The captured words, as saved
+    author?: string; // Who wrote the captured post, when Lens could read it
   }>;
   // Absent when a topic was saved before any post idea was picked for it
   idea?: { hook: string; angle: string; format: string; belief?: string };
@@ -274,6 +275,7 @@ export interface BrainMetadata {
   entities?: string[];
   sourceContext?: string; // Content from source
   explore?: ExploreOrigin; // Where an idea saved from Explore came from, so later steps stay on that topic
+  reframe?: ReframeSettings; // A quick take on one captured post, written straight from the capture
   inferred?: {
     outcome?: boolean;
     stance?: boolean;
@@ -343,6 +345,25 @@ export type CaptureKind = 'bookmark' | 'snip' | 'frame';
 // 'framing' is only on captures saved before Style replaced it
 export type CaptureIntent = 'agree' | 'counter' | 'evidence' | 'example' | 'style' | 'framing';
 
+// How the creator wants to respond to a post they reframe
+export type ReframeMode = 'build' | 'push_back' | 'my_story' | 'proof' | 'style';
+
+export interface ReframeSettings {
+  mode: ReframeMode;
+  take?: string; // The creator's one-line take, if they gave one
+  captureId: string;
+  author?: string; // Who wrote the original post
+  postUrl?: string; // The original post's own link
+  original: string; // The original post's words, for the writer and the originality check
+}
+
+// The post a Frame was taken from, read from the page by Lens 1.0.5+ (LinkedIn and X)
+export interface CapturedPost {
+  author?: string;
+  authorUrl?: string;
+  url?: string; // The post's own link, not the feed it was seen in
+}
+
 export interface Artifact {
   id: string;
   userId: string;
@@ -363,6 +384,7 @@ export interface Artifact {
     entities?: string[];
     summary?: string;
     key_insight?: string;
+    post?: CapturedPost;
   };
   usedIn?: number; // Pipeline items built from this capture
   createdAt: Date;

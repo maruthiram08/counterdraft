@@ -1,4 +1,5 @@
 import { BrainMetadata } from '@/types';
+import { formatReframe } from './reframe';
 
 // Presets are suggestions only: any of these fields can also hold the user's own words
 export const GOAL_PRESETS = ['authority', 'engagement', 'conversion', 'connection'];
@@ -188,6 +189,8 @@ export function formatIdeaChain({ hook, angle, meta }: { hook: string; angle?: s
     else if (meta?.sourceContext || meta?.explore?.sources?.length) lines.push(`${lines.length + 1}. The source material they picked (below)`);
     const savedAngle = originAngle(angle, meta);
     lines.push(`${lines.length + 1}. The idea they saved: "${hook}"${savedAngle ? ` (angle: ${savedAngle})` : ''}`);
+    const reframe = formatReframe(meta);
+    if (reframe) lines.push(`${lines.length + 1}. ${reframe.replace(/\n/g, '\n   ')}`);
     if (meta?.brief?.trim()) lines.push(`${lines.length + 1}. Their brief for this post: "${meta.brief.trim()}"`);
     return `\n\nHOW THIS IDEA CAME TO BE (one connected chain, not separate inputs):\n${lines.join('\n')}`;
 }

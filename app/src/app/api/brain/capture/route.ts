@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { isCaptureIntent, isCaptureKind } from '@/lib/brain/captures';
+import { capturedPost, isCaptureIntent, isCaptureKind } from '@/lib/brain/captures';
 import { storeCaptureImage } from '@/lib/brain/capture-images';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { getOpenAI } from '@/lib/openai';
@@ -27,6 +27,8 @@ export async function POST(req: NextRequest) {
         // Lens 1.0.2+ sends the text of a framed element; a tall screenshot gets scaled down before the model reads it
         const pageText = typeof body.pageText === 'string' ? body.pageText.trim().slice(0, 10000) : '';
         // Lens 1.0.3 says which tool made the capture; for older versions a frame is the one that sends page text
+        // Lens 1.0.5 reads who wrote a framed LinkedIn or X post and the post's own link
+        const post = capturedPost(body.post);
         const kind = isCaptureKind(body.captureKind)
             ? body.captureKind
             : !imageBase64 ? 'bookmark' : pageText ? 'frame' : 'snip';
@@ -147,10 +149,12 @@ Think like a careful analyst preparing material for long-term thinking, not a co
         }
 
         // Helper for safe domain extraction
+        // The post's own link beats the feed it was seen in
+        const savedUrl = post?.url || sourceUrl || "";
         let domain = 'unknown';
         try {
-            if (sourceUrl) {
-                domain = new URL(sourceUrl).hostname;
+            if (savedUrl) {
+                domain = new URL(savedUrl).hostname;
             }
         } catch {
             console.warn("Invalid Source URL:", sourceUrl);
@@ -161,14 +165,18 @@ Think like a careful analyst preparing material for long-term thinking, not a co
         const intent = isCaptureIntent(intentType) ? intentType : null;
         const row = {
             user_id: userId,
-            source_url: sourceUrl || "",
+            source_url: savedUrl,
             source_title: sourceTitle || pageTitle,
             source_domain: domain,
             image_path: imagePath,
             ocr_text: ocrText,
             user_note: userNote,
             intent_type: intent,
-            ai_metadata: { ...aiMetadata, ...(intent ? { intent } : {}) }
+            ai_metadata: {
+                ...aiMetadata,
+                ...(intent ? { intent } : {}),
+                ...(post ? { post, ...(post.url && sourceUrl && post.url !== sourceUrl ? { page_url: sourceUrl } : {}) } : {}),
+            }
         };
         let { data: artifact, error: dbError } = await supabase.from('thinking_artifacts').insert(row).select().single();
         // Until migration 20261027_capture_style_intent runs, the intent_type check rejects 'style'; it is kept in ai_metadata

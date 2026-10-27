@@ -24,6 +24,8 @@ import { mergeNotes } from "@/lib/editor/draft-tools";
 import type { DraftAnswer, DraftQuestion, OutlineShapeOption } from "@/lib/editor/draft-tools";
 import { liveSuggestions, wrapSuggestions } from "@/lib/editor/suggestions";
 import { DraftQuestionsStep } from "./wizard/DraftQuestionsStep";
+import { OriginalityCheck } from "./wizard/OriginalityCheck";
+import { reframeModeLabel } from "@/lib/brain/reframe";
 
 // Set when the writer ticks "Don't ask me before drafting"
 const SKIP_QUESTIONS_KEY = 'cd-skip-draft-questions';
@@ -90,6 +92,13 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
         return meta;
     });
+
+    // A reframe drafts straight from the captured post until the writer adds research
+    const reframe = localBrainMetadata?.reframe;
+    const quickReframe = !!reframe?.original && !deepDive && outline.length === 0;
+    const reframeDomain = localBrainMetadata?.explore?.sources?.find(s => s.captureId === reframe?.captureId)?.source;
+    // Set when a new reframe opens, so its first draft starts without a click
+    const [autoStartReframe, setAutoStartReframe] = useState(false);
 
     // Returns the new analysis so a caller can compare it with the last one
     const handleVerifyStrategy = async (contentOverride?: string, fix?: string): Promise<StrategyAnalysis | null> => {
@@ -561,11 +570,11 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     };
 
     const handleNext = () => {
-        if (step === 'deep_dive' && deepDive) {
+        if (draftQuestions) {
+            writeDraft(draftQuestions.map((q, i) => ({ question: q.question, answer: draftAnswers[i] || '' })).filter(a => a.answer.trim()));
+        } else if (step === 'deep_dive' && deepDive) {
             setStep('outline');
             generateOutline();
-        } else if (step === 'outline' && draftQuestions) {
-            writeDraft(draftQuestions.map((q, i) => ({ question: q.question, answer: draftAnswers[i] || '' })).filter(a => a.answer.trim()));
         } else if (step === 'outline' && outlineApproved) {
             checkLimit().then(allowed => {
                 if (!allowed) return;
@@ -618,6 +627,25 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         }
     };
 
+    // Reframe: the pre-draft questions, then the draft. Answers already given skip the questions.
+    const startReframe = () => {
+        checkLimit().then(allowed => {
+            if (!allowed) return;
+            if (readSkipQuestions() || latestBrainMetadata.current?.draftNotes?.length) {
+                writeDraft();
+                return;
+            }
+            askBeforeDrafting();
+        });
+    };
+
+    useEffect(() => {
+        if (!autoStartReframe) return;
+        setAutoStartReframe(false);
+        startReframe();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once when a new reframe opens
+    }, [autoStartReframe]);
+
     // Work the saved notes into the draft as it stands now, and fill any gaps with suggestions
     const workInNotes = async (notes: DraftAnswer[]) => {
         setWorkingInNotes(true);
@@ -648,7 +676,8 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     };
 
     const handleBack = () => {
-        if (step === 'outline' && draftQuestions) setDraftQuestions(null);
+        if (draftQuestions) setDraftQuestions(null);
+        else if (step === 'deep_dive' && quickReframe) setStep('generate');
         else if (step === 'outline') setStep('deep_dive');
         else if (step === 'generate') setStep('outline');
     };
@@ -774,6 +803,10 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         } else {
             if (item.draft_content) setStep('generate');
             else if (item.outline) setStep('outline');
+            else if (latestBrainMetadata.current?.reframe?.original) {
+                setStep('generate');
+                setAutoStartReframe(true);
+            }
             else setStep('deep_dive');
         }
     }, [item.id, item.deep_dive, item.outline, item.draft_content, item.dev_step, deepDive, draftContent, outline.length]);
@@ -784,6 +817,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         { key: 'generate', label: 'Draft' },
     ];
     const currentStepIndex = steps.findIndex(s => s.key === step);
+    const canGoBack = !!draftQuestions || (step === 'deep_dive' ? quickReframe : step === 'outline' || !quickReframe);
 
     const headerItem: ContentItem = { ...item, brain_metadata: localBrainMetadata };
 
@@ -811,7 +845,21 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     </div>
                 </div>
 
-                {/* Steps Row */}
+                {/* Steps Row: a reframe skips research and outline unless the writer adds them */}
+                {quickReframe && step === 'generate' && reframe ? (
+                    <div className="px-4 md:px-8 pb-3 md:pb-4 bg-canvas shrink-0 flex flex-wrap items-center justify-center gap-2 z-40">
+                        <span className="h-9 md:h-10 px-4 rounded-full bg-canvas shadow-pressed text-[13px] md:text-sm font-medium text-ember-600 flex items-center whitespace-nowrap">
+                            Reframe · {reframeModeLabel(reframe.mode)}
+                        </span>
+                        <button
+                            onClick={() => setStep('deep_dive')}
+                            disabled={loading || askingQuestions || completing}
+                            className="h-11 md:h-10 px-4 rounded-full bg-canvas shadow-raised text-[13px] md:text-sm font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                        >
+                            Add research
+                        </button>
+                    </div>
+                ) : (
                 <div className="px-4 md:px-8 pb-3 md:pb-4 bg-canvas shrink-0 flex justify-center z-40">
                     <div className="flex items-center md:gap-3">
                         {steps.map((s, i) => {
@@ -841,6 +889,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                         })}
                     </div>
                 </div>
+                )}
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-canvas">
@@ -883,7 +932,11 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             )
                         )}
 
-                        {step === 'outline' && draftQuestions && (
+                        {step === 'generate' && askingQuestions && !draftContent && (
+                            <ThinkingLoader message="Reading the post..." />
+                        )}
+
+                        {(step === 'outline' || step === 'generate') && draftQuestions && (
                             <DraftQuestionsStep
                                 questions={draftQuestions}
                                 answers={draftAnswers}
@@ -914,7 +967,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             />
                         )}
 
-                        {step === 'generate' && (
+                        {step === 'generate' && !draftQuestions && !(askingQuestions && !draftContent) && (
                             <DraftStep
                                 draftContent={draftContent}
                                 loading={loading}
@@ -938,12 +991,26 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 suggestions={localBrainMetadata?.draftSuggestions || []}
                                 onKeepSuggestion={(text) => updateMetadata({ draftSuggestions: liveSuggestions(draftContent, localBrainMetadata?.draftSuggestions).filter(s => s !== text) })}
                                 draftError={draftError}
-                                onWriteDraft={() => checkLimit().then(allowed => { if (allowed) generateDraft(); })}
+                                onWriteDraft={quickReframe ? startReframe : () => checkLimit().then(allowed => { if (allowed) generateDraft(); })}
                                 onRebuild={() => {
+                                    // A reframe has no outline: redraft from the post with the new strategy
+                                    if (quickReframe) {
+                                        checkLimit().then(allowed => { if (allowed) generateDraft(); });
+                                        return;
+                                    }
                                     // The draft follows the outline, so a new strategy starts from a new outline
                                     setStep('outline');
                                     generateOutline();
                                 }}
+                            />
+                        )}
+
+                        {step === 'generate' && reframe?.original && draftContent && !loading && !draftQuestions && (
+                            <OriginalityCheck
+                                draft={draftContent}
+                                reframe={reframe}
+                                domain={reframeDomain}
+                                onAddCredit={line => setDraftContent(`${draftContent.trimEnd()}\n\n${line}`)}
                             />
                         )}
 
@@ -971,7 +1038,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 {/* Phones: a footer bar, so the buttons never cover the text. Desktop: floating, so the content keeps the full height */}
                 <div className="shrink-0 z-50 flex justify-between items-center gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-canvas border-t border-line md:border-0 md:bg-transparent md:p-0 md:pointer-events-none md:absolute md:bottom-6 md:left-8 md:right-8 md:items-end">
                     <div className="pointer-events-auto">
-                        {step !== 'deep_dive' && (
+                        {canGoBack && (
                             <button
                                 onClick={handleBack}
                                 disabled={loading || completing}
@@ -996,7 +1063,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             </button>
                         )}
 
-                        {step === 'generate' ? (
+                        {step === 'generate' && !draftQuestions ? (
                             <button
                                 onClick={handleComplete}
                                 disabled={!draftContent || loading || completing}
