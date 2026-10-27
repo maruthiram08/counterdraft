@@ -72,7 +72,7 @@ export function selfEditChecklist(draft: string): string {
 
 /**
  * Guards the self-edit: an edit that comes back empty, gutted, ballooned, or missing the creator's
- * [placeholders] is worse than no edit, so the original draft stands.
+ * [placeholders] or <suggested> marks is worse than no edit, so the original draft stands.
  */
 export function acceptSelfEdit(original: string, edited: string | null | undefined): string {
     const next = (edited || '').trim();
@@ -81,5 +81,8 @@ export function acceptSelfEdit(original: string, edited: string | null | undefin
     if (ratio < 0.6 || ratio > 1.3) return original;
     const placeholders = original.match(/\[[^\]\n]{3,}\]/g) || [];
     if (placeholders.some(p => !next.includes(p))) return original;
+    // Suggested passages must stay marked, or the creator loses track of what to check
+    const tags = (text: string) => (text.match(/<suggested>/gi) || []).length;
+    if (tags(next) !== tags(original)) return original;
     return next;
 }

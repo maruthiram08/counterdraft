@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { cleanAnswers, parseDraftQuestions } from '@/lib/editor/draft-tools'
+import { cleanAnswers, formatNotes, mergeNotes, parseDraftQuestions } from '@/lib/editor/draft-tools'
+import { DraftNotesPanel } from '@/components/editor/DraftNotesPanel'
 import { DraftQuestionsStep } from '@/components/pipeline/wizard/DraftQuestionsStep'
 
 describe('parseDraftQuestions', () => {
@@ -17,9 +18,31 @@ describe('parseDraftQuestions', () => {
 })
 
 describe('cleanAnswers', () => {
-    it('keeps answered questions only', () => {
-        expect(cleanAnswers([{ question: 'Q', answer: '  A  ' }, { question: 'Q2', answer: ' ' }, 'junk'])).toEqual([{ question: 'Q', answer: 'A' }])
+    it('keeps answers and notes with text only', () => {
+        expect(cleanAnswers([{ question: 'Q', answer: '  A  ' }, { question: 'Q2', answer: ' ' }, 'junk', { answer: 'Remembered later' }])).toEqual([
+            { question: 'Q', answer: 'A' },
+            { question: '', answer: 'Remembered later' },
+        ])
         expect(cleanAnswers('nope')).toEqual([])
+    })
+})
+
+describe('mergeNotes', () => {
+    it('keeps earlier notes, replaces a re-answered question and adds new ones last', () => {
+        const merged = mergeNotes(
+            [{ question: 'Where were you?', answer: 'Home' }, { question: '', answer: 'Our coach cried' }],
+            [{ question: 'Where were you?', answer: 'At the stadium' }, { question: '', answer: 'The bus parade' }],
+        )
+        expect(merged).toEqual([
+            { question: '', answer: 'Our coach cried' },
+            { question: 'Where were you?', answer: 'At the stadium' },
+            { question: '', answer: 'The bus parade' },
+        ])
+        expect(mergeNotes(undefined, [])).toEqual([])
+    })
+
+    it('formats notes under their questions', () => {
+        expect(formatNotes([{ question: 'Q', answer: 'A' }, { question: '', answer: 'N' }])).toBe('Q: Q\nA: A\n\nNote: N')
     })
 })
 
@@ -39,5 +62,22 @@ describe('DraftQuestionsStep', () => {
         expect(onChange).toHaveBeenCalledWith(0, 'I saw it from the roof')
         fireEvent.click(screen.getByText('Skip and write the draft'))
         expect(onSkip).toHaveBeenCalled()
+    })
+})
+
+describe('DraftNotesPanel', () => {
+    it('saves a note for later and works the notes into the draft', () => {
+        const onChange = jest.fn()
+        const onWorkIn = jest.fn()
+        const notes = [{ question: 'Where were you?', answer: 'At the stadium' }]
+        render(<DraftNotesPanel notes={notes} onChange={onChange} onWorkIn={onWorkIn} working={false} />)
+        expect(screen.getByText('At the stadium')).toBeInTheDocument()
+        fireEvent.change(screen.getByLabelText('Add a note'), { target: { value: 'The bus parade' } })
+        fireEvent.click(screen.getByText('Work my notes into the draft'))
+        const withNew = [...notes, { question: '', answer: 'The bus parade' }]
+        expect(onChange).toHaveBeenCalledWith(withNew)
+        expect(onWorkIn).toHaveBeenCalledWith(withNew)
+        fireEvent.click(screen.getByLabelText('Remove note'))
+        expect(onChange).toHaveBeenLastCalledWith([])
     })
 })

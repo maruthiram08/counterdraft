@@ -10,7 +10,7 @@ interface DraftQuestionsStepProps {
     onSkip: () => void;
 }
 
-// A few questions before drafting, so the draft starts from the writer's own stories instead of [placeholders]
+// A few questions before drafting, so the draft starts from the writer's own stories instead of our guesses
 export function DraftQuestionsStep({ questions, answers, onChange, dontAsk, onDontAskChange, onSkip }: DraftQuestionsStepProps) {
     const answered = answers.filter(a => a.trim()).length;
 
@@ -20,7 +20,7 @@ export function DraftQuestionsStep({ questions, answers, onChange, dontAsk, onDo
                 <h3 className="flex items-center gap-2 text-2xl font-medium tracking-[-0.02em] text-ink">
                     <MessageCircleQuestion size={22} className="text-ember-500" /> Before I write: {questions.length === 1 ? 'one question' : `${questions.length} quick questions`}
                 </h3>
-                <p className="mt-1 text-sm text-ink-soft">Only you know these. A sentence or two each is plenty; anything you leave blank becomes a [placeholder] to fill later.</p>
+                <p className="mt-1 text-sm text-ink-soft">Only you know these. A sentence or two each is plenty. Leave any blank and I&apos;ll suggest something you can change; remember it later and add it under Your notes on the draft.</p>
             </div>
 
             <ol className="space-y-4">
