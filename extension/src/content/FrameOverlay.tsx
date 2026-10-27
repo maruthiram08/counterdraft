@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { captureElement } from './captureElement';
 
 export function FrameOverlay() {
     const [isActive, setIsActive] = useState(false);
@@ -49,31 +50,46 @@ export function FrameOverlay() {
         });
     };
 
-    const handleClick = (e: MouseEvent) => {
+    const handleClick = async (e: MouseEvent) => {
         if (!isActive) return;
         e.preventDefault();
         e.stopPropagation();
 
         const target = e.target as HTMLElement;
         const rect = target.getBoundingClientRect();
-
-        // Capture logic
-        const captureUrl = window.location.href;
-
-        chrome.runtime.sendMessage({
-            type: 'SNIP_COMPLETED', // Route through background for consistency
-            payload: {
-                x: rect.left,
-                y: rect.top,
-                width: rect.width,
-                height: rect.height,
-                deviceScaleFactor: window.devicePixelRatio,
-                pageUrl: captureUrl,
-                pageTitle: document.title
-            }
-        });
+        const basePayload = {
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height,
+            deviceScaleFactor: window.devicePixelRatio,
+            pageUrl: window.location.href,
+            pageTitle: document.title
+        };
 
         cleanup();
+
+        try {
+            chrome.runtime.sendMessage({ type: 'FRAME_CAPTURE_PROGRESS', payload: { done: 0, total: 1 } });
+            const capture = await captureElement(target, (done, total) => {
+                chrome.runtime.sendMessage({ type: 'FRAME_CAPTURE_PROGRESS', payload: { done, total } });
+            });
+            chrome.runtime.sendMessage({
+                type: 'SNIP_COMPLETED', // Route through background for consistency
+                payload: {
+                    ...basePayload,
+                    width: capture.width,
+                    height: capture.height,
+                    tiles: capture.tiles,
+                    truncated: capture.truncated,
+                    pageText: capture.text
+                }
+            });
+        } catch (err) {
+            // Fall back to the visible part only, as before
+            console.error("[CounterDraft] Full element capture failed:", err);
+            chrome.runtime.sendMessage({ type: 'SNIP_COMPLETED', payload: basePayload });
+        }
     };
 
     // Attach DOM listeners when active (re-bound on each change so handlers see the current isActive)
