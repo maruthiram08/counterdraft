@@ -22,7 +22,7 @@ export const SmartStudio: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-sm font-medium text-ink">Medium Article</div>
-                  <div className="text-xs text-ink-muted">SEO-optimized</div>
+                  <div className="text-xs text-ink-muted">With a cover image</div>
                 </div>
               </button>
               <button onClick={() => setSelectedPlatform('instagram')} className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${selectedPlatform === 'instagram' ? 'bg-canvas shadow-pressed' : 'hover:shadow-raised'}`}>

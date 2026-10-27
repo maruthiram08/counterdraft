@@ -38,9 +38,6 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, count, color, cards 
           <h4 className="text-[15px] font-medium tracking-[-0.01em] text-ink mb-4 leading-snug group-hover:text-ember-700 transition-colors line-clamp-2">{card.title}</h4>
 
           <div className="flex items-center justify-between mt-auto pt-1">
-            <div className="flex -space-x-2">
-              <div className="w-7 h-7 rounded-full bg-canvas shadow-well flex items-center justify-center text-[10px] font-medium text-ink-soft">JD</div>
-            </div>
             <span className="text-xs text-ink-muted">{card.date}</span>
           </div>
         </div>
@@ -67,23 +64,23 @@ export const CommandCenter: React.FC = () => {
       color: "bg-ember-500",
       cards: [
         { title: "Why your LinkedIn posts aren't getting traction", category: "LinkedIn", tagColor: "bg-dusk-100 text-dusk-700", date: "2m ago" },
-        { title: "5 lessons from my first 1,000 newsletter subscribers", category: "Substack", tagColor: "bg-ember-100 text-ember-700", date: "4h ago" }
+        { title: "5 lessons from my first year of freelancing", category: "Medium", tagColor: "bg-ember-100 text-ember-700", date: "4h ago" }
       ]
     },
     {
-      title: "Drafting",
+      title: "In Development",
       count: 3,
       color: "bg-sand-500",
       cards: [
-        { title: "How I structure a 2,000-word blog post in 30 minutes", category: "Blog", tagColor: "bg-canvas shadow-well text-ink-soft", date: "1d ago" }
+        { title: "How I plan a week of posts in 30 minutes", category: "LinkedIn", tagColor: "bg-dusk-100 text-dusk-700", date: "1d ago" }
       ]
     },
     {
-      title: "Review",
+      title: "Drafts",
       count: 1,
       color: "bg-dusk-500",
       cards: [
-        { title: "Client case study: B2B content that converts", category: "Portfolio", tagColor: "bg-sage-100 text-sage-700", date: "2d ago" }
+        { title: "Client case study: B2B content that converts", category: "LinkedIn", tagColor: "bg-dusk-100 text-dusk-700", date: "2d ago" }
       ]
     },
     {
@@ -91,7 +88,7 @@ export const CommandCenter: React.FC = () => {
       count: 84,
       color: "bg-ink",
       cards: [
-        { title: "Chapter 3: Finding your writing voice", category: "Book", tagColor: "bg-ink text-white", date: "Oct 24" }
+        { title: "Finding your writing voice", category: "Instagram", tagColor: "bg-ink text-white", date: "Oct 24" }
       ]
     }
   ];
@@ -114,10 +111,9 @@ export const CommandCenter: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
-          <button className="h-10 px-4 rounded-full bg-canvas shadow-raised text-ink text-xs font-medium hover:text-ember-600 active:shadow-pressed transition-all hidden sm:block">Filter View</button>
           <button className="h-10 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center gap-2">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-            New Logic
+            New Idea
           </button>
         </div>
       </div>

@@ -68,7 +68,7 @@ export default function WaitlistPage() {
                 </h1>
 
                 <p className="text-sm text-ink-soft text-center mb-8 font-medium">
-                    NOT A WRITING ASSISTANT. A THINKING ADVERSARY.
+                    Find your angle before you write a word.
                 </p>
 
                 <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
@@ -117,7 +117,7 @@ export default function WaitlistPage() {
                         )}
                         {!message && (
                             <p className="text-xs text-ink-muted">
-                                Early access + thinking frameworks. No spam.
+                                Early access news only. No spam.
                             </p>
                         )}
                     </div>
