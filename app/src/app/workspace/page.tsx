@@ -23,7 +23,8 @@ import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { MobileAgentSheet } from "@/components/mobile/MobileAgentSheet";
 import { CommandCenter } from "@/components/pipeline/CommandCenter";
 import NewDraftModal from "@/components/modal/NewDraftModal";
-import type { ContentReference } from "@/types";
+import type { ContentReference, Draft } from "@/types";
+import { toast } from "sonner";
 import { YourMind } from "@/components/thinking/YourMind";
 import { GenealogyTree } from "@/components/thinking/GenealogyTree";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -57,7 +58,7 @@ function WorkspaceContent() {
     const { directions, loading: directionsLoading, generateDirections, generated } = useDirections();
     const { tensions, loading: tensionsLoading, classifyTension } = useTensions();
     const [classifiedTensionIds, setClassifiedTensionIds] = useState<Set<string>>(new Set());
-    const { drafts, loading: draftsLoading, updateDraft, refetch } = useDrafts();
+    const { drafts, loading: draftsLoading, updateDraft, saveDraft, refetch } = useDrafts();
     const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
     const activeDraftId = urlDraftId ?? selectedDraftId;
     const selectedDraft = drafts.find(d => d.id === activeDraftId) || null;
@@ -125,6 +126,18 @@ function WorkspaceContent() {
         await updateDraft(id, { status: 'published' });
         // 2. Switch tab immediately for visibility
         setPostsTab('published');
+    };
+
+    // A published post stays as it went out; reusing it starts a fresh draft with the same text
+    const handleDuplicate = async (draft: Draft) => {
+        const copy = await saveDraft(draft.belief_text || 'Untitled', draft.content || '');
+        if (!copy) {
+            toast.error("Couldn't make a new draft", { description: "You may have hit your draft limit." });
+            return;
+        }
+        toast.success("New draft ready", { description: "The published post is unchanged." });
+        setPostsTab('drafts');
+        selectDraft(copy.id);
     };
 
     // Modal state
@@ -575,6 +588,7 @@ function WorkspaceContent() {
                                                             return await updateDraft(id, { brain_metadata: metadata });
                                                         }}
                                                         onPublish={handlePublish}
+                                                        onDuplicate={handleDuplicate}
                                                     />
                                                 </div>
                                                 <MobileAgentSheet>
@@ -631,6 +645,7 @@ function WorkspaceContent() {
                                                     return await updateDraft(id, { brain_metadata: metadata });
                                                 }}
                                                 onPublish={handlePublish}
+                                                onDuplicate={handleDuplicate}
                                             />
                                         }
                                         rightPane={
@@ -645,7 +660,7 @@ function WorkspaceContent() {
                                 )
                             ) : (
                                 <div className={`h-full overflow-y-auto ${isMobile ? 'pb-20' : ''}`}>
-                                    <PublishedPostsList drafts={drafts} />
+                                    <PublishedPostsList drafts={drafts} onOpen={(id) => selectDraft(id)} />
                                 </div>
                             )}
                         </div>
