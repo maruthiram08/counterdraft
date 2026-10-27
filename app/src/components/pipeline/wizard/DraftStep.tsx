@@ -78,7 +78,9 @@ export function DraftStep({
         const area = textareaRef.current;
         if (!area) return;
         const mark = backdropRef.current?.querySelector<HTMLElement>(`[data-placeholder="${p.index}"]`);
-        if (mark) area.scrollTop = Math.max(0, mark.offsetTop - area.clientHeight / 3);
+        // Desktop scrolls inside the editor; on phones the editor is as tall as the draft, so scroll the page instead
+        if (mark && area.scrollHeight > area.clientHeight) area.scrollTop = Math.max(0, mark.offsetTop - area.clientHeight / 3);
+        else mark?.scrollIntoView({ block: 'center', behavior: 'smooth' });
         area.focus({ preventScroll: true });
         area.setSelectionRange(p.start, p.end);
         if (backdropRef.current) backdropRef.current.scrollTop = area.scrollTop;
@@ -177,9 +179,10 @@ export function DraftStep({
                             )}
                         </div>
                     </div>
-                    <div className="flex-1 bg-surface rounded-card shadow-card flex flex-col overflow-hidden">
+                    {/* On phones the card grows with the draft and the page does the scrolling: no box-in-a-box scroll, nothing clipped by the corners */}
+                    <div className="flex-1 bg-surface rounded-tile md:rounded-card shadow-card flex flex-col md:overflow-hidden">
                         {/* Toolbar: one swipeable row on phones, where the formatting mocks are hidden; the fade on the right edge says there is more */}
-                        <div className="flex flex-nowrap md:flex-wrap items-center gap-1 px-3 md:px-4 py-2 md:py-3 border-b border-line bg-surface overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_80%,transparent)] md:[mask-image:none]">
+                        <div className="flex flex-nowrap md:flex-wrap items-center gap-1 px-3 md:px-4 py-2 md:py-3 border-b border-line bg-surface rounded-t-tile md:rounded-none overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_80%,transparent)] md:[mask-image:none]">
                             <div className="hidden md:flex gap-0.5">
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Bold size={14} /></button>
                                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-ink-muted hover:text-ink active:shadow-pressed transition-all"><Italic size={14} /></button>
@@ -284,12 +287,13 @@ export function DraftStep({
                                 <PlaceholderNotice placeholders={placeholders} onJump={jumpTo} />
                             </div>
                         )}
-                        <div className="flex-1 relative min-h-[320px] bg-surface">
-                            {/* Highlight backdrop: same box and type as the textarea, so the marks sit under the placeholders */}
+                        <div className="md:flex-1 relative min-h-[320px] bg-surface rounded-b-tile md:rounded-none">
+                            {/* Highlight backdrop: same box and type as the textarea, so the marks sit under the placeholders.
+                                On phones it stays in the flow and gives the box its height, so the textarea always fits its text */}
                             <div
                                 ref={backdropRef}
                                 aria-hidden="true"
-                                className="absolute inset-0 overflow-y-scroll pointer-events-none whitespace-pre-wrap break-words text-lg leading-relaxed text-transparent p-6 md:px-12 md:py-8"
+                                className="relative md:absolute md:inset-0 min-h-[320px] md:min-h-0 md:overflow-y-scroll pointer-events-none whitespace-pre-wrap break-words text-lg leading-relaxed text-transparent p-6 md:px-12 md:py-8"
                                 dangerouslySetInnerHTML={{ __html: markPlaceholders(draftContent) }}
                             />
                             <textarea
@@ -299,7 +303,7 @@ export function DraftStep({
                                 onChange={(e) => onUpdateDraft(e.target.value)}
                                 onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
                                 onScroll={(e) => { if (backdropRef.current) backdropRef.current.scrollTop = e.currentTarget.scrollTop; }}
-                                className="absolute inset-0 w-full h-full resize-none outline-none overflow-y-scroll bg-transparent text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:px-12 md:py-8"
+                                className="absolute inset-0 w-full h-full resize-none outline-none overflow-hidden md:overflow-y-scroll bg-transparent text-lg leading-relaxed text-ink placeholder:text-ink-muted p-6 md:px-12 md:py-8"
                                 placeholder="Start writing..."
                             />
                         </div>
