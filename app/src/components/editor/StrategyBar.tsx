@@ -30,6 +30,9 @@ interface FieldConfig {
 }
 
 // Every field takes free text; presets are only one-click shortcuts
+// Collapsed strategy on phones shows this many chips, then "+N more"
+const PHONE_CHIPS = 2;
+
 const FIELDS: FieldConfig[] = [
     { key: 'outcome', label: 'Goal', icon: Target, color: 'text-dusk-500', placeholder: 'What should this post achieve?', presets: ['Authority', 'Engagement', 'Conversion', 'Connection'] },
     { key: 'audience', label: 'Audience', icon: Users, color: 'text-sand-500', placeholder: 'Who is this for?', presets: ['Founders', 'Engineers', 'Investors', 'Designers', 'Marketing Leaders'] },
@@ -118,7 +121,7 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
 
     // On a phone the open panel fills the first screen, so start closed once a strategy exists
     useEffect(() => {
-        if (window.matchMedia('(max-width: 767px)').matches && hasStrategy(draft.brain_metadata || {})) {
+        if (window.matchMedia?.('(max-width: 767px)').matches && hasStrategy(draft.brain_metadata || {})) {
             setIsExpanded(false);
         }
         // Only on first render: after that the writer decides
@@ -251,18 +254,29 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
                     <button
                         onClick={() => setIsExpanded(true)}
                         title="Edit strategy"
-                        className="w-full text-left px-4 pt-6 pb-3 flex flex-nowrap md:flex-wrap items-center gap-2 overflow-x-auto scrollbar-none"
+                        className="w-full text-left px-4 pt-6 pb-3 flex flex-nowrap md:flex-wrap items-center gap-2"
                     >
-                        {filledFields.length ? filledFields.map(field => {
-                            const Icon = field.icon;
-                            return (
-                                <span key={field.key} className="shrink-0 md:shrink max-w-[240px] md:max-w-full flex items-center gap-1.5 h-7 px-3 rounded-full bg-canvas shadow-well text-xs font-medium text-ink">
-                                    <Icon size={11} className={`shrink-0 ${field.color}`} />
-                                    <span className="text-ink-muted shrink-0 whitespace-nowrap">{field.label}:</span>
-                                    <span className="truncate min-w-0 md:max-w-[200px]">{getFieldValue(metadata, field.key)}</span>
+                        {/* Phones: one row that never runs off the edge. Two chips share the width (icon + value;
+                            the label stays for screen readers), the rest fold into "+N more" */}
+                        {filledFields.length ? <>
+                            {filledFields.map((field, i) => {
+                                const Icon = field.icon;
+                                const value = getFieldValue(metadata, field.key);
+                                // Short values stay whole; a long one gives up the room and truncates
+                                return (
+                                    <span key={field.key} className={`${i >= PHONE_CHIPS ? 'hidden md:flex' : 'flex'} min-w-0 ${value.length <= 18 ? 'shrink-0' : 'shrink'} md:shrink-0 md:max-w-full items-center gap-1.5 h-8 md:h-7 px-3 rounded-full bg-canvas shadow-well text-xs font-medium text-ink`}>
+                                        <Icon size={11} className={`shrink-0 ${field.color}`} />
+                                        <span className="sr-only md:not-sr-only md:text-ink-muted md:shrink-0 md:whitespace-nowrap">{field.label}:</span>
+                                        <span className="truncate min-w-0 md:max-w-[200px]">{value}</span>
+                                    </span>
+                                );
+                            })}
+                            {filledFields.length > PHONE_CHIPS && (
+                                <span className="md:hidden shrink-0 flex items-center h-8 px-3 rounded-full text-xs font-medium text-ember-700 bg-ember-50">
+                                    +{filledFields.length - PHONE_CHIPS} more
                                 </span>
-                            );
-                        }) : (
+                            )}
+                        </> : (
                             <span className="text-xs text-ink-soft">No strategy yet. Claude will infer one from your topic.</span>
                         )}
                     </button>
