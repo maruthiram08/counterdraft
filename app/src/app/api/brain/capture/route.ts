@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { isCaptureIntent, isCaptureKind } from '@/lib/brain/captures';
+import { storeCaptureImage } from '@/lib/brain/capture-images';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { getOpenAI } from '@/lib/openai';
 
@@ -24,13 +26,17 @@ export async function POST(req: NextRequest) {
         const { imageBase64, userNote, intentType, sourceUrl, sourceTitle, pageTitle, isBookmark } = body;
         // Lens 1.0.2+ sends the text of a framed element; a tall screenshot gets scaled down before the model reads it
         const pageText = typeof body.pageText === 'string' ? body.pageText.trim().slice(0, 10000) : '';
+        // Lens 1.0.3 says which tool made the capture; for older versions a frame is the one that sends page text
+        const kind = isCaptureKind(body.captureKind)
+            ? body.captureKind
+            : !imageBase64 ? 'bookmark' : pageText ? 'frame' : 'snip';
 
         if (!imageBase64 && !isBookmark && intentType !== 'bookmark' && intentType !== 'pin') {
             return NextResponse.json({ error: 'No image provided' }, { status: 400 });
         }
 
-        // 3. Skip Storage Upload (User Request)
-        const imagePath = null;
+        // 3. Keep the image, so charts and screenshots can be seen again (a failed upload still saves the capture)
+        const imagePath = imageBase64 ? await storeCaptureImage(userId, imageBase64) : null;
 
         // 4. AI Processing (OCR + Analysis)
         let ocrText = "";
@@ -133,11 +139,11 @@ Think like a careful analyst preparing material for long-term thinking, not a co
             const aiResult = JSON.parse(response.choices[0].message.content || "{}");
             // The model rewords and cuts long text even when given the exact copy, so keep the page's own words
             ocrText = pageText || aiResult.ocr_text || "";
-            aiMetadata = pageText ? { ...aiResult, ocr_text: pageText } : aiResult;
+            aiMetadata = { ...(pageText ? { ...aiResult, ocr_text: pageText } : aiResult), kind };
         } else {
-            // No Image (Bookmark Mode)
-            // We could run a text-only classification on the title/note, but for now just save.
-            aiMetadata = { type: 'bookmark', note: userNote };
+            // Bookmark: Lens 1.0.3 sends the article text read in the browser, so it is ready for ideas and drafting
+            ocrText = pageText;
+            aiMetadata = { type: 'bookmark', kind: 'bookmark', note: userNote };
         }
 
         // Helper for safe domain extraction
@@ -151,21 +157,24 @@ Think like a careful analyst preparing material for long-term thinking, not a co
         }
 
         // 5. Save to Database
-        const { data: artifact, error: dbError } = await supabase
-            .from('thinking_artifacts')
-            .insert({
-                user_id: userId,
-                source_url: sourceUrl || "",
-                source_title: sourceTitle || pageTitle,
-                source_domain: domain,
-                image_path: imagePath,
-                ocr_text: ocrText,
-                user_note: userNote,
-                intent_type: intentType || 'example',
-                ai_metadata: aiMetadata
-            })
-            .select()
-            .single();
+        // Intent is optional; a capture saved without one is just "saved"
+        const intent = isCaptureIntent(intentType) ? intentType : null;
+        const row = {
+            user_id: userId,
+            source_url: sourceUrl || "",
+            source_title: sourceTitle || pageTitle,
+            source_domain: domain,
+            image_path: imagePath,
+            ocr_text: ocrText,
+            user_note: userNote,
+            intent_type: intent,
+            ai_metadata: { ...aiMetadata, ...(intent ? { intent } : {}) }
+        };
+        let { data: artifact, error: dbError } = await supabase.from('thinking_artifacts').insert(row).select().single();
+        // Until migration 20261027_capture_style_intent runs, the intent_type check rejects 'style'; it is kept in ai_metadata
+        if (dbError?.code === '23514' && intent) {
+            ({ data: artifact, error: dbError } = await supabase.from('thinking_artifacts').insert({ ...row, intent_type: null }).select().single());
+        }
 
         if (dbError) throw dbError;
 

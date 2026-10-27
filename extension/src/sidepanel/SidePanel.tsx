@@ -16,6 +16,7 @@ interface SnipData {
     pageUrl: string;
     pageText?: string;
     truncated?: boolean;
+    kind: 'bookmark' | 'snip' | 'frame';
 }
 
 // One screenful of a Frame capture, cut out of a viewport screenshot (CSS pixels)
@@ -32,6 +33,23 @@ interface CaptureTile {
 
 // Vercel rejects request bodies over 4.5 MB, so keep the image well under that
 const MAX_IMAGE_CHARS = 3_000_000;
+
+// Runs inside the page for a bookmark: the article's text as the reader sees it, logged in and fully loaded.
+// innerText keeps line breaks, so paragraphs survive.
+function readArticleText(): string {
+    const pick = (sel: string) => Array.from(document.querySelectorAll<HTMLElement>(sel));
+    const candidates = [
+        ...pick('article'), ...pick('main'), ...pick('[role="main"]'), ...pick('[itemprop="articleBody"]'),
+    ];
+    const best = candidates.sort((a, b) => b.innerText.length - a.innerText.length)[0];
+    const root = best && best.innerText.trim().length >= 200 ? best : document.body;
+    return (root?.innerText || '')
+        .split('\n')
+        .map(line => line.replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join('\n')
+        .slice(0, 10000);
+}
 
 const loadImage = (src: string): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
     const img = new Image();
@@ -83,7 +101,7 @@ export function SidePanel() {
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [snipData, setSnipData] = useState<SnipData | null>(null);
     const [userNote, setUserNote] = useState("");
-    const [userIntent, setUserIntent] = useState<'agree' | 'counter' | 'evidence' | 'framing' | 'example' | null>(null);
+    const [userIntent, setUserIntent] = useState<'agree' | 'counter' | 'evidence' | 'example' | 'style' | null>(null);
     // State Preservation: Store the target tab when we initiate an action to ensure we don't lose the URL
     const [targetTab, setTargetTab] = useState<{ id: number; url: string; title: string } | null>(null);
 
@@ -153,6 +171,7 @@ export function SidePanel() {
                 delete snipFields.tiles; // screenshots are already joined into croppedUrl
                 setSnipData({
                     ...snipFields,
+                    kind: msg.payload.tiles?.length || msg.payload.pageText ? 'frame' : 'snip',
                     pageUrl: finalPageUrl,
                     pageTitle: finalPageTitle,
                     dataUrl: croppedUrl
@@ -286,20 +305,32 @@ export function SidePanel() {
         if (!tab) return;
 
         setCapturedImage(null); // No image for bookmark
+        setStatus("Processing...");
+
+        // Read the page here, where it is logged in and rendered; our server often can't (LinkedIn, X, paywalls)
+        let pageText = '';
+        if (tab.id && !tab.url?.startsWith('chrome://') && !tab.url?.startsWith('edge://')) {
+            try {
+                const [result] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readArticleText });
+                pageText = typeof result?.result === 'string' ? result.result : '';
+            } catch (err) {
+                console.warn("Could not read the page text:", err);
+            }
+        }
+
         setSnipData({
             dataUrl: "", // Empty string means "no image"
             x: 0, y: 0, width: 0, height: 0, deviceScaleFactor: 1,
             pageTitle: tab.title || "Unknown Page",
             pageUrl: tab.url || "",
+            pageText: pageText || undefined,
+            kind: 'bookmark',
         });
         setStatus("Review");
     };
 
     const handleSave = async () => {
-        if (!snipData || !userIntent) {
-            alert("Please select an Intent (Why are you saving this?)");
-            return;
-        }
+        if (!snipData) return;
 
         setStatus("Saving...");
         // API logic omitted for brevity in search block, will fail if I don't include full block?
@@ -332,7 +363,8 @@ export function SidePanel() {
                 body: JSON.stringify({
                     imageBase64: snipData.dataUrl,
                     userNote,
-                    intentType: userIntent,
+                    intentType: userIntent || undefined,
+                    captureKind: snipData.kind,
                     sourceUrl: snipData.pageUrl,
                     sourceTitle: snipData.pageTitle,
                     pageTitle: snipData.pageTitle,
@@ -372,6 +404,7 @@ export function SidePanel() {
         setCapturedImage(null);
         setSnipData(null);
         setUserNote("");
+        setUserIntent(null);
         setProgress(null);
     };
 
@@ -448,7 +481,7 @@ export function SidePanel() {
                                     ? 'Sending to Brain...'
                                     : progress && progress.total > 1
                                         ? `Capturing the whole element (${Math.min(progress.done + 1, progress.total)} of ${progress.total})...`
-                                        : 'Processing Image...'}
+                                        : 'Processing...'}
                             </div>
                         )}
 
@@ -471,6 +504,14 @@ export function SidePanel() {
                             <p className="text-xs text-amber-700">This element is very long, so the image stops partway. The full text is still saved.</p>
                         )}
 
+                        {snipData.kind === 'bookmark' && (
+                            <p className="text-xs text-gray-500">
+                                {snipData.pageText
+                                    ? `Page text saved (${snipData.pageText.split(/\s+/).length.toLocaleString()} words).`
+                                    : "Couldn't read this page's text. CounterDraft will try again when you find ideas."}
+                            </p>
+                        )}
+
                         {/* Metadata */}
                         <div className="bg-white p-3 rounded-lg border border-gray-100">
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Source</h3>
@@ -491,7 +532,7 @@ export function SidePanel() {
                         {/* Intent Interrogation */}
                         <div className="space-y-3">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                                Why are you saving this?
+                                Why are you saving this? <span className="normal-case font-normal tracking-normal text-gray-400">(optional)</span>
                             </label>
 
                             <div className="flex flex-wrap gap-2">
@@ -499,12 +540,12 @@ export function SidePanel() {
                                     { id: 'agree', label: 'Agree', color: 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' },
                                     { id: 'counter', label: 'Counter', color: 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' },
                                     { id: 'evidence', label: 'Evidence', color: 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200' },
-                                    { id: 'framing', label: 'Framing', color: 'bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200' },
-                                    { id: 'example', label: 'Example', color: 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200' }
+                                    { id: 'example', label: 'Example', color: 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200' },
+                                    { id: 'style', label: 'Style', color: 'bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200' }
                                 ].map(intent => (
                                     <button
                                         key={intent.id}
-                                        onClick={() => setUserIntent(intent.id as any)}
+                                        onClick={() => setUserIntent(userIntent === intent.id ? null : intent.id as any)}
                                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${userIntent === intent.id
                                             ? `${intent.color} ring-2 ring-offset-1 ring-${intent.id === 'counter' ? 'red' : 'blue'}-400 scale-105`
                                             : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
@@ -521,6 +562,7 @@ export function SidePanel() {
                                 placeholder={
                                     userIntent === 'counter' ? "Why is this wrong? What's the flaw?" :
                                         userIntent === 'evidence' ? "What does this prove?" :
+                                            userIntent === 'style' ? "What do you like about how it's written?" :
                                             "Add a quick note..."
                                 }
                                 className={`w-full text-sm p-3 border rounded-lg focus:ring-2 outline-none min-h-[80px] resize-none transition-colors ${userIntent === 'counter'
@@ -534,11 +576,7 @@ export function SidePanel() {
                         {/* Action */}
                         <button
                             onClick={handleSave}
-                            disabled={!userIntent}
-                            className={`w-full py-2.5 text-white rounded-lg font-medium text-sm transition flex items-center justify-center gap-2 ${userIntent
-                                ? 'bg-[#16a34a] hover:bg-[#15803d]'
-                                : 'bg-gray-300 cursor-not-allowed hidden'
-                                }`}
+                            className="w-full py-2.5 text-white rounded-lg font-medium text-sm transition flex items-center justify-center gap-2 bg-[#16a34a] hover:bg-[#15803d]"
                         >
                             <Check size={16} />
                             Save to Brain

@@ -223,6 +223,7 @@ export interface Audience {
 export interface ExploreOrigin {
   query: string; // What the writer typed
   label?: string; // Short name for the search
+  from?: 'explore' | 'captures'; // Captures: ideas found from Lens captures in Your Mind
   intent?: 'learn' | 'news'; // Know-how search or news search
   platform?: string;
   tone?: string;
@@ -234,6 +235,12 @@ export interface ExploreOrigin {
     takeaway?: string; // What a writer can use from it
     kind?: string; // framework, case study, expert view, data or news
     keyPoints?: string[]; // Facts and examples from reading the full piece (deep dive)
+    // Set when the source is one of the writer's Lens captures rather than an Explore result
+    captureId?: string;
+    captureKind?: CaptureKind;
+    intent?: CaptureIntent; // What the writer thinks of it
+    note?: string; // The writer's own note on the capture
+    text?: string; // The captured words, as saved
   }>;
   // Absent when a topic was saved before any post idea was picked for it
   idea?: { hook: string; angle: string; format: string; belief?: string };
@@ -332,6 +339,10 @@ export type BrainAction =
   | 'confidence_calculation'
   | 'bootstrap_genealogy';
 
+export type CaptureKind = 'bookmark' | 'snip' | 'frame';
+// 'framing' is only on captures saved before Style replaced it
+export type CaptureIntent = 'agree' | 'counter' | 'evidence' | 'example' | 'style' | 'framing';
+
 export interface Artifact {
   id: string;
   userId: string;
@@ -340,14 +351,20 @@ export interface Artifact {
   source_title?: string;
   ocr_text?: string;
   user_note?: string;
-  intent_type?: 'agree' | 'counter' | 'evidence' | 'framing' | 'inspiration';
+  intent_type?: CaptureIntent | null;
   image_path?: string;
+  imageUrl?: string; // Public URL of the stored snip or frame image
   ai_metadata?: {
+    visual_summary?: string;
+    intent?: CaptureIntent; // Kept here while the database's intent_type check doesn't allow 'style' yet
+    kind?: CaptureKind;
+    type?: string;
     tags?: string[];
     entities?: string[];
     summary?: string;
+    key_insight?: string;
   };
-  urls?: string[];
+  usedIn?: number; // Pipeline items built from this capture
   createdAt: Date;
   created_at?: string | Date; // Support DB raw shape
 }

@@ -3,28 +3,34 @@
 import { useMemo } from 'react';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Trash2, PenTool, Copy, Check } from 'lucide-react';
+import { ExternalLink, Trash2, Lightbulb, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import type { Artifact } from '@/types';
+import { captureIntent, captureKind } from '@/lib/brain/captures';
+
+const KIND_LABELS = { bookmark: 'Bookmark', snip: 'Snip', frame: 'Frame' } as const;
 
 interface ArtifactCardProps {
     artifact: Artifact;
     onDelete: (id: string) => void;
-    onCreateDraft: (artifact: Artifact) => void;
+    onFindIdeas: (artifact: Artifact) => void;
 }
 
-export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardProps) {
+    const kind = captureKind(artifact);
+    const intent = captureIntent(artifact);
     const [copied, setCopied] = useState(false);
 
     const intentColor = useMemo(() => {
-        switch (artifact.intent_type) {
+        switch (intent) {
             case 'agree': return 'bg-sage-100 text-sage-700';
             case 'counter': return 'bg-rose-100 text-rose-700';
             case 'evidence': return 'bg-dusk-100 text-dusk-700';
+            case 'style':
             case 'framing': return 'bg-ember-100 text-ember-700';
             default: return 'bg-canvas shadow-well text-ink-soft';
         }
-    }, [artifact.intent_type]);
+    }, [intent]);
 
     const handleCopy = () => {
         const text = artifact.ocr_text || artifact.user_note || "";
@@ -82,31 +88,45 @@ export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCard
 
             {/* Content Body */}
             <div className="flex-1 relative group">
-                {artifact.image_path ? (
-                    // If we had image storage, we'd show it here.
-                    // Since we are text-only for now (or base64 if we decided to store it, but route.ts currently skips storage),
-                    // We check if we have ocr_text to display instead.
-                    <div className="mx-5 my-2 bg-surface-muted rounded-tile h-32 flex items-center justify-center text-ink-muted text-xs">
-                        Image (Not Stored)
-                    </div>
-                ) : (
-                    <div className="px-5 py-2">
-                        {artifact.ocr_text ? (
-                            <p className="text-sm text-ink-soft line-clamp-[10] leading-relaxed bg-surface-muted p-3 rounded-2xl">
-                                {artifact.ocr_text}
-                            </p>
-                        ) : (
-                            !artifact.user_note && <div className="h-12 flex items-center justify-center text-ink-muted text-xs">No Content</div>
-                        )}
-                    </div>
-                )}
+                <div className="px-5 py-2 flex flex-col gap-2">
+                    {artifact.imageUrl && (
+                        <a href={artifact.imageUrl} target="_blank" rel="noopener noreferrer" className="block rounded-2xl overflow-hidden bg-surface-muted max-h-64" title="Open the full image">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- stored capture, any size */}
+                            <img src={artifact.imageUrl} alt={`Capture from ${artifact.source_domain || 'a page'}`} loading="lazy" className="w-full h-auto object-cover object-top" />
+                        </a>
+                    )}
+                    {artifact.ocr_text ? (
+                        <p className={`text-sm text-ink-soft leading-relaxed bg-surface-muted p-3 rounded-2xl whitespace-pre-line ${artifact.imageUrl ? 'line-clamp-4' : 'line-clamp-[10]'}`}>
+                            {artifact.ocr_text}
+                        </p>
+                    ) : (
+                        <div className="text-sm bg-surface-muted p-3 rounded-2xl flex flex-col gap-1">
+                            <p className="text-ink-soft">{artifact.source_title || 'No text saved.'}</p>
+                            {kind === 'bookmark' && <p className="text-xs text-ink-muted">The page is read when you find ideas.</p>}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Footer Actions */}
-            <div className="px-5 pb-5 pt-3 flex items-center justify-between mt-auto">
-                <span className={`inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium lowercase first-letter:uppercase ${intentColor}`}>
-                    {artifact.intent_type || 'saved'}
-                </span>
+            <div className="px-5 pb-5 pt-3 flex items-center justify-between gap-2 mt-auto">
+                <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                    {kind && (
+                        <span className="inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium bg-canvas shadow-well text-ink-soft">
+                            {KIND_LABELS[kind]}
+                        </span>
+                    )}
+                    {intent && (
+                        <span className={`inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium lowercase first-letter:uppercase ${intentColor}`}>
+                            {intent}
+                        </span>
+                    )}
+                    {!!artifact.usedIn && (
+                        <span className="text-xs text-ink-muted whitespace-nowrap" title="Pipeline items built from this capture">
+                            In {artifact.usedIn} {artifact.usedIn === 1 ? 'post' : 'posts'}
+                        </span>
+                    )}
+                </div>
 
                 <div className="flex items-center gap-1">
                     <button
@@ -128,11 +148,11 @@ export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCard
                         </a>
                     )}
                     <button
-                        onClick={() => onCreateDraft(artifact)}
-                        className="flex items-center gap-1.5 h-8 pl-3 pr-3.5 bg-ink text-white rounded-full text-xs font-medium hover:bg-ink/90 transition-colors ml-1"
+                        onClick={() => onFindIdeas(artifact)}
+                        className="flex items-center gap-1.5 h-9 pl-3 pr-3.5 bg-ink text-white rounded-full text-xs font-medium hover:bg-ink/90 transition-colors ml-1 whitespace-nowrap"
                     >
-                        <PenTool size={10} />
-                        Draft
+                        <Lightbulb size={12} />
+                        Find ideas
                     </button>
                 </div>
             </div>

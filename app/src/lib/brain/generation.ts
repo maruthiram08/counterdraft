@@ -8,6 +8,7 @@ import { extractSuggestions } from '@/lib/editor/suggestions';
 import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditChecklist, PastPost, SEE_MORE_CHARS } from './craft';
 import { CRAFT_CRITERIA, CraftKey, CraftScore, scoreCraft } from '@/lib/editor/craft-score';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
+import { formatCaptureSources } from './captures';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, outlineShape, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
 import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
@@ -110,10 +111,11 @@ export class BrainGenerationService {
 
         // Ground research in live web results aimed at where the whole chain meets the brief
         const exploreSources = formatExploreSources(brainMetadata);
+        const captures = formatCaptureSources(brainMetadata);
         // Plan from the original search and saved angle first; the hook is only a working title
         const origin = originQuery(brainMetadata);
         const searchSeed = `${origin ? `\nOriginal search: ${origin}` : ''}\nSaved angle: ${originAngle(angle, brainMetadata) || 'None'}`;
-        const plan = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}`)
+        const plan = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}${formatCaptureSources(brainMetadata, 1200)}`)
             .catch((): ResearchPlan => ({ queries: fallbackQueries(hook, brainMetadata, angle) }));
         // Each "must include" item gets its own search so the brief's extra asks aren't crowded out by the hook
         const includeQueries = (brainMetadata?.include || []).slice(0, 2).map(item => plan.place && !item.toLowerCase().includes(plan.place.toLowerCase().slice(0, 4)) ? `${item} ${plan.place}` : item);
@@ -122,7 +124,7 @@ export class BrainGenerationService {
         const asks = (plan.asks || []).map(a => a.question);
         const asksBlock = asks.length ? `\n\nTHE BRIEF'S QUESTIONS (each needs at least two findings of its own, or a "Gap:" finding):\n${asks.map(a => `- ${a}`).join('\n')}` : '';
         const sources = await gatherWebSources(queries, 15, plan.country);
-        const webSources = `${exploreSources}${formatWebSources(sources)}`;
+        const webSources = `${exploreSources}${captures}${formatWebSources(sources)}`;
 
         TraceLogger.log('deep_dive', 'Research Phase Input', {
             hook,
@@ -160,7 +162,7 @@ Your task is to provide:
    - Prefer strong sources: news outlets, journals and research, surveys, government and established organisations, named experts. Use a personal blog only for a first-hand story, and say it is one person's experience.
    - Include the numbers the sources give (survey results, percentages, counts, dates). A finding with a figure beats one that says "many" or "increasingly".
    - When the brief asks what someone can do, give concrete actions recommended by named experts or organisations (e.g. a child psychologist's advice), one action per finding.
-   - Base findings on the EXPLORE SOURCES, WEB SOURCES, references and source material provided. End each sourced finding with the domain shown in brackets after that source's title, e.g. "(source: hbr.org)"; never a paraphrased title or site name.
+   - Base findings on the EXPLORE SOURCES, THE CREATOR'S CAPTURES, WEB SOURCES, references and source material provided. End each sourced finding with the domain shown in brackets after that source's title, e.g. "(source: hbr.org)"; never a paraphrased title or site name.
    - Never mention a study, statistic or institution that is not in the provided material. If the sources cannot support something the post needs, say so as its own finding starting with "Gap:" (e.g. "Gap: no published pricing; confirm before citing") instead of inventing it.
 
 2. **Key insights**: Strategic synthesis TAILORED to the provided audience and stance. Find the "So What?" — surface tensions, tradeoffs, or overlooked implications relevant to this specific audience.
@@ -351,6 +353,7 @@ Example: { "text": "Updated research point..." }`
         const shape = outlineShape(brainMetadata);
 
         const referencesContext = this.formatReferences(references);
+        const captures = formatCaptureSources(brainMetadata, 1500);
         const userContextString = userContext ? `\n\nCreator's extra instructions:\n${userContext}` : '';
         const sourceContext = brainMetadata?.sourceContext
             ? `\n\nOriginal Source Material:\n${brainMetadata.sourceContext.substring(0, 3000)}...`
@@ -383,7 +386,7 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
                 },
                 {
                     role: 'user',
-                    content: `Topic: ${hook}\nAngle: ${angle || 'General'}${ideaChain}${strategy}${userContextString}\n\n${this.formatDeepDive(deep_dive)}${referencesContext}${sourceContext}`
+                    content: `Topic: ${hook}\nAngle: ${angle || 'General'}${ideaChain}${strategy}${userContextString}\n\n${this.formatDeepDive(deep_dive)}${captures}${referencesContext}${sourceContext}`
                 }
             ],
             response_format: { type: 'json_object' },
@@ -421,6 +424,7 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
         const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
         const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY');
         const research = deep_dive ? `\n\n${this.formatDeepDive(deep_dive)}` : '';
+        const captures = formatCaptureSources(brainMetadata);
 
         const voiceContext = await this.voiceContext(userId);
 
@@ -463,7 +467,7 @@ Keep the outline's order and shape. Do not add sections. This is for the writer,
 Angle: ${angle || 'General'}${ideaChain}${strategy}
 
 Outline:
-${outlineContext}${research}${ownMaterial}
+${outlineContext}${research}${formatCaptureSources(brainMetadata, 1500)}${ownMaterial}
 
 Expand this into a drafting brief. Put the creator's own material in the sections it fits before you mark anything SUGGEST.`
                 }
@@ -573,7 +577,7 @@ Angle: ${angle || 'General exploration'}
 DRAFTING BRIEF (Follow this structure):
 ${draftingBrief}${ownMaterial}
 
-${referencesContext}${sourceContext}${userContextString}`
+${captures}${referencesContext}${sourceContext}${userContextString}`
                 }
             ],
         });

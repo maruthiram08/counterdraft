@@ -153,9 +153,6 @@ function WorkspaceContent() {
     // Modal state
     const [draftModalOpen, setDraftModalOpen] = useState(false);
     type SourceType = 'belief' | 'tension' | 'idea' | 'manual';
-    const sourceTypes: SourceType[] = ['belief', 'tension', 'idea', 'manual'];
-    const isSourceType = (value: string | undefined): value is SourceType =>
-        typeof value === 'string' && sourceTypes.includes(value as SourceType);
 
     const [newDraftPrefill, setNewDraftPrefill] = useState<{
         hook?: string;
@@ -245,14 +242,9 @@ function WorkspaceContent() {
                 {effectiveSection === 'mind' && (
                     <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                         <YourMind
-                            onDraftRequest={(data) => {
-                                setNewDraftPrefill({
-                                    hook: data.hook,
-                                    sourceType: isSourceType(data.type) ? data.type : undefined,
-                                    sourceId: data.id,
-                                    references: data.references
-                                });
-                                setDraftModalOpen(true);
+                            onOpenItem={(itemId) => {
+                                setAutoNavToWizardId(itemId);
+                                goToSection('pipeline');
                             }}
                         />
                     </div>
@@ -702,7 +694,6 @@ function WorkspaceContent() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             hook: data.hook,
-                            angle: "Draft created from Command Center",
                             brain_metadata: brainMetadata,
                             source_type: newDraftPrefill?.sourceType,
                             source_id: newDraftPrefill?.sourceId,

@@ -6,6 +6,8 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { readPage } from '@/lib/read-page';
+import { captureToSource, formatCapturesForIdeas, stanceFromIntents, CaptureRow, CaptureSource } from '@/lib/brain/captures';
 
 // Platform-specific guidance
 const PLATFORM_GUIDANCE: Record<string, string> = {
@@ -53,11 +55,21 @@ export async function POST(req: Request) {
         // Explore doesn't ask for a tone; the strategy step sets it later, so ideas offer a range
         const tone = body.tone || 'mixed';
         const count = Math.min(Math.max(body.count || 3, 1), 10); // Clamp between 1-10
-        const stanceDesc = typeof body.stance === 'string' && Object.hasOwn(STANCE_GUIDANCE, body.stance) ? STANCE_GUIDANCE[body.stance] : undefined;
+
+        // Ideas from the writer's own Lens captures, read here so their full text and intent are used
+        const captures = Array.isArray(body.captureIds) ? await loadCaptures(userId, body.captureIds) : [];
+        if (Array.isArray(body.captureIds) && !captures.length) {
+            return NextResponse.json({ error: 'Those captures could not be found' }, { status: 404 });
+        }
+
+        const stance = typeof body.stance === 'string' ? body.stance : stanceFromIntents(captures.map(c => c.intent));
+        const stanceDesc = stance && Object.hasOwn(STANCE_GUIDANCE, stance) ? STANCE_GUIDANCE[stance] : undefined;
 
         // Support both single title and array of titles
         let titles: string[] = [];
-        if (body.titles && Array.isArray(body.titles)) {
+        if (captures.length) {
+            titles = captures.map(c => [c.title, c.note].filter(Boolean).join(' '));
+        } else if (body.titles && Array.isArray(body.titles)) {
             titles = body.titles;
         } else if (body.title) {
             titles = [body.title];
@@ -109,7 +121,12 @@ export async function POST(req: Request) {
                 typeof src.summary === 'string' && src.summary ? `  Snippet: ${src.summary.slice(0, 900)}` : '',
             ].filter(Boolean).join('\n'))
             .join('\n');
-        const userMessage = search
+        const userMessage = captures.length
+            ? `The writer saved ${captures.length === 1 ? 'this' : 'these'} while reading and wants to post about ${captures.length === 1 ? 'it' : 'them'}. Every idea must respond to the captured material the way the writer intends (their intent and note below), and be their own post, not a summary of someone else's.${captures.length > 1 ? ' Find the thread that connects the captures; an idea may lean on some more than others.' : ''}
+
+Captures:
+${formatCapturesForIdeas(captures)}`
+            : search
             ? `The writer is exploring: "${search}"
 Every idea must be about that, as they framed it. Use the material below as evidence, examples or a starting point, not as a new topic.
 
@@ -179,7 +196,7 @@ Think like an editor helping a creator stand out during a noisy moment — not a
         });
 
         const result = completion.choices[0].message.content;
-        TraceLogger.log('explore', 'Generated Ideas', { platform, tone, stance: body.stance, count, result });
+        TraceLogger.log('explore', 'Generated Ideas', { platform, tone, stance, count, captures: captures.length, result });
 
         if (!result) throw new Error("No response from OpenAI");
 
@@ -189,6 +206,8 @@ Think like an editor helping a creator stand out during a noisy moment — not a
 
         return NextResponse.json({
             ideas: parsed.ideas || [],
+            // The sources each saved idea carries, so research and drafting see the same captures
+            ...(captures.length ? { captureSources: captures } : {}),
             config: { platform, tone, count } // Return config for transparency
         });
     } catch (err: unknown) {
@@ -238,4 +257,25 @@ async function getWriterContext(userId: string, relatedBeliefIds: unknown): Prom
         lines.push(`Avoid: ${voice.data.anti_patterns.slice(0, 5).join('; ')}`);
     }
     return lines.join('\n');
+}
+
+// The writer's captures, in the order asked. A bookmark saved without page text is read now.
+async function loadCaptures(userId: string, ids: unknown[]): Promise<CaptureSource[]> {
+    const wanted = ids.filter((id): id is string => typeof id === 'string').slice(0, 6);
+    if (!wanted.length) return [];
+    const { data } = await supabaseAdmin
+        .from('thinking_artifacts')
+        .select('id, source_url, source_title, source_domain, ocr_text, user_note, intent_type, ai_metadata')
+        .eq('user_id', userId)
+        .in('id', wanted);
+    const rows = (data || []) as CaptureRow[];
+    const byId = new Map(rows.map(r => [r.id, r]));
+    return Promise.all(wanted.filter(id => byId.has(id)).map(async id => {
+        const row = byId.get(id)!;
+        let pageText: string | undefined;
+        if (!row.ocr_text?.trim() && row.source_url) {
+            pageText = await readPage(row.source_url).then(p => p.content).catch(() => undefined);
+        }
+        return captureToSource(row, pageText);
+    }));
 }

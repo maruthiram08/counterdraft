@@ -33,6 +33,7 @@ export function ContentCard({ item, onAction }: ContentCardProps) {
     const stage = item.stage;
     const confidence = item.brain_metadata?.confidence;
     const isTopic = item.brain_metadata?.explore?.savedAs === 'topic';
+    const fromCaptures = item.brain_metadata?.explore?.from === 'captures';
 
     return (
         <div className="bg-surface p-4 rounded-tile shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all duration-200 group flex flex-col gap-3">
@@ -41,6 +42,11 @@ export function ContentCard({ item, onAction }: ContentCardProps) {
                     {isTopic && (
                         <span className="h-7 px-3 rounded-full bg-ember-50 text-ember-700 text-xs font-medium flex items-center" title="Saved from Explore before picking a post idea">
                             Topic
+                        </span>
+                    )}
+                    {fromCaptures && (
+                        <span className="h-7 px-3 rounded-full bg-dusk-100 text-dusk-700 text-xs font-medium flex items-center" title="Found from your Lens captures">
+                            From captures
                         </span>
                     )}
                     {item.format && (

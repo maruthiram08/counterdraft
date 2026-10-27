@@ -6,7 +6,6 @@ import { Layers, Zap } from 'lucide-react';
 import { BeliefCard } from '@/components/thinking/BeliefCard';
 import { TensionCard } from '@/components/thinking/TensionCard';
 import { AddContentModal } from '@/components/thinking/AddContentModal';
-import { UrlPreviewModal } from '@/components/modal/UrlPreviewModal';
 import { useBeliefs } from '@/hooks/useBeliefs';
 import { useTensions, type Tension } from '@/hooks/useTensions';
 import { useDrafts } from '@/hooks/useDrafts';
@@ -16,15 +15,10 @@ import { BookMarked } from 'lucide-react';
 import { toast } from 'sonner';
 import { LimitModal } from '@/components/modal/LimitModal';
 
-import { Artifact, ContentReference } from '@/types';
 
 interface YourMindProps {
-    onDraftRequest?: (data: {
-        id?: string;
-        hook: string;
-        type: string;
-        references?: ContentReference[];
-    }) => void;
+    // Opens a Pipeline item (an idea saved from captures) in the writing wizard
+    onOpenItem?: (itemId: string) => void;
 }
 
 function SkeletonBeliefCard() {
@@ -67,7 +61,7 @@ function SkeletonTensionCard() {
     );
 }
 
-export function YourMind({ onDraftRequest }: YourMindProps) {
+export function YourMind({ onOpenItem }: YourMindProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -78,10 +72,6 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
     const [activeTab, setActiveTab] = useState<'beliefs' | 'tensions' | 'artifacts'>(initialTab);
     const [beliefView, setBeliefView] = useState<'list' | 'tree'>(initialView);
     const [addContentModalOpen, setAddContentModalOpen] = useState(false);
-
-    // NEW: URL Preview Modal state
-    const [urlPreviewModalOpen, setUrlPreviewModalOpen] = useState(false);
-    const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
 
     // Sync helpers
     const updateUrl = (key: string, value: string) => {
@@ -386,57 +376,7 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                 )}
 
                 {activeTab === 'artifacts' && (
-                    <ArtifactGrid
-                        onDraft={(artifact) => {
-                            // NEW: Open preview modal instead of direct draft
-                            if (artifact.source_url) {
-                                setSelectedArtifact(artifact);
-                                setUrlPreviewModalOpen(true);
-                            } else if (onDraftRequest) {
-                                // No URL, use ocr_text directly (e.g., screenshots)
-                                onDraftRequest({
-                                    id: artifact.id,
-                                    hook: artifact.user_note || "New Draft from Artifact",
-                                    type: 'artifact',
-                                    references: artifact.ocr_text ? [{
-                                        id: `ref-${Date.now()}`,
-                                        contentItemId: '',
-                                        referenceType: 'text',
-                                        content: artifact.ocr_text,
-                                        title: "Screenshot Content",
-                                        createdAt: new Date()
-                                    }] : []
-                                });
-                            } else {
-                                // Fallback (Legacy)
-                                handleWriteAbout({
-                                    id: artifact.id,
-                                    text: artifact.user_note || (artifact.ocr_text ? artifact.ocr_text.slice(0, 100) + "..." : "Saved Highlight"),
-                                    context: artifact.ocr_text,
-                                    type: 'artifact',
-                                    tags: artifact.ai_metadata?.tags,
-                                    entities: artifact.ai_metadata?.entities
-                                });
-                            }
-                        }}
-                        onSynthesize={(selectedArtifacts) => {
-                            if (onDraftRequest) {
-                                onDraftRequest({
-                                    hook: `Synthesis of ${selectedArtifacts.length} sources`,
-                                    type: 'synthesis',
-                                    references: selectedArtifacts.map(a => ({
-                                        id: `ref-${a.id}`,
-                                        contentItemId: '',
-                                        referenceType: 'text',
-                                        content: a.ocr_text || a.user_note,
-                                        url: a.source_url,
-                                        title: a.source_title || a.user_note || 'Research Snippet',
-                                        createdAt: new Date()
-                                    }))
-                                });
-                            }
-                        }}
-                    />
+                    <ArtifactGrid onOpenItem={onOpenItem} />
                 )}
             </div>
 
@@ -444,34 +384,6 @@ export function YourMind({ onDraftRequest }: YourMindProps) {
                 isOpen={addContentModalOpen}
                 onClose={() => setAddContentModalOpen(false)}
                 onSuccess={() => window.location.reload()}
-            />
-
-            {/* NEW: URL Preview Modal */}
-            <UrlPreviewModal
-                isOpen={urlPreviewModalOpen}
-                onClose={() => {
-                    setUrlPreviewModalOpen(false);
-                    setSelectedArtifact(null);
-                }}
-                artifact={selectedArtifact}
-                onCreateDraft={(content, title, url) => {
-                    if (onDraftRequest) {
-                        onDraftRequest({
-                            id: selectedArtifact?.id,
-                            hook: selectedArtifact?.user_note || title || "New Draft from URL",
-                            type: 'artifact',
-                            references: content ? [{
-                                id: `ref-${Date.now()}`,
-                                contentItemId: '',
-                                referenceType: 'text',
-                                content: content,
-                                url: url,
-                                title: title || "Fetched Article Content",
-                                createdAt: new Date()
-                            }] : []
-                        });
-                    }
-                }}
             />
 
             <LimitModal
