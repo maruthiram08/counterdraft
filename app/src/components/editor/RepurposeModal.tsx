@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ComponentType } from "react";
-import { X, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette } from "lucide-react";
+import { X, ArrowLeft, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette } from "lucide-react";
 import { SmartStudioPanel } from "./SmartStudioPanel";
 import type { SlideContent } from "@/lib/pptx-generator";
 
@@ -149,6 +149,8 @@ type RepurposeResult = {
 
 export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onDesign, sourceContent }: RepurposeModalProps) {
     const [selectedPlatformId, setSelectedPlatformId] = useState<string>('medium');
+    // Phones show one pane at a time: pick a format, then its options (with a way back)
+    const [phoneShowsOptions, setPhoneShowsOptions] = useState(false);
     const [optionsValues, setOptionsValues] = useState<Record<string, Record<string, string | boolean>>>({
         medium: { length: 'medium', generateCover: true },
         instagram: { format: 'carousel', labels: '', generateInfographic: true }
@@ -285,13 +287,18 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm p-4 md:p-8">
-            <div className="bg-canvas rounded-card shadow-float w-full max-w-6xl h-[90vh] flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-canvas rounded-card shadow-float w-full max-w-6xl h-[90dvh] flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
                 {/* LEFT SIDEBAR navigation */}
-                <div className="w-[300px] bg-canvas flex flex-col shrink-0">
-                    <div className="px-6 pt-8 pb-2">
-                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">Repurpose</h2>
-                        <p className="text-sm text-ink-soft mt-1">Transform content for social.</p>
+                <div className={`w-full md:w-[300px] bg-canvas flex-col shrink-0 ${phoneShowsOptions ? 'hidden md:flex' : 'flex'}`}>
+                    <div className="px-6 pt-6 md:pt-8 pb-2 flex items-start justify-between gap-3">
+                        <div>
+                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">Repurpose</h2>
+                            <p className="text-sm text-ink-soft mt-1">Transform content for social.</p>
+                        </div>
+                        <button onClick={onClose} aria-label="Close" className="md:hidden w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
+                            <X size={20} />
+                        </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -307,7 +314,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                         return (
                                             <button
                                                 key={p.id}
-                                                onClick={() => setSelectedPlatformId(p.id)}
+                                                onClick={() => { setSelectedPlatformId(p.id); setPhoneShowsOptions(true); }}
                                                 className={`w-full text-left p-4 rounded-tile flex items-start gap-3 transition-all duration-200 relative overflow-hidden group ${isSelected ? 'bg-canvas shadow-pressed' : 'bg-canvas shadow-raised hover:shadow-float'
                                                     }`}
                                             >
@@ -341,22 +348,25 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                 </div>
 
                 {/* RIGHT CONTENT AREA */}
-                <div className="flex-1 flex flex-col bg-canvas min-w-0">
+                <div className={`flex-1 flex-col bg-canvas min-w-0 ${phoneShowsOptions ? 'flex' : 'hidden md:flex'}`}>
                     {/* Header */}
-                    <div className="h-20 flex items-center justify-between px-8 pt-4 shrink-0 bg-canvas sticky top-0 z-10">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${currentPlatform.bgClass} ${currentPlatform.textClass}`}>
+                    <div className="h-20 flex items-center justify-between gap-3 px-5 md:px-8 pt-4 shrink-0 bg-canvas sticky top-0 z-10">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <button onClick={() => setPhoneShowsOptions(false)} aria-label="Back to formats" className="md:hidden w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
+                                <ArrowLeft size={20} />
+                            </button>
+                            <div className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center ${currentPlatform.bgClass} ${currentPlatform.textClass}`}>
                                 <currentPlatform.icon size={18} />
                             </div>
-                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink">{currentPlatform.label}</h2>
+                            <h2 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink truncate">{currentPlatform.label}</h2>
                         </div>
-                        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
+                        <button onClick={onClose} aria-label="Close" className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all">
                             <X size={20} />
                         </button>
                     </div>
 
                     {/* Scrollable Body */}
-                    <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                    <div className="flex-1 overflow-y-auto p-5 md:p-8">
                         {selectedPlatformId === 'smart_studio' ? (
                             <div className="h-full flex flex-col">
                                 <SmartStudioPanel content={sourceContent || ''} onDownload={() => setIsSuccess(true)} />
@@ -466,7 +476,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
 
                     {/* Footer - Only for non-Smart Studio */}
                     {selectedPlatformId !== 'smart_studio' && (
-                        <div className="px-6 pb-6 pt-2 md:px-8 flex items-center justify-end gap-3 shrink-0">
+                        <div className="px-5 pb-5 pt-2 md:px-8 md:pb-6 flex flex-wrap items-center justify-end gap-3 shrink-0">
                             {error && (
                                 <p role="alert" className="mr-auto text-sm text-ember-700">{error}</p>
                             )}
@@ -474,7 +484,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                             <button
                                 onClick={handleConfirm}
                                 disabled={isProcessing}
-                                className="h-12 px-6 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
+                                className="h-12 px-6 whitespace-nowrap rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isProcessing ? (
                                     <>

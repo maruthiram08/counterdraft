@@ -91,21 +91,21 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
 
                     <button
                         onClick={() => handleClassify('inconsistency')}
-                        className="h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-rose-700 hover:bg-rose-100 active:shadow-pressed transition-all flex items-center gap-1.5"
+                        className="h-10 md:h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-rose-700 hover:bg-rose-100 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <X size={14} /> Inconsistency
                     </button>
 
                     <button
                         onClick={() => handleClassify('intentional_nuance')}
-                        className="h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-sage-700 hover:bg-sage-100 active:shadow-pressed transition-all flex items-center gap-1.5"
+                        className="h-10 md:h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-sage-700 hover:bg-sage-100 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <Check size={14} /> Nuance
                     </button>
 
                     <button
                         onClick={() => handleClassify('explore')}
-                        className="h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-dusk-700 hover:bg-dusk-100 active:shadow-pressed transition-all flex items-center gap-1.5"
+                        className="h-10 md:h-9 px-3 rounded-full text-xs font-medium text-ink-muted hover:text-dusk-700 hover:bg-dusk-100 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <Lightbulb size={14} /> Explore
                     </button>

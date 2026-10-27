@@ -80,10 +80,10 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                                 }}
                             />
                             <div className="flex justify-end gap-2">
-                                <button onClick={() => setIsEditing(false)} className="p-1.5 rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all">
+                                <button onClick={() => setIsEditing(false)} className="p-3 md:p-1.5 rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all">
                                     <X size={14} />
                                 </button>
-                                <button onClick={handleSaveEdit} className="p-1.5 rounded-full text-sage-700 hover:bg-sage-100 active:shadow-pressed transition-all">
+                                <button onClick={handleSaveEdit} className="p-3 md:p-1.5 rounded-full text-sage-700 hover:bg-sage-100 active:shadow-pressed transition-all">
                                     <Check size={14} />
                                 </button>
                             </div>
@@ -144,7 +144,7 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                         {onRefine && (
                             <button
                                 onClick={onRefine}
-                                className="p-1.5 rounded-full text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
+                                className="p-3 md:p-1.5 rounded-full text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
                                 title="Regenerate this point"
                             >
                                 <AnimatedIcon icon={RefreshCWIcon} size={14} />
@@ -152,21 +152,21 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                         )}
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="p-1.5 rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all"
+                            className="p-3 md:p-1.5 rounded-full text-ink-muted hover:text-ink active:shadow-pressed transition-all"
                             title="Edit text"
                         >
                             <Edit2 size={14} />
                         </button>
                         <button
                             onClick={() => setShowNoteInput(!showNoteInput)}
-                            className={`p-1.5 rounded-full transition-all ${showNoteInput ? 'text-ember-600 bg-canvas shadow-pressed' : 'text-ink-muted hover:text-ember-600 active:shadow-pressed'}`}
+                            className={`p-3 md:p-1.5 rounded-full transition-all ${showNoteInput ? 'text-ember-600 bg-canvas shadow-pressed' : 'text-ink-muted hover:text-ember-600 active:shadow-pressed'}`}
                             title="Add note"
                         >
                             <MessageSquare size={14} />
                         </button>
                         <button
                             onClick={onDelete}
-                            className="p-1.5 rounded-full text-ink-muted hover:text-rose-500 active:shadow-pressed transition-all"
+                            className="p-3 md:p-1.5 rounded-full text-ink-muted hover:text-rose-500 active:shadow-pressed transition-all"
                             title="Delete item"
                         >
                             <Trash2 size={14} />
