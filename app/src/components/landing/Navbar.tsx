@@ -22,10 +22,10 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
         </Link>
 
         <div className="hidden lg:flex items-center gap-10">
-          <a href="#the-brain" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">How It Works</a>
-          <a href="#command-center" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Organize</a>
-          <a href="#smart-studio" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Repurpose</a>
-          <a href="#" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Blog</a>
+          <Link href="/#the-brain" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">How It Works</Link>
+          <Link href="/#command-center" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Organize</Link>
+          <Link href="/#smart-studio" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Repurpose</Link>
+          <Link href="/pricing" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Pricing</Link>
         </div>
 
         <div className="flex items-center gap-3 md:gap-6 shrink-0">

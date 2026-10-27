@@ -1,59 +1,46 @@
 import { NextResponse } from 'next/server';
+import { AntiSlopService } from '@/lib/tools/anti-slop';
 
-// THIS IS A "LITE" VERSION OF THE BRAIN LOGIC
-// It returns a simplified analysis for the public marketing site.
-// In the future, this should call the real BrainDecisionService but filter the output.
+// The homepage "Try it now" check. It only looks for stock phrases (the same word list the
+// app uses on drafts), so it's free to run for anyone and never calls a model.
+
+const EXTRA_PHRASES: Record<string, string> = {
+    'game-changer': 'Hype the post can rarely back up.',
+    'leverage': 'Corporate filler; "use" usually works.',
+    "in today's world": 'Throat-clearing opening.',
+};
+
+const MAX_ISSUES = 5;
 
 export async function POST(req: Request) {
     try {
         const { text } = await req.json();
 
-        if (!text || text.length < 50) {
+        if (typeof text !== 'string' || text.length < 50) {
             return NextResponse.json({ error: 'Text too short' }, { status: 400 });
         }
+        const sample = text.slice(0, 5000);
 
-        // SIMULATED ANALYSIS for "Lite" version
-        // 1. Check for basic "AI Stop Words"
-        const aiPatterns = ['game-changer', 'unleash', 'leverage', 'in today\'s world', 'delve'];
-        const issues = [];
-
-        // Quick scan for clichés
-        aiPatterns.forEach(word => {
-            if (text.toLowerCase().includes(word)) {
-                issues.push({
-                    type: 'cliche',
-                    match: word,
-                    message: `The phrase "${word}" creates cognitive gloss.`
-                });
-            }
-        });
-
-        // Add a generic style issue if too clean
-        if (issues.length === 0 && text.length > 200) {
-            issues.push({
-                type: 'tone',
-                match: 'structure',
-                message: 'Sentence structure lacks rhythmic variation.'
-            });
-        }
-
-        // Calculate a "Teaser Score"
-        // Base 80, minus 10 for each issue found
-        const score = Math.max(40, 80 - (issues.length * 15));
-
-        // MOCK RESPONSE
-        // We only return ONE clear issue, the rest are "hidden" for the lead magnet.
-        const response = {
-            score,
-            primary_critique: issues.length > 0 ? issues[0] : { type: 'positive', message: 'Good flow, but lacks unique opinion.' },
-            hidden_issues_count: Math.max(0, issues.length - 1 + Math.floor(Math.random() * 3)) // Fake "more issues" to drive curiosity if few found
+        const issues: { type: string; match: string; message: string; suggestion?: string }[] = [];
+        const seen = new Set<string>();
+        const add = (match: string, message: string, suggestion?: string) => {
+            const key = match.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            issues.push({ type: 'cliche', match, message, suggestion: suggestion || undefined });
         };
 
-        // Add artificial delay to simulate "Thinking"
-        await new Promise(r => setTimeout(r, 2000));
+        AntiSlopService.scan(sample).forEach(m => add(m.word, m.reason, m.suggestion));
+        const lower = sample.toLowerCase();
+        Object.entries(EXTRA_PHRASES).forEach(([phrase, reason]) => {
+            const at = lower.indexOf(phrase);
+            if (at !== -1) add(sample.slice(at, at + phrase.length), reason);
+        });
 
-        return NextResponse.json(response);
-
+        return NextResponse.json({
+            issues: issues.slice(0, MAX_ISSUES),
+            total: issues.length,
+        });
     } catch (err) {
         console.error('Audit Error:', err);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

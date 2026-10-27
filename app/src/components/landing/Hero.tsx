@@ -20,14 +20,14 @@ export const Hero: React.FC = () => {
           Write content that <span className="text-ember-500">sounds like you</span>.
         </h1>
         <p className="text-ink-soft text-lg md:text-xl max-w-2xl mx-auto mb-8 md:mb-12 leading-relaxed animate-fade-in-up [&_strong]:font-medium [&_strong]:text-ink" style={{ animationDelay: '0.2s' }}>
-          LinkedIn posts. Blog articles. Newsletters. Even books. Counterdraft helps you <strong>find your angle, organize your ideas, and publish without sounding generic</strong>.
+          LinkedIn posts first, then Medium articles and Instagram carousels from them. Counterdraft helps you <strong>find your angle, organize your ideas, and publish without sounding generic</strong>.
         </p>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 mb-16 md:mb-28 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <SignedOut>
             <Link href="/sign-up" className="w-full sm:w-auto" onClick={() => posthog?.capture('click_get_started', { location: 'hero' })}>
               <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
-                Start Writing
+                Get Started
               </button>
             </Link>
           </SignedOut>
@@ -60,7 +60,7 @@ export const Hero: React.FC = () => {
               </div>
               <div className="text-xs text-ink-muted font-mono flex items-center gap-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-sage-500 animate-pulse"></span>
-                CONNECTED_BRAIN_INSTANCE.PRO
+                WORKSPACE_PREVIEW
               </div>
               <div className="hidden sm:block w-12"></div>
             </div>

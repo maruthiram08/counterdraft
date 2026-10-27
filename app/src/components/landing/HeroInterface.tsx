@@ -28,7 +28,7 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
             <div className="flex-1 p-4 md:p-8 flex flex-col overflow-y-auto min-h-0">
                 <div className="mb-6 md:mb-8 shrink-0">
                     <h2 className="text-3xl md:text-[40px] md:leading-[1.05] font-medium tracking-[-0.03em] text-ink mb-2">Morning, Alex.</h2>
-                    <p className="text-sm md:text-base text-ink-soft">Your latest <span className="text-ink font-medium border-b border-ember-200 pb-0.5">LinkedIn post</span> is picking up engagement.</p>
+                    <p className="text-sm md:text-base text-ink-soft">Your <span className="text-ink font-medium border-b border-ember-200 pb-0.5">LinkedIn post</span> is ready for one last read.</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 pb-4">
@@ -62,13 +62,13 @@ export const HeroInterface: React.FC<HeroDashboardProps> = ({ className }) => {
                     <div className="space-y-4">
                         {/* Stat 1 */}
                         <div className="bg-surface p-5 rounded-tile shadow-card">
-                            <div className="text-sm text-ink-muted mb-2">Originality Score</div>
+                            <div className="text-sm text-ink-muted mb-2">Craft Score</div>
                             <div className="flex items-end gap-2">
-                                <span className="text-4xl font-medium tracking-[-0.03em] text-ink">94%</span>
-                                <span className="text-xs font-medium text-sage-700 bg-sage-100 rounded-full px-2 py-0.5 mb-1.5">↑ 12%</span>
+                                <span className="text-4xl font-medium tracking-[-0.03em] text-ink">86</span>
+                                <span className="text-sm text-ink-muted mb-1">/ 100</span>
                             </div>
                             <div className="w-full h-1.5 bg-canvas shadow-well rounded-full mt-3 overflow-hidden">
-                                <div className="h-full bg-ember-500 rounded-full w-[94%]"></div>
+                                <div className="h-full bg-ember-500 rounded-full w-[86%]"></div>
                             </div>
                         </div>
 

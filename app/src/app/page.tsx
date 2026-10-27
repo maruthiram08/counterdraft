@@ -8,7 +8,7 @@ import { Hero } from '@/components/landing/Hero';
 import { CommandCenter } from '@/components/landing/CommandCenter';
 import { SmartStudio } from '@/components/landing/SmartStudio';
 import { TheBrain } from '@/components/landing/TheBrain';
-import { Testimonials } from '@/components/landing/Testimonials';
+import { ComingSoon } from '@/components/landing/ComingSoon';
 import { Footer } from '@/components/landing/Footer';
 import { usePostHog } from 'posthog-js/react';
 
@@ -39,7 +39,7 @@ export default function Home() {
             </div>
             <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium mb-6 tracking-[-0.03em] text-ink">Start with clarity, not a blank page.</h2>
             <p className="text-ink-soft text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-              Before you write a word, we help you define your reader, lock your perspective, and cut the clichés. So every piece sounds like you—not like everyone else.
+              Before you write a word, we help you define your reader, lock your perspective, and cut the clichés. So every post sounds like you, not like everyone else.
             </p>
           </div>
           <TheBrain />
@@ -55,12 +55,8 @@ export default function Home() {
                 </div>
                 <h2 className="text-4xl md:text-[56px] md:leading-[1.05] font-medium mb-6 tracking-[-0.03em] text-ink">All your ideas. Finally in one place.</h2>
                 <p className="text-ink-soft text-lg md:text-xl max-w-xl">
-                  From first spark to published post—capture ideas, develop drafts, and track everything without scattered docs and lost notes.
+                  From first spark to posted: capture ideas, develop drafts, and keep track of what you&apos;ve posted, without scattered docs and lost notes.
                 </p>
-              </div>
-              <div className="hidden md:flex gap-3 mb-4">
-                <button className="h-12 w-12 rounded-full bg-canvas shadow-raised flex items-center justify-center text-ink-soft hover:text-ink active:shadow-pressed transition-all">←</button>
-                <button className="h-12 w-12 rounded-full bg-canvas shadow-raised flex items-center justify-center text-ink-soft hover:text-ink active:shadow-pressed transition-all">→</button>
               </div>
             </div>
             <CommandCenter />
@@ -74,20 +70,22 @@ export default function Home() {
               <div className="inline-flex items-center h-8 px-4 rounded-full bg-ember-100 text-ember-700 text-sm font-medium mb-6">
                 Repurpose everywhere
               </div>
-              <h2 className="text-4xl md:text-5xl font-medium mb-6 tracking-[-0.03em] leading-[1.05] text-ink">One article. Every platform. Your voice.</h2>
+              <h2 className="text-4xl md:text-5xl font-medium mb-6 tracking-[-0.03em] leading-[1.05] text-ink">One post. More places. Your voice.</h2>
               <p className="text-ink-soft text-lg mb-10 leading-relaxed">
-                Turn your blog post into LinkedIn content, Twitter threads, and Instagram carousels—without sounding like a robot.
+                Write your LinkedIn post, then turn it into a Medium article or an Instagram carousel, without sounding like a robot.
               </p>
               <div className="space-y-6">
                 {[
-                  { label: "LinkedIn Posts That Stand Out", desc: "Not another generic hot take." },
-                  { label: "Twitter & Threads That Get Read", desc: "Multi-part threads from long-form ideas." },
-                  { label: "Carousels & Slides", desc: "Visual content from your written work." }
+                  { label: "LinkedIn posts that stand out", desc: "Not another generic hot take. Connect LinkedIn to post from the app, or copy it." },
+                  { label: "Medium articles", desc: "A longer article from your post, with a cover image." },
+                  { label: "Instagram carousels and captions", desc: "Slide-by-slide scripts, hashtags and a matching image." },
+                  { label: "X threads and newsletters", desc: "Threads and newsletter issues written from your posts, ready to copy.", soon: true }
                 ].map((item, i) => (
                   <div key={i} className="group cursor-default">
-                    <div className="flex items-center gap-3 text-ink text-[17px] font-medium tracking-[-0.01em] mb-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-ember-500"></div>
+                    <div className={`flex flex-wrap items-center gap-3 text-[17px] font-medium tracking-[-0.01em] mb-1 ${item.soon ? 'text-ink-soft' : 'text-ink'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${item.soon ? 'bg-ink-muted' : 'bg-ember-500'}`}></div>
                       {item.label}
+                      {item.soon && <ComingSoon />}
                     </div>
                     <p className="text-ink-muted text-sm pl-4.5">{item.desc}</p>
                   </div>
@@ -100,21 +98,19 @@ export default function Home() {
           </div>
         </section>
 
-        <Testimonials />
-
         <section className="py-20 md:py-40 text-center relative overflow-hidden bg-canvas">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-ember-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
           <div className="relative z-10 max-w-4xl mx-auto px-4">
             <h2 className="text-4xl md:text-7xl font-medium mb-6 md:mb-8 tracking-[-0.03em] leading-[1.05] text-ink">Ready to write something you&apos;re proud of?</h2>
             <p className="text-ink-soft text-lg md:text-2xl max-w-2xl mx-auto mb-8 md:mb-12">
-              Thousands of creators use Counterdraft for LinkedIn, Medium, Substack, and more.
+              Find your angle, draft in your voice, and post to LinkedIn. Then turn it into a Medium article or an Instagram carousel.
             </p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-6">
               <SignedOut>
                 <Link href="/sign-up" className="w-full sm:w-auto" onClick={() => posthog?.capture('click_get_started', { location: 'footer' })}>
                   <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
-                    Start Writing Free
+                    Get Started
                   </button>
                 </Link>
               </SignedOut>

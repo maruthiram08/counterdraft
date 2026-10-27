@@ -51,8 +51,8 @@ export default function PhilosophyPage() {
                     </div>
 
                     <p>
-                        Counterdraft is not an AI writer. It is an <strong>Intelligence Amplifier</strong>. We use AI to verify your arguments,
-                        challenge your biases, and remix your core truths—but the truth itself must come from you.
+                        Counterdraft uses AI to help you draft, but it is not a generic AI writer. It starts from your reader, your stance and your own posts,
+                        checks the draft against that strategy, and flags the stock phrases. The truth itself must come from you.
                     </p>
                 </div>
             </main>
