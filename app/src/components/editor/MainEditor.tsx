@@ -2,11 +2,9 @@
 
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
-import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
-import { SparklesIcon } from "@/components/icons/animated";
+import { Check } from "lucide-react";
 import type { Draft, BrainMetadata } from "@/types";
 import { ContextualToolbar } from "./ContextualToolbar";
-import { PublishModal } from "./PublishModal";
 import { RepurposeModal } from "./RepurposeModal";
 import { VerificationSidebar } from "./FactCheckSidebar";
 import { EditorHeader } from "./EditorHeader";
@@ -17,7 +15,10 @@ import { LinkedInPreview } from "./LinkedInPreview";
 import { PlaceholderNotice } from "./PlaceholderNotice";
 import { VariantsPanel } from "./VariantsPanel";
 import { CraftScorePanel } from "./CraftScorePanel";
-import { postPlatforms } from "./PublishedPostsList";
+import { PostSheet } from "./PostSheet";
+import { postPlatforms, postedDate, postUrl, isManualRecord } from "@/lib/posts/posted";
+import type { PostedDetails } from "@/hooks/useDrafts";
+import { toast } from "sonner";
 import { findPlaceholders, Placeholder } from "@/lib/editor/placeholders";
 
 // Refactored Hooks & Utils
@@ -32,12 +33,17 @@ interface MainEditorProps {
     draft: Draft | null;
     onSave: (id: string, content: string, title?: string) => Promise<boolean>;
     onUpdateMetadata?: (id: string, metadata: BrainMetadata) => Promise<boolean>;
-    onPublish?: (id: string, stage: string) => Promise<void>;
+    onMarkPosted?: (id: string, details: PostedDetails) => Promise<PostedResult>;
+    onMoveBack?: (id: string) => Promise<PostedResult>;
+    onLinkedInPosted?: () => void;
     onDuplicate?: (draft: Draft) => Promise<void>;
 }
 
-export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditorProps) {
+type PostedResult = { ok: true } | { ok: false; error: string };
+
+export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedInPosted, onDuplicate }: MainEditorProps) {
     const [duplicating, setDuplicating] = useState(false);
+    const [movingBack, setMovingBack] = useState(false);
 
     // 1. Core State
     const {
@@ -50,7 +56,7 @@ export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditor
 
     // 2. Mode & UI State
     const [isPreview, setIsPreview] = useState(false);
-    const [showPublishModal, setShowPublishModal] = useState(false);
+    const [postSheet, setPostSheet] = useState<'post' | 'details' | null>(null);
     const [postTool, setPostTool] = useState<'craft' | 'openings' | 'variants' | 'preview' | null>(null);
 
     // 3. Selection
@@ -86,7 +92,7 @@ export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditor
     const {
         learning, extracting, refining,
         lastRefinement, setLastRefinement,
-        handleFinalize, handleExecuteRefinement,
+        learnFromFinal, handleExecuteRefinement,
         handleFactFix, handleApplySlopSuggestion
     } = useAIActions({
         draft,
@@ -94,7 +100,6 @@ export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditor
         setContent,
         getFullContent,
         onSave,
-        onPublish,
         handleVerify,
         setToolbarPosition,
         setSelectionRange,
@@ -202,11 +207,10 @@ export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditor
                         handleCopy={handleCopy}
                         handleSave={handleSave}
                         setShowRepurposeModal={setShowRepurposeModal}
-                        handleFinalize={handleFinalize}
+                        onPost={() => setPostSheet('post')}
                         learning={learning}
                         setShowFactCheck={setShowFactCheck}
                         handleDownloadDesign={handleDownloadDesign}
-                        setShowPublishModal={setShowPublishModal}
                         copied={copied}
                     />
 
@@ -244,49 +248,88 @@ export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditor
                         </div>
                     )}
 
-                    {/* Published Banner */}
-                    {draft.status === 'published' && (
-                        <div className="mb-6 p-4 bg-dusk-100 rounded-tile shadow-raised flex flex-wrap gap-3 items-center justify-between group/banner animate-in fade-in slide-in-from-top-2 duration-500">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-surface text-dusk-700">
-                                    <AnimatedIcon icon={SparklesIcon} size={18} />
+                    {/* Posted banner: the post as it went out, plus ways to reuse it */}
+                    {draft.status === 'published' && (() => {
+                        const platforms = postPlatforms(draft);
+                        const viaCounterDraft = (draft.published_posts || []).some(p => !isManualRecord(p));
+                        const link = (draft.published_posts || []).map(postUrl).find(Boolean);
+                        const when = new Date(postedDate(draft)).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+                        return (
+                            <div className="mb-6 p-4 bg-dusk-100 rounded-tile shadow-raised animate-in fade-in slide-in-from-top-2 duration-500">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-surface text-dusk-700">
+                                        <Check size={18} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="text-sm font-medium text-ink">Posted{platforms.length > 0 && ` on ${platforms.join(', ')}`}</h4>
+                                        <p className="text-xs text-ink-soft">
+                                            {when}
+                                            {link && (
+                                                <>
+                                                    {' · '}
+                                                    <a href={link} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ember-600">View post</a>
+                                                </>
+                                            )}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 className="text-sm font-medium text-ink">This post is published</h4>
-                                    <p className="text-xs text-ink-soft">
-                                        Published on {draft.published_posts?.[0]?.published_at ? new Date(draft.published_posts[0].published_at).toLocaleDateString() : new Date(draft.updated_at).toLocaleDateString()}
-                                        {postPlatforms(draft).length > 0 && ` on ${postPlatforms(draft).join(', ')}`}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                    onClick={handleCopy}
-                                    className="h-11 md:h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
-                                >
-                                    {copied ? 'Copied' : 'Copy'}
-                                </button>
-                                {onDuplicate && (
+                                <div className="flex flex-wrap items-center gap-2">
                                     <button
-                                        onClick={async () => {
-                                            setDuplicating(true);
-                                            try { await onDuplicate(draft); } finally { setDuplicating(false); }
-                                        }}
-                                        disabled={duplicating}
-                                        className="h-11 md:h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-60"
+                                        onClick={handleCopy}
+                                        className="h-11 md:h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                     >
-                                        {duplicating ? 'Copying…' : 'Use as new draft'}
+                                        {copied ? 'Copied' : 'Copy'}
                                     </button>
+                                    {onDuplicate && (
+                                        <button
+                                            onClick={async () => {
+                                                setDuplicating(true);
+                                                try { await onDuplicate(draft); } finally { setDuplicating(false); }
+                                            }}
+                                            disabled={duplicating}
+                                            className="h-11 md:h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-60"
+                                        >
+                                            {duplicating ? 'Copying…' : 'Use as new draft'}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setShowRepurposeModal(true)}
+                                        className="h-11 md:h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                                    >
+                                        Repurpose
+                                    </button>
+                                </div>
+                                {/* Posts marked by hand can be corrected or taken back; LinkedIn posts made here can't */}
+                                {!viaCounterDraft && (onMarkPosted || onMoveBack) && (
+                                    <div className="flex flex-wrap items-center gap-x-4 mt-2 -mb-1">
+                                        {onMarkPosted && (
+                                            <button
+                                                onClick={() => setPostSheet('details')}
+                                                className="h-11 md:h-9 text-xs font-medium text-ink-soft hover:text-ember-600 underline underline-offset-2"
+                                            >
+                                                {link ? 'Edit details' : 'Add the link'}
+                                            </button>
+                                        )}
+                                        {onMoveBack && (
+                                            <button
+                                                onClick={async () => {
+                                                    setMovingBack(true);
+                                                    const result = await onMoveBack(draft.id);
+                                                    setMovingBack(false);
+                                                    if (result.ok) toast.success("Back in Drafts");
+                                                    else toast.error(result.error);
+                                                }}
+                                                disabled={movingBack}
+                                                className="h-11 md:h-9 text-xs font-medium text-ink-soft hover:text-ember-600 underline underline-offset-2 disabled:opacity-60"
+                                            >
+                                                {movingBack ? 'Moving…' : 'Move back to drafts'}
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
-                                <button
-                                    onClick={() => setShowRepurposeModal(true)}
-                                    className="h-11 md:h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
-                                >
-                                    Repurpose
-                                </button>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* Opening and feed preview: how the post lands before "see more" */}
                     <div className="mb-4 flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto scrollbar-none p-2 -m-2">
@@ -371,13 +414,30 @@ export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditor
             </div>
 
             {/* Modals */}
-            <PublishModal
-                isOpen={showPublishModal}
-                onClose={() => setShowPublishModal(false)}
-                draftId={draft.id}
-                content={content}
-                beliefText={draft.belief_text}
-            />
+            {onMarkPosted && (
+                <PostSheet
+                    isOpen={postSheet !== null}
+                    mode={postSheet || 'post'}
+                    onClose={() => setPostSheet(null)}
+                    draft={draft}
+                    content={getFullContent()}
+                    onMarkPosted={async (details) => {
+                        const wasDraft = draft.status !== 'published';
+                        const finalContent = getFullContent();
+                        if (wasDraft) await onSave(draft.id, finalContent);
+                        const result = await onMarkPosted(draft.id, details);
+                        if (result.ok && wasDraft) {
+                            toast.success("Moved to Posted");
+                            void learnFromFinal(finalContent);
+                        }
+                        return result;
+                    }}
+                    onLinkedInPosted={() => {
+                        void learnFromFinal(getFullContent());
+                        onLinkedInPosted?.();
+                    }}
+                />
+            )}
             <RepurposeModal
                 isOpen={showRepurposeModal}
                 onClose={() => setShowRepurposeModal(false)}

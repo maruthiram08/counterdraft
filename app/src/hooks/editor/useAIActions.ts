@@ -10,7 +10,6 @@ interface UseAIActionsProps {
     setContent: (c: string) => void;
     getFullContent: () => string;
     onSave: (id: string, content: string) => Promise<boolean>;
-    onPublish?: (id: string, stage: string) => Promise<void>;
     handleVerify?: () => void;
     setToolbarPosition?: (pos: { top: number; left: number } | null) => void;
     setSelectionRange?: (range: { start: number; end: number } | null) => void;
@@ -21,9 +20,6 @@ export function useAIActions({
     draft,
     content,
     setContent,
-    getFullContent,
-    onSave,
-    onPublish,
     handleVerify,
     setToolbarPosition,
     setSelectionRange,
@@ -65,68 +61,24 @@ export function useAIActions({
         }
     };
 
-    const handleFinalize = async () => {
+    // Learn from the version that actually went out. Runs after the post is marked; it never blocks posting.
+    const learnFromFinal = async (finalContent: string) => {
         if (!draft) return;
         setLearning(true);
-        const toastId = toast.loading("Finalizing and updating Voice Profile...");
-
         try {
-            await onSave(draft.id, getFullContent());
-
             const learnRes = await fetch('/api/voice/learn', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    draftId: draft.id,
-                    finalContent: getFullContent()
-                })
+                body: JSON.stringify({ draftId: draft.id, finalContent })
             });
-
             if (learnRes.ok) {
                 const data = await learnRes.json();
                 if (data.learned) {
-                    toast.success("Voice Profile Updated!", { id: toastId, description: `Added ${data.newRulesCount} new rules based on your edits.` });
-                } else {
-                    toast.success("Analysis Complete", { id: toastId, description: "No significant style deviations found." });
+                    toast.success("Voice profile updated", { description: `Added ${data.newRulesCount} new rules from your edits.` });
                 }
-
-                // 1. Update backend state (this is the source of truth)
-                const publishRes = await fetch('/api/content', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: draft.id,
-                        stage: 'published',
-                        status: 'published', // Explicitly set status to published
-                        published_at: new Date().toISOString()
-                    })
-                });
-
-                if (!publishRes.ok) {
-                    throw new Error("Failed to update status to published");
-                }
-
-                // 2. Update parent state if callback provided
-                if (onPublish) {
-                    await onPublish(draft.id, 'published');
-                } else {
-                    // Fallback: direct update if no parent handler
-                    await fetch(`/api/drafts/${draft.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: 'published' })
-                    });
-                }
-
-                toast.success("Draft moved to Published", { duration: 3000 });
-                // Force a small delay to allow UI to react before any navigation
-                await new Promise(r => setTimeout(r, 500));
-            } else {
-                toast.error("Failed to update voice profile.", { id: toastId });
             }
         } catch (e) {
             console.error("Learning failed", e);
-            toast.error("Network error.", { id: toastId });
         } finally {
             setLearning(false);
         }
@@ -247,7 +199,7 @@ export function useAIActions({
         lastRefinement,
         setLastRefinement,
         handleExtractKnowledge,
-        handleFinalize,
+        learnFromFinal,
         handleExecuteRefinement,
         handleFactFix,
         handleApplySlopSuggestion

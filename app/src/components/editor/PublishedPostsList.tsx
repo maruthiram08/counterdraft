@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Draft } from "@/types";
+import { platformName, postPlatforms, postUrl, postedDate } from "@/lib/posts/posted";
 import { ExternalLink, Calendar, Layers, ChevronRight } from "lucide-react";
 
 interface PublishedPostsListProps {
@@ -9,42 +10,8 @@ interface PublishedPostsListProps {
     onOpen?: (draftId: string) => void;
 }
 
-const PLATFORM_NAMES: Record<string, string> = {
-    linkedin: 'LinkedIn',
-    x: 'X',
-    twitter: 'X',
-    instagram: 'Instagram',
-    medium: 'Medium',
-    substack: 'Substack',
-    threads: 'Threads',
-    blog: 'Blog',
-    newsletter: 'Newsletter',
-};
-
-export function platformName(platform: string): string {
-    const key = platform.trim().toLowerCase();
-    return PLATFORM_NAMES[key] || platform.charAt(0).toUpperCase() + platform.slice(1);
-}
-
-// Platforms a post went out on: real publish records first, else the platform it was written for.
-// Posts marked done by hand have neither, and then we say nothing rather than "Unknown".
-export function postPlatforms(draft: Draft): string[] {
-    const fromRecords = (draft.published_posts || []).map(p => p.platform).filter(Boolean);
-    const names = (fromRecords.length > 0 ? fromRecords : [draft.labels?.platform || draft.platform].filter((p): p is string => !!p))
-        .map(platformName);
-    return Array.from(new Set(names));
-}
-
-function postUrl(p: NonNullable<Draft['published_posts']>[number]): string | null {
-    if (p.url) return p.url;
-    if (p.platform === 'linkedin' && p.platform_post_id?.includes('urn:li')) {
-        return `https://www.linkedin.com/feed/update/urn:li:activity:${p.platform_post_id.split(':').pop()}`;
-    }
-    return null;
-}
-
 export function PublishedPostsList({ drafts, onOpen }: PublishedPostsListProps) {
-    // Newest first; a post counts as published by status or by having a publish record
+    // Newest first; a post counts as posted by status or by having a post record
     const publishedItems = useMemo(() => {
         return drafts
             .filter(d => d.status === 'published' || (d.published_posts && d.published_posts.length > 0))
@@ -65,15 +32,15 @@ export function PublishedPostsList({ drafts, onOpen }: PublishedPostsListProps) 
         return (
             <div className="flex flex-col items-center justify-center h-full text-ink-soft">
                 <Layers size={48} className="mb-4 text-ink-muted/40" />
-                <p>No published posts yet.</p>
-                <p className="text-sm mt-2 text-ink-muted">Drafts you publish will appear here.</p>
+                <p>Nothing posted yet.</p>
+                <p className="text-sm mt-2 text-ink-muted px-6 text-center">When a draft goes out, tap Post and mark it as posted. It lands here.</p>
             </div>
         );
     }
 
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-8 w-full">
-            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4 md:mb-6">Published History</h2>
+            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4 md:mb-6">Posted</h2>
 
             <div className="bg-surface rounded-card shadow-card overflow-hidden">
                 {/* Desktop Table Header - Hidden on mobile */}
@@ -90,7 +57,7 @@ export function PublishedPostsList({ drafts, onOpen }: PublishedPostsListProps) 
                         const links = (item.published_posts || [])
                             .map(p => ({ id: p.id, platform: platformName(p.platform), url: postUrl(p) }))
                             .filter((l): l is { id: string; platform: string; url: string } => !!l.url);
-                        const date = item.published_posts?.[0]?.published_at || item.updated_at;
+                        const date = postedDate(item);
 
                         return (
                             <div

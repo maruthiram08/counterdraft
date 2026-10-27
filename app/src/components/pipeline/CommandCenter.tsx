@@ -392,7 +392,7 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                         )}
                         {(!isMobile || activeStage === 'published') && (
                             <StatusColumn
-                                title="Published"
+                                title="Posted"
                                 icon={<CheckCircle size={16} className="text-green-600" />}
                                 items={published}
                                 stage="published"

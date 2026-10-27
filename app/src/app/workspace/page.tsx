@@ -11,7 +11,7 @@ import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { SparklesIcon } from "@/components/icons/animated";
 import { useDirections } from "@/hooks/useDirections";
 import { useTensions } from "@/hooks/useTensions";
-import { useDrafts } from "@/hooks/useDrafts";
+import { useDrafts, type PostedDetails } from "@/hooks/useDrafts";
 import { ThreePaneLayout } from "@/components/editor/ThreePaneLayout";
 import { DraftsSidebar } from "@/components/editor/DraftsSidebar";
 import { MainEditor } from "@/components/editor/MainEditor";
@@ -58,7 +58,7 @@ function WorkspaceContent() {
     const { directions, loading: directionsLoading, generateDirections, generated } = useDirections();
     const { tensions, loading: tensionsLoading, classifyTension } = useTensions();
     const [classifiedTensionIds, setClassifiedTensionIds] = useState<Set<string>>(new Set());
-    const { drafts, loading: draftsLoading, updateDraft, saveDraft, refetch } = useDrafts();
+    const { drafts, loading: draftsLoading, updateDraft, saveDraft, markPosted, moveBackToDrafts, refetch } = useDrafts();
     const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
     const activeDraftId = urlDraftId ?? selectedDraftId;
     const selectedDraft = drafts.find(d => d.id === activeDraftId) || null;
@@ -121,11 +121,21 @@ function WorkspaceContent() {
         }
     };
 
-    const handlePublish = async (id: string) => {
-        // 1. Update status effectively moving it to Published list
-        await updateDraft(id, { status: 'published' });
-        // 2. Switch tab immediately for visibility
+    const handleMarkPosted = async (id: string, details: PostedDetails) => {
+        const result = await markPosted(id, details);
+        if (result.ok) setPostsTab('published');
+        return result;
+    };
+
+    const handleMoveBack = async (id: string) => {
+        const result = await moveBackToDrafts(id);
+        if (result.ok) setPostsTab('drafts');
+        return result;
+    };
+
+    const handleLinkedInPosted = () => {
         setPostsTab('published');
+        refetch();
     };
 
     // A published post stays as it went out; reusing it starts a fresh draft with the same text
@@ -548,7 +558,7 @@ function WorkspaceContent() {
                                     : 'shadow-raised text-ink-soft hover:text-ink'
                                     }`}
                             >
-                                Published
+                                Posted
                             </button>
                         </div>
 
@@ -587,7 +597,9 @@ function WorkspaceContent() {
                                                         onUpdateMetadata={async (id, metadata) => {
                                                             return await updateDraft(id, { brain_metadata: metadata });
                                                         }}
-                                                        onPublish={handlePublish}
+                                                        onMarkPosted={handleMarkPosted}
+                                                        onMoveBack={handleMoveBack}
+                                                        onLinkedInPosted={handleLinkedInPosted}
                                                         onDuplicate={handleDuplicate}
                                                     />
                                                 </div>
@@ -604,8 +616,8 @@ function WorkspaceContent() {
                                             <div className="flex-1 overflow-y-auto pb-28">
                                                 <DraftsSidebar
                                                     drafts={effectivePostsTab === 'drafts' ? draftItems : publishedItems}
-                                                    placeholder={effectivePostsTab === 'published' ? "Search published..." : "Search drafts..."}
-                                                    emptyMessage={effectivePostsTab === 'published' ? "No published posts" : "No drafts"}
+                                                    placeholder={effectivePostsTab === 'published' ? "Search posts..." : "Search drafts..."}
+                                                    emptyMessage={effectivePostsTab === 'published' ? "Nothing posted yet" : "No drafts"}
                                                     selectedDraftId={activeDraftId}
                                                     onSelect={(draft) => selectDraft(draft.id)}
                                                     onNew={() => {
@@ -621,8 +633,8 @@ function WorkspaceContent() {
                                         leftPane={
                                             <DraftsSidebar
                                                 drafts={effectivePostsTab === 'drafts' ? draftItems : publishedItems}
-                                                placeholder={effectivePostsTab === 'published' ? "Search published..." : "Search drafts..."}
-                                                emptyMessage={effectivePostsTab === 'published' ? "No published posts" : "No drafts"}
+                                                placeholder={effectivePostsTab === 'published' ? "Search posts..." : "Search drafts..."}
+                                                emptyMessage={effectivePostsTab === 'published' ? "Nothing posted yet" : "No drafts"}
                                                 selectedDraftId={activeDraftId}
                                                 onSelect={(draft) => selectDraft(draft.id)}
                                                 onNew={() => {
@@ -644,7 +656,9 @@ function WorkspaceContent() {
                                                 onUpdateMetadata={async (id, metadata) => {
                                                     return await updateDraft(id, { brain_metadata: metadata });
                                                 }}
-                                                onPublish={handlePublish}
+                                                onMarkPosted={handleMarkPosted}
+                                                onMoveBack={handleMoveBack}
+                                                onLinkedInPosted={handleLinkedInPosted}
                                                 onDuplicate={handleDuplicate}
                                             />
                                         }

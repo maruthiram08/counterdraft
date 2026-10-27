@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Draft } from '@/types';
 
+export interface PostedDetails {
+    platform?: string;
+    url?: string;
+    postedAt?: string;
+}
+
 export function useDrafts() {
     const [drafts, setDrafts] = useState<Draft[]>([]);
     const [loading, setLoading] = useState(true);
@@ -81,6 +87,35 @@ export function useDrafts() {
         }
     };
 
+    // Mark as posted (or update where and when); the server returns the row with its post record
+    const markPosted = async (id: string, details: PostedDetails = {}): Promise<{ ok: true } | { ok: false; error: string }> => {
+        try {
+            const res = await fetch(`/api/drafts/${id}/posted`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(details),
+            });
+            const data = await res.json();
+            if (!res.ok) return { ok: false, error: data.error || "Couldn't mark it as posted" };
+            setDrafts(prev => prev.map(d => d.id === id ? { ...d, ...data.draft, labels: d.labels } : d));
+            return { ok: true };
+        } catch {
+            return { ok: false, error: "Couldn't reach CounterDraft. Try again." };
+        }
+    };
+
+    const moveBackToDrafts = async (id: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+        try {
+            const res = await fetch(`/api/drafts/${id}/posted`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) return { ok: false, error: data.error || "Couldn't move it back" };
+            setDrafts(prev => prev.map(d => d.id === id ? { ...d, ...data.draft, labels: d.labels } : d));
+            return { ok: true };
+        } catch {
+            return { ok: false, error: "Couldn't reach CounterDraft. Try again." };
+        }
+    };
+
     useEffect(() => {
         fetchDrafts();
     }, [fetchDrafts]);
@@ -118,6 +153,8 @@ export function useDrafts() {
         saveDraft,
         deleteDraft,
         updateDraft,
+        markPosted,
+        moveBackToDrafts,
         refetch: fetchDrafts,
     };
 }
