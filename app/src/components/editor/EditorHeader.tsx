@@ -1,6 +1,6 @@
 import { Edit2, Eye, Check, Save, Image as ImageIcon } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
-import { BrainIcon, CopyIcon, RefreshCWIcon, SendIcon, ShieldCheckIcon } from "@/components/icons/animated";
+import { CopyIcon, RefreshCWIcon, SendIcon, ShieldCheckIcon } from "@/components/icons/animated";
 import type { Draft } from "@/types";
 
 interface EditorHeaderProps {
@@ -13,11 +13,10 @@ interface EditorHeaderProps {
     handleCopy: () => void;
     handleSave: () => void;
     setShowRepurposeModal: (v: boolean) => void;
-    handleFinalize: () => void;
+    onPost: () => void;
     learning: boolean;
     setShowFactCheck: (v: boolean) => void;
     handleDownloadDesign: () => void;
-    setShowPublishModal: (v: boolean) => void;
     copied: boolean;
 }
 
@@ -31,11 +30,10 @@ export function EditorHeader({
     handleCopy,
     handleSave,
     setShowRepurposeModal,
-    handleFinalize,
+    onPost,
     learning,
     setShowFactCheck,
     handleDownloadDesign,
-    setShowPublishModal,
     copied
 }: EditorHeaderProps) {
     return (
@@ -51,7 +49,7 @@ export function EditorHeader({
                         }`}
                 >
                     <Edit2 size={12} />
-                    <span>Edit</span>
+                    <span>{draft.status === 'published' ? 'Text' : 'Edit'}</span>
                 </button>
                 <button
                     onClick={() => setIsPreview(true)}
@@ -67,11 +65,11 @@ export function EditorHeader({
 
             {/* Actions Bar + Status */}
             <div className="flex items-center gap-1 bg-surface shadow-card rounded-full pl-3 pr-1.5 py-1.5 pointer-events-auto transition-opacity duration-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
-                <div className="flex items-center gap-1.5 mr-1 pl-1 pr-2 sm:pr-3 border-r border-line select-none" title={saving ? "Saving" : extracting ? "Analyzing" : saved ? "Saved" : draft.status === 'published' ? "Published" : "Draft"}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${saving ? 'bg-sand-500 animate-pulse' : extracting ? 'bg-dusk-500 animate-pulse' : saved ? 'bg-sage-500' : draft.status === 'published' ? 'bg-ink' : 'bg-ink-muted/50'}`}></div>
+                <div className="flex items-center gap-1.5 mr-1 pl-1 pr-2 sm:pr-3 border-r border-line select-none" title={saving ? "Saving" : extracting ? "Analyzing" : learning ? "Learning" : saved ? "Saved" : draft.status === 'published' ? "Posted" : "Draft"}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${saving ? 'bg-sand-500 animate-pulse' : extracting || learning ? 'bg-dusk-500 animate-pulse' : saved ? 'bg-sage-500' : draft.status === 'published' ? 'bg-ink' : 'bg-ink-muted/50'}`}></div>
                     {/* Phones keep just the dot, so every action fits on one row */}
                     <span className="hidden sm:inline text-xs font-medium text-ink-muted">
-                        {saving ? "Saving" : extracting ? "Analyzing" : saved ? "Saved" : draft.status === 'published' ? "Published" : "Draft"}
+                        {saving ? "Saving" : extracting ? "Analyzing" : learning ? "Learning" : saved ? "Saved" : draft.status === 'published' ? "Posted" : "Draft"}
                     </span>
                 </div>
 
@@ -106,18 +104,6 @@ export function EditorHeader({
 
                 <div className="hidden sm:block w-px h-4 bg-line mx-1"></div>
 
-                {draft.status !== 'published' && (
-                    <button
-                        onClick={handleFinalize}
-                        disabled={learning}
-                        title="Finalize & Learn (Updates Voice)"
-                        className="h-9 md:h-8 px-3 rounded-full bg-ember-100 text-ember-700 hover:bg-ember-200 active:shadow-pressed transition-all flex items-center gap-1.5"
-                    >
-                        <AnimatedIcon icon={BrainIcon} size={14} />
-                        <span className="hidden sm:inline text-xs font-medium">Finalize</span>
-                    </button>
-                )}
-
                 <button
                     onClick={() => setShowFactCheck(true)}
                     title="Verify Claims & Plagiarism"
@@ -138,11 +124,12 @@ export function EditorHeader({
 
                 {draft.status !== 'published' && (
                     <button
-                        onClick={() => setShowPublishModal(true)}
+                        onClick={onPost}
+                        title="Mark as posted, or post to LinkedIn"
                         className="ml-1 h-9 md:h-8 px-4 rounded-full bg-ember-500 hover:bg-ember-600 text-white text-xs font-medium shadow-ember active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <AnimatedIcon icon={SendIcon} size={13} />
-                        Publish
+                        Post
                     </button>
                 )}
             </div>

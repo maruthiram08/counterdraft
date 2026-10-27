@@ -87,7 +87,7 @@ export const CommandCenter: React.FC = () => {
       ]
     },
     {
-      title: "Published",
+      title: "Posted",
       count: 84,
       color: "bg-ink",
       cards: [

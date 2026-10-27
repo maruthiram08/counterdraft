@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { PublishedPostsList, postPlatforms } from '@/components/editor/PublishedPostsList';
+import { PublishedPostsList } from '@/components/editor/PublishedPostsList';
+import { postPlatforms } from '@/lib/posts/posted';
 import type { Draft } from '@/types';
 
 const base: Draft = {
