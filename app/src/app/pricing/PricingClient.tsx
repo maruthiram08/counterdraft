@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Script from 'next/script';
+import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,6 +31,14 @@ type RazorpayOptions = {
     theme?: { color?: string };
 };
 
+// What Pro unlocks today; keep in step with the free limits in lib/constants/pricing.ts
+const PRO_FEATURES = [
+    { title: 'Unlimited Drafts & Revisions', detail: 'From brief to outline to finished LinkedIn post.' },
+    { title: 'Explore and Web Research', detail: 'Find what to write about, with sources behind each draft.' },
+    { title: 'Craft Score and Strategy Check', detail: 'Scores for every draft, with a Fix for each weak part.' },
+    { title: 'Medium and Instagram Versions', detail: 'Turn a post into an article or a carousel, with images.' },
+];
+
 type RazorpayConstructor = new (options: RazorpayOptions) => { open: () => void };
 type RazorpayWindow = Window & { Razorpay?: RazorpayConstructor };
 
@@ -54,12 +63,12 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
 
     const plans = {
         global: {
-            monthly: { price: "$29", perMonth: "$29", billed: "billed monthly", id: "prod_gl_monthly" },
-            yearly: { price: "$290", perMonth: "$24", billed: "billed annually", id: "prod_gl_yearly", save: "20%" }
+            monthly: { price: "$29", perMonth: "$29", billed: "Paid once for 1 month", id: "prod_gl_monthly" },
+            yearly: { price: "$290", perMonth: "$24", billed: "Paid once for 12 months", id: "prod_gl_yearly", save: "16%" } // 29*12 = 348. 290/348 ~ 16.7% discount
         },
         india: {
-            monthly: { price: "₹999", perMonth: "₹999", billed: "billed monthly", id: "prod_in_monthly" },
-            yearly: { price: "₹9,999", perMonth: "₹833", billed: "billed yearly", id: "prod_in_yearly", save: "16%" } // 999*12 = 11988. 9999/11988 ~ 16.5% discount
+            monthly: { price: "₹999", perMonth: "₹999", billed: "Paid once for 1 month", id: "prod_in_monthly" },
+            yearly: { price: "₹9,999", perMonth: "₹833", billed: "Paid once for 12 months", id: "prod_in_yearly", save: "16%" } // 999*12 = 11988. 9999/11988 ~ 16.5% discount
         }
     };
 
@@ -154,7 +163,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 amount: data.amount,
                 currency: data.currency,
                 name: "CounterDraft",
-                description: "Pro Subscription",
+                description: "Counterdraft Pro",
                 order_id: data.orderId,
                 handler: async function (response: RazorpayResponse) {
                     // 3. Verify Payment
@@ -206,7 +215,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 {/* HERO SECTION */}
                 <div className="text-center max-w-3xl mx-auto mb-10 md:mb-20">
                     <span className="inline-flex items-center h-8 px-4 rounded-full bg-canvas shadow-well text-ink-soft font-medium text-xs mb-6 md:mb-8">
-                        Used by founders, operators, and independent thinkers
+                        Pay once. No auto-renewal.
                     </span>
 
                     <h1 className="text-4xl md:text-6xl font-medium mb-6 tracking-[-0.03em] text-ink leading-[1.05]">
@@ -215,7 +224,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                     </h1>
 
                     <p className="text-lg md:text-xl text-ink-soft max-w-2xl mx-auto mb-6 md:mb-8 leading-relaxed">
-                        Counterdraft is a strategic writing OS that helps you form stronger positions, expose weak arguments, and publish ideas that hold up under pressure.
+                        Counterdraft helps you find your angle, check every draft against your strategy, and write LinkedIn posts that sound like you.
                     </p>
                     <p className="text-lg text-ink-muted font-medium">Stop posting. Start persuading.</p>
                 </div>
@@ -283,7 +292,11 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                             </div>
                             <div className="flex items-start gap-4">
                                 <span className="text-ember-500 mt-1">●</span>
-                                <span className="text-ink-soft text-sm">Explore the workspace and how The Brain works</span>
+                                <span className="text-ink-soft text-sm">Look around the workspace and see how The Brain works</span>
+                            </div>
+                            <div className="flex items-start gap-4">
+                                <span className="text-ember-500 mt-1">●</span>
+                                <span className="text-ink-soft text-sm">Track your <span className="font-medium text-ink">beliefs and tensions</span> in Your Mind</span>
                             </div>
                             <div className="flex items-start gap-4">
                                 <span className="text-ember-500 mt-1">●</span>
@@ -294,11 +307,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
 
                             <div className="flex items-start gap-4 opacity-50">
                                 <span className="text-ink-muted mt-1">○</span>
-                                <span className="text-ink-muted text-sm">Drafting, research and images need Pro</span>
-                            </div>
-                            <div className="flex items-start gap-4 opacity-50">
-                                <span className="text-ink-muted mt-1">○</span>
-                                <span className="text-ink-muted text-sm">No belief or tension tracking</span>
+                                <span className="text-ink-muted text-sm">Drafting, Explore, research and images need Pro</span>
                             </div>
                         </div>
                     </div>
@@ -306,7 +315,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                     {/* TIER 2: PRO (AUTHORITY) */}
                     <div className="bg-ink rounded-card p-6 md:p-10 flex flex-col items-start text-left shadow-float relative overflow-hidden">
                         <div className="mb-4 md:mb-0 md:absolute md:top-6 md:right-6 bg-ember-500 text-white text-xs font-medium h-7 px-3 flex items-center rounded-full shadow-ember z-10">
-                            The Full OS
+                            Full access
                         </div>
 
                         <div className="mb-6 relative z-10">
@@ -388,45 +397,17 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                         <div className="space-y-5 w-full relative z-10 text-white">
                             <p className="text-sm text-white/60">You Get Everything In Starter, Plus:</p>
 
-                            <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                            {PRO_FEATURES.map(feature => (
+                                <div key={feature.title} className="flex items-start gap-4">
+                                    <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                        <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
+                                    <div>
+                                        <span className="text-white font-medium text-sm block">{feature.title}</span>
+                                        <span className="text-white/60 text-xs mt-0.5 block">{feature.detail}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-white font-medium text-sm block">Unlimited Drafts & Revisions</span>
-                                    <span className="text-white/60 text-xs mt-0.5 block">Iterate until it&apos;s perfect.</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                </div>
-                                <div>
-                                    <span className="text-white font-medium text-sm block">Full Brain Access</span>
-                                    <span className="text-white/60 text-xs mt-0.5 block">Deep strategic analysis & logic checks.</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                </div>
-                                <div>
-                                    <span className="text-white font-medium text-sm block">Belief & Tension Tracking</span>
-                                    <span className="text-white/60 text-xs mt-0.5 block">Detect inconsistencies in your position.</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-4">
-                                <div className="w-5 h-5 rounded-full bg-ember-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-ember-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                </div>
-                                <div>
-                                    <span className="text-white font-medium text-sm block">Turn Weak Opinions into Defensible Positions</span>
-                                    <span className="text-white/60 text-xs mt-0.5 block">Strategic rewrites, not cosmetic edits.</span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
                         {/* Subtle Background Gradient for Pro */}
@@ -438,13 +419,13 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                 <div className="mt-12 md:mt-24 text-center max-w-2xl mx-auto bg-surface rounded-card shadow-card p-6 md:p-8">
                     <h4 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Why is this not just another AI Writer?</h4>
                     <p className="text-ink-soft leading-relaxed">
-                        AI writers generate text. <span className="text-ember-700 font-medium bg-ember-50 px-1 rounded">Counterdraft interrogates your thinking</span> before text exists. If your goal is SEO spam or engagement bait, this isn&apos;t for you. If your goal is credibility, influence, and long-term trust, you&apos;re home.
+                        AI writers start from a prompt. <span className="text-ember-700 font-medium bg-ember-50 px-1 rounded">Counterdraft starts from your thinking</span>: your reader, your stance and your goal, before it drafts anything. If your goal is SEO spam or engagement bait, this isn&apos;t for you. If your goal is credibility, influence, and long-term trust, you&apos;re home.
                     </p>
                 </div>
 
                 <div className="mt-8 md:mt-12 mb-8 md:mb-16 text-center">
                     <p className="text-xs text-ink-muted font-medium">
-                        {isIndia ? "🇮🇳 Localized pricing for India applied." : "Secure payments via Razorpay. International cards accepted."} • Protected by 256-bit encryption.
+                        {isIndia ? "🇮🇳 Localized pricing for India applied." : "Prices in US dollars."} Payments are handled by Razorpay; we never see your card details. Pro doesn&apos;t renew automatically. See our <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link>.
                     </p>
                 </div>
             </main>
