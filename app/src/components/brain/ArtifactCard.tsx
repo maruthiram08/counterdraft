@@ -1,6 +1,6 @@
 "use strict";
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Trash2, PenTool, Copy, Check } from 'lucide-react';
@@ -15,6 +15,15 @@ interface ArtifactCardProps {
 
 export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCardProps) {
     const [copied, setCopied] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+    const [clamped, setClamped] = useState(false);
+    const textRef = useRef<HTMLParagraphElement>(null);
+
+    // Long captures are cut to 10 lines; only offer "Show all" when something is actually hidden
+    useEffect(() => {
+        const el = textRef.current;
+        if (el && !expanded) setClamped(el.scrollHeight > el.clientHeight + 1);
+    }, [artifact.ocr_text, expanded]);
 
     const intentColor = useMemo(() => {
         switch (artifact.intent_type) {
@@ -92,9 +101,22 @@ export function ArtifactCard({ artifact, onDelete, onCreateDraft }: ArtifactCard
                 ) : (
                     <div className="px-5 py-2">
                         {artifact.ocr_text ? (
-                            <p className="text-sm text-ink-soft line-clamp-[10] leading-relaxed bg-surface-muted p-3 rounded-2xl">
-                                {artifact.ocr_text}
-                            </p>
+                            <div className="bg-surface-muted p-3 rounded-2xl">
+                                <p
+                                    ref={textRef}
+                                    className={`text-sm text-ink-soft leading-relaxed whitespace-pre-line ${expanded ? '' : 'line-clamp-[10]'}`}
+                                >
+                                    {artifact.ocr_text}
+                                </p>
+                                {(clamped || expanded) && (
+                                    <button
+                                        onClick={() => setExpanded(!expanded)}
+                                        className="mt-1 min-h-11 text-xs font-medium text-ember-600 hover:text-ember-700"
+                                    >
+                                        {expanded ? 'Show less' : 'Show all'}
+                                    </button>
+                                )}
+                            </div>
                         ) : (
                             !artifact.user_note && <div className="h-12 flex items-center justify-center text-ink-muted text-xs">No Content</div>
                         )}
