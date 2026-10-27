@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { captureElement } from './captureElement';
+import { readPostInfo } from './postInfo';
 
 export function FrameOverlay() {
     const [isActive, setIsActive] = useState(false);
@@ -57,6 +58,8 @@ export function FrameOverlay() {
 
         const target = e.target as HTMLElement;
         const rect = target.getBoundingClientRect();
+        // Read before capturing: the capture scrolls and hides parts of the page
+        const post = readPostInfo(target);
         const basePayload = {
             x: rect.left,
             y: rect.top,
@@ -64,7 +67,8 @@ export function FrameOverlay() {
             height: rect.height,
             deviceScaleFactor: window.devicePixelRatio,
             pageUrl: window.location.href,
-            pageTitle: document.title
+            pageTitle: document.title,
+            post
         };
 
         cleanup();
@@ -82,7 +86,8 @@ export function FrameOverlay() {
                     height: capture.height,
                     tiles: capture.tiles,
                     truncated: capture.truncated,
-                    pageText: capture.text
+                    pageText: capture.text,
+                    post
                 }
             });
         } catch (err) {

@@ -9,6 +9,7 @@ import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditCheckli
 import { CRAFT_CRITERIA, CraftKey, CraftScore, scoreCraft } from '@/lib/editor/craft-score';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
 import { formatCaptureSources } from './captures';
+import { formatOriginalPost } from './reframe';
 import { formatExploreSources, formatIdeaChain, formatStrategyContext, originAngle, originQuery, normalizeFormat, sanitizeParsedStrategy, ParsedStrategy, outlineShape, STRATEGY_CRITERIA, StrategyCriterion, scoreCriteria, totalScore, weakestCriterion } from './strategy';
 import { anchorQueries, countLocalFindings, dropUnknownCitations, sharesKeyWords, fallbackQueries, formatWebSources, gatherWebSources } from './webResearch';
 
@@ -419,7 +420,92 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
     }
 
     // --- 4. Draft ---
-    async generateDraft({ userId, hook, angle, outline, deep_dive, references, userContext, brainMetadata, answers }: DraftParams): Promise<DraftResult> {
+    async generateDraft(params: DraftParams): Promise<DraftResult> {
+        // A reframe with no research or outline goes straight from the captured post to a draft
+        if (params.brainMetadata?.reframe?.original && !params.outline?.length && !params.deep_dive?.research?.length) {
+            return this.generateReframeDraft(params);
+        }
+        return this.generateOutlinedDraft(params);
+    }
+
+    // --- 4r. Reframe: one post reacting to a captured post, in the way the creator picked ---
+    private async generateReframeDraft({ userId, hook, angle, brainMetadata, userContext, answers }: DraftParams): Promise<DraftResult> {
+        const reframe = brainMetadata!.reframe!;
+        const format = normalizeFormat(brainMetadata?.format);
+        const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
+        const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY');
+        const voiceContext = await this.voiceContext(userId);
+        const styleExamples = formatStyleExamples(pickStyleExamples(
+            await this.loadPastPosts(userId),
+            [reframe.take, reframe.original.slice(0, 600), brainMetadata?.brief].filter(Boolean).join(' '),
+        ));
+        const ownMaterial = answers?.length
+            ? `\n\nTHE CREATOR'S OWN MATERIAL (their answers and notes; every one goes into the post as a real detail, in their words where possible):\n${formatNotes(answers)}`
+            : '';
+        const note = captureNote(brainMetadata);
+        const formatInstruction = format
+            ? `Format: ${format.replace(/_/g, ' ')}. Write it in that shape.`
+            : 'Format: whatever shape suits a quick reaction post (often a short argument or a short story).';
+        const lengthInstruction = brainMetadata?.length
+            ? `Length: ${brainMetadata.length}. This overrides everything else about length.`
+            : 'Length: a LinkedIn post, usually 120 to 250 words. A reaction, not an essay.';
+        const closingInstruction = brainMetadata?.cta
+            ? `End by steering the reader toward this call to action, without engagement bait: ${brainMetadata.cta}`
+            : 'End on the point, an implication or an honest question. No engagement bait.';
+
+        TraceLogger.log('draft', 'Reframe Draft Context', {
+            hook,
+            mode: reframe.mode,
+            hasTake: !!reframe.take,
+            hasAuthor: !!reframe.author,
+            answers: answers?.length || 0,
+            format: format || 'none',
+        });
+
+        const completion = await this.openai.chat.completions.create({
+            model: WRITER_MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: `${SAFETY_PREAMBLE}
+
+You are writing one LinkedIn post for a creator who is reacting to someone else's post they saved. It must read as the creator's own post with their own point, never as a summary or rewrite of the original.${ideaChain}${strategy}
+
+${formatInstruction}
+${lengthInstruction}
+
+Rules:
+- The creator's response decides the post (see "How the creator wants to respond" above). Hold it from the first line to the last.
+- Stay original: do not reuse the original's sentences, distinctive phrases or structure (unless the creator asked to borrow its style, and then only its shape). At most one short quote, under 15 words, in quotation marks and credited${reframe.author ? ` to ${reframe.author}` : ''}.
+- Refer to the original only as much as a reader needs to follow (e.g. "${reframe.author ? `${reframe.author} wrote` : 'Saw a post this week arguing'} that..."), or not at all when the creator's point stands alone.
+- Use every piece of the creator's own material below; it is what makes the post theirs.
+- Never leave a gap or a [bracketed placeholder]. Where the post needs a detail only the creator has (a moment, a client, a number) and nobody gave it, write a short, believable first-person version and wrap exactly that passage in <suggested>...</suggested> so the creator can check it. One to three sentences each.
+- Never invent a statistic, study or quote.
+
+Style & voice:
+- **ADOPT THE USER'S VOICE:** ${voiceContext ? 'Strictly follow the guidelines below.' : 'Write in a natural, human voice.'}${styleExamples ? ' Their past posts below show how they really write; when a guideline and the posts disagree, follow the posts.' : ''}
+${voiceContext}${styleExamples}
+- Short paragraphs for LinkedIn readability. No markdown headers, no emojis, no hashtags unless their past posts use them.
+- ${closingInstruction}
+- Do NOT mention AI, drafting or this brief.`
+                },
+                {
+                    role: 'user',
+                    content: `${formatOriginalPost(reframe)}${note ? `\n\nThe creator's note when they saved it: "${note}"` : ''}${ownMaterial}${userContext ? `\n\nThe creator's special instructions:\n${userContext}` : ''}
+
+Write the creator's post.`
+                }
+            ],
+        });
+
+        const draft = completion.choices[0].message.content || '';
+        if (!draft) return { draft: '', suggestions: [] };
+        const edited = await this.selfEdit(draft, { stance: brainMetadata?.stance, voiceContext, styleExamples });
+        const { text, suggestions } = extractSuggestions(edited);
+        return { draft: text, suggestions };
+    }
+
+    private async generateOutlinedDraft({ userId, hook, angle, outline, deep_dive, references, userContext, brainMetadata, answers }: DraftParams): Promise<DraftResult> {
         const format = normalizeFormat(brainMetadata?.format);
         const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
         const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY');
@@ -688,14 +774,14 @@ Return JSON: { "shapes": [ { "name": "...", "why": "...", "sections": ["...", ".
                     content: `Before an AI drafts a creator's post, ask them 2 or 3 short questions whose answers only they can give, so the draft carries real detail instead of [placeholders]: a moment they lived, an example from their work, a number they know, what they actually think.
 
 Rules:
-- Each question points at a specific section of the outline that needs it. Ask about the most important gaps first.
+- Each question points at a specific section of the outline (or, with no outline, a part of the planned post) that needs it. Ask about the most important gaps first.
 - Never ask for things research can answer, or for their opinion on the topic in general.
 - Plain words, under 20 words each, answerable in a sentence or two.
 - Each gets a hint on what helps (e.g. "one moment, with where you were").
 
 Return JSON: { "questions": [ { "question": "...", "hint": "..." } ] }`
                 },
-                { role: 'user', content: `Topic: ${hook}\nAngle: ${angle || 'General'}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}\n\nOutline:\n${outlineText}` }
+                { role: 'user', content: `Topic: ${hook}\nAngle: ${angle || 'General'}${formatIdeaChainIfReframe(hook, angle, brainMetadata)}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}\n\n${outlineText ? `Outline:\n${outlineText}` : brainMetadata?.reframe?.original ? `No outline: this is a quick post reacting to the post below. Ask about the creator's own experience or view that would make the reaction theirs.\n\n${formatOriginalPost(brainMetadata.reframe, 2500)}` : 'Outline: none yet'}` }
             ],
         });
         let raw: unknown = {};
@@ -1136,3 +1222,14 @@ ${brief?.trim() || '(empty: infer the strategy)'}${draftText?.trim() ? `\n\nDraf
 export const brainGenerationService = new BrainGenerationService();
 type ImageSize = '1024x1024' | '1536x1024';
 export const generateImage = (prompt: string, size?: ImageSize) => brainGenerationService.generateImage(prompt, size);
+
+// The creator's note on the captured post a reframe reacts to
+function captureNote(meta?: BrainMetadata): string {
+    const id = meta?.reframe?.captureId;
+    return meta?.explore?.sources?.find(src => src.captureId === id)?.note || '';
+}
+
+// Questions for a reframe need to know how the creator wants to respond
+function formatIdeaChainIfReframe(hook: string, angle: string | undefined, meta?: BrainMetadata): string {
+    return meta?.reframe ? formatIdeaChain({ hook, angle, meta }) : '';
+}

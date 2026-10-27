@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getArtifacts, deleteArtifact } from '@/app/brain/actions';
 import { ArtifactCard } from './ArtifactCard';
 import { CaptureIdeasModal } from './CaptureIdeasModal';
+import { ReframeSheet } from './ReframeSheet';
 import { Loader2, Search, MousePointerClick } from 'lucide-react';
 import { captureKind } from '@/lib/brain/captures';
+import { canReframe } from '@/lib/brain/reframe';
+import { toast } from 'sonner';
 
 import { Artifact, CaptureKind } from '@/types';
 
@@ -28,6 +32,11 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
     const [kindFilter, setKindFilter] = useState<CaptureKind | 'all'>('all');
     // The captures post ideas are being found for
     const [ideasFor, setIdeasFor] = useState<Artifact[] | null>(null);
+    // The capture being reframed
+    const [reframing, setReframing] = useState<Artifact | null>(null);
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const reframeParam = searchParams.get('reframe');
 
     const fetchArtifacts = useCallback(async (quiet = false) => {
         if (!quiet) setLoading(true);
@@ -48,6 +57,17 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
         }, 300);
         return () => clearTimeout(timer);
     }, [fetchArtifacts]);
+
+    // Lens "Save and reframe" links here with the new capture's id
+    useEffect(() => {
+        if (!reframeParam || loading) return;
+        const capture = artifacts.find(a => a.id === reframeParam);
+        if (capture && canReframe(capture)) setReframing(capture);
+        else if (capture) toast.info('That capture has no text to react to yet. Try Find ideas on it.');
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete('reframe');
+        router.replace(`/workspace?${params.toString()}`, { scroll: false });
+    }, [reframeParam, loading, artifacts, searchParams, router]);
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isSelectMode, setIsSelectMode] = useState(false);
@@ -171,6 +191,7 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
                                 artifact={artifact}
                                 onDelete={handleDelete}
                                 onFindIdeas={a => setIdeasFor([a])}
+                                onReframe={setReframing}
                             />
                         </div>
                     ))}
@@ -181,6 +202,14 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
                 <CaptureIdeasModal
                     captures={ideasFor}
                     onClose={() => setIdeasFor(null)}
+                    onOpenItem={onOpenItem}
+                    onSaved={() => fetchArtifacts(true)}
+                />
+            )}
+            {reframing && (
+                <ReframeSheet
+                    capture={reframing}
+                    onClose={() => setReframing(null)}
                     onOpenItem={onOpenItem}
                     onSaved={() => fetchArtifacts(true)}
                 />

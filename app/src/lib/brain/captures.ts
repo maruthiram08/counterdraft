@@ -1,4 +1,4 @@
-import type { BrainMetadata, CaptureIntent, CaptureKind, ExploreOrigin } from '@/types';
+import type { BrainMetadata, CaptureIntent, CaptureKind, CapturedPost, ExploreOrigin } from '@/types';
 
 // Lens captures (bookmarks, snips, frames) as source material for post ideas, research and drafting.
 
@@ -30,7 +30,7 @@ export interface CaptureRow {
     user_note?: string | null;
     intent_type?: string | null;
     image_path?: string | null;
-    ai_metadata?: { kind?: unknown; type?: unknown; key_insight?: unknown; visual_summary?: unknown; intent?: unknown } | null;
+    ai_metadata?: { kind?: unknown; type?: unknown; key_insight?: unknown; visual_summary?: unknown; intent?: unknown; post?: { author?: unknown; url?: unknown } | null } | null;
 }
 
 export function isCaptureIntent(value: unknown): value is CaptureIntent {
@@ -54,6 +54,12 @@ export function captureKind(row: Pick<CaptureRow, 'ai_metadata'>): CaptureKind |
 export function captureIntent(row: Pick<CaptureRow, 'intent_type' | 'ai_metadata'>): CaptureIntent | undefined {
     if (isCaptureIntent(row.intent_type)) return row.intent_type;
     return isCaptureIntent(row.ai_metadata?.intent) ? row.ai_metadata.intent : undefined;
+}
+
+// Who wrote the captured post, when Lens read it from the page
+export function captureAuthor(row: Pick<CaptureRow, 'ai_metadata'>): string | undefined {
+    const author = row.ai_metadata?.post?.author;
+    return typeof author === 'string' && author.trim() ? author.trim().slice(0, 120) : undefined;
 }
 
 // The domain without "www.", or the raw URL when it isn't one
@@ -94,6 +100,7 @@ export function captureToSource(row: CaptureRow, pageText?: string): CaptureSour
         note: note || undefined,
         text: text ? trimText(text) : undefined,
         takeaway: insight || undefined,
+        author: captureAuthor(row),
     };
 }
 
@@ -113,6 +120,7 @@ export function stanceFromIntents(intents: Array<CaptureIntent | undefined>): 'a
 function describe(s: CaptureSource, i: number, limit: number): string {
     const where = s.source || s.url;
     const lines = [`[C${i + 1}] ${s.title}${where ? ` (${where})` : ''}`];
+    if (s.author) lines.push(`Written by: ${s.author}`);
     if (s.intent) lines.push(`What the creator thinks: ${INTENT_MEANING[s.intent]}.`);
     if (s.note) lines.push(`Their note: "${s.note}"`);
     if (s.text) lines.push(`Captured text:\n"""\n${trimText(s.text, limit)}\n"""`);
@@ -132,4 +140,27 @@ export function formatCaptureSources(meta?: Partial<BrainMetadata>, limit = TEXT
     if (!sources.length) return '';
     const list = sources.slice(0, 6).map((s, i) => describe(s, i, limit)).join('\n\n');
     return `\n\nTHE CREATOR'S CAPTURES (what they saved while reading; this is what the post responds to. Use them as the creator intends each one, quote sparingly and never pass their words off as the creator's. Cite one by the domain in brackets after its title):\n${list}`;
+}
+
+const webUrl = (value: unknown): string | undefined => {
+    if (typeof value !== 'string') return undefined;
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString().slice(0, 500) : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+// Only plain text and web links from what Lens read off the page
+export function capturedPost(value: unknown): CapturedPost | undefined {
+    if (!value || typeof value !== 'object') return undefined;
+    const raw = value as Record<string, unknown>;
+    const author = typeof raw.author === 'string' ? raw.author.replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+    const post: CapturedPost = {
+        ...(author ? { author } : {}),
+        ...(webUrl(raw.authorUrl) ? { authorUrl: webUrl(raw.authorUrl) } : {}),
+        ...(webUrl(raw.url) ? { url: webUrl(raw.url) } : {}),
+    };
+    return Object.keys(post).length ? post : undefined;
 }

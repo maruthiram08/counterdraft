@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Camera, Scissors, MapPin, X, Check } from 'lucide-react';
+import { Camera, Scissors, MapPin, X, Check, MessageSquareQuote } from 'lucide-react';
 
 // The CounterDraft app this extension saves captures to. Set VITE_APP_URL at build time
 // (e.g. VITE_APP_URL=https://counterdraft.com npm run build); defaults to local dev.
@@ -17,6 +17,8 @@ interface SnipData {
     pageText?: string;
     truncated?: boolean;
     kind: 'bookmark' | 'snip' | 'frame';
+    // Who wrote a framed LinkedIn or X post, and the post's own link
+    post?: { author?: string; authorUrl?: string; url?: string };
 }
 
 // One screenful of a Frame capture, cut out of a viewport screenshot (CSS pixels)
@@ -329,7 +331,8 @@ export function SidePanel() {
         setStatus("Review");
     };
 
-    const handleSave = async () => {
+    // With reframe, the app opens on the new capture, ready to write your take on it
+    const handleSave = async (reframe = false) => {
         if (!snipData) return;
 
         setStatus("Saving...");
@@ -369,7 +372,8 @@ export function SidePanel() {
                     sourceTitle: snipData.pageTitle,
                     pageTitle: snipData.pageTitle,
                     isBookmark: !snipData.dataUrl,
-                    pageText: snipData.pageText || undefined
+                    pageText: snipData.pageText || undefined,
+                    post: snipData.post || undefined
                 })
             });
 
@@ -388,6 +392,11 @@ export function SidePanel() {
                 throw new Error(message || `Failed to save (error ${response.status})`);
             }
 
+            const saved = await response.json().catch(() => ({}));
+            const id = saved?.artifact?.id;
+            if (reframe && id) {
+                await chrome.tabs.create({ url: `${APP_URL}/workspace?tab=mind&subtab=artifacts&reframe=${encodeURIComponent(id)}` });
+            }
             setStatus("Success");
             setTimeout(handleReset, 2000);
         } catch (error: any) {
@@ -515,7 +524,9 @@ export function SidePanel() {
                         {/* Metadata */}
                         <div className="bg-white p-3 rounded-lg border border-gray-100">
                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Source</h3>
-                            <p className="text-sm font-medium truncate" title={snipData.pageTitle}>{snipData.pageTitle}</p>
+                            <p className="text-sm font-medium truncate" title={snipData.pageTitle}>
+                                {snipData.post?.author ? `Post by ${snipData.post.author}` : snipData.pageTitle}
+                            </p>
                             <p className="text-xs text-gray-400 truncate">
                                 {(() => {
                                     try {
@@ -575,11 +586,19 @@ export function SidePanel() {
 
                         {/* Action */}
                         <button
-                            onClick={handleSave}
+                            onClick={() => handleSave()}
                             className="w-full py-2.5 text-white rounded-lg font-medium text-sm transition flex items-center justify-center gap-2 bg-[#16a34a] hover:bg-[#15803d]"
                         >
                             <Check size={16} />
                             Save to Brain
+                        </button>
+                        <button
+                            onClick={() => handleSave(true)}
+                            title="Save, then write your own take on it in CounterDraft"
+                            className="w-full py-2.5 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2 border border-gray-200 text-gray-800 bg-white hover:bg-gray-50"
+                        >
+                            <MessageSquareQuote size={16} />
+                            Save and reframe
                         </button>
                     </div>
                 )}

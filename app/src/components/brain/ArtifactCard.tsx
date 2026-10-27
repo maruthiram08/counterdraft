@@ -3,10 +3,11 @@
 import { useMemo } from 'react';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Trash2, Lightbulb, Copy, Check } from 'lucide-react';
+import { ExternalLink, Trash2, Lightbulb, Copy, Check, MessageSquareQuote } from 'lucide-react';
 import { useState } from 'react';
 import type { Artifact } from '@/types';
-import { captureIntent, captureKind } from '@/lib/brain/captures';
+import { captureAuthor, captureIntent, captureKind } from '@/lib/brain/captures';
+import { canReframe } from '@/lib/brain/reframe';
 
 const KIND_LABELS = { bookmark: 'Bookmark', snip: 'Snip', frame: 'Frame' } as const;
 
@@ -14,10 +15,13 @@ interface ArtifactCardProps {
     artifact: Artifact;
     onDelete: (id: string) => void;
     onFindIdeas: (artifact: Artifact) => void;
+    onReframe: (artifact: Artifact) => void;
 }
 
-export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe }: ArtifactCardProps) {
     const kind = captureKind(artifact);
+    const author = captureAuthor(artifact);
+    const reframable = canReframe(artifact);
     const intent = captureIntent(artifact);
     const [copied, setCopied] = useState(false);
 
@@ -66,8 +70,8 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardPr
                         <span className="text-sm font-medium text-ink truncate block max-w-[140px]" title={artifact.source_title}>
                             {artifact.source_domain || "Unknown Source"}
                         </span>
-                        <span className="text-xs text-ink-muted">
-                            {formatDistanceToNow(new Date(artifact.created_at || artifact.createdAt), { addSuffix: true })}
+                        <span className="text-xs text-ink-muted truncate">
+                            {author && <>{author} · </>}{formatDistanceToNow(new Date(artifact.created_at || artifact.createdAt), { addSuffix: true })}
                         </span>
                     </div>
                 </div>
@@ -108,8 +112,8 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardPr
                 </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="px-5 pb-5 pt-3 flex items-center justify-between gap-2 mt-auto">
+            {/* Footer: what it is, then what to do with it */}
+            <div className="px-5 pb-5 pt-3 flex flex-col gap-3 mt-auto">
                 <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                     {kind && (
                         <span className="inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium bg-canvas shadow-well text-ink-soft">
@@ -131,8 +135,9 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardPr
                 <div className="flex items-center gap-1">
                     <button
                         onClick={handleCopy}
-                        className="w-8 h-8 flex items-center justify-center text-ink-muted hover:text-ink rounded-full active:shadow-pressed transition-all"
+                        className="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-ink rounded-full active:shadow-pressed transition-all"
                         title="Copy text"
+                        aria-label="Copy text"
                     >
                         {copied ? <Check size={14} className="text-sage-700" /> : <Copy size={14} />}
                     </button>
@@ -141,19 +146,31 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardPr
                             href={artifact.source_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-8 h-8 flex items-center justify-center text-ink-muted hover:text-ember-600 rounded-full active:shadow-pressed transition-all"
-                            title="Open Source"
+                            className="w-10 h-10 flex items-center justify-center text-ink-muted hover:text-ember-600 rounded-full active:shadow-pressed transition-all"
+                            title="Open source"
+                            aria-label="Open source"
                         >
                             <ExternalLink size={14} />
                         </a>
                     )}
+                    <div className="flex-1" />
                     <button
                         onClick={() => onFindIdeas(artifact)}
-                        className="flex items-center gap-1.5 h-9 pl-3 pr-3.5 bg-ink text-white rounded-full text-xs font-medium hover:bg-ink/90 transition-colors ml-1 whitespace-nowrap"
+                        className={`flex items-center gap-1.5 h-10 px-3.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${reframable ? 'bg-canvas shadow-raised text-ink hover:text-ember-600 active:shadow-pressed' : 'bg-ink text-white hover:bg-ink/90'}`}
                     >
                         <Lightbulb size={12} />
                         Find ideas
                     </button>
+                    {reframable && (
+                        <button
+                            onClick={() => onReframe(artifact)}
+                            title="Write your own take on this, straight to a draft"
+                            className="flex items-center gap-1.5 h-10 px-3.5 bg-ink text-white rounded-full text-xs font-medium hover:bg-ink/90 transition-colors whitespace-nowrap"
+                        >
+                            <MessageSquareQuote size={12} />
+                            Reframe
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
