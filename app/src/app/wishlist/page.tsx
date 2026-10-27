@@ -101,10 +101,10 @@ export default function WishlistPage() {
         <div className="min-h-screen bg-canvas">
             <Navbar />
 
-            <div className="pt-32 pb-20 max-w-5xl mx-auto px-4 md:px-10">
+            <div className="pt-24 md:pt-32 pb-12 md:pb-20 max-w-5xl mx-auto px-4 md:px-10">
 
                 {/* Header */}
-                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between mb-12">
+                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between mb-8 md:mb-12">
                     <div>
                         <div className="inline-flex items-center h-7 px-3 rounded-full bg-dusk-100 text-xs font-medium text-dusk-700 mb-4">
                             Community Roadmap
@@ -129,18 +129,18 @@ export default function WishlistPage() {
                         {loading ? (
                             <div className="flex justify-center py-20"><Loader2 className="animate-spin text-ink-muted" /></div>
                         ) : features.length === 0 ? (
-                            <div className="text-center py-20 bg-canvas shadow-pressed rounded-card">
+                            <div className="text-center py-12 md:py-20 px-6 bg-canvas shadow-pressed rounded-card">
                                 <p className="text-ink-muted font-medium">No active features yet. Be the first!</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {features.map(feature => (
-                                    <div key={feature.id} className="bg-surface rounded-tile shadow-card p-5 flex gap-5 hover:shadow-float hover:-translate-y-0.5 transition-all group">
+                                    <div key={feature.id} className="bg-surface rounded-tile shadow-card p-4 md:p-5 flex gap-4 md:gap-5 hover:shadow-float hover:-translate-y-0.5 transition-all group">
                                         {/* Vote Box */}
                                         <div className="flex flex-col items-center gap-1">
                                             <button
                                                 onClick={() => handleVote(feature.id)}
-                                                className="w-10 h-10 rounded-full bg-canvas shadow-raised flex items-center justify-center text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
+                                                aria-label="Upvote" className="w-11 h-11 rounded-full bg-canvas shadow-raised flex items-center justify-center text-ink-muted hover:text-ember-600 active:shadow-pressed transition-all"
                                             >
                                                 <ArrowUp size={20} className="stroke-[3]" />
                                             </button>
@@ -148,7 +148,7 @@ export default function WishlistPage() {
                                         </div>
 
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-1">
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
                                                 <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink">{feature.title}</h3>
                                                 {feature.status === 'in_progress' && (
                                                     <span className="text-xs font-medium bg-sand-100 text-sand-700 px-2.5 py-0.5 rounded-full">In Progress</span>

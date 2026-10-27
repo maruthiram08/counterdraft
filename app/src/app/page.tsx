@@ -31,9 +31,9 @@ export default function Home() {
       <main>
         <Hero />
 
-        <section id="the-brain" className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <section id="the-brain" className="py-16 md:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           {/* ... */}
-          <div className="text-center mb-20">
+          <div className="text-center mb-10 md:mb-20">
             <div className="inline-flex items-center h-8 px-4 rounded-full bg-ember-100 text-ember-700 text-sm font-medium mb-6">
               Find your angle
             </div>
@@ -45,10 +45,10 @@ export default function Home() {
           <TheBrain />
         </section>
 
-        <section id="command-center" className="py-32 bg-surface-muted overflow-hidden">
+        <section id="command-center" className="py-16 md:py-32 bg-surface-muted overflow-hidden">
           {/* ... */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row items-end justify-between gap-12 mb-20">
+            <div className="flex flex-col md:flex-row items-end justify-between gap-6 md:gap-12 mb-10 md:mb-20">
               <div className="md:w-3/5">
                 <div className="inline-flex items-center h-8 px-4 rounded-full bg-canvas shadow-raised text-ink-soft text-sm font-medium mb-6">
                   Stay organized
@@ -67,9 +67,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="smart-studio" className="py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <section id="smart-studio" className="py-16 md:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           {/* ... */}
-          <div className="flex flex-col lg:flex-row gap-20 items-start">
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-20 items-start">
             <div className="lg:w-1/3 lg:sticky lg:top-32">
               <div className="inline-flex items-center h-8 px-4 rounded-full bg-ember-100 text-ember-700 text-sm font-medium mb-6">
                 Repurpose everywhere
@@ -102,32 +102,32 @@ export default function Home() {
 
         <Testimonials />
 
-        <section className="py-40 text-center relative overflow-hidden bg-canvas">
+        <section className="py-20 md:py-40 text-center relative overflow-hidden bg-canvas">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-ember-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
           <div className="relative z-10 max-w-4xl mx-auto px-4">
-            <h2 className="text-5xl md:text-7xl font-medium mb-8 tracking-[-0.03em] leading-[1.05] text-ink">Ready to write something you&apos;re proud of?</h2>
-            <p className="text-ink-soft text-xl md:text-2xl max-w-2xl mx-auto mb-12">
+            <h2 className="text-4xl md:text-7xl font-medium mb-6 md:mb-8 tracking-[-0.03em] leading-[1.05] text-ink">Ready to write something you&apos;re proud of?</h2>
+            <p className="text-ink-soft text-lg md:text-2xl max-w-2xl mx-auto mb-8 md:mb-12">
               Thousands of creators use Counterdraft for LinkedIn, Medium, Substack, and more.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-6">
               <SignedOut>
-                <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'footer' })}>
+                <Link href="/sign-up" className="w-full sm:w-auto" onClick={() => posthog?.capture('click_get_started', { location: 'footer' })}>
                   <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                     Start Writing Free
                   </button>
                 </Link>
               </SignedOut>
               <SignedIn>
-                <Link href="/workspace">
+                <Link href="/workspace" className="w-full sm:w-auto">
                   <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-ember-500 text-white text-base font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                     Go to Dashboard
                   </button>
                 </Link>
               </SignedIn>
-              <button className="w-full sm:w-auto h-14 px-8 rounded-full bg-canvas text-ink text-base font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all">
+              <Link href="/philosophy" className="w-full sm:w-auto h-14 px-8 rounded-full bg-canvas text-ink text-base font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all flex items-center justify-center">
                 The Philosophy
-              </button>
+              </Link>
             </div>
           </div>
         </section>

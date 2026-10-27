@@ -14,17 +14,13 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
   const posthog = usePostHog();
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-canvas/85 backdrop-blur-xl py-3 shadow-raised' : 'bg-transparent py-8'}`}>
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1.5 md:gap-3 group cursor-pointer">
-          <Image src="/brand/logo-icon.png" alt="Counterdraft Icon" width={36} height={36} className="h-9 w-9 group-hover:scale-105 transition-transform" />
-          <Image src="/brand/logo-text.png" alt="Counterdraft" width={200} height={44} className="h-[44px] w-auto mt-0.5" />
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-canvas/85 backdrop-blur-xl py-3 shadow-raised' : 'bg-transparent py-4 md:py-8'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10 flex items-center justify-between gap-3">
+        <Link href="/" className="flex items-center gap-1.5 md:gap-3 group cursor-pointer min-w-0">
+          <Image src="/brand/logo-icon.png" alt="Counterdraft Icon" width={36} height={36} className="h-8 w-8 md:h-9 md:w-9 shrink-0 group-hover:scale-105 transition-transform" />
+          <Image src="/brand/logo-text.png" alt="Counterdraft" width={200} height={44} className="h-8 md:h-[44px] w-auto mt-0.5" />
         </Link>
 
-        {/* ... (Middle Text Links omitted for brevity if unchanged, but need to be careful with replace) ... */}
-        {/* It's safer to target larger block or just the SignedOut part. Let's try to target the SignedOut block specifically? 
-            The Navbar component needs the hook at the top level. 
-        */}
         <div className="hidden lg:flex items-center gap-10">
           <a href="#the-brain" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">How It Works</a>
           <a href="#command-center" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Organize</a>
@@ -32,16 +28,16 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
           <a href="#" className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">Blog</a>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 md:gap-6 shrink-0">
           <SignedOut>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 md:gap-4">
               <SignInButton mode="modal">
-                <button className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">
+                <button className="h-10 px-3 whitespace-nowrap text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium">
                   Sign In
                 </button>
               </SignInButton>
               <Link href="/sign-up" onClick={() => posthog?.capture('click_get_started', { location: 'navbar' })}>
-                <button className="h-10 px-4 md:px-5 rounded-full bg-ember-500 text-white text-xs md:text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
+                <button className="h-10 px-4 md:px-5 whitespace-nowrap rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all">
                   Get Started
                 </button>
               </Link>
@@ -50,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isScrolled = false }) => {
 
           <SignedIn>
             <Link href="/workspace">
-              <button className="text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium mr-4">
+              <button className="h-10 px-3 whitespace-nowrap text-ink-soft hover:text-ember-600 transition-colors text-sm font-medium md:mr-4">
                 Dashboard
               </button>
             </Link>
