@@ -340,7 +340,8 @@ export type BrainAction =
   | 'bootstrap_genealogy';
 
 export type CaptureKind = 'bookmark' | 'snip' | 'frame';
-export type CaptureIntent = 'agree' | 'counter' | 'evidence' | 'framing' | 'example';
+// 'framing' is only on captures saved before Style replaced it
+export type CaptureIntent = 'agree' | 'counter' | 'evidence' | 'example' | 'style' | 'framing';
 
 export interface Artifact {
   id: string;
@@ -355,6 +356,7 @@ export interface Artifact {
   imageUrl?: string; // Public URL of the stored snip or frame image
   ai_metadata?: {
     visual_summary?: string;
+    intent?: CaptureIntent; // Kept here while the database's intent_type check doesn't allow 'style' yet
     kind?: CaptureKind;
     type?: string;
     tags?: string[];

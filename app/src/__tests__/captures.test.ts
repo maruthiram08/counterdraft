@@ -134,3 +134,12 @@ describe('capture images', () => {
         expect(source.text).toBe('Q3 revenue\n\n[What the image shows: Bar chart: revenue doubled]');
     });
 });
+
+describe('style intent', () => {
+    it('reads a Style intent parked in ai_metadata and tells the writer to borrow the style', () => {
+        const source = captureToSource({ ...frame, intent_type: null, ai_metadata: { kind: 'frame', intent: 'style' } });
+        expect(source.intent).toBe('style');
+        const meta = { explore: { query: '', from: 'captures', sources: [source] } } as unknown as BrainMetadata;
+        expect(formatCaptureSources(meta)).toContain('borrow the style');
+    });
+});

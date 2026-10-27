@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Trash2, Lightbulb, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import type { Artifact } from '@/types';
-import { captureKind } from '@/lib/brain/captures';
+import { captureIntent, captureKind } from '@/lib/brain/captures';
 
 const KIND_LABELS = { bookmark: 'Bookmark', snip: 'Snip', frame: 'Frame' } as const;
 
@@ -18,17 +18,19 @@ interface ArtifactCardProps {
 
 export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardProps) {
     const kind = captureKind(artifact);
+    const intent = captureIntent(artifact);
     const [copied, setCopied] = useState(false);
 
     const intentColor = useMemo(() => {
-        switch (artifact.intent_type) {
+        switch (intent) {
             case 'agree': return 'bg-sage-100 text-sage-700';
             case 'counter': return 'bg-rose-100 text-rose-700';
             case 'evidence': return 'bg-dusk-100 text-dusk-700';
+            case 'style':
             case 'framing': return 'bg-ember-100 text-ember-700';
             default: return 'bg-canvas shadow-well text-ink-soft';
         }
-    }, [artifact.intent_type]);
+    }, [intent]);
 
     const handleCopy = () => {
         const text = artifact.ocr_text || artifact.user_note || "";
@@ -114,9 +116,9 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardPr
                             {KIND_LABELS[kind]}
                         </span>
                     )}
-                    {artifact.intent_type && (
+                    {intent && (
                         <span className={`inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium lowercase first-letter:uppercase ${intentColor}`}>
-                            {artifact.intent_type}
+                            {intent}
                         </span>
                     )}
                     {!!artifact.usedIn && (

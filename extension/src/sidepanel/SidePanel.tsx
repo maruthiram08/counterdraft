@@ -101,7 +101,7 @@ export function SidePanel() {
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [snipData, setSnipData] = useState<SnipData | null>(null);
     const [userNote, setUserNote] = useState("");
-    const [userIntent, setUserIntent] = useState<'agree' | 'counter' | 'evidence' | 'framing' | 'example' | null>(null);
+    const [userIntent, setUserIntent] = useState<'agree' | 'counter' | 'evidence' | 'example' | 'style' | null>(null);
     // State Preservation: Store the target tab when we initiate an action to ensure we don't lose the URL
     const [targetTab, setTargetTab] = useState<{ id: number; url: string; title: string } | null>(null);
 
@@ -540,8 +540,8 @@ export function SidePanel() {
                                     { id: 'agree', label: 'Agree', color: 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' },
                                     { id: 'counter', label: 'Counter', color: 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' },
                                     { id: 'evidence', label: 'Evidence', color: 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200' },
-                                    { id: 'framing', label: 'Framing', color: 'bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200' },
-                                    { id: 'example', label: 'Example', color: 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200' }
+                                    { id: 'example', label: 'Example', color: 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200' },
+                                    { id: 'style', label: 'Style', color: 'bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200' }
                                 ].map(intent => (
                                     <button
                                         key={intent.id}
@@ -562,6 +562,7 @@ export function SidePanel() {
                                 placeholder={
                                     userIntent === 'counter' ? "Why is this wrong? What's the flaw?" :
                                         userIntent === 'evidence' ? "What does this prove?" :
+                                            userIntent === 'style' ? "What do you like about how it's written?" :
                                             "Add a quick note..."
                                 }
                                 className={`w-full text-sm p-3 border rounded-lg focus:ring-2 outline-none min-h-[80px] resize-none transition-colors ${userIntent === 'counter'

@@ -2,7 +2,8 @@ import type { BrainMetadata, CaptureIntent, CaptureKind, ExploreOrigin } from '@
 
 // Lens captures (bookmarks, snips, frames) as source material for post ideas, research and drafting.
 
-export const CAPTURE_INTENTS: CaptureIntent[] = ['agree', 'counter', 'evidence', 'framing', 'example'];
+// What Lens offers today; 'framing' is still read on older captures
+export const CAPTURE_INTENTS: CaptureIntent[] = ['agree', 'counter', 'evidence', 'example', 'style', 'framing'];
 export const CAPTURE_KINDS: CaptureKind[] = ['bookmark', 'snip', 'frame'];
 
 // How the writer means each capture to be used, in words the models act on
@@ -10,6 +11,7 @@ const INTENT_MEANING: Record<CaptureIntent, string> = {
     agree: 'The creator agrees with this and wants to build on it',
     counter: 'The creator disagrees with this and wants to push back on it',
     evidence: 'The creator saved this as proof or data to back a point',
+    style: 'The creator likes how this is written (its hook, structure or format) and wants to borrow the style for their own post, not the content',
     framing: 'The creator likes how this frames the idea and wants to use that framing in their own words',
     example: 'The creator saved this as an example to use',
 };
@@ -28,7 +30,7 @@ export interface CaptureRow {
     user_note?: string | null;
     intent_type?: string | null;
     image_path?: string | null;
-    ai_metadata?: { kind?: unknown; type?: unknown; key_insight?: unknown; visual_summary?: unknown } | null;
+    ai_metadata?: { kind?: unknown; type?: unknown; key_insight?: unknown; visual_summary?: unknown; intent?: unknown } | null;
 }
 
 export function isCaptureIntent(value: unknown): value is CaptureIntent {
@@ -46,6 +48,12 @@ export function captureKind(row: Pick<CaptureRow, 'ai_metadata'>): CaptureKind |
     if (isCaptureKind(meta?.kind)) return meta.kind;
     if (meta?.type === 'bookmark') return 'bookmark';
     return undefined;
+}
+
+// The column first; a Style capture saved before the database allowed it keeps its intent in ai_metadata
+export function captureIntent(row: Pick<CaptureRow, 'intent_type' | 'ai_metadata'>): CaptureIntent | undefined {
+    if (isCaptureIntent(row.intent_type)) return row.intent_type;
+    return isCaptureIntent(row.ai_metadata?.intent) ? row.ai_metadata.intent : undefined;
 }
 
 // The domain without "www.", or the raw URL when it isn't one
@@ -82,7 +90,7 @@ export function captureToSource(row: CaptureRow, pageText?: string): CaptureSour
         source: domain || undefined,
         captureId: row.id,
         captureKind: captureKind(row),
-        intent: isCaptureIntent(row.intent_type) ? row.intent_type : undefined,
+        intent: captureIntent(row),
         note: note || undefined,
         text: text ? trimText(text) : undefined,
         takeaway: insight || undefined,

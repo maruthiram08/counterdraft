@@ -157,22 +157,24 @@ Think like a careful analyst preparing material for long-term thinking, not a co
         }
 
         // 5. Save to Database
-        const { data: artifact, error: dbError } = await supabase
-            .from('thinking_artifacts')
-            .insert({
-                user_id: userId,
-                source_url: sourceUrl || "",
-                source_title: sourceTitle || pageTitle,
-                source_domain: domain,
-                image_path: imagePath,
-                ocr_text: ocrText,
-                user_note: userNote,
-                // Intent is optional; a capture saved without one is just "saved"
-                intent_type: isCaptureIntent(intentType) ? intentType : null,
-                ai_metadata: aiMetadata
-            })
-            .select()
-            .single();
+        // Intent is optional; a capture saved without one is just "saved"
+        const intent = isCaptureIntent(intentType) ? intentType : null;
+        const row = {
+            user_id: userId,
+            source_url: sourceUrl || "",
+            source_title: sourceTitle || pageTitle,
+            source_domain: domain,
+            image_path: imagePath,
+            ocr_text: ocrText,
+            user_note: userNote,
+            intent_type: intent,
+            ai_metadata: { ...aiMetadata, ...(intent ? { intent } : {}) }
+        };
+        let { data: artifact, error: dbError } = await supabase.from('thinking_artifacts').insert(row).select().single();
+        // Until migration 20261027_capture_style_intent runs, the intent_type check rejects 'style'; it is kept in ai_metadata
+        if (dbError?.code === '23514' && intent) {
+            ({ data: artifact, error: dbError } = await supabase.from('thinking_artifacts').insert({ ...row, intent_type: null }).select().single());
+        }
 
         if (dbError) throw dbError;
 
