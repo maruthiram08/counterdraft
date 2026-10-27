@@ -26,6 +26,15 @@ with `Origin: null` (the middleware allows that only when Chrome marks it `Sec-F
 2. Click **Load unpacked** and choose `extension/dist`.
 3. Sign in to CounterDraft in the same browser, then click the Lens icon to open the side panel.
 
+## How Frame captures work
+
+Frame captures the whole element you click, not just the part on screen. `src/content/captureElement.ts`
+opens any "…see more" button inside it, hides fixed and sticky bars (like LinkedIn's top nav), scrolls
+the element through the window one screenful at a time and takes a screenshot of each (Chrome allows
+two per second, so a long post takes a couple of seconds), then puts the page back where it was. The
+side panel joins the strips into one image. The element's text is sent along as `pageText`, because
+the AI model scales a tall image down before reading it. Very long elements stop at 12,000px of image.
+
 ## Server side
 
 If the app sets `ALLOWED_EXTENSIONS`, add this extension's ID (shown on `chrome://extensions`) to

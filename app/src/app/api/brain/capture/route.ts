@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
         // 2. Parse Payload
         const body = await req.json();
         const { imageBase64, userNote, intentType, sourceUrl, sourceTitle, pageTitle, isBookmark } = body;
+        // Lens 1.0.2+ sends the text of a framed element; a tall screenshot gets scaled down before the model reads it
+        const pageText = typeof body.pageText === 'string' ? body.pageText.trim().slice(0, 10000) : '';
 
         if (!imageBase64 && !isBookmark && intentType !== 'bookmark' && intentType !== 'pin') {
             return NextResponse.json({ error: 'No image provided' }, { status: 400 });
@@ -115,6 +117,10 @@ Think like a careful analyst preparing material for long-term thinking, not a co
                         role: "user",
                         content: [
                             { type: "text", text: `User Note: "${userNote}". Context: ${pageTitle}` },
+                            ...(pageText ? [{
+                                type: "text" as const,
+                                text: `Text copied from the captured part of the page. Treat it as the exact wording for ocr_text and cleaned_text, and use the image for layout and visuals:\n---\n${pageText}\n---`
+                            }] : []),
                             { type: "image_url", image_url: { url: imageBase64 } }
                         ]
                     }
@@ -123,7 +129,7 @@ Think like a careful analyst preparing material for long-term thinking, not a co
             });
 
             const aiResult = JSON.parse(response.choices[0].message.content || "{}");
-            ocrText = aiResult.ocr_text || "";
+            ocrText = aiResult.ocr_text || pageText;
             aiMetadata = aiResult;
         } else {
             // No Image (Bookmark Mode)

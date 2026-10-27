@@ -14,10 +14,72 @@ interface SnipData {
     deviceScaleFactor: number;
     pageTitle: string;
     pageUrl: string;
+    pageText?: string;
+    truncated?: boolean;
 }
+
+// One screenful of a Frame capture, cut out of a viewport screenshot (CSS pixels)
+interface CaptureTile {
+    dataUrl: string;
+    sx: number;
+    sy: number;
+    sw: number;
+    sh: number;
+    dx: number;
+    dy: number;
+    viewportWidth: number;
+}
+
+// Vercel rejects request bodies over 4.5 MB, so keep the image well under that
+const MAX_IMAGE_CHARS = 3_000_000;
+
+const loadImage = (src: string): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Could not read the screenshot'));
+    img.src = src;
+});
+
+// PNG keeps text sharpest; tall captures fall back to JPEG, then to a smaller size
+const encodeCanvas = (canvas: HTMLCanvasElement): string => {
+    const png = canvas.toDataURL('image/png');
+    if (png.length <= MAX_IMAGE_CHARS) return png;
+    let source = canvas;
+    for (let i = 0; i < 4; i++) {
+        const jpeg = source.toDataURL('image/jpeg', 0.85);
+        if (jpeg.length <= MAX_IMAGE_CHARS) return jpeg;
+        const smaller = document.createElement('canvas');
+        smaller.width = Math.round(source.width * 0.75);
+        smaller.height = Math.round(source.height * 0.75);
+        smaller.getContext('2d')?.drawImage(source, 0, 0, smaller.width, smaller.height);
+        source = smaller;
+    }
+    return source.toDataURL('image/jpeg', 0.7);
+};
+
+const stitchTiles = async (tiles: CaptureTile[], width: number, height: number): Promise<string> => {
+    const images = await Promise.all(tiles.map(tile => loadImage(tile.dataUrl)));
+    // Screenshot pixels per CSS pixel (devicePixelRatio and zoom), read from the screenshot itself
+    const scale = images[0].naturalWidth / tiles[0].viewportWidth;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas unavailable');
+    tiles.forEach((tile, i) => {
+        const s = images[i].naturalWidth / tile.viewportWidth;
+        ctx.drawImage(
+            images[i],
+            tile.sx * s, tile.sy * s, tile.sw * s, tile.sh * s,
+            Math.round(tile.dx * scale), Math.round(tile.dy * scale), tile.sw * scale, tile.sh * scale
+        );
+    });
+    return encodeCanvas(canvas);
+};
 
 export function SidePanel() {
     const [status, setStatus] = useState<string>("Idle");
+    const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [snipData, setSnipData] = useState<SnipData | null>(null);
     const [userNote, setUserNote] = useState("");
@@ -27,7 +89,12 @@ export function SidePanel() {
 
     // --- Message Listener ---
     useEffect(() => {
-        const listener = async (msg: any, _sender: any, _sendResponse: any) => {
+        const handleMessage = async (msg: any) => {
+            if (msg.type === 'FRAME_CAPTURE_PROGRESS') {
+                setProgress(msg.payload);
+                setStatus("Processing...");
+                return;
+            }
             if (msg.type === 'PROCESS_SNIP') {
                 setStatus("Processing...");
 
@@ -56,29 +123,53 @@ export function SidePanel() {
 
                 console.log("Processing snip with URL:", finalPageUrl);
 
-                // 1. Get the full screenshot first
-                const fullScreenResponse = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE_TAB' });
-                const fullScreenshotUrl = fullScreenResponse.dataUrl;
+                let croppedUrl: string;
+                if (msg.payload.tiles?.length) {
+                    // Frame mode: the page already took one screenshot per screenful, join them
+                    croppedUrl = await stitchTiles(
+                        msg.payload.tiles,
+                        msg.payload.width,
+                        msg.payload.height
+                    );
+                } else {
+                    // 1. Get the full screenshot first
+                    const fullScreenResponse = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE_TAB' });
+                    const fullScreenshotUrl = fullScreenResponse.dataUrl;
 
-                // 2. Crop it
-                const croppedUrl = await cropImage(
-                    fullScreenshotUrl,
-                    msg.payload.x,
-                    msg.payload.y,
-                    msg.payload.width,
-                    msg.payload.height,
-                    msg.payload.deviceScaleFactor
-                );
+                    // 2. Crop it
+                    croppedUrl = await cropImage(
+                        fullScreenshotUrl,
+                        msg.payload.x,
+                        msg.payload.y,
+                        msg.payload.width,
+                        msg.payload.height,
+                        msg.payload.deviceScaleFactor
+                    );
+                }
+                setProgress(null);
 
                 setCapturedImage(croppedUrl);
+                const snipFields = { ...msg.payload };
+                delete snipFields.tiles; // screenshots are already joined into croppedUrl
                 setSnipData({
-                    ...msg.payload,
+                    ...snipFields,
                     pageUrl: finalPageUrl,
                     pageTitle: finalPageTitle,
                     dataUrl: croppedUrl
                 });
                 setStatus("Review");
             }
+        };
+        // Not async: a listener that returns a promise answers every message, and would beat the
+        // background's reply to the page's CAPTURE_VISIBLE_TAB requests with an empty one
+        const listener = (msg: any) => {
+            handleMessage(msg).catch((err) => {
+                console.error("Processing snip failed:", err);
+                alert("Capture failed: " + (err?.message || "Unknown error"));
+                setProgress(null);
+                setStatus("Idle");
+            });
+            return false;
         };
         chrome.runtime.onMessage.addListener(listener);
         return () => chrome.runtime.onMessage.removeListener(listener);
@@ -102,7 +193,7 @@ export function SidePanel() {
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(img, pixelX, pixelY, pixelW, pixelH, 0, 0, pixelW, pixelH);
-                    resolve(canvas.toDataURL('image/png'));
+                    resolve(encodeCanvas(canvas));
                 }
             };
             img.src = src;
@@ -245,7 +336,8 @@ export function SidePanel() {
                     sourceUrl: snipData.pageUrl,
                     sourceTitle: snipData.pageTitle,
                     pageTitle: snipData.pageTitle,
-                    isBookmark: !snipData.dataUrl
+                    isBookmark: !snipData.dataUrl,
+                    pageText: snipData.pageText || undefined
                 })
             });
 
@@ -280,6 +372,7 @@ export function SidePanel() {
         setCapturedImage(null);
         setSnipData(null);
         setUserNote("");
+        setProgress(null);
     };
 
     if (status === 'Success') {
@@ -351,7 +444,11 @@ export function SidePanel() {
                         {(status === 'Saving...' || status === 'Processing...') && (
                             <div className="p-4 bg-slate-50 text-slate-700 rounded-lg text-sm text-center border border-slate-100 flex flex-col items-center gap-2">
                                 <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
-                                {status === 'Saving...' ? 'Sending to Brain...' : 'Processing Image...'}
+                                {status === 'Saving...'
+                                    ? 'Sending to Brain...'
+                                    : progress && progress.total > 1
+                                        ? `Capturing the whole element (${Math.min(progress.done + 1, progress.total)} of ${progress.total})...`
+                                        : 'Processing Image...'}
                             </div>
                         )}
 
@@ -365,10 +462,13 @@ export function SidePanel() {
                     <div className="space-y-4 animate-fade-in">
                         {/* The Snip - only show if image exists */}
                         {capturedImage && (
-                            <div className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-100">
+                            <div className="relative group rounded-lg overflow-y-auto max-h-[55vh] border border-gray-200 shadow-sm bg-gray-100">
                                 <img src={capturedImage} alt="Snip" className="w-full h-auto object-contain" />
                                 <div className="absolute inset-0 bg-black/5 pointer-events-none border-inset border-black/10"></div>
                             </div>
+                        )}
+                        {capturedImage && snipData.truncated && (
+                            <p className="text-xs text-amber-700">This element is very long, so the image stops partway. The full text is still saved.</p>
                         )}
 
                         {/* Metadata */}
