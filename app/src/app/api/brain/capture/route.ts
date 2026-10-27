@@ -129,8 +129,9 @@ Think like a careful analyst preparing material for long-term thinking, not a co
             });
 
             const aiResult = JSON.parse(response.choices[0].message.content || "{}");
-            ocrText = aiResult.ocr_text || pageText;
-            aiMetadata = aiResult;
+            // The model rewords and cuts long text even when given the exact copy, so keep the page's own words
+            ocrText = pageText || aiResult.ocr_text || "";
+            aiMetadata = pageText ? { ...aiResult, ocr_text: pageText } : aiResult;
         } else {
             // No Image (Bookmark Mode)
             // We could run a text-only classification on the title/note, but for now just save.
