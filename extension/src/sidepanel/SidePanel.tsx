@@ -173,7 +173,8 @@ export function SidePanel() {
                 delete snipFields.tiles; // screenshots are already joined into croppedUrl
                 setSnipData({
                     ...snipFields,
-                    kind: msg.payload.tiles?.length || msg.payload.pageText ? 'frame' : 'snip',
+                    // Lens 1.0.6 says which tool made it; snips now carry page text too
+                    kind: msg.payload.kind === 'snip' || msg.payload.kind === 'frame' ? msg.payload.kind : msg.payload.tiles?.length || msg.payload.pageText ? 'frame' : 'snip',
                     pageUrl: finalPageUrl,
                     pageTitle: finalPageTitle,
                     dataUrl: croppedUrl

@@ -68,6 +68,7 @@ export function FrameOverlay() {
             deviceScaleFactor: window.devicePixelRatio,
             pageUrl: window.location.href,
             pageTitle: document.title,
+            kind: 'frame',
             post
         };
 

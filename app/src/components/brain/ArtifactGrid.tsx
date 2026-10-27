@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getArtifacts, deleteArtifact } from '@/app/brain/actions';
 import { ArtifactCard } from './ArtifactCard';
@@ -170,28 +170,31 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
             ) : (
                 <div className="columns-1 md:columns-2 lg:columns-3 gap-5 space-y-5">
                     {shown.map(artifact => (
-                        <div key={artifact.id} className="relative group break-inside-avoid mb-4">
-                            {isSelectMode && (
-                                <div
-                                    className="absolute top-3 right-3 z-10 cursor-pointer"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
+                        <div
+                            key={artifact.id}
+                            className={`relative group break-inside-avoid mb-4 ${isSelectMode ? 'cursor-pointer rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300' : ''}`}
+                            // While picking, the whole card is the checkbox, so it's easy to hit on a phone
+                            {...(isSelectMode ? {
+                                role: 'checkbox',
+                                'aria-checked': selectedIds.has(artifact.id),
+                                'aria-label': artifact.source_title || artifact.source_domain || 'Capture',
+                                tabIndex: 0,
+                                onClick: () => toggleSelection(artifact.id),
+                                onKeyDown: (e: ReactKeyboardEvent) => {
+                                    if (e.key === ' ' || e.key === 'Enter') {
+                                        e.preventDefault();
                                         toggleSelection(artifact.id);
-                                    }}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedIds.has(artifact.id)}
-                                        onChange={() => toggleSelection(artifact.id)}
-                                        className="w-5 h-5 rounded border-line accent-ember-500 focus:ring-ember-200 cursor-pointer"
-                                    />
-                                </div>
-                            )}
+                                    }
+                                },
+                            } : {})}
+                        >
                             <ArtifactCard
                                 artifact={artifact}
                                 onDelete={handleDelete}
                                 onFindIdeas={a => setIdeasFor([a])}
                                 onReframe={setReframing}
+                                selecting={isSelectMode}
+                                selected={selectedIds.has(artifact.id)}
                             />
                         </div>
                     ))}

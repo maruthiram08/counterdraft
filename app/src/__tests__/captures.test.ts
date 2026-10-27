@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { captureKind, captureToSource, formatCaptureSources, formatCapturesForIdeas, stanceFromIntents, trimText } from '@/lib/brain/captures';
+import { captureKind, captureToSource, formatCaptureSources, formatCapturesForIdeas, perCaptureLimit, stanceFromIntents, trimText } from '@/lib/brain/captures';
 import { formatExploreSources, formatIdeaChain } from '@/lib/brain/strategy';
 import { extractPageText } from '@/lib/read-page';
 import type { BrainMetadata } from '@/types';
@@ -50,6 +50,24 @@ describe('captures', () => {
         expect(stanceFromIntents(['agree', 'counter'])).toBeUndefined();
         expect(stanceFromIntents(['evidence'])).toBeUndefined();
         expect(stanceFromIntents([undefined])).toBeUndefined();
+    });
+
+    it('keeps a long capture whole on the idea and shares the prompt budget between captures', () => {
+        const long = 'Every word of this frame matters. '.repeat(250); // about 8,500 characters
+        const source = captureToSource({ ...frame, ocr_text: long });
+        expect(source.text).toBe(long.trim());
+        const one = { explore: { query: '', from: 'captures', sources: [source] } } as unknown as BrainMetadata;
+        expect(formatCaptureSources(one).length).toBeGreaterThan(7500);
+        const six = { explore: { query: '', from: 'captures', sources: Array.from({ length: 6 }, (_, i) => ({ ...source, captureId: `c${i}` })) } } as unknown as BrainMetadata;
+        expect(formatCaptureSources(six).length).toBeLessThan(15000);
+        expect(perCaptureLimit(1)).toBe(8000);
+        expect(perCaptureLimit(6)).toBe(2000);
+        expect(perCaptureLimit(6, 3000)).toBe(1200);
+    });
+
+    it('carries the stored image along with the capture', () => {
+        expect(captureToSource({ ...frame, imageUrl: 'https://img/x.png' }).image).toBe('https://img/x.png');
+        expect(captureToSource(frame).image).toBeUndefined();
     });
 
     it('trims long text at a sentence or line', () => {

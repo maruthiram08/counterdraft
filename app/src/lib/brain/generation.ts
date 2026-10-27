@@ -116,7 +116,7 @@ export class BrainGenerationService {
         // Plan from the original search and saved angle first; the hook is only a working title
         const origin = originQuery(brainMetadata);
         const searchSeed = `${origin ? `\nOriginal search: ${origin}` : ''}\nSaved angle: ${originAngle(angle, brainMetadata) || 'None'}`;
-        const plan = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}${formatCaptureSources(brainMetadata, 1200)}`)
+        const plan = await this.planResearchQueries(hook, `${searchSeed}${ideaChain}${brainContext}${exploreSources}${formatCaptureSources(brainMetadata, 3000)}`)
             .catch((): ResearchPlan => ({ queries: fallbackQueries(hook, brainMetadata, angle) }));
         // Each "must include" item gets its own search so the brief's extra asks aren't crowded out by the hook
         const includeQueries = (brainMetadata?.include || []).slice(0, 2).map(item => plan.place && !item.toLowerCase().includes(plan.place.toLowerCase().slice(0, 4)) ? `${item} ${plan.place}` : item);
@@ -354,7 +354,7 @@ Example: { "text": "Updated research point..." }`
         const shape = outlineShape(brainMetadata);
 
         const referencesContext = this.formatReferences(references);
-        const captures = formatCaptureSources(brainMetadata, 1500);
+        const captures = formatCaptureSources(brainMetadata, 6000);
         const userContextString = userContext ? `\n\nCreator's extra instructions:\n${userContext}` : '';
         const sourceContext = brainMetadata?.sourceContext
             ? `\n\nOriginal Source Material:\n${brainMetadata.sourceContext.substring(0, 3000)}...`
@@ -553,7 +553,7 @@ Keep the outline's order and shape. Do not add sections. This is for the writer,
 Angle: ${angle || 'General'}${ideaChain}${strategy}
 
 Outline:
-${outlineContext}${research}${formatCaptureSources(brainMetadata, 1500)}${ownMaterial}
+${outlineContext}${research}${formatCaptureSources(brainMetadata, 4000)}${ownMaterial}
 
 Expand this into a drafting brief. Put the creator's own material in the sections it fits before you mark anything SUGGEST.`
                 }

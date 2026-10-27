@@ -20,7 +20,7 @@ interface CaptureIdeasModalProps {
     onClose: () => void;
     // Opens a saved idea in the writing wizard
     onOpenItem?: (itemId: string) => void;
-    // A capture was used, so its "In N posts" count changes
+    // A capture changed: used in a post (its "In N posts" count), or a bookmark's page text was saved
     onSaved?: () => void;
 }
 
@@ -35,6 +35,8 @@ export function CaptureIdeasModal({ captures, onClose, onOpenItem, onSaved }: Ca
     const [sources, setSources] = useState<CaptureSource[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // Bookmarks whose page couldn't be read
+    const [unread, setUnread] = useState<string[]>([]);
     const [busy, setBusy] = useState<string | null>(null);
     const [saved, setSaved] = useState<Set<string>>(new Set());
     const [ownHook, setOwnHook] = useState('');
@@ -58,12 +60,16 @@ export function CaptureIdeasModal({ captures, onClose, onOpenItem, onSaved }: Ca
             }
             setIdeas(data.ideas || []);
             setSources(data.captureSources || []);
+            setUnread(data.unreadCaptures || []);
+            // A bookmark read just now keeps its text, so its card can show it
+            if (captures.some(c => !c.ocr_text?.trim())) onSaved?.();
             if (!data.ideas?.length) setError("No strong ideas came out of this. Try again, or write your own below.");
         } catch (err) {
             setError(err instanceof Error ? err.message : "Couldn't find ideas. Try again.");
         } finally {
             setLoading(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- runs again only when the captures change
     }, [ids]);
 
     useEffect(() => { findIdeas(); }, [findIdeas]);
@@ -165,6 +171,11 @@ export function CaptureIdeasModal({ captures, onClose, onOpenItem, onSaved }: Ca
                             <>
                                 {error && (
                                     <div className="bg-rose-100 rounded-tile p-4 text-rose-700 text-sm">{error}</div>
+                                )}
+                                {unread.length > 0 && (
+                                    <div role="status" className="bg-ember-50 rounded-tile p-4 text-ink-soft text-sm">
+                                        Couldn&apos;t read {unread.length === 1 ? <b className="text-ink">{unread[0]}</b> : `${unread.length} of the pages`}, so these ideas use {unread.length === 1 ? 'its' : 'their'} title and your note only. Sites that need a login (LinkedIn, X, paywalls) can only be read by Lens: open the page and save it again, or Frame the part you want.
+                                    </div>
                                 )}
                                 {ideas.map(idea => {
                                     const isSaved = saved.has(idea.hook);

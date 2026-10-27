@@ -242,6 +242,7 @@ export interface ExploreOrigin {
     note?: string; // The writer's own note on the capture
     text?: string; // The captured words, as saved
     author?: string; // Who wrote the captured post, when Lens could read it
+    image?: string; // The snip or frame image, shown beside the capture while writing
   }>;
   // Absent when a topic was saved before any post idea was picked for it
   idea?: { hook: string; angle: string; format: string; belief?: string };
@@ -385,6 +386,7 @@ export interface Artifact {
     summary?: string;
     key_insight?: string;
     post?: CapturedPost;
+    analysis_failed?: boolean; // The image couldn't be read when it was saved
   };
   usedIn?: number; // Pipeline items built from this capture
   createdAt: Date;

@@ -25,6 +25,7 @@ import type { DraftAnswer, DraftQuestion, OutlineShapeOption } from "@/lib/edito
 import { liveSuggestions, wrapSuggestions } from "@/lib/editor/suggestions";
 import { DraftQuestionsStep } from "./wizard/DraftQuestionsStep";
 import { OriginalityCheck } from "./wizard/OriginalityCheck";
+import { CaptureSourcesStrip } from "./wizard/CaptureSourcesStrip";
 import { reframeModeLabel } from "@/lib/brain/reframe";
 
 // Set when the writer ticks "Don't ask me before drafting"
@@ -97,6 +98,14 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const reframe = localBrainMetadata?.reframe;
     const quickReframe = !!reframe?.original && !deepDive && outline.length === 0;
     const reframeDomain = localBrainMetadata?.explore?.sources?.find(s => s.captureId === reframe?.captureId)?.source;
+    // The Lens captures this post is built from, shown so the writer can check or drop one
+    const captureSourceList = (localBrainMetadata?.explore?.sources || []).filter(s => !!s.captureId);
+    const removeCaptureSource = (captureId: string) => {
+        const explore = latestBrainMetadata.current?.explore;
+        if (!explore) return;
+        updateMetadata({ explore: { ...explore, sources: explore.sources.filter(s => s.captureId !== captureId) } });
+        toast.success("Removed. Steps you run from now on won't use it.");
+    };
     // Set when a new reframe opens, so its first draft starts without a click
     const [autoStartReframe, setAutoStartReframe] = useState(false);
 
@@ -900,6 +909,15 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             onStrategyShaped={handleStrategyShaped}
                             collapsed={step === 'generate' && !!draftContent}
                         />
+
+                        {captureSourceList.length > 0 && (
+                            <CaptureSourcesStrip
+                                sources={captureSourceList}
+                                lockedId={reframe?.captureId}
+                                disabled={loading || askingQuestions || completing}
+                                onRemove={removeCaptureSource}
+                            />
+                        )}
 
                         {step === 'deep_dive' && (
                             loading ? (
