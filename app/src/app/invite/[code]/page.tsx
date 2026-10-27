@@ -1,5 +1,5 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import InviteClient from './InviteClient';
 
 interface Props {
@@ -20,7 +20,13 @@ export default async function InvitePage({ params }: Props) {
         return notFound();
     }
 
-    const isExpired = coupon.redemptions_count >= coupon.max_redemptions;
+    // Discount codes are applied on the Pricing page
+    if ((coupon.discount_percent ?? 100) < 100) {
+        redirect(`/pricing?coupon=${encodeURIComponent(coupon.code)}`);
+    }
+
+    const isExpired = coupon.redemptions_count >= coupon.max_redemptions
+        || (!!coupon.expires_at && new Date(coupon.expires_at) < new Date());
     const planName = coupon.access_plans?.display_name || 'Pro Plan';
 
     return (
@@ -35,7 +41,7 @@ export default async function InvitePage({ params }: Props) {
                 {isExpired ? (
                     <>
                         <h1 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Invite Expired</h1>
-                        <p className="text-ink-soft">This magic link has already been claimed.</p>
+                        <p className="text-ink-soft">This invite has expired or has already been used.</p>
                     </>
                 ) : (
                     <>

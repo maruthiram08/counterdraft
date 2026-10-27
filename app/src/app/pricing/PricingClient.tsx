@@ -5,6 +5,7 @@ import Script from 'next/script';
 import { useAuth } from '@clerk/nextjs';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PAID_PLANS, discountedAmount, formatAmount } from '@/lib/billing/plans';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 
@@ -68,13 +69,63 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
     const { isLoaded: authLoaded, isSignedIn } = useAuth();
     const [checkingOut, setCheckingOut] = useState(false);
 
+    // Discount code (checked on the server; the order API re-checks it before charging)
+    const [couponOpen, setCouponOpen] = useState(false);
+    const [couponInput, setCouponInput] = useState('');
+    const [coupon, setCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
+    const [couponError, setCouponError] = useState('');
+    const [couponChecking, setCouponChecking] = useState(false);
+
+    const signUpThenBack = (code?: string) => {
+        const back = code ? `/pricing?coupon=${encodeURIComponent(code)}` : '/pricing';
+        window.location.assign(`/sign-up?redirect_url=${encodeURIComponent(back)}`);
+    };
+
+    const applyCoupon = async (raw: string) => {
+        const code = raw.trim().toUpperCase();
+        if (!code) return;
+        if (authLoaded && !isSignedIn) { signUpThenBack(code); return; }
+        setCouponChecking(true);
+        setCouponError('');
+        try {
+            const res = await fetch('/api/billing/coupon', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, planId: currentPlan.id }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) { signUpThenBack(code); return; }
+            if (!res.ok) { setCoupon(null); setCouponError(data.error || 'That code is not valid.'); return; }
+            setCoupon({ code: data.code, discountPercent: data.discountPercent });
+            setCouponOpen(false);
+        } catch {
+            setCouponError('Could not check that code. Please try again.');
+        } finally {
+            setCouponChecking(false);
+        }
+    };
+
+    // A shared link like /pricing?coupon=LAUNCH20 fills in and applies the code
+    const [linkCoupon, setLinkCoupon] = useState<string | null>(null);
+    useEffect(() => {
+        const code = new URLSearchParams(window.location.search).get('coupon');
+        if (code) { setLinkCoupon(code); setCouponInput(code.toUpperCase()); setCouponOpen(true); }
+    }, []);
+    useEffect(() => {
+        if (linkCoupon && authLoaded && isSignedIn) { setLinkCoupon(null); applyCoupon(linkCoupon); }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [linkCoupon, authLoaded, isSignedIn]);
+
+    const paidPlan = PAID_PLANS[currentPlan.id];
+    const discountedTotal = coupon && paidPlan ? formatAmount(discountedAmount(paidPlan.amount, coupon.discountPercent), paidPlan.currency) : null;
+
     // Same Razorpay checkout for both regions: INR plans for India, USD plans (international cards) elsewhere
     const handleSubscribe = async (planId: string) => {
         if (checkingOut) return;
 
         // Paying needs an account to attach Pro to: sign up first, then come back here
         if (authLoaded && !isSignedIn) {
-            window.location.assign(`/sign-up?redirect_url=${encodeURIComponent('/pricing')}`);
+            signUpThenBack(coupon?.code);
             return;
         }
 
@@ -84,12 +135,12 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
             const res = await fetch('/api/billing/razorpay/order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ planId })
+                body: JSON.stringify({ planId, couponCode: coupon?.code })
             });
             const data = await res.json().catch(() => ({}));
 
             if (res.status === 401) {
-                window.location.assign(`/sign-up?redirect_url=${encodeURIComponent('/pricing')}`);
+                signUpThenBack(coupon?.code);
                 return;
             }
             if (!res.ok || data.error) throw new Error(data.error || `Could not start the payment (${res.status})`);
@@ -272,6 +323,53 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                                 {billingCycle === 'yearly' && isIndia && <span className="text-ember-200 ml-2"> (₹9,999/yr)</span>}
                                 {billingCycle === 'yearly' && !isIndia && <span className="text-ember-200 ml-2"> (Total {currentPlan.price}/yr)</span>}
                             </p>
+                        </div>
+
+                        {/* Discount code */}
+                        <div className="-mt-2 mb-5 relative z-10 w-full">
+                            {coupon ? (
+                                <div className="flex items-center justify-between gap-3 rounded-full bg-white/10 px-4 py-2.5 text-sm">
+                                    <span className="text-white">
+                                        <span className="font-mono font-medium">{coupon.code}</span>
+                                        <span className="text-white/70">: {coupon.discountPercent}% off{discountedTotal ? `, you pay ${discountedTotal}` : ''}</span>
+                                    </span>
+                                    <button
+                                        onClick={() => { setCoupon(null); setCouponInput(''); }}
+                                        className="min-h-[44px] -my-2.5 px-2 text-xs text-white/60 hover:text-white"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ) : couponOpen ? (
+                                <form
+                                    onSubmit={(e) => { e.preventDefault(); applyCoupon(couponInput); }}
+                                    className="flex gap-2 w-full"
+                                >
+                                    <input
+                                        autoFocus
+                                        value={couponInput}
+                                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                                        placeholder="Coupon code"
+                                        className="flex-1 min-w-0 h-11 rounded-full bg-white/10 px-4 text-base md:text-sm text-white placeholder:text-white/40 font-mono uppercase border-0 focus:outline-none focus:ring-2 focus:ring-ember-300"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={couponChecking || !couponInput.trim()}
+                                        className="shrink-0 h-11 px-4 rounded-full bg-white text-ink text-sm font-medium disabled:opacity-60 flex items-center gap-1.5"
+                                    >
+                                        {couponChecking && <Loader2 size={14} className="animate-spin" />}
+                                        Apply
+                                    </button>
+                                </form>
+                            ) : (
+                                <button
+                                    onClick={() => setCouponOpen(true)}
+                                    className="min-h-[44px] text-sm text-white/70 hover:text-white underline underline-offset-4"
+                                >
+                                    Have a coupon?
+                                </button>
+                            )}
+                            {couponError && <p className="mt-2 text-xs text-ember-200">{couponError}</p>}
                         </div>
 
                         <button

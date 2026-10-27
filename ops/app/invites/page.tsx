@@ -18,8 +18,12 @@ export default function InviteFactory() {
     });
 
     const generateRandomCode = () => {
-        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-        setFormData(prev => ({ ...prev, code: `BETA-${random}` }));
+        // 10 random characters (no look-alikes like 0/O, 1/I) so codes can't be guessed
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const bytes = crypto.getRandomValues(new Uint8Array(10));
+        const random = Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
+        const prefix = formData.discount >= 100 ? 'BETA' : `OFF${formData.discount}`;
+        setFormData(prev => ({ ...prev, code: `${prefix}-${random}` }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -99,7 +103,7 @@ export default function InviteFactory() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-neutral-700 mb-2">Discount %</label>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Discount % <span className="font-normal text-neutral-400">(100 = free invite)</span></label>
                                 <input
                                     type="number"
                                     className="w-full p-3 border border-neutral-300 rounded-lg"
@@ -131,7 +135,11 @@ export default function InviteFactory() {
                                 <div>
                                     <p className="font-bold">Coupon Created!</p>
                                     <p className="font-mono mt-1">{success.code}</p>
-                                    <p className="text-xs mt-2 text-green-600">Share this code with users to bypass payment.</p>
+                                    {(success.discount_percent ?? 100) >= 100 ? (
+                                        <p className="text-xs mt-2 text-green-600">Free invite. Share this link: <span className="font-mono">counterdraft.com/invite/{success.code}</span></p>
+                                    ) : (
+                                        <p className="text-xs mt-2 text-green-600">{success.discount_percent}% off at checkout. Share this link: <span className="font-mono">counterdraft.com/pricing?coupon={success.code}</span>, or the code to type on Pricing.</p>
+                                    )}
                                 </div>
                             </div>
                         )}

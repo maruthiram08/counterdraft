@@ -48,6 +48,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Coupon fully redeemed' }, { status: 409 });
         }
 
+        // 3.5. Discount codes are used at checkout, not claimed for free access
+        if ((coupon.discount_percent ?? 100) < 100) {
+            return NextResponse.json({ error: 'This is a discount code. Use it on the Pricing page.' }, { status: 400 });
+        }
+
         // 4. ATOMIC REDEMPTION (RPC or Safe Update)
         // Since we don't have a stored procedure for this specific lock, we rely on the WHERE clause condition.
         // "Update set count = count + 1 WHERE code = X AND count < max"
