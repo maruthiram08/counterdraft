@@ -1,6 +1,6 @@
 
 import { useMemo, useRef, useState } from "react";
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool, Gauge, NotebookPen } from "lucide-react";
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool, Gauge, NotebookPen, AlertCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
@@ -52,6 +52,8 @@ interface DraftStepProps {
     workingInNotes?: boolean;
     suggestions?: string[];
     onKeepSuggestion?: (text: string) => void;
+    draftError?: string | null;
+    onWriteDraft?: () => void;
 }
 
 export function DraftStep({
@@ -77,6 +79,8 @@ export function DraftStep({
     workingInNotes = false,
     suggestions = [],
     onKeepSuggestion,
+    draftError,
+    onWriteDraft,
 }: DraftStepProps) {
     const [tool, setTool] = useState<DraftTool | null>(null);
     // Rewrite one paragraph: the caret picks it, the writer can say what should change
@@ -163,8 +167,35 @@ export function DraftStep({
         );
     }
 
+    // No draft yet: the request failed, was cut off, or the writer left before it came back. Always offer a way on
     if (!draftContent) {
-        return <div className="flex items-center justify-center h-full text-ink-muted">Ready to draft.</div>;
+        return (
+            <div className="flex flex-col items-center text-center gap-4 py-12 px-4">
+                {draftError ? (
+                    <>
+                        <AlertCircle size={28} className="text-ember-500" />
+                        <div className="space-y-1 max-w-sm">
+                            <p className="text-ink font-medium">The draft didn&apos;t come through.</p>
+                            <p className="text-sm text-ink-muted">{draftError}</p>
+                        </div>
+                    </>
+                ) : (
+                    <div className="space-y-1 max-w-sm">
+                        <p className="text-ink font-medium">No draft yet.</p>
+                        <p className="text-sm text-ink-muted">It uses your outline, research and notes.</p>
+                    </div>
+                )}
+                {onWriteDraft && !readOnly && (
+                    <button
+                        onClick={onWriteDraft}
+                        className="flex items-center gap-2 h-11 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                    >
+                        {draftError ? <RotateCcw size={16} /> : <PenTool size={16} />}
+                        {draftError ? 'Try again' : 'Write draft'}
+                    </button>
+                )}
+            </div>
+        );
     }
 
     return (
