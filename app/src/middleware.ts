@@ -1,21 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import { checkWriteOrigin } from '@/lib/request-origin';
 
 const isProtectedRoute = createRouteMatcher([
     '/workspace(.*)',
     '/onboarding(.*)',
     '/api/billing(.*)', // Explicitly protect billing to ensure auth context
 ]);
-
-// Exact host match (a substring check would accept lookalikes such as counterdraft.app.evil.com)
-function hasHost(url: string | null, host: string | null): boolean {
-    if (!url || !host) return false;
-    try {
-        return new URL(url).host === host;
-    } catch {
-        return false;
-    }
-}
 
 export default clerkMiddleware(async (auth, req) => {
     // 1. Geo Detection (Pass-through)
@@ -30,7 +21,7 @@ export default clerkMiddleware(async (auth, req) => {
     if (origin && origin.startsWith('chrome-extension://')) {
         const extensionId = origin.replace('chrome-extension://', '');
         if (allowedExtensions.length > 0 && !allowedExtensions.includes(extensionId)) {
-            return new NextResponse('Unauthorized Extension', { status: 403 });
+            return NextResponse.json({ error: 'Unauthorized Extension' }, { status: 403 });
         }
 
         res.headers.set('Access-Control-Allow-Origin', origin);
@@ -46,15 +37,15 @@ export default clerkMiddleware(async (auth, req) => {
 
     // 2.1 Basic CSRF Protection for API POST/PUT/PATCH/DELETE
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && req.nextUrl.pathname.startsWith('/api')) {
-        const referer = req.headers.get('referer');
-        const host = req.headers.get('host');
-
-        if (origin && !hasHost(origin, host) && !origin.startsWith('chrome-extension://')) {
-            return new NextResponse('Invalid Origin', { status: 403 });
-        }
-
-        if (!origin && !hasHost(referer, host)) {
-            return new NextResponse('Missing Referer/Origin', { status: 403 });
+        const rejection = checkWriteOrigin({
+            origin,
+            referer: req.headers.get('referer'),
+            host: req.headers.get('host'),
+            secFetchSite: req.headers.get('sec-fetch-site'),
+        });
+        if (rejection) {
+            // JSON so API callers (the Lens extension included) can show the reason
+            return NextResponse.json({ error: rejection }, { status: 403 });
         }
     }
 

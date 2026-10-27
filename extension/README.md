@@ -11,12 +11,14 @@ It is not on the Chrome Web Store yet, so it has to be built and loaded unpacked
 ```bash
 cd extension
 npm install
-VITE_APP_URL=https://counterdraft.com npm run build   # point at production
-npm run build                                         # or leave unset for http://localhost:3000
+VITE_APP_URL=https://www.counterdraft.com npm run build   # point at production
+npm run build                                             # or leave unset for http://localhost:3000
 ```
 
 `VITE_APP_URL` is the CounterDraft app the extension reads your sign-in cookie from and posts
-captures to. It is baked in at build time.
+captures to. It is baked in at build time. Use the www host: counterdraft.com redirects to
+www.counterdraft.com, the sign-in cookie lives on www, and a redirected POST reaches the server
+with `Origin: null` (the middleware allows that only when Chrome marks it `Sec-Fetch-Site: none`).
 
 ## Load it in Chrome
 
