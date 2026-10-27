@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { extractBeliefs } from "@/lib/brain/analysis";
 import { getOrCreateUser } from "@/lib/user-sync";
 import { storeAnalysisResults } from "@/lib/belief-storage";
+import { UsageService } from "@/lib/billing/usage";
 
 export async function POST(req: Request) {
     try {
@@ -22,6 +23,21 @@ export async function POST(req: Request) {
 
             if (!userId) {
                 return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+
+            // Free accounts get one analysis (onboarding) to see how The Brain works; ongoing belief and tension tracking is Pro
+            const access = await UsageService.checkFeature(userId, 'ALLOW_BELIEFS');
+            if (!access.allowed) {
+                const { count } = await supabaseAdmin
+                    .from("raw_posts")
+                    .select("id", { count: "exact", head: true })
+                    .eq("user_id", userId);
+                if ((count || 0) > 0) {
+                    return NextResponse.json(
+                        { error: "Adding more content to Your Mind needs Pro.", code: "pro_required", usage: { tier: access.tier, count: 0, limit: 0 } },
+                        { status: 403 }
+                    );
+                }
             }
 
             // 2. Insert Content into raw_posts

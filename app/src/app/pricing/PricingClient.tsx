@@ -37,6 +37,7 @@ const PRO_FEATURES = [
     { title: 'Explore and Web Research', detail: 'Find what to write about, with sources behind each draft.' },
     { title: 'Craft Score and Strategy Check', detail: 'Scores for every draft, with a Fix for each weak part.' },
     { title: 'Medium and Instagram Versions', detail: 'Turn a post into an article or a carousel, with images.' },
+    { title: 'Belief & Tension Tracking', detail: 'Your Mind keeps learning from everything you add and write.' },
 ];
 
 type RazorpayConstructor = new (options: RazorpayOptions) => { open: () => void };
@@ -296,7 +297,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                             </div>
                             <div className="flex items-start gap-4">
                                 <span className="text-ember-500 mt-1">●</span>
-                                <span className="text-ink-soft text-sm">Track your <span className="font-medium text-ink">beliefs and tensions</span> in Your Mind</span>
+                                <span className="text-ink-soft text-sm">See the <span className="font-medium text-ink">beliefs</span> The Brain finds in your first posts</span>
                             </div>
                             <div className="flex items-start gap-4">
                                 <span className="text-ember-500 mt-1">●</span>
@@ -308,6 +309,10 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                             <div className="flex items-start gap-4 opacity-50">
                                 <span className="text-ink-muted mt-1">○</span>
                                 <span className="text-ink-muted text-sm">Drafting, Explore, research and images need Pro</span>
+                            </div>
+                            <div className="flex items-start gap-4 opacity-50">
+                                <span className="text-ink-muted mt-1">○</span>
+                                <span className="text-ink-muted text-sm">Ongoing belief and tension tracking needs Pro</span>
                             </div>
                         </div>
                     </div>

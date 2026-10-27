@@ -15,6 +15,26 @@ export class UsageService {
         return this._incrementGeneric(userId, 'image_count');
     }
 
+    /**
+     * Check a plan feature flag (e.g. belief and tension tracking) rather than a monthly count.
+     */
+    static async checkFeature(userId: string, feature: 'ALLOW_BELIEFS' | 'ALLOW_TENSIONS') {
+        const { data: user } = await supabaseAdmin.from('users').select('subscription_status, subscription_plan').eq('id', userId).maybeSingle();
+        const tier = await this.resolveTier(userId, user);
+        return { allowed: PRICING_CONFIG.LIMITS[tier][feature], tier };
+    }
+
+    // Subscriptions table (V2) first, then the users table (V1)
+    private static async resolveTier(
+        userId: string,
+        userMeta?: { subscription_status?: string | null; subscription_plan?: string | null } | null
+    ): Promise<Tier> {
+        const { data: sub } = await supabaseAdmin.from('subscriptions').select('plan_id, status, current_period_end').eq('user_id', userId).eq('status', 'active').maybeSingle();
+        if (isSubscriptionLive(sub)) return PRICING_CONFIG.TIERS.PRO;
+        if (userMeta?.subscription_status === 'active' && userMeta?.subscription_plan?.includes('pro')) return PRICING_CONFIG.TIERS.PRO;
+        return PRICING_CONFIG.TIERS.FREE;
+    }
+
     // --- GENERIC HELPERS ---
 
     private static async _checkLimitGeneric(
@@ -50,21 +70,7 @@ export class UsageService {
         if (!usage) return { allowed: false, reason: "System error loading usage." };
 
         // 2. Determine Effective Tier
-        // Logic: Check Subscriptions Table (V2) -> Fallback to Users Table (V1)
-        let effectiveTier: Tier = PRICING_CONFIG.TIERS.FREE;
-
-        // V2 Check
-        const { data: sub } = await supabase.from('subscriptions').select('plan_id, status, current_period_end').eq('user_id', userId).eq('status', 'active').maybeSingle();
-        if (isSubscriptionLive(sub)) {
-            effectiveTier = PRICING_CONFIG.TIERS.PRO;
-        }
-        // V1 Fallback
-        else {
-            const userMeta = usage.users;
-            if (userMeta?.subscription_status === 'active' && userMeta?.subscription_plan?.includes('pro')) {
-                effectiveTier = PRICING_CONFIG.TIERS.PRO;
-            }
-        }
+        const effectiveTier = await this.resolveTier(userId, usage.users);
 
         // 3. Check Limit
         const limit = PRICING_CONFIG.LIMITS[effectiveTier][configKey];
