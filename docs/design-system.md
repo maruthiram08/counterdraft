@@ -87,7 +87,7 @@ Rule: neumorphic controls sit on `bg-canvas`; content that has to be read sits o
 - Secondary button: canvas pill, `shadow-raised`, ember icon; `active:shadow-pressed`.
 - Chip: canvas pill with `shadow-well`, 28px tall. Status chips: navy (high), ember-100 (medium), well (low).
 - Count badge: round canvas `shadow-raised`.
-- Nav item: round 44px; active is `shadow-pressed` with an ember icon.
+- Nav item: round 44px; active is `shadow-pressed` with an ember icon (desktop sidebar). Phone bottom nav: active tab gets a `w-14 h-8 rounded-full bg-ember-100` capsule behind an `ember-600` icon and a semibold label; no pressed pill.
 - Stat strip: label, big number, row of thin tick bars filled in the stage colour (borrowed from the reference's Proposal Progress card).
 
 ## Class recipes (Tailwind, copy these)
