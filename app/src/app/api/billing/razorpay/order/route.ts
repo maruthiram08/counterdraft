@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { razorpay } from '@/lib/billing/razorpay';
 import { getOrCreateUser } from '@/lib/user-sync';
-
-import { PRICING_CONFIG } from '@/lib/constants/pricing';
-
-const PLANS: Record<string, { amount: number; currency: string }> = {
-    [PRICING_CONFIG.PLANS.INDIA.MONTHLY]: { amount: 999, currency: 'INR' }, // ₹999
-    [PRICING_CONFIG.PLANS.INDIA.YEARLY]: { amount: 9999, currency: 'INR' }, // ₹9,999
-};
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { PAID_PLANS } from '@/lib/billing/plans';
 
 export async function POST(req: NextRequest) {
     try {
@@ -19,17 +14,26 @@ export async function POST(req: NextRequest) {
         const { planId } = await req.json();
 
         // 1. Validate Plan
-        const plan = PLANS[planId as keyof typeof PLANS];
+        const plan = PAID_PLANS[planId as string];
         if (!plan) {
             return NextResponse.json({ error: 'Invalid plan ID' }, { status: 400 });
         }
 
-        // 2. Create Order
-        // Amount must be in smallest currency unit (paise)
-        const amountInPaise = plan.amount * 100;
+        // 1.5. Refuse to charge for a plan we could not record afterwards
+        // (subscriptions.plan_id references access_plans, so a missing row would fail after payment)
+        const { data: planRow } = await supabaseAdmin
+            .from('access_plans')
+            .select('id')
+            .eq('id', planId)
+            .maybeSingle();
+        if (!planRow) {
+            console.error('[Razorpay] Plan missing from access_plans, refusing order:', planId);
+            return NextResponse.json({ error: 'This plan is not available yet. Please try again later.' }, { status: 503 });
+        }
 
+        // 2. Create Order (amount is already in the smallest currency unit)
         const options = {
-            amount: amountInPaise,
+            amount: plan.amount,
             currency: plan.currency,
             receipt: `rcpt_${Date.now()}_${userId.substring(0, 5)}`,
             notes: {
@@ -50,7 +54,9 @@ export async function POST(req: NextRequest) {
 
     } catch (error: unknown) {
         console.error('Razorpay Order Create Error:', error);
-        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        // Razorpay errors are objects with error.description, not Error instances
+        const description = (error as { error?: { description?: string } })?.error?.description;
+        const message = description || (error instanceof Error ? error.message : 'Could not start the payment.');
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }

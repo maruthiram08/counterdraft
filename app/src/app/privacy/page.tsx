@@ -77,7 +77,7 @@ export default function PrivacyPage() {
                         <li><strong>AI model providers such as OpenAI</strong> to analyse your content and generate text. Their API terms do not allow them to train models on it.</li>
                         <li><strong>Tavily</strong> for web research you request.</li>
                         <li><strong>PostHog</strong> for product analytics.</li>
-                        <li><strong>Razorpay and Dodo Payments</strong> for payments.</li>
+                        <li><strong>Razorpay</strong> for payments.</li>
                         <li><strong>LinkedIn</strong>, only if you connect it, to import and publish posts.</li>
                     </ul>
                     <p>We may also disclose data if the law requires it.</p>

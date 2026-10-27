@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
-import { PRICING_CONFIG } from '@/lib/constants/pricing';
+import { PAID_PLANS, periodEndFrom } from '@/lib/billing/plans';
 import { razorpay } from '@/lib/billing/razorpay';
 
 export async function POST(req: NextRequest) {
@@ -67,11 +67,10 @@ export async function POST(req: NextRequest) {
         const planIdToStore = verifiedPlanId;
 
         // Calculate End Date
-        const endDate = new Date();
-        if (verifiedPlanId === PRICING_CONFIG.PLANS.INDIA.MONTHLY) {
-            endDate.setMonth(endDate.getMonth() + 1);
-        } else if (verifiedPlanId === PRICING_CONFIG.PLANS.INDIA.YEARLY) {
-            endDate.setFullYear(endDate.getFullYear() + 1);
+        const paidPlan = PAID_PLANS[verifiedPlanId as string];
+        if (!paidPlan) {
+            console.error('[Razorpay] Unknown plan on a verified order', { verifiedPlanId, razorpay_order_id });
+            return NextResponse.json({ error: 'Unknown plan. Please contact support.' }, { status: 400 });
         }
 
         // 3. Provision Subscription in DB
@@ -81,6 +80,16 @@ export async function POST(req: NextRequest) {
             .select('*')
             .eq('user_id', userId)
             .single();
+
+        // Same order verified twice (retry, double click): already provisioned
+        if (existingSub?.subscription_id === razorpay_order_id && existingSub?.status === 'active') {
+            return NextResponse.json({ success: true, redirectUrl: '/workspace?upgraded=true' });
+        }
+
+        // Paying again before the current period ends extends it instead of throwing away the remaining days
+        const now = new Date();
+        const currentEnd = existingSub?.status === 'active' && existingSub?.current_period_end ? new Date(existingSub.current_period_end) : null;
+        const endDate = periodEndFrom(currentEnd && currentEnd > now ? currentEnd : now, paidPlan.months);
 
         let error;
         if (existingSub) {

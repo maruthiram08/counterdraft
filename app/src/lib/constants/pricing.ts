@@ -25,7 +25,7 @@ export const PRICING_CONFIG = {
         }
     },
 
-    // Plan IDs (Mapped to Dodo Payments)
+    // Plan IDs (prices in lib/billing/plans.ts, charged through Razorpay)
     PLANS: {
         GLOBAL: {
             MONTHLY: 'prod_gl_monthly',
