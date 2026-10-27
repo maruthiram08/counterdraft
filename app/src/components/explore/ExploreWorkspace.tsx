@@ -1316,9 +1316,10 @@ export function ExploreWorkspace() {
     return (
         <div className="flex flex-col h-full relative">
             {trail.length === 0 ? (
-                /* Starting point: the search sits right under the question, with ready-made starting topics below it */
-                <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-4 md:p-6">
-                    <div className="w-full max-w-2xl flex flex-col items-center text-center">
+                /* Starting point: the search sits right under the question, with ready-made starting topics below it.
+                   pb-32 on phones keeps Surprise me clear of the bottom nav; my-auto centres without clipping the top when it overflows */
+                <div className="flex-1 overflow-y-auto flex flex-col items-center p-4 pb-32 md:p-6">
+                    <div className="my-auto w-full max-w-2xl flex flex-col items-center text-center">
                         <div className="w-12 h-12 mb-4 rounded-full bg-canvas shadow-raised flex items-center justify-center"><AnimatedIcon icon={SparklesIcon} size={20} trigger="mount" className="text-ember-500" /></div>
                         <h2 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink mb-2">What would you like to explore?</h2>
                         <p className="text-sm md:text-base text-ink-soft mb-6 max-w-md">
@@ -1378,9 +1379,11 @@ export function ExploreWorkspace() {
                             <button
                                 onClick={surpriseMe}
                                 disabled={surprising || loading}
-                                className="mt-4 inline-flex items-center gap-1.5 h-10 md:h-8 px-4 md:px-3 rounded-full text-sm md:text-xs font-medium text-ember-700 hover:bg-ember-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200"
+                                className={`mt-6 inline-flex items-center gap-2 h-11 md:h-9 px-5 md:px-4 rounded-full text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200 ${surprising
+                                    ? 'bg-ember-50 text-ember-700 shadow-pressed'
+                                    : 'bg-canvas text-ember-700 shadow-raised hover:text-ember-600 active:shadow-pressed active:bg-ember-50 disabled:opacity-50'}`}
                             >
-                                {surprising ? <Loader2 size={12} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={12} />}
+                                {surprising ? <Loader2 size={16} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={16} />}
                                 {surprising ? 'Finding something new...' : 'Surprise me'}
                             </button>
                             {watched.length > 0 && (
