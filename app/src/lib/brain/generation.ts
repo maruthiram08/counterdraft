@@ -3,7 +3,8 @@ import { TraceLogger } from '@/lib/trace';
 import { SAFETY_PREAMBLE } from '@/lib/openai';
 import { voiceService } from '@/lib/voice/service';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { parseDraftQuestions, parseOutlineShapes, parseVariants, DraftAnswer, DraftQuestion, DraftVariant, OutlineShapeOption } from '@/lib/editor/draft-tools';
+import { formatNotes, parseDraftQuestions, parseOutlineShapes, parseVariants, DraftAnswer, DraftQuestion, DraftVariant, OutlineShapeOption } from '@/lib/editor/draft-tools';
+import { extractSuggestions } from '@/lib/editor/suggestions';
 import { acceptSelfEdit, formatStyleExamples, pickStyleExamples, selfEditChecklist, PastPost, SEE_MORE_CHARS } from './craft';
 import { CRAFT_CRITERIA, CraftKey, CraftScore, scoreCraft } from '@/lib/editor/craft-score';
 import { BrainMetadata, ContentReference, DeepDiveData, OutlineItem, ResearchItem, InsightItem } from '@/types';
@@ -38,8 +39,13 @@ export interface OutlineParams {
     brainMetadata?: BrainMetadata;
 }
 
+export interface DraftResult {
+    draft: string;
+    suggestions: string[]; // passages the draft wrote where it needed a detail nobody gave, for the creator to check
+}
+
 export interface DraftParams {
-    answers?: DraftAnswer[]; // the creator's own answers to the questions asked before drafting
+    answers?: DraftAnswer[]; // the creator's own answers to the questions asked before drafting, and notes added since
     userId: string;
     hook: string;
     angle?: string;
@@ -410,7 +416,7 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
     }
 
     // --- 4. Draft ---
-    async generateDraft({ userId, hook, angle, outline, deep_dive, references, userContext, brainMetadata, answers }: DraftParams): Promise<string> {
+    async generateDraft({ userId, hook, angle, outline, deep_dive, references, userContext, brainMetadata, answers }: DraftParams): Promise<DraftResult> {
         const format = normalizeFormat(brainMetadata?.format);
         const ideaChain = formatIdeaChain({ hook, angle, meta: brainMetadata });
         const strategy = formatStrategyContext(brainMetadata, 'THE STRATEGY');
@@ -424,9 +430,9 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
             [hook, angle, brainMetadata?.brief].filter(Boolean).join(' '),
         ));
 
-        // What the creator told us before drafting: their own stories and examples, which beat any placeholder
+        // What the creator told us: their own stories and examples, which beat anything we could suggest
         const ownMaterial = answers?.length
-            ? `\n\nTHE CREATOR'S OWN MATERIAL (their answers before drafting; use these as the post's real details, in their words where possible):\n${answers.map(a => `Q: ${a.question}\nA: ${a.answer}`).join('\n\n')}`
+            ? `\n\nTHE CREATOR'S OWN MATERIAL (their answers and notes; every one goes into the post as a real detail, in their words where possible):\n${formatNotes(answers)}`
             : '';
 
         // Expand Outline into Brief
@@ -446,7 +452,8 @@ Return JSON: { "spine": "...", "sections": ["...", "..."] }`
 Expand each outline section into a short brief for the writer:
 1. The point this section makes, in one sentence, in the post's stance.
 2. The specific research it uses: copy the findings it needs word for word, numbers and "(source: ...)" included. Prefer findings the outline names; add others only if they fit the section.
-3. For a section with no fitting finding (e.g. one the creator added by hand), say what the creator should supply ("add your own example of ..."). Never invent a statistic, study, company or quote.
+3. The creator's own material: attach each answer or note to the section it fits best. Every one must land somewhere; they answered so the post would use it.
+4. For a section that still needs an example, moment or detail nobody gave, write "SUGGEST:" and the kind of example that would fit (e.g. "SUGGEST: a well-known national team win that changed how the country was seen abroad"). The writer will propose one for the creator to check. Never invent a statistic, study or quote.
 
 Keep the outline's order and shape. Do not add sections. This is for the writer, not the reader.`
                 },
@@ -458,7 +465,7 @@ Angle: ${angle || 'General'}${ideaChain}${strategy}
 Outline:
 ${outlineContext}${research}${ownMaterial}
 
-Expand this into a drafting brief. Where the creator's own material fits a section, attach it there instead of asking them to supply it.`
+Expand this into a drafting brief. Put the creator's own material in the sections it fits before you mark anything SUGGEST.`
                 }
             ]
         });
@@ -540,7 +547,11 @@ Write for the defined audience (${brainMetadata?.audience?.role || 'the reader t
 Writing requirements:
 - Follow the Drafting Brief's sections in order and in its shape. A story reads as a story, a guide as steps, a list as items; do not turn them into an essay.
 - Use the research the brief attaches to each section: its numbers, names and examples. Name where a figure comes from in plain words ("a 2024 Naukri survey found..."). Never add a statistic, study or quote that isn't in the brief or the sources.
-- Use the creator's own material below wherever it fits; it outranks research for stories and examples. Where the brief still says the creator should add their own example and no answer covers it, leave a short [bracketed placeholder] instead of inventing one.
+- Use every piece of the creator's own material below, in the section it fits; it outranks research for stories and examples. A draft that drops an answer they gave has failed.
+- Never leave a gap or a [bracketed placeholder]. Where the brief says SUGGEST, write the example yourself so the post reads complete, and wrap exactly that passage in <suggested>...</suggested> so the creator can check it or swap in their own:
+  - A public example (an event, a team, a company): only one you are sure is real and well known, described without numbers or quotes you don't have.
+  - Something only the creator lived (a moment, a client, a lesson): a short, believable version in first person, plain and specific, that they can edit.
+  - Keep each suggestion to one to three sentences. Never wrap the creator's own material or the research.
 - Every paragraph earns its place; no filler, no restating.
 
 Style & voice:
@@ -568,7 +579,48 @@ ${referencesContext}${sourceContext}${userContextString}`
         });
 
         const draft = completion.choices[0].message.content || '';
-        return draft ? this.selfEdit(draft, { stance: brainMetadata?.stance, voiceContext, styleExamples }) : '';
+        if (!draft) return { draft: '', suggestions: [] };
+        const edited = await this.selfEdit(draft, { stance: brainMetadata?.stance, voiceContext, styleExamples });
+        const { text, suggestions } = extractSuggestions(edited);
+        return { draft: text, suggestions };
+    }
+
+    // --- 4a. Work the creator's notes into a draft they may have edited: answers they remembered later, and fill any gaps ---
+    async useNotes({ userId, draft, notes, outline, deep_dive, brainMetadata }: {
+        userId: string;
+        draft: string; // with suggested passages still wrapped in <suggested> tags
+        notes: DraftAnswer[];
+        outline?: OutlineItem[];
+        deep_dive?: DeepDiveData;
+        brainMetadata?: BrainMetadata;
+    }): Promise<DraftResult> {
+        const voiceContext = await this.voiceContext(userId);
+        const outlineText = outline?.map((s, i) => `${i + 1}. ${typeof s === 'string' ? s : s.text}`).join('\n') || '';
+        const completion = await this.openai.chat.completions.create({
+            model: WRITER_MODEL,
+            temperature: 0.4,
+            messages: [
+                {
+                    role: 'system',
+                    content: `${SAFETY_PREAMBLE}
+
+You revise a creator's LinkedIn post to use the notes they gave you. They may have edited the post by hand; keep their wording wherever a note doesn't touch it.
+
+1. Work every note into the post where it fits: replace a <suggested> passage or a [bracketed placeholder] it covers, or add it to the paragraph it belongs to. Use their words where you can. Every note must show up in the post.
+2. Fill every [bracketed placeholder] no note covers with your own suggestion wrapped in <suggested>...</suggested>: a public example only if you are sure it is real and well known, otherwise a short, believable first-person version they can edit. Never invent a statistic, study or quote.
+3. Keep every other <suggested> passage exactly as it is, tags included. Drop the tags only where a note replaced the passage.
+4. Keep the structure, stance, facts and length (a note may add a sentence or two). Match the creator's voice.${voiceContext}${formatStrategyContext(brainMetadata, 'THE STRATEGY')}
+
+Return only the post, with no comments or markdown fences.`
+                },
+                {
+                    role: 'user',
+                    content: `${outlineText ? `Outline:\n${outlineText}\n\n` : ''}${deep_dive ? `${this.formatDeepDive(deep_dive)}\n\n` : ''}THE CREATOR'S NOTES:\n${formatNotes(notes)}\n\nPost:\n${draft}`
+                }
+            ],
+        });
+        const { text, suggestions } = extractSuggestions((completion.choices[0].message.content || '').trim() || draft);
+        return { draft: text, suggestions };
     }
 
     // The creator's voice profile as prompt guidelines; empty when they have none
@@ -770,7 +822,7 @@ ${selfEditChecklist(draft)}
 Keep:
 - The structure, order, argument${stance ? ` and stance ("${stance}")` : ''}.
 - Every fact, number, name and source exactly as written. Add none.
-- Every [bracketed placeholder] exactly as written.
+- Every [bracketed placeholder] exactly as written, and every <suggested>...</suggested> tag pair around its passage (you may tighten the words inside).
 - The creator's voice.${voiceContext}${styleExamples}
 - Roughly the same length; cutting is fine, padding is not.
 

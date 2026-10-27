@@ -75,4 +75,11 @@ describe('acceptSelfEdit', () => {
         const edited = original.replace('[add your own example of a hire]', 'my colleague Sam, who was hired last year');
         expect(acceptSelfEdit(original, edited)).toBe(original);
     });
+
+    it('keeps the original when a suggested passage lost its marks', () => {
+        const suggested = 'A draft with a hook.\n\n<suggested>When India won in 2011, our office stopped to watch.</suggested>\n\nAn ending that lands.';
+        const tightened = suggested.replace('our office stopped', 'the office stopped');
+        expect(acceptSelfEdit(suggested, tightened)).toBe(tightened);
+        expect(acceptSelfEdit(suggested, suggested.replace(/<\/?suggested>/g, ''))).toBe(suggested);
+    });
 });
