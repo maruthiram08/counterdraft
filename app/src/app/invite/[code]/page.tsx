@@ -1,5 +1,7 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { notFound, redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import InviteClient from './InviteClient';
 
 interface Props {
@@ -8,6 +10,19 @@ interface Props {
 
 export default async function InvitePage({ params }: Props) {
     const { code } = await params;
+
+    // 0. Slow down code guessing: this page tells you whether a code exists
+    const ip = getClientIp(new Request('http://invite', { headers: await headers() }));
+    if (!rateLimit(`invite:${ip}`, { windowMs: 15 * 60 * 1000, max: 20 }).allowed) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-canvas p-4 font-sans">
+                <div className="max-w-md w-full bg-surface rounded-card shadow-card p-6 md:p-8 text-center">
+                    <h1 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Too many tries</h1>
+                    <p className="text-ink-soft">Please wait a few minutes and open your invite link again.</p>
+                </div>
+            </div>
+        );
+    }
 
     // 1. Validate Code
     const { data: coupon } = await supabase
