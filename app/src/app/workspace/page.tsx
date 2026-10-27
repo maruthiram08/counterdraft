@@ -543,7 +543,7 @@ function WorkspaceContent() {
                         <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
                             {(effectivePostsTab === 'drafts' || (effectivePostsTab === 'published' && activeDraftId)) ? (
                                 isMobile ? (
-                                    <div className="h-full flex flex-col pb-20">
+                                    <div className="h-full flex flex-col">
                                         {activeDraftId ? (
                                             <div className="flex-1 flex flex-col min-h-0">
                                                 <div className="flex items-center gap-3 px-4 py-3 bg-canvas shrink-0">
@@ -559,7 +559,8 @@ function WorkspaceContent() {
                                                         {selectedDraft?.belief_text || 'Edit Draft'}
                                                     </span>
                                                 </div>
-                                                <div className="flex-1 overflow-y-auto pb-32">
+                                                {/* The editor scrolls itself, under the bottom nav */}
+                                                <div className="flex-1 min-h-0">
                                                     <MainEditor
                                                         draft={selectedDraft}
                                                         onSave={async (id, content, title) => {
@@ -585,7 +586,7 @@ function WorkspaceContent() {
                                                 </MobileAgentSheet>
                                             </div>
                                         ) : (
-                                            <div className="flex-1 overflow-y-auto">
+                                            <div className="flex-1 overflow-y-auto pb-28">
                                                 <DraftsSidebar
                                                     drafts={effectivePostsTab === 'drafts' ? draftItems : publishedItems}
                                                     placeholder={effectivePostsTab === 'published' ? "Search published..." : "Search drafts..."}

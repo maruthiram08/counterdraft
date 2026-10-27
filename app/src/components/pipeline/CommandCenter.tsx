@@ -298,13 +298,14 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
     const developing = items.filter(i => i.stage === 'developing');
     const drafts = items.filter(i => i.stage === 'draft');
     const published = items.filter(i => i.stage === 'published');
+    const counts: Record<Stage, number> = { idea: ideas.length, developing: developing.length, draft: drafts.length, published: published.length };
 
     return (
         <div className="h-full overflow-y-auto bg-canvas">
             <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-4 md:pt-6 pb-28 md:pb-12 flex flex-col gap-5">
                 <PipelineHeader
                     loading={loading}
-                    counts={{ idea: ideas.length, developing: developing.length, draft: drafts.length, published: published.length }}
+                    counts={counts}
                     onSuggest={handleSuggest}
                     onNewDraft={handleNewDraftClick}
                 />
@@ -349,6 +350,7 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                                         }`}
                                 >
                                     {STAGE_STYLES[stage].label}
+                                    <span className={`ml-2 text-xs ${activeStage === stage ? 'text-ember-600' : 'text-ink-muted'}`}>{loading ? '–' : counts[stage]}</span>
                                 </button>
                             ))}
                         </div>

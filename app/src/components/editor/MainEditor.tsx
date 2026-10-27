@@ -185,7 +185,8 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
 
             {/* Document Surface */}
             <div className="flex-1 overflow-y-auto relative">
-                <div className="max-w-4xl mx-auto pt-16 pb-8 md:pt-8 md:pb-12 px-4 md:px-10 min-h-full relative">
+                {/* Phones: bottom room to clear the nav and the AI Agent pill */}
+                <div className="max-w-4xl mx-auto pt-2 pb-40 md:pt-8 md:pb-12 px-4 md:px-10 min-h-full relative">
 
                     {/* Sticky Header Actions */}
                     <EditorHeader
@@ -232,7 +233,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                             </div>
                             <button
                                 onClick={() => setCoverImage(null)}
-                                className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-rose-700 active:shadow-pressed opacity-0 group-hover/image:opacity-100 transition-all"
+                                className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-rose-700 active:shadow-pressed [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/image:opacity-100 transition-all"
                                 title="Remove Cover Art"
                             >
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
@@ -272,12 +273,12 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                     )}
 
                     {/* Opening and feed preview: how the post lands before "see more" */}
-                    <div className="mb-4 flex flex-wrap gap-2">
+                    <div className="mb-4 flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto scrollbar-none p-2 -m-2">
                         {draft.status !== 'published' && (
                             <button
                                 onClick={() => setPostTool(t => t === 'craft' ? null : 'craft')}
                                 aria-pressed={postTool === 'craft'}
-                                className={`h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'craft' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                                className={`shrink-0 whitespace-nowrap h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'craft' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
                             >
                                 Craft score
                             </button>
@@ -286,7 +287,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                             <button
                                 onClick={() => setPostTool(t => t === 'openings' ? null : 'openings')}
                                 aria-pressed={postTool === 'openings'}
-                                className={`h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'openings' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                                className={`shrink-0 whitespace-nowrap h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'openings' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
                             >
                                 Try other openings
                             </button>
@@ -295,7 +296,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                             <button
                                 onClick={() => setPostTool(t => t === 'variants' ? null : 'variants')}
                                 aria-pressed={postTool === 'variants'}
-                                className={`h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'variants' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                                className={`shrink-0 whitespace-nowrap h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'variants' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
                             >
                                 Variants
                             </button>
@@ -303,7 +304,7 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                         <button
                             onClick={() => setPostTool(t => t === 'preview' ? null : 'preview')}
                             aria-pressed={postTool === 'preview'}
-                            className={`h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'preview' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                            className={`shrink-0 whitespace-nowrap h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'preview' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
                         >
                             LinkedIn preview
                         </button>

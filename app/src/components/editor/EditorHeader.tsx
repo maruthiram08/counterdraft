@@ -39,9 +39,10 @@ export function EditorHeader({
     copied
 }: EditorHeaderProps) {
     return (
-        <div className="sticky top-4 flex flex-row flex-wrap items-center justify-end gap-3 z-20 pointer-events-none mb-4">
+        // Touch screens can't hover, so there the controls always show. Phones don't pin them: two rows would cover the text
+        <div className="relative md:sticky md:top-4 flex flex-row flex-wrap items-center justify-end gap-2 md:gap-3 z-20 pointer-events-none mb-4">
             {/* View Mode Switcher */}
-            <div className="flex items-center p-1 bg-canvas shadow-well rounded-full pointer-events-auto transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+            <div className="flex items-center p-1 bg-canvas shadow-well rounded-full pointer-events-auto transition-opacity duration-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
                 <button
                     onClick={() => setIsPreview(false)}
                     className={`flex items-center gap-1.5 h-8 px-3.5 text-xs font-medium rounded-full transition-all ${!isPreview
@@ -65,8 +66,8 @@ export function EditorHeader({
             </div>
 
             {/* Actions Bar + Status */}
-            <div className="flex items-center gap-1 bg-surface shadow-card rounded-full pl-3 pr-1.5 py-1.5 pointer-events-auto transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-                <div className="flex items-center gap-1.5 mr-1 pl-1 pr-3 border-r border-line select-none">
+            <div className="flex items-center gap-1 bg-surface shadow-card rounded-full pl-3 pr-1.5 py-1.5 pointer-events-auto transition-opacity duration-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
+                <div className="flex items-center gap-1.5 mr-1 pl-1 pr-2 sm:pr-3 border-r border-line select-none">
                     <div className={`w-1.5 h-1.5 rounded-full ${saving ? 'bg-sand-500 animate-pulse' : extracting ? 'bg-dusk-500 animate-pulse' : saved ? 'bg-sage-500' : draft.status === 'published' ? 'bg-ink' : 'bg-ink-muted/50'}`}></div>
                     <span className="text-xs font-medium text-ink-muted">
                         {saving ? "Saving" : extracting ? "Analyzing" : saved ? "Saved" : draft.status === 'published' ? "Published" : "Draft"}
@@ -92,7 +93,7 @@ export function EditorHeader({
                     </button>
                 )}
 
-                <div className="w-px h-4 bg-line mx-1"></div>
+                <div className="hidden sm:block w-px h-4 bg-line mx-1"></div>
 
                 <button
                     onClick={() => setShowRepurposeModal(true)}
@@ -102,7 +103,7 @@ export function EditorHeader({
                     <AnimatedIcon icon={RefreshCWIcon} size={14} />
                 </button>
 
-                <div className="w-px h-4 bg-line mx-1"></div>
+                <div className="hidden sm:block w-px h-4 bg-line mx-1"></div>
 
                 {draft.status !== 'published' && (
                     <button
@@ -112,7 +113,7 @@ export function EditorHeader({
                         className="h-8 px-3 rounded-full bg-ember-100 text-ember-700 hover:bg-ember-200 active:shadow-pressed transition-all flex items-center gap-1.5"
                     >
                         <AnimatedIcon icon={BrainIcon} size={14} />
-                        <span className="text-xs font-medium">Finalize</span>
+                        <span className="hidden sm:inline text-xs font-medium">Finalize</span>
                     </button>
                 )}
 

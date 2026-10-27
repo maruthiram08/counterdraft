@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon, Puzzle, Download } from "lucide-react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
+import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { RazorpayButton } from "@/components/billing/RazorpayButton";
 import { useRouter } from 'next/navigation';
 
@@ -129,8 +130,8 @@ export default function SettingsPage() {
                     <div className="max-w-3xl mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12">
                         {/* Page Header */}
                         <div className="mb-6">
-                            <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink flex items-center gap-4">
-                                <Settings size={40} className="text-ember-500 shrink-0" />
+                            <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink flex items-center gap-3 md:gap-4">
+                                <Settings size={40} className="text-ember-500 shrink-0 w-8 h-8 md:w-10 md:h-10" />
                                 Settings
                             </h1>
                             <p className="mt-1 text-sm text-ink-soft">
@@ -146,7 +147,7 @@ export default function SettingsPage() {
 
                         {/* Integrations Section */}
                         <section className="mb-8">
-                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+                            <h2 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
                                 <Link2 size={20} className="text-ember-500" />
                                 Integrations
                             </h2>
@@ -197,6 +198,19 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Phones have no sidebar, so without this Settings is a dead end */}
+            <MobileBottomNav
+                activeSection="settings"
+                onNavigate={(section) => {
+                    if (section === 'settings') return;
+                    if (section === 'style') {
+                        router.push('/style');
+                        return;
+                    }
+                    router.push(`/workspace?tab=${section}`);
+                }}
+            />
         </div>
     );
 }
@@ -223,7 +237,7 @@ function ProfileSection() {
 
     return (
         <section className="mb-8">
-            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+            <h2 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
                 <UserIcon size={20} className="text-ember-500" />
                 Profile
             </h2>
@@ -240,7 +254,7 @@ function ProfileSection() {
                         className="w-16 h-16 rounded-full shadow-raised"
                     />
                     <div>
-                        <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">{user.fullName}</h3>
+                        <h3 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink">{user.fullName}</h3>
                         <p className="text-ink-muted">{user.primaryEmailAddress?.emailAddress}</p>
                     </div>
                 </div>
@@ -288,7 +302,7 @@ function IntegrationCard({
                 ? 'hover:shadow-float hover:-translate-y-0.5'
                 : 'opacity-60'
             }`}>
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4">
                     <div className="w-11 h-11 rounded-full bg-canvas shadow-well flex items-center justify-center text-xl shrink-0">{icon}</div>
                     <div>
@@ -322,7 +336,7 @@ function IntegrationCard({
                     </div>
                 </div>
 
-                <div className="shrink-0 flex items-center gap-2">
+                <div className="shrink-0 flex items-center gap-2 pl-15 sm:pl-0">
                     {connected ? (
                         <>
                             {platform === 'linkedin' && onSync && (
@@ -380,7 +394,7 @@ const CHROME_EXTENSION_URL = process.env.NEXT_PUBLIC_CHROME_EXTENSION_URL;
 function ExtensionSection() {
     return (
         <section className="mb-8">
-            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+            <h2 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
                 <Puzzle size={20} className="text-ember-500" />
                 Chrome Extension
             </h2>
@@ -468,7 +482,7 @@ function UsageSection() {
 
     return (
         <section className="mb-8">
-            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
+            <h2 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
                 <Settings size={20} className="text-ember-500" /> {/* Reusing icon for visual consistency */}
                 Plan & Usage
             </h2>

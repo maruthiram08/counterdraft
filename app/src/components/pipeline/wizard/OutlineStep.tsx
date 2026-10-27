@@ -132,14 +132,14 @@ export function OutlineStep({
                     onClick={onRebuild}
                 />
             )}
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Proposed Outline</h3>
-                <div className="flex flex-wrap justify-end gap-2">
+            <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center mb-4">
+                <h3 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink">Proposed Outline</h3>
+                <div className="flex flex-wrap md:justify-end gap-2">
                     {onFindShapes && (
                         <button
                             onClick={onFindShapes}
                             disabled={findingShapes}
-                            className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                            className="flex items-center gap-1.5 h-9 md:h-10 px-3.5 md:px-4 rounded-full bg-canvas text-ink text-[13px] md:text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                             title="See this post built two other ways"
                         >
                             {findingShapes ? <Loader2 size={14} className="animate-spin text-ember-500" /> : <Shapes size={14} className="text-ember-500" />}
@@ -150,7 +150,7 @@ export function OutlineStep({
                         onClick={() => {
                             if (confirm("Rebuild the outline from your current strategy? Your edits to this outline will be replaced.")) onRebuild();
                         }}
-                        className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                        className="flex items-center gap-1.5 h-9 md:h-10 px-3.5 md:px-4 rounded-full bg-canvas text-ink text-[13px] md:text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                         title="Rebuild the outline from the current strategy and research"
                     >
                         <AnimatedIcon icon={RefreshCWIcon} size={14} className="text-ember-500" />
@@ -158,7 +158,7 @@ export function OutlineStep({
                     </button>
                     <button
                         onClick={onAddOutlinePoint}
-                        className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                        className="flex items-center gap-1.5 h-9 md:h-10 px-3.5 md:px-4 rounded-full bg-canvas text-ink text-[13px] md:text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                     >
                         <Plus size={14} className="text-ember-500" />
                         Add Section

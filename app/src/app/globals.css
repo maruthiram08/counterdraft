@@ -313,3 +313,16 @@ h5 {
 .input::placeholder {
   color: var(--text-muted);
 }
+
+/* Swipeable rows (toolbars, tabs) without a visible scrollbar */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Clear the iPhone home indicator */
+@utility safe-area-pb {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}

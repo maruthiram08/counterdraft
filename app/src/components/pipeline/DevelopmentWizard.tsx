@@ -736,9 +736,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         <div className="fixed top-0 right-0 bottom-0 left-0 md:left-16 z-40 flex flex-col bg-canvas shadow-float animate-in fade-in duration-200">
             <div className="relative w-full h-full flex flex-col bg-canvas">
                 {/* Header Row */}
-                <div className="px-4 md:px-8 h-20 flex items-center justify-between bg-canvas shrink-0 z-50">
-                    <div className="flex items-center gap-3 min-w-0 pr-4 flex-1">
-                        <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink truncate" title={item.hook}>
+                <div className="px-4 md:px-8 py-3 md:py-0 md:h-20 flex items-center justify-between gap-3 bg-canvas shrink-0 z-50">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <h2 className="text-lg leading-snug md:text-2xl md:leading-normal font-medium tracking-[-0.02em] text-ink line-clamp-2 md:line-clamp-1" title={item.hook}>
                             {item.hook}
                         </h2>
                     </div>
@@ -751,21 +751,21 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             }}
                             className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                         >
-                            Save & Exit <X size={14} className="text-ember-500" />
+                            <span className="md:hidden">Save</span><span className="hidden md:inline">Save & Exit</span> <X size={14} className="text-ember-500" />
                         </button>
                     </div>
                 </div>
 
                 {/* Steps Row */}
-                <div className="px-4 md:px-8 pb-4 bg-canvas shrink-0 flex justify-center z-40">
-                    <div className="flex items-center gap-2 md:gap-3">
+                <div className="px-4 md:px-8 pb-3 md:pb-4 bg-canvas shrink-0 flex justify-center z-40">
+                    <div className="flex items-center md:gap-3">
                         {steps.map((s, i) => {
                             const isActive = s.key === step;
                             const isPast = i < currentStepIndex;
                             return (
                                 <div key={s.key} className="flex items-center">
                                     <div
-                                        className={`h-10 px-4 rounded-full bg-canvas text-sm font-medium transition-all flex items-center gap-2 ${isActive
+                                        className={`h-9 md:h-10 px-3 md:px-4 rounded-full bg-canvas text-[13px] md:text-sm font-medium transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap ${isActive
                                             ? 'shadow-pressed text-ember-600'
                                             : isPast
                                                 ? 'shadow-raised text-sage-700'
@@ -779,7 +779,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                         <span>{s.label}</span>
                                     </div>
                                     {i < steps.length - 1 && (
-                                        <div className={`w-6 md:w-12 h-0.5 rounded-full mx-1 md:mx-2 ${isPast ? 'bg-sage-500/40' : 'bg-line'}`} />
+                                        <div className={`w-3 md:w-12 h-0.5 rounded-full mx-1 md:mx-2 ${isPast ? 'bg-sage-500/40' : 'bg-line'}`} />
                                     )}
                                 </div>
                             );
@@ -789,7 +789,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto bg-canvas">
-                    <div className="w-full max-w-[1600px] mx-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 min-h-full flex flex-col">
+                    <div className="w-full max-w-[1600px] mx-auto px-4 pt-4 pb-8 md:px-8 md:pt-6 md:pb-24 min-h-full flex flex-col">
                         <BrainHeaderPanel
                             item={headerItem}
                             onUpdate={handleUpdateBrainMetadata}
@@ -905,14 +905,14 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     />
                 </div>
 
-                {/* Floating actions: no footer bar, so the content keeps the full height */}
-                <div className="pointer-events-none absolute bottom-4 md:bottom-6 left-4 right-4 md:left-8 md:right-8 flex justify-between items-end z-50">
+                {/* Phones: a footer bar, so the buttons never cover the text. Desktop: floating, so the content keeps the full height */}
+                <div className="shrink-0 z-50 flex justify-between items-center gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-canvas border-t border-line md:border-0 md:bg-transparent md:p-0 md:pointer-events-none md:absolute md:bottom-6 md:left-8 md:right-8 md:items-end">
                     <div className="pointer-events-auto">
                         {step !== 'deep_dive' && (
                             <button
                                 onClick={handleBack}
                                 disabled={loading || completing}
-                                className="h-10 px-4 rounded-full bg-canvas text-ink-soft text-sm font-medium shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-1.5"
+                                className="h-11 md:h-10 px-4 rounded-full bg-canvas text-ink-soft text-sm font-medium shadow-raised md:shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-1.5"
                             >
                                 <ArrowLeft size={14} className="text-ember-500" /> Back
                             </button>
@@ -927,9 +927,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                     document.querySelector('.overflow-y-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                                 disabled={loading || !deepDive}
-                                className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
+                                className="h-11 md:h-12 px-4 md:px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised md:shadow-float hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
-                                <AnimatedIcon icon={RefreshCWIcon} size={14} className="text-ember-500" /> Refine Research
+                                <AnimatedIcon icon={RefreshCWIcon} size={14} className="text-ember-500" /> <span>Refine<span className="hidden md:inline"> Research</span></span>
                             </button>
                         )}
 
@@ -938,7 +938,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 onClick={handleComplete}
                                 disabled={!draftContent || loading || completing}
                                 aria-busy={completing}
-                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-70 disabled:cursor-wait flex items-center gap-2"
+                                className="h-11 md:h-12 px-4 md:px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-70 disabled:cursor-wait flex items-center gap-2"
                             >
                                 {completing ? (
                                     <><Loader2 size={16} className="animate-spin" /> Saving your draft...</>
@@ -950,7 +950,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                             <button
                                 onClick={handleNext}
                                 disabled={loading || askingQuestions || (step === 'outline' && !outlineApproved) || (step === 'deep_dive' && !deepDive)}
-                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
+                                className="h-11 md:h-12 px-4 md:px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 {askingQuestions
                                     ? <><Loader2 size={16} className="animate-spin" /> One moment...</>

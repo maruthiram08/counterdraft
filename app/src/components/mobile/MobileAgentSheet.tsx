@@ -15,8 +15,8 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
     const [startY, setStartY] = useState(0);
     const sheetRef = useRef<HTMLDivElement>(null);
 
-    const heights = {
-        collapsed: '56px',
+    // Collapsed shows the pill instead of the sheet
+    const heights: Record<Exclude<SheetState, 'collapsed'>, string> = {
         half: '50vh',
         full: 'calc(100vh - 120px)'
     };
@@ -51,12 +51,6 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
         setIsDragging(false);
     };
 
-    const handleClick = () => {
-        if (sheetState === 'collapsed') {
-            setSheetState('half');
-        }
-    };
-
     const handleClose = () => {
         setSheetState('collapsed');
     };
@@ -71,15 +65,24 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
                 />
             )}
 
+            {/* Collapsed: a pill above the bottom nav, so it never covers the nav or the text */}
+            {sheetState === 'collapsed' && (
+                <button
+                    onClick={() => setSheetState('half')}
+                    className="fixed right-4 bottom-[104px] z-30 h-11 pl-3.5 pr-4 rounded-full bg-canvas shadow-float text-ink text-sm font-medium flex items-center gap-2 active:shadow-pressed transition-all"
+                >
+                    <Sparkles size={16} className="text-ember-500" />
+                    AI Agent
+                    <ChevronUp size={16} className="opacity-50" />
+                </button>
+            )}
+
             {/* Bottom Sheet */}
-            <div
+            {sheetState !== 'collapsed' && <div
                 ref={sheetRef}
                 className={`fixed bottom-0 left-0 right-0 z-50 bg-canvas rounded-t-card shadow-float transition-all duration-300 ease-out ${isDragging ? 'transition-none' : ''
                     }`}
-                style={{
-                    height: heights[sheetState],
-                    marginBottom: sheetState === 'collapsed' ? '64px' : '0' // Account for bottom nav
-                }}
+                style={{ height: heights[sheetState] }}
             >
                 {/* Handle Bar */}
                 <div
@@ -87,39 +90,27 @@ export function MobileAgentSheet({ children }: MobileAgentSheetProps) {
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    onClick={handleClick}
                 >
                     <div className="w-10 h-1 bg-ink-muted/40 rounded-full mb-2" />
-
-                    {sheetState === 'collapsed' ? (
-                        <div className="flex items-center gap-2 text-ink font-medium text-sm py-1">
-                            <Sparkles size={16} className="text-ember-500" />
+                    <div className="w-full flex items-center justify-between px-4 py-1">
+                        <div className="flex items-center gap-2 text-ink font-medium tracking-[-0.01em]">
+                            <Sparkles size={18} className="text-ember-500" />
                             <span>AI Agent</span>
-                            <ChevronUp size={16} className="opacity-50" />
                         </div>
-                    ) : (
-                        <div className="w-full flex items-center justify-between px-4 py-1">
-                            <div className="flex items-center gap-2 text-ink font-medium tracking-[-0.01em]">
-                                <Sparkles size={18} className="text-ember-500" />
-                                <span>AI Agent</span>
-                            </div>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                                className="w-9 h-9 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-                    )}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                            className="w-9 h-9 rounded-full flex items-center justify-center bg-canvas shadow-raised text-ink-soft hover:text-ink active:shadow-pressed transition-all"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
-                {sheetState !== 'collapsed' && (
-                    <div className="flex-1 overflow-y-auto h-[calc(100%-60px)]">
-                        {children}
-                    </div>
-                )}
-            </div>
+                <div className="flex-1 overflow-y-auto h-[calc(100%-60px)]">
+                    {children}
+                </div>
+            </div>}
         </>
     );
 }

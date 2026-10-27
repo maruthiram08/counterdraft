@@ -115,6 +115,15 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
     useEffect(() => {
         if (collapsed) setIsExpanded(false);
     }, [collapsed]);
+
+    // On a phone the open panel fills the first screen, so start closed once a strategy exists
+    useEffect(() => {
+        if (window.matchMedia('(max-width: 767px)').matches && hasStrategy(draft.brain_metadata || {})) {
+            setIsExpanded(false);
+        }
+        // Only on first render: after that the writer decides
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const [metadata, setMetadata] = useState<Partial<BrainMetadata>>(draft.brain_metadata || {});
     const [brief, setBrief] = useState(draft.brain_metadata?.brief || "");
     const [isParsing, setIsParsing] = useState(false);
@@ -242,15 +251,15 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
                     <button
                         onClick={() => setIsExpanded(true)}
                         title="Edit strategy"
-                        className="w-full text-left px-4 pt-6 pb-3 flex flex-wrap items-center gap-2"
+                        className="w-full text-left px-4 pt-6 pb-3 flex flex-nowrap md:flex-wrap items-center gap-2 overflow-x-auto scrollbar-none"
                     >
                         {filledFields.length ? filledFields.map(field => {
                             const Icon = field.icon;
                             return (
-                                <span key={field.key} className="max-w-full flex items-center gap-1.5 h-7 px-3 rounded-full bg-canvas shadow-well text-xs font-medium text-ink">
-                                    <Icon size={11} className={field.color} />
-                                    <span className="text-ink-muted">{field.label}:</span>
-                                    <span className="truncate max-w-[200px]">{getFieldValue(metadata, field.key)}</span>
+                                <span key={field.key} className="shrink-0 md:shrink max-w-[240px] md:max-w-full flex items-center gap-1.5 h-7 px-3 rounded-full bg-canvas shadow-well text-xs font-medium text-ink">
+                                    <Icon size={11} className={`shrink-0 ${field.color}`} />
+                                    <span className="text-ink-muted shrink-0 whitespace-nowrap">{field.label}:</span>
+                                    <span className="truncate min-w-0 md:max-w-[200px]">{getFieldValue(metadata, field.key)}</span>
                                 </span>
                             );
                         }) : (
@@ -373,11 +382,11 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
                                             ? 'bg-canvas shadow-well text-ink hover:text-ember-700'
                                             : 'bg-surface border border-dashed border-line text-ink-muted hover:text-ink-soft hover:border-ink-muted/40'} ${isPublished ? 'cursor-default' : ''}`}
                                     >
-                                        <Icon size={11} className={value ? field.color : ''} />
+                                        <Icon size={11} className={`shrink-0 ${value ? field.color : ''}`} />
                                         {value ? (
                                             <>
-                                                <span className="text-ink-muted">{field.label}:</span>
-                                                <span className="truncate max-w-[260px]">{value}</span>
+                                                <span className="text-ink-muted shrink-0 whitespace-nowrap">{field.label}:</span>
+                                                <span className="truncate min-w-0 md:max-w-[260px]">{value}</span>
                                             </>
                                         ) : (
                                             <span>{field.label}</span>

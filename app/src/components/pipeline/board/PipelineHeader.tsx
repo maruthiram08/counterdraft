@@ -25,7 +25,8 @@ export function PipelineHeader({ loading, counts, onSuggest, onNewDraft }: Pipel
                 </p>
             </div>
 
-            <div className="flex items-center gap-6 md:gap-8 order-3 lg:order-none w-full lg:w-auto lg:flex-1 lg:justify-center overflow-x-auto scrollbar-none">
+            {/* Phones show these counts on the stage tabs instead */}
+            <div className="hidden sm:flex items-center gap-6 md:gap-8 order-3 lg:order-none w-full lg:w-auto lg:flex-1 lg:justify-center overflow-x-auto scrollbar-none">
                 {STAGES.map(stage => {
                     const style = STAGE_STYLES[stage];
                     const filled = Math.min(counts[stage], TICKS);
