@@ -11,6 +11,8 @@ import crypto from 'crypto';
 // Article generation, a possible retry and a cover image run back to back.
 export const maxDuration = 120;
 
+const REPURPOSE_PLATFORMS = ['medium', 'instagram', 'x_thread', 'newsletter'];
+
 // Store a generated image in the public references bucket and return its URL.
 async function storeImage(userId: string, image: Buffer): Promise<string | null> {
     const path = `${userId}/generated/${crypto.randomUUID()}.jpg`;
@@ -28,6 +30,9 @@ export async function POST(req: Request) {
     try {
         const { sourceId, platform, options: rawOptions } = await req.json() as { sourceId: string; platform: string; options?: RepurposeOptions };
         const options: RepurposeOptions = rawOptions ?? {};
+        if (!REPURPOSE_PLATFORMS.includes(platform)) {
+            return NextResponse.json({ error: 'Unknown format' }, { status: 400 });
+        }
 
         // 0. Strict Auth
         const authUserId = await getOrCreateUser();

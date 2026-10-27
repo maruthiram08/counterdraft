@@ -8,6 +8,7 @@ export const POST_PLATFORMS = [
     { key: 'instagram', name: 'Instagram' },
     { key: 'medium', name: 'Medium' },
     { key: 'substack', name: 'Substack' },
+    { key: 'newsletter', name: 'Newsletter' },
     { key: 'other', name: 'Somewhere else' },
 ] as const;
 
@@ -23,7 +24,16 @@ const NAMES: Record<string, string> = {
     threads: 'Threads',
     blog: 'Blog',
     newsletter: 'Newsletter',
+    x_thread: 'X thread',
 };
+
+// The platform a repurposed draft is written for, as the Post sheet should preselect it
+const POSTS_TO: Record<string, string> = { x_thread: 'x', newsletter: 'newsletter' };
+
+export function postPlatformFor(format?: string | null): string | null {
+    if (!format) return null;
+    return POSTS_TO[format] ?? format;
+}
 
 export function isPostPlatform(value: unknown): value is PostPlatformKey {
     return typeof value === 'string' && POST_PLATFORMS.some(p => p.key === value);

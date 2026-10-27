@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
               <Image src="/brand/logo-text.png" alt="Counterdraft" width={160} height={28} className="h-7 w-auto mt-1" />
             </div>
             <p className="text-ink-soft text-base md:text-lg max-w-sm leading-relaxed">
-              The writing tool for creators who want to stand out. Built for LinkedIn, with Medium and Instagram versions of every post.
+              The writing tool for creators who want to stand out. Built for LinkedIn, with Medium, Instagram, X thread and newsletter versions of every post.
             </p>
           </div>
 

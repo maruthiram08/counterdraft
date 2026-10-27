@@ -36,8 +36,8 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Counterdraft — Write Content That Sounds Like You",
-  description: "The writing tool for LinkedIn posts, with Medium articles and Instagram carousels from each one. Find your angle and publish without sounding generic.",
-  keywords: ["writing tool", "LinkedIn content", "LinkedIn posts", "content creation", "Medium", "Instagram carousel"],
+  description: "The writing tool for LinkedIn posts, with Medium articles, Instagram carousels, X threads and newsletters from each one. Find your angle and publish without sounding generic.",
+  keywords: ["writing tool", "LinkedIn content", "LinkedIn posts", "content creation", "Medium", "Instagram carousel", "X threads", "newsletters"],
   openGraph: {
     title: "Counterdraft — Write Content That Sounds Like You",
     description: "The writing tool for creators who want to stand out.",

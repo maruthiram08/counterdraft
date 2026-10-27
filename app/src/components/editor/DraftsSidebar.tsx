@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 import type { Draft } from "@/types";
+import { platformName } from "@/lib/posts/posted";
 import { useState, useEffect, useRef } from "react";
 
 interface DraftsSidebarProps {
@@ -141,11 +142,11 @@ export function DraftsSidebar({
                     {draft.labels && (
                         <div className="flex flex-wrap gap-1.5 items-center my-2">
                             {draft.labels.platform && (
-                                <span className={`h-6 px-2.5 rounded-full text-[11px] font-medium capitalize flex items-center ${draft.labels.platform === 'medium'
+                                <span className={`h-6 px-2.5 rounded-full text-[11px] font-medium flex items-center ${draft.labels.platform === 'medium'
                                     ? 'bg-ink text-white'
                                     : 'bg-ember-100 text-ember-700'
                                     }`}>
-                                    {draft.labels.platform}
+                                    {platformName(draft.labels.platform)}
                                 </span>
                             )}
                             {draft.labels.length && (

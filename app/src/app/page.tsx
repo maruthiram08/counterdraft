@@ -8,7 +8,6 @@ import { Hero } from '@/components/landing/Hero';
 import { CommandCenter } from '@/components/landing/CommandCenter';
 import { SmartStudio } from '@/components/landing/SmartStudio';
 import { TheBrain } from '@/components/landing/TheBrain';
-import { ComingSoon } from '@/components/landing/ComingSoon';
 import { Footer } from '@/components/landing/Footer';
 import { usePostHog } from 'posthog-js/react';
 
@@ -72,20 +71,19 @@ export default function Home() {
               </div>
               <h2 className="text-4xl md:text-5xl font-medium mb-6 tracking-[-0.03em] leading-[1.05] text-ink">One post. More places. Your voice.</h2>
               <p className="text-ink-soft text-lg mb-10 leading-relaxed">
-                Write your LinkedIn post, then turn it into a Medium article or an Instagram carousel, without sounding like a robot.
+                Write your LinkedIn post, then turn it into a Medium article, an Instagram carousel, an X thread or a newsletter issue, without sounding like a robot.
               </p>
               <div className="space-y-6">
                 {[
                   { label: "LinkedIn posts that stand out", desc: "Not another generic hot take. Connect LinkedIn to post from the app, or copy it." },
                   { label: "Medium articles", desc: "A longer article from your post, with a cover image." },
                   { label: "Instagram carousels and captions", desc: "Slide-by-slide scripts, hashtags and a matching image." },
-                  { label: "X threads and newsletters", desc: "Threads and newsletter issues written from your posts, ready to copy.", soon: true }
+                  { label: "X threads and newsletters", desc: "A thread with a strong first post, or an issue with subject line and preview text. Ready to copy: you post and send them yourself." }
                 ].map((item, i) => (
                   <div key={i} className="group cursor-default">
-                    <div className={`flex flex-wrap items-center gap-3 text-[17px] font-medium tracking-[-0.01em] mb-1 ${item.soon ? 'text-ink-soft' : 'text-ink'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${item.soon ? 'bg-ink-muted' : 'bg-ember-500'}`}></div>
+                    <div className="flex flex-wrap items-center gap-3 text-[17px] font-medium tracking-[-0.01em] mb-1 text-ink">
+                      <div className="w-1.5 h-1.5 rounded-full bg-ember-500"></div>
                       {item.label}
-                      {item.soon && <ComingSoon />}
                     </div>
                     <p className="text-ink-muted text-sm pl-4.5">{item.desc}</p>
                   </div>
@@ -104,7 +102,7 @@ export default function Home() {
           <div className="relative z-10 max-w-4xl mx-auto px-4">
             <h2 className="text-4xl md:text-7xl font-medium mb-6 md:mb-8 tracking-[-0.03em] leading-[1.05] text-ink">Ready to write something you&apos;re proud of?</h2>
             <p className="text-ink-soft text-lg md:text-2xl max-w-2xl mx-auto mb-8 md:mb-12">
-              Find your angle, draft in your voice, and post to LinkedIn. Then turn it into a Medium article or an Instagram carousel.
+              Find your angle, draft in your voice, and post to LinkedIn. Then turn it into an article, a carousel, an X thread or a newsletter.
             </p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-6">
               <SignedOut>
