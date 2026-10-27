@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { extractBeliefs } from '@/lib/brain/analysis';
 import { storeAnalysisResults } from '@/lib/belief-storage';
+import { UsageService } from '@/lib/billing/usage';
 
 export const maxDuration = 60; // Allow longer timeout for analysis
 
@@ -19,6 +20,12 @@ export async function POST(req: NextRequest) {
         }
 
         const { text, contentId } = await req.json();
+
+        // Belief and tension tracking is Pro; callers run this in the background, so skip quietly
+        const access = await UsageService.checkFeature(userId, 'ALLOW_BELIEFS');
+        if (!access.allowed) {
+            return NextResponse.json({ skipped: true, reason: 'pro_required' });
+        }
 
         if (!text || text.length < 50) {
             return NextResponse.json({ skipped: true, reason: 'Text too short' });

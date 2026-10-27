@@ -13,6 +13,7 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [needsPro, setNeedsPro] = useState(false);
     const [status, setStatus] = useState("");
 
     const handleSubmit = async () => {
@@ -20,6 +21,7 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
 
         setLoading(true);
         setError(null);
+        setNeedsPro(false);
         setStatus("Sending to analysis...");
 
         try {
@@ -35,7 +37,10 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
 
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.error || "Ingestion failed");
+            if (!res.ok) {
+                setNeedsPro(data.code === "pro_required");
+                throw new Error(data.error || "Ingestion failed");
+            }
 
             setStatus("Analysis complete!");
 
@@ -84,7 +89,10 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
                     />
 
                     {error && (
-                        <p className="text-rose-700 text-sm mt-2">{error}</p>
+                        <p className="text-rose-700 text-sm mt-2">
+                            {error}
+                            {needsPro && <> <a href="/pricing" className="underline underline-offset-2 font-medium">See Pro</a></>}
+                        </p>
                     )}
 
                     {status && !error && (
