@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { razorpay } from '@/lib/billing/razorpay';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { PAID_PLANS } from '@/lib/billing/plans';
+import { priceWithCoupon } from '@/lib/billing/coupons';
 
 export async function POST(req: NextRequest) {
     try {
@@ -11,12 +11,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { planId } = await req.json();
+        const { planId, couponCode } = await req.json();
 
-        // 1. Validate Plan
-        const plan = PAID_PLANS[planId as string];
-        if (!plan) {
-            return NextResponse.json({ error: 'Invalid plan ID' }, { status: 400 });
+        // 1. Validate Plan (and the discount code, if any; the price is always worked out here)
+        const priced = await priceWithCoupon(String(planId ?? ''), couponCode ? String(couponCode) : null);
+        if ('error' in priced) {
+            return NextResponse.json({ error: priced.error }, { status: 400 });
         }
 
         // 1.5. Refuse to charge for a plan we could not record afterwards
@@ -31,14 +31,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'This plan is not available yet. Please try again later.' }, { status: 503 });
         }
 
-        // 2. Create Order (amount is already in the smallest currency unit)
+        // 2. Create Order (amount is in the smallest currency unit)
         const options = {
-            amount: plan.amount,
-            currency: plan.currency,
+            amount: priced.amount,
+            currency: priced.plan.currency,
             receipt: `rcpt_${Date.now()}_${userId.substring(0, 5)}`,
             notes: {
                 userId: userId,
-                planId: planId
+                planId: planId,
+                ...(priced.couponCode ? { couponCode: priced.couponCode } : {}),
             }
         };
 

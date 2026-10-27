@@ -36,3 +36,17 @@ export function periodEndFrom(start: Date, months: number): Date {
     end.setMonth(end.getMonth() + months);
     return end;
 }
+
+/** Discounted amount in the smallest currency unit, rounded to a whole rupee / dollar (never below 1). */
+export function discountedAmount(amount: number, discountPercent: number): number {
+    return Math.max(100, Math.round((amount * (100 - discountPercent)) / 100 / 100) * 100);
+}
+
+export function formatAmount(amount: number, currency: PaidPlan['currency']): string {
+    const value = amount / 100;
+    return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    }).format(value);
+}

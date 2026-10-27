@@ -5,6 +5,11 @@ export async function POST(req: Request) {
     try {
         const { code, planId, maxUses, discount } = await req.json();
 
+        const pct = Number(discount ?? 100);
+        if (!Number.isFinite(pct) || pct < 1 || pct > 100) {
+            return NextResponse.json({ error: 'Discount must be between 1 and 100' }, { status: 400 });
+        }
+
         if (!code || !planId) {
             return NextResponse.json({ error: 'Code and Plan ID are required' }, { status: 400 });
         }
@@ -16,7 +21,7 @@ export async function POST(req: Request) {
                 code: code.toUpperCase(),
                 plan_id: planId,
                 max_redemptions: maxUses || 100,
-                discount_percent: discount || 100, // Default to 100% off (free beta)
+                discount_percent: pct, // 100 = free invite, less = discount at checkout
                 is_active: true,
                 redemptions_count: 0
             })

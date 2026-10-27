@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { PRICING_CONFIG, Tier } from '@/lib/constants/pricing';
+import { isSubscriptionLive } from '@/lib/billing/plans';
 
 export async function GET() {
     try {
@@ -26,6 +27,14 @@ export async function GET() {
         // Check Limits
         const limitCheck = await UsageService.checkDraftLimit(userId);
 
+        // When the current Pro period ends (for the renewal reminder); null = no end date or not Pro
+        const { data: sub } = await supabaseAdmin
+            .from('subscriptions')
+            .select('status, plan_id, current_period_end')
+            .eq('user_id', userId)
+            .maybeSingle();
+        const proUntil = isSubscriptionLive(sub) ? sub?.current_period_end ?? null : null;
+
         // Safe access to pricing config
         const tierConfig = PRICING_CONFIG.LIMITS[limitCheck.tier as Tier];
         const searchLimit = tierConfig ? tierConfig.SEARCHES_PER_MONTH : 20;
@@ -44,6 +53,7 @@ export async function GET() {
                 count: limitCheck.usage,
                 limit: limitCheck.limit,
                 search_limit: searchLimit,
+                pro_until: proUntil,
             }
         });
     } catch (error) {

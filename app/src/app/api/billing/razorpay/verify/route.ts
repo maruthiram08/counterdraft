@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
-import { PAID_PLANS, periodEndFrom } from '@/lib/billing/plans';
 import { razorpay } from '@/lib/billing/razorpay';
+import { grantPaidPlan } from '@/lib/billing/provision';
 
 export async function POST(req: NextRequest) {
     try {
@@ -11,7 +10,6 @@ export async function POST(req: NextRequest) {
             razorpay_order_id,
             razorpay_payment_id,
             razorpay_signature,
-            planId
         } = await req.json();
 
         const userId = await getOrCreateUser();
@@ -31,18 +29,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
         }
 
-        // 1.5. Verify Order Ownership (Prevent Replay/Injection)
-        // We must ensure this order was actually created for THIS user.
-        // We need to fetch the order from Razorpay to check the notes.
+        // 2. Verify Order Ownership (Prevent Replay/Injection)
+        // The plan, coupon and user come from the order notes we wrote, never from the request body
         const order = await razorpay.orders.fetch(razorpay_order_id);
 
         if (!order) {
             return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-        }
-
-        if (order.status !== 'paid' && order.status !== 'attempted') {
-            // Just a warning, sometimes status lags slightly, but usually it should be paid or attempted
-            console.warn('[Razorpay] Order status is', order.status);
         }
 
         if (order.notes?.userId !== userId) {
@@ -53,73 +45,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Order does not belong to this user' }, { status: 403 });
         }
 
-        // 2. Determine Plan Details
-        // SECURITY: Use the planId from order notes rather than trusting the request body
-        const verifiedPlanId = order.notes?.planId || planId;
-
-        if (verifiedPlanId !== planId) {
-            console.warn('[Razorpay] Plan ID mismatch, using verified ID from order notes', {
-                requestPlanId: planId,
-                verifiedPlanId: verifiedPlanId
-            });
-        }
-
-        const planIdToStore = verifiedPlanId;
-
-        // Calculate End Date
-        const paidPlan = PAID_PLANS[verifiedPlanId as string];
-        if (!paidPlan) {
-            console.error('[Razorpay] Unknown plan on a verified order', { verifiedPlanId, razorpay_order_id });
-            return NextResponse.json({ error: 'Unknown plan. Please contact support.' }, { status: 400 });
-        }
-
-        // 3. Provision Subscription in DB
-        // Check existing
-        const { data: existingSub } = await supabaseAdmin
-            .from('subscriptions')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-
-        // Same order verified twice (retry, double click): already provisioned
-        if (existingSub?.subscription_id === razorpay_order_id && existingSub?.status === 'active') {
-            return NextResponse.json({ success: true, redirectUrl: '/workspace?upgraded=true' });
-        }
-
-        // Paying again before the current period ends extends it instead of throwing away the remaining days
-        const now = new Date();
-        const currentEnd = existingSub?.status === 'active' && existingSub?.current_period_end ? new Date(existingSub.current_period_end) : null;
-        const endDate = periodEndFrom(currentEnd && currentEnd > now ? currentEnd : now, paidPlan.months);
-
-        let error;
-        if (existingSub) {
-            const { error: updateError } = await supabaseAdmin
-                .from('subscriptions')
-                .update({
-                    status: 'active',
-                    plan_id: planIdToStore,
-                    current_period_end: endDate.toISOString(),
-                    cancel_at_period_end: false,
-                    provider: 'razorpay',
-                    subscription_id: razorpay_order_id // Store Order ID as sub ID references
-                })
-                .eq('user_id', userId);
-            error = updateError;
-        } else {
-            const { error: insertError } = await supabaseAdmin
-                .from('subscriptions')
-                .insert({
-                    user_id: userId,
-                    status: 'active',
-                    plan_id: planIdToStore,
-                    current_period_end: endDate.toISOString(),
-                    provider: 'razorpay',
-                    subscription_id: razorpay_order_id
-                });
-            error = insertError;
-        }
-
-        if (error) throw error;
+        // 3. Provision (shared with the order.paid webhook, idempotent per order)
+        await grantPaidPlan({
+            userId,
+            planId: String(order.notes?.planId ?? ''),
+            orderId: razorpay_order_id,
+            couponCode: order.notes?.couponCode ? String(order.notes.couponCode) : null,
+        });
 
         return NextResponse.json({ success: true, redirectUrl: '/workspace?upgraded=true' });
 

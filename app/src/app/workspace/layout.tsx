@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
     const { user, isLoaded } = useUser();
@@ -32,6 +33,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
                         router.push('/onboarding');
                         return;
                     }
+                    announceBilling(data.usage?.pro_until ?? null, (path) => router.push(path));
                 }
             } catch (e) {
                 console.error("Failed to check onboarding status", e);
@@ -58,4 +60,33 @@ function showLoading(isLoaded: boolean, checking: boolean) {
     if (!isLoaded) return true;
     if (checking) return true;
     return false;
+}
+
+const RENEW_WINDOW_DAYS = 5;
+
+// "Welcome to Pro" after checkout, and a once-per-session reminder when Pro is about to end
+function announceBilling(proUntil: string | null, go: (path: string) => void) {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('upgraded') === 'true') {
+        toast.success('Welcome to Pro. Everything is unlocked.');
+        url.searchParams.delete('upgraded');
+        window.history.replaceState(null, '', url.pathname + url.search);
+        return;
+    }
+
+    if (!proUntil) return;
+    const daysLeft = Math.ceil((new Date(proUntil).getTime() - Date.now()) / 86_400_000);
+    if (daysLeft < 0 || daysLeft > RENEW_WINDOW_DAYS) return;
+
+    try {
+        if (sessionStorage.getItem('renew-reminder-shown')) return;
+        sessionStorage.setItem('renew-reminder-shown', '1');
+    } catch { /* storage blocked: show it anyway */ }
+
+    const when = daysLeft <= 0 ? 'today' : daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
+    toast(`Your Pro plan ends ${when}.`, {
+        description: 'Renew to keep drafting without limits.',
+        duration: 15000,
+        action: { label: 'Renew', onClick: () => go('/pricing') },
+    });
 }
