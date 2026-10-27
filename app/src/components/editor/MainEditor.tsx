@@ -17,6 +17,7 @@ import { LinkedInPreview } from "./LinkedInPreview";
 import { PlaceholderNotice } from "./PlaceholderNotice";
 import { VariantsPanel } from "./VariantsPanel";
 import { CraftScorePanel } from "./CraftScorePanel";
+import { postPlatforms } from "./PublishedPostsList";
 import { findPlaceholders, Placeholder } from "@/lib/editor/placeholders";
 
 // Refactored Hooks & Utils
@@ -32,9 +33,11 @@ interface MainEditorProps {
     onSave: (id: string, content: string, title?: string) => Promise<boolean>;
     onUpdateMetadata?: (id: string, metadata: BrainMetadata) => Promise<boolean>;
     onPublish?: (id: string, stage: string) => Promise<void>;
+    onDuplicate?: (draft: Draft) => Promise<void>;
 }
 
-export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
+export function MainEditor({ draft, onSave, onPublish, onDuplicate }: MainEditorProps) {
+    const [duplicating, setDuplicating] = useState(false);
 
     // 1. Core State
     const {
@@ -252,19 +255,32 @@ export function MainEditor({ draft, onSave, onPublish }: MainEditorProps) {
                                     <h4 className="text-sm font-medium text-ink">This post is published</h4>
                                     <p className="text-xs text-ink-soft">
                                         Published on {draft.published_posts?.[0]?.published_at ? new Date(draft.published_posts[0].published_at).toLocaleDateString() : new Date(draft.updated_at).toLocaleDateString()}
+                                        {postPlatforms(draft).length > 0 && ` on ${postPlatforms(draft).join(', ')}`}
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     onClick={handleCopy}
-                                    className="h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                                    className="h-11 md:h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                 >
-                                    Copy Content
+                                    {copied ? 'Copied' : 'Copy'}
                                 </button>
+                                {onDuplicate && (
+                                    <button
+                                        onClick={async () => {
+                                            setDuplicating(true);
+                                            try { await onDuplicate(draft); } finally { setDuplicating(false); }
+                                        }}
+                                        disabled={duplicating}
+                                        className="h-11 md:h-9 px-4 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-60"
+                                    >
+                                        {duplicating ? 'Copying…' : 'Use as new draft'}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => setShowRepurposeModal(true)}
-                                    className="h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                                    className="h-11 md:h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                 >
                                     Repurpose
                                 </button>
