@@ -75,10 +75,13 @@ export interface DraftQuestion {
     hint: string; // what kind of answer helps, e.g. "one moment, a sentence or two"
 }
 
+// An answer to a question asked before drafting, or a note the creator added later (no question)
 export interface DraftAnswer {
     question: string;
     answer: string;
 }
+
+export const MAX_DRAFT_NOTES = 12;
 
 /** Two or three short questions for the writer before drafting. */
 export function parseDraftQuestions(raw: unknown): DraftQuestion[] {
@@ -96,7 +99,7 @@ export function parseDraftQuestions(raw: unknown): DraftQuestion[] {
         .slice(0, 3);
 }
 
-/** Answered questions only, trimmed and capped, from a request body. */
+/** Answers and notes with text only, trimmed and capped, from a request body. */
 export function cleanAnswers(raw: unknown): DraftAnswer[] {
     if (!Array.isArray(raw)) return [];
     return raw
@@ -105,6 +108,20 @@ export function cleanAnswers(raw: unknown): DraftAnswer[] {
             question: typeof a.question === 'string' ? a.question.trim().slice(0, 240) : '',
             answer: typeof a.answer === 'string' ? a.answer.trim().slice(0, 1500) : '',
         }))
-        .filter(a => a.question && a.answer)
-        .slice(0, 3);
+        .filter(a => a.answer)
+        .slice(0, MAX_DRAFT_NOTES);
+}
+
+/** Notes kept for this post: a new answer to the same question replaces the old one, newest last. */
+export function mergeNotes(existing: DraftAnswer[] = [], incoming: DraftAnswer[] = []): DraftAnswer[] {
+    const key = (a: DraftAnswer) => (a.question || a.answer).trim().toLowerCase();
+    const added = new Set(incoming.map(key));
+    return [...existing.filter(a => !added.has(key(a))), ...incoming]
+        .filter(a => a.answer.trim())
+        .slice(-MAX_DRAFT_NOTES);
+}
+
+/** The creator's notes for a prompt, each under the question it answers. */
+export function formatNotes(notes: DraftAnswer[]): string {
+    return notes.map(a => a.question ? `Q: ${a.question}\nA: ${a.answer}` : `Note: ${a.answer}`).join('\n\n');
 }

@@ -1,6 +1,6 @@
 
 import { useMemo, useRef, useState } from "react";
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool, Gauge } from "lucide-react";
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool, Gauge, NotebookPen } from "lucide-react";
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
@@ -13,11 +13,15 @@ import { PlaceholderNotice } from "@/components/editor/PlaceholderNotice";
 import { findPlaceholders, markPlaceholders, Placeholder } from "@/lib/editor/placeholders";
 import { VariantsPanel } from "@/components/editor/VariantsPanel";
 import { CraftScorePanel } from "@/components/editor/CraftScorePanel";
-import { paragraphAt, replaceRange, Span } from "@/lib/editor/draft-tools";
+import { paragraphAt, replaceRange, Span, DraftAnswer } from "@/lib/editor/draft-tools";
+import { findSuggestions, Suggestion } from "@/lib/editor/suggestions";
+import { SuggestionNotice } from "@/components/editor/SuggestionNotice";
+import { DraftNotesPanel } from "@/components/editor/DraftNotesPanel";
 
-type DraftTool = 'craft' | 'openings' | 'preview' | 'rewrite' | 'variants';
+type DraftTool = 'notes' | 'craft' | 'openings' | 'preview' | 'rewrite' | 'variants';
 
 const TOOLS: { key: DraftTool; label: string; Icon: typeof Eye }[] = [
+    { key: 'notes', label: 'Your notes', Icon: NotebookPen },
     { key: 'craft', label: 'Craft score', Icon: Gauge },
     { key: 'openings', label: 'Openings', Icon: Wand2 },
     { key: 'rewrite', label: 'Rewrite paragraph', Icon: PenTool },
@@ -42,6 +46,12 @@ interface DraftStepProps {
     onAutoFix: (instruction: string) => void;
     strategyChanged?: boolean;
     onRebuild: () => void;
+    notes?: DraftAnswer[];
+    onNotesChange?: (notes: DraftAnswer[]) => void;
+    onWorkInNotes?: (notes: DraftAnswer[]) => void;
+    workingInNotes?: boolean;
+    suggestions?: string[];
+    onKeepSuggestion?: (text: string) => void;
 }
 
 export function DraftStep({
@@ -60,7 +70,13 @@ export function DraftStep({
     onVerifyStrategy,
     onAutoFix,
     strategyChanged,
-    onRebuild
+    onRebuild,
+    notes = [],
+    onNotesChange,
+    onWorkInNotes,
+    workingInNotes = false,
+    suggestions = [],
+    onKeepSuggestion,
 }: DraftStepProps) {
     const [tool, setTool] = useState<DraftTool | null>(null);
     // Rewrite one paragraph: the caret picks it, the writer can say what should change
@@ -72,12 +88,14 @@ export function DraftStep({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const backdropRef = useRef<HTMLDivElement>(null);
     const placeholders = useMemo(() => findPlaceholders(draftContent), [draftContent]);
+    // A suggestion the writer has edited no longer matches, so its highlight goes on its own
+    const suggested = useMemo(() => findSuggestions(draftContent, suggestions), [draftContent, suggestions]);
 
-    // Scroll the draft to a placeholder and select it, so typing replaces it
-    const jumpTo = (p: Placeholder) => {
+    // Scroll the draft to a placeholder or suggestion and select it, so typing replaces it
+    const jumpTo = (p: Placeholder | Suggestion, attr: 'data-placeholder' | 'data-suggestion' = 'data-placeholder') => {
         const area = textareaRef.current;
         if (!area) return;
-        const mark = backdropRef.current?.querySelector<HTMLElement>(`[data-placeholder="${p.index}"]`);
+        const mark = backdropRef.current?.querySelector<HTMLElement>(`[${attr}="${p.index}"]`);
         if (mark) area.scrollTop = Math.max(0, mark.offsetTop - area.clientHeight / 3);
         area.focus({ preventScroll: true });
         area.setSelectionRange(p.start, p.end);
@@ -220,6 +238,11 @@ export function DraftStep({
                                 <Copy size={12} /> Copy
                             </button>
                         </div>
+                        {tool === 'notes' && onNotesChange && onWorkInNotes && (
+                            <div className="px-4 py-4 md:px-6 border-b border-line">
+                                <DraftNotesPanel notes={notes} onChange={onNotesChange} onWorkIn={onWorkInNotes} working={workingInNotes} disabled={readOnly} />
+                            </div>
+                        )}
                         {tool === 'craft' && (
                             <div className="px-4 py-4 md:px-6 border-b border-line">
                                 <CraftScorePanel content={draftContent} brainMetadata={brainMetadata} onApply={onUpdateDraft} disabled={readOnly} />
@@ -281,7 +304,21 @@ export function DraftStep({
                         )}
                         {placeholders.length > 0 && !readOnly && (
                             <div className="px-4 pt-4 md:px-6">
-                                <PlaceholderNotice placeholders={placeholders} onJump={jumpTo} />
+                                <PlaceholderNotice
+                                    placeholders={placeholders}
+                                    onJump={(p) => jumpTo(p)}
+                                    onFill={onWorkInNotes ? () => onWorkInNotes(notes) : undefined}
+                                    filling={workingInNotes}
+                                />
+                            </div>
+                        )}
+                        {suggested.length > 0 && !readOnly && (
+                            <div className="px-4 pt-4 md:px-6">
+                                <SuggestionNotice
+                                    suggestions={suggested}
+                                    onJump={(s) => jumpTo(s, 'data-suggestion')}
+                                    onKeep={(s) => onKeepSuggestion?.(s.text)}
+                                />
                             </div>
                         )}
                         <div className="flex-1 relative min-h-[320px] bg-surface">
@@ -290,7 +327,7 @@ export function DraftStep({
                                 ref={backdropRef}
                                 aria-hidden="true"
                                 className="absolute inset-0 overflow-y-scroll pointer-events-none whitespace-pre-wrap break-words text-lg leading-relaxed text-transparent p-6 md:px-12 md:py-8"
-                                dangerouslySetInnerHTML={{ __html: markPlaceholders(draftContent) }}
+                                dangerouslySetInnerHTML={{ __html: markPlaceholders(draftContent, suggested) }}
                             />
                             <textarea
                                 ref={textareaRef}

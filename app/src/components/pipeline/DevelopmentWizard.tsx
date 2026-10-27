@@ -20,7 +20,9 @@ import { DraftStep } from "./wizard/DraftStep";
 import { RefineContextPanel } from "./wizard/RefineContextPanel";
 import { ThinkingLoader } from "./wizard/ThinkingLoader";
 import { StrategyAnalysis, toStrategyAnalysis } from "@/lib/brain/strategy";
+import { mergeNotes } from "@/lib/editor/draft-tools";
 import type { DraftAnswer, DraftQuestion, OutlineShapeOption } from "@/lib/editor/draft-tools";
+import { liveSuggestions, wrapSuggestions } from "@/lib/editor/suggestions";
 import { DraftQuestionsStep } from "./wizard/DraftQuestionsStep";
 
 // Set when the writer ticks "Don't ask me before drafting"
@@ -66,6 +68,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     // Draft state
     const [draftContent, setDraftContent] = useState('');
+    const [workingInNotes, setWorkingInNotes] = useState(false);
 
     // Strategy Verification State
     const [strategyAnalysis, setStrategyAnalysis] = useState<StrategyAnalysis | null>(null);
@@ -215,6 +218,14 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
         latestBrainMetadata.current = brainMetadata;
         setLocalBrainMetadata(brainMetadata);
         saveProgress({ ...extra, brain_metadata: brainMetadata });
+    };
+
+    // Notes and suggested passages live in the metadata, so a later rebuild or rewrite still has them
+    const updateMetadata = (patch: Partial<BrainMetadata>) => {
+        const brainMetadata = { ...latestBrainMetadata.current, ...patch } as BrainMetadata;
+        latestBrainMetadata.current = brainMetadata;
+        setLocalBrainMetadata(brainMetadata);
+        saveProgress({ brain_metadata: brainMetadata });
     };
 
     const [refiningItems, setRefiningItems] = useState<{ type: 'research' | 'insights', index: number }[]>([]);
@@ -492,6 +503,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
     const generateDraft = async (answers: DraftAnswer[] = []) => {
         setLoading(true);
         saveProgress({ dev_step: 'draft_in_progress' });
+        // Today's answers join the notes from earlier runs, so nothing the writer told us is lost on a redraft
+        const notes = mergeNotes(latestBrainMetadata.current?.draftNotes, answers);
+        if (answers.length) updateMetadata({ draftNotes: notes });
         const brainMetadataForRun = latestBrainMetadata.current;
         const draftedWith = formatStrategyContext(brainMetadataForRun);
         try {
@@ -507,7 +521,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                     brainMetadata: brainMetadataForRun,
                     userContext: globalContext,
                     references: brainMetadataForRun?.references || [],
-                    answers,
+                    answers: notes,
                 }),
             });
 
@@ -528,7 +542,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
             const data = await res.json();
             setDraftContent(data.draft || '');
-            markGeneratedWith('draftedWith', draftedWith);
+            updateMetadata({ draftedWith, draftSuggestions: Array.isArray(data.suggestions) ? data.suggestions : [] });
         } catch (err) {
             console.error('Draft generation failed:', err);
         } finally {
@@ -583,12 +597,43 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                 writeDraft();
                 return;
             }
-            setDraftAnswers([]);
+            // A question asked before keeps the answer given then
+            const notes = latestBrainMetadata.current?.draftNotes || [];
+            setDraftAnswers(data.questions.map((q: DraftQuestion) => notes.find(n => n.question === q.question)?.answer || ''));
             setDraftQuestions(data.questions);
         } catch {
             writeDraft();
         } finally {
             setAskingQuestions(false);
+        }
+    };
+
+    // Work the saved notes into the draft as it stands now, and fill any gaps with suggestions
+    const workInNotes = async (notes: DraftAnswer[]) => {
+        setWorkingInNotes(true);
+        try {
+            const current = latestBrainMetadata.current;
+            const res = await fetch('/api/content/develop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'use_notes',
+                    draft: wrapSuggestions(draftContent, current?.draftSuggestions || []),
+                    notes,
+                    outline,
+                    deep_dive: deepDive,
+                    brainMetadata: current,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.draft) throw new Error(data.error || 'Could not work your notes in');
+            setDraftContent(data.draft);
+            updateMetadata({ draftNotes: notes, draftSuggestions: Array.isArray(data.suggestions) ? data.suggestions : [] });
+            toast.success(notes.length ? 'Your notes are in the draft' : 'Filled in. Check the highlighted spots.');
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Could not work your notes in');
+        } finally {
+            setWorkingInNotes(false);
         }
     };
 
@@ -876,6 +921,12 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 onVerifyStrategy={handleVerifyStrategy}
                                 onAutoFix={handleAutoFix}
                                 strategyChanged={strategyChangedSinceDraft}
+                                notes={localBrainMetadata?.draftNotes || []}
+                                onNotesChange={(draftNotes) => updateMetadata({ draftNotes })}
+                                onWorkInNotes={workInNotes}
+                                workingInNotes={workingInNotes}
+                                suggestions={localBrainMetadata?.draftSuggestions || []}
+                                onKeepSuggestion={(text) => updateMetadata({ draftSuggestions: liveSuggestions(draftContent, localBrainMetadata?.draftSuggestions).filter(s => s !== text) })}
                                 onRebuild={() => {
                                     // The draft follows the outline, so a new strategy starts from a new outline
                                     setStep('outline');

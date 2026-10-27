@@ -257,6 +257,8 @@ export interface BrainMetadata {
   researchedWith?: string; // Strategy snapshot the current research was generated from
   outlinedWith?: string; // Strategy snapshot the current outline was generated from
   draftedWith?: string; // Strategy snapshot the current draft was generated from
+  draftNotes?: { question: string; answer: string }[]; // The creator's answers before drafting and notes added since; every draft and rewrite uses them
+  draftSuggestions?: string[]; // Passages the draft wrote where it needed a detail nobody gave, for the creator to check
   source?: {
     type: 'belief' | 'tension' | 'idea' | 'manual' | 'artifact' | 'synthesis';
     id?: string;

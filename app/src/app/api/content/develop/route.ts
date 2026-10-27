@@ -5,6 +5,7 @@ import { UsageService } from '@/lib/billing/usage';
 import { brainGenerationService } from '@/lib/brain/generation';
 import { rateLimit } from '@/lib/rate-limit';
 import { cleanAnswers } from '@/lib/editor/draft-tools';
+import { findPlaceholders } from '@/lib/editor/placeholders';
 import { cleanCraftFix } from '@/lib/editor/craft-score';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
         actionType = action || 'unknown';
 
         // 🛡️ CONTENT MODERATION CHECK (on user-provided text fields)
-        const inputToModerate = [hook, angle, userContext, currentText, brief, typeof body.instruction === 'string' ? body.instruction : '', ...cleanAnswers(body.answers).map(a => a.answer)].filter(Boolean).join(' ');
+        const inputToModerate = [hook, angle, userContext, currentText, brief, typeof body.instruction === 'string' ? body.instruction : '', ...cleanAnswers(body.answers).map(a => a.answer), ...cleanAnswers(body.notes).map(a => a.answer)].filter(Boolean).join(' ');
         if (inputToModerate) {
             const modResult = await moderateContent(inputToModerate);
             if (modResult.flagged) {
@@ -116,7 +117,7 @@ export async function POST(req: Request) {
                 }, { status: 403 });
             }
 
-            const generatedDraft = await brainGenerationService.generateDraft({
+            const { draft: generatedDraft, suggestions } = await brainGenerationService.generateDraft({
                 userId,
                 hook,
                 angle,
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
                 answers: cleanAnswers(body.answers),
             });
 
-            return NextResponse.json({ draft: generatedDraft });
+            return NextResponse.json({ draft: generatedDraft, suggestions });
 
         } else if (action === 'verify_strategy') {
             const textToVerify = draft || currentText;
@@ -173,7 +174,7 @@ export async function POST(req: Request) {
             const result = await brainGenerationService.verifyFacts(textToVerify);
             return NextResponse.json(result);
 
-        } else if (action === 'outline_shapes' || action === 'draft_questions' || action === 'rewrite_section' || action === 'variants' || action === 'craft_score' || action === 'craft_fix') {
+        } else if (action === 'outline_shapes' || action === 'draft_questions' || action === 'rewrite_section' || action === 'variants' || action === 'craft_score' || action === 'craft_fix' || action === 'use_notes') {
             // Small edits on work already made: rate limited, not counted as new drafts
             const limit = rateLimit(`develop-edit:${userId}`, { windowMs: 15 * 60 * 1000, max: 30 });
             if (!limit.allowed) {
@@ -196,6 +197,17 @@ export async function POST(req: Request) {
                 status = 'error';
                 errorDetails = 'Missing draft';
                 return NextResponse.json({ error: 'Missing draft' }, { status: 400 });
+            }
+
+            if (action === 'use_notes') {
+                const notes = cleanAnswers(body.notes);
+                if (!notes.length && !findPlaceholders(draft).length) {
+                    status = 'error';
+                    errorDetails = 'Nothing to work in';
+                    return NextResponse.json({ error: 'Add a note first' }, { status: 400 });
+                }
+                const result = await brainGenerationService.useNotes({ userId, draft, notes, outline, deep_dive, brainMetadata });
+                return NextResponse.json(result);
             }
 
             if (action === 'craft_score') {

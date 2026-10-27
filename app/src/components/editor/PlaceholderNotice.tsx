@@ -1,15 +1,17 @@
 "use client";
 
-import { PenLine } from "lucide-react";
+import { Loader2, PenLine, Sparkles } from "lucide-react";
 import { Placeholder } from "@/lib/editor/placeholders";
 
 interface PlaceholderNoticeProps {
     placeholders: Placeholder[];
     onJump: (placeholder: Placeholder) => void;
+    onFill?: () => void; // write a suggestion into each spot instead of leaving it to the creator
+    filling?: boolean;
 }
 
 // The draft left spots only the creator can fill. Named up front, each one a click away.
-export function PlaceholderNotice({ placeholders, onJump }: PlaceholderNoticeProps) {
+export function PlaceholderNotice({ placeholders, onJump, onFill, filling }: PlaceholderNoticeProps) {
     if (!placeholders.length) return null;
     const count = placeholders.length;
 
@@ -32,6 +34,16 @@ export function PlaceholderNotice({ placeholders, onJump }: PlaceholderNoticePro
                     </li>
                 ))}
             </ul>
+            {onFill && (
+                <button
+                    onClick={onFill}
+                    disabled={filling}
+                    className="mt-3 flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface shadow-raised text-xs font-medium text-ember-700 hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                >
+                    {filling ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    Suggest something for {count === 1 ? 'it' : 'these'}
+                </button>
+            )}
         </div>
     );
 }
