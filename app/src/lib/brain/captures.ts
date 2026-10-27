@@ -28,7 +28,7 @@ export interface CaptureRow {
     user_note?: string | null;
     intent_type?: string | null;
     image_path?: string | null;
-    ai_metadata?: { kind?: unknown; type?: unknown; key_insight?: unknown } | null;
+    ai_metadata?: { kind?: unknown; type?: unknown; key_insight?: unknown; visual_summary?: unknown } | null;
 }
 
 export function isCaptureIntent(value: unknown): value is CaptureIntent {
@@ -69,7 +69,10 @@ export function trimText(text: string, limit = TEXT_LIMIT): string {
 
 // One capture as a source an idea carries through research, outline and draft
 export function captureToSource(row: CaptureRow, pageText?: string): CaptureSource {
-    const text = (row.ocr_text || pageText || '').trim();
+    // A chart or diagram has little text; the capture model's description of it is what a writer can use
+    const visual = typeof row.ai_metadata?.visual_summary === 'string' ? row.ai_metadata.visual_summary.trim() : '';
+    const words = (row.ocr_text || pageText || '').trim();
+    const text = visual ? `${words}${words ? '\n\n' : ''}[What the image shows: ${visual}]` : words;
     const domain = captureDomain(row);
     const note = row.user_note?.trim();
     const insight = typeof row.ai_metadata?.key_insight === 'string' ? row.ai_metadata.key_insight.trim() : '';

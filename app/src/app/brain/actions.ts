@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
+import { captureImageUrl, removeCaptureImage } from '@/lib/brain/capture-images';
 
 interface GetArtifactsFilters {
     intent?: string;
@@ -33,7 +34,11 @@ export async function getArtifacts(filters?: GetArtifactsFilters) {
     const [{ data, error }, used] = await Promise.all([query, captureUseCounts(userId)]);
     if (error) throw new Error(error.message);
 
-    return (data || []).map(artifact => ({ ...artifact, usedIn: used.get(artifact.id) || 0 }));
+    return (data || []).map(artifact => ({
+        ...artifact,
+        imageUrl: captureImageUrl(artifact.image_path),
+        usedIn: used.get(artifact.id) || 0,
+    }));
 }
 
 // How many Pipeline items were built from each capture
@@ -61,11 +66,13 @@ export async function deleteArtifact(id: string) {
     const userId = await getOrCreateUser();
     if (!userId) throw new Error('User sync failed');
 
-    const { error } = await supabase
+    const { data: deleted, error } = await supabase
         .from('thinking_artifacts')
         .delete()
-        .match({ id, user_id: userId });
+        .match({ id, user_id: userId })
+        .select('image_path');
 
     if (error) throw new Error(error.message);
+    await Promise.all((deleted || []).map(row => removeCaptureImage(row.image_path)));
     return true;
 }

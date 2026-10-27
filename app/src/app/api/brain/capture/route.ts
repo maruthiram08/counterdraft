@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { isCaptureIntent, isCaptureKind } from '@/lib/brain/captures';
+import { storeCaptureImage } from '@/lib/brain/capture-images';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { getOpenAI } from '@/lib/openai';
 
@@ -34,8 +35,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'No image provided' }, { status: 400 });
         }
 
-        // 3. Skip Storage Upload (User Request)
-        const imagePath = null;
+        // 3. Keep the image, so charts and screenshots can be seen again (a failed upload still saves the capture)
+        const imagePath = imageBase64 ? await storeCaptureImage(userId, imageBase64) : null;
 
         // 4. AI Processing (OCR + Analysis)
         let ocrText = "";

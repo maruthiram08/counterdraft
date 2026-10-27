@@ -352,7 +352,9 @@ export interface Artifact {
   user_note?: string;
   intent_type?: CaptureIntent | null;
   image_path?: string;
+  imageUrl?: string; // Public URL of the stored snip or frame image
   ai_metadata?: {
+    visual_summary?: string;
     kind?: CaptureKind;
     type?: string;
     tags?: string[];

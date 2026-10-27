@@ -118,3 +118,19 @@ describe('extractPageText', () => {
         expect(extractPageText(html).content).toContain('Words in a div.');
     });
 });
+
+describe('capture images', () => {
+    it('decodes the data URLs Lens sends and ignores anything else', () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { decodeImage } = require('@/lib/brain/capture-images');
+        expect(decodeImage('data:image/png;base64,aGVsbG8=')).toMatchObject({ contentType: 'image/png', ext: 'png' });
+        expect(decodeImage('data:image/jpeg;base64,aGVsbG8=')?.ext).toBe('jpg');
+        expect(decodeImage('data:text/html;base64,aGVsbG8=')).toBeNull();
+        expect(decodeImage('')).toBeNull();
+    });
+
+    it('adds what a chart shows to the capture text', () => {
+        const source = captureToSource({ ...frame, ocr_text: 'Q3 revenue', ai_metadata: { kind: 'snip', visual_summary: 'Bar chart: revenue doubled' } });
+        expect(source.text).toBe('Q3 revenue\n\n[What the image shows: Bar chart: revenue doubled]');
+    });
+});

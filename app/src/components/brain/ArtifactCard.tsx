@@ -86,9 +86,15 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas }: ArtifactCardPr
 
             {/* Content Body */}
             <div className="flex-1 relative group">
-                <div className="px-5 py-2">
+                <div className="px-5 py-2 flex flex-col gap-2">
+                    {artifact.imageUrl && (
+                        <a href={artifact.imageUrl} target="_blank" rel="noopener noreferrer" className="block rounded-2xl overflow-hidden bg-surface-muted max-h-64" title="Open the full image">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- stored capture, any size */}
+                            <img src={artifact.imageUrl} alt={`Capture from ${artifact.source_domain || 'a page'}`} loading="lazy" className="w-full h-auto object-cover object-top" />
+                        </a>
+                    )}
                     {artifact.ocr_text ? (
-                        <p className="text-sm text-ink-soft line-clamp-[10] leading-relaxed bg-surface-muted p-3 rounded-2xl whitespace-pre-line">
+                        <p className={`text-sm text-ink-soft leading-relaxed bg-surface-muted p-3 rounded-2xl whitespace-pre-line ${artifact.imageUrl ? 'line-clamp-4' : 'line-clamp-[10]'}`}>
                             {artifact.ocr_text}
                         </p>
                     ) : (
