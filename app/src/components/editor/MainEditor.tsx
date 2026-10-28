@@ -17,6 +17,7 @@ import { NewsletterPreview } from "./NewsletterPreview";
 import { PlaceholderNotice } from "./PlaceholderNotice";
 import { VariantsPanel } from "./VariantsPanel";
 import { CraftScorePanel } from "./CraftScorePanel";
+import { ReaderPanel } from "./ReaderPanel";
 import { PostSheet } from "./PostSheet";
 import { postPlatforms, postedDate, postUrl, isManualRecord } from "@/lib/posts/posted";
 import type { PostedDetails } from "@/hooks/useDrafts";
@@ -59,7 +60,7 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
     // 2. Mode & UI State
     const [isPreview, setIsPreview] = useState(false);
     const [postSheet, setPostSheet] = useState<'post' | 'details' | null>(null);
-    const [postTool, setPostTool] = useState<'craft' | 'openings' | 'variants' | 'preview' | null>(null);
+    const [postTool, setPostTool] = useState<'craft' | 'readers' | 'openings' | 'variants' | 'preview' | null>(null);
     // X threads and newsletters get their own preview with copy buttons; the LinkedIn tools would break their shape
     const format = draft?.platform === 'x_thread' || draft?.platform === 'newsletter' ? draft.platform : null;
     const previewLabel = format === 'x_thread' ? 'Thread preview' : format === 'newsletter' ? 'Email preview' : 'LinkedIn preview';
@@ -354,6 +355,15 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
                         )}
                         {draft.status !== 'published' && !format && (
                             <button
+                                onClick={() => setPostTool(t => t === 'readers' ? null : 'readers')}
+                                aria-pressed={postTool === 'readers'}
+                                className={`shrink-0 whitespace-nowrap h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'readers' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
+                            >
+                                Reader panel
+                            </button>
+                        )}
+                        {draft.status !== 'published' && !format && (
+                            <button
                                 onClick={() => setPostTool(t => t === 'openings' ? null : 'openings')}
                                 aria-pressed={postTool === 'openings'}
                                 className={`shrink-0 whitespace-nowrap h-9 px-4 rounded-full bg-canvas text-xs font-medium transition-all ${postTool === 'openings' ? 'shadow-pressed text-ember-600' : 'shadow-raised text-ink-soft hover:text-ember-600 active:shadow-pressed'}`}
@@ -381,6 +391,7 @@ export function MainEditor({ draft, onSave, onMarkPosted, onMoveBack, onLinkedIn
                     {postTool && (
                         <div className="mb-6 bg-surface rounded-card shadow-card p-5 md:p-6">
                             {postTool === 'craft' && <CraftScorePanel content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
+                            {postTool === 'readers' && <ReaderPanel content={content} brainMetadata={draft.brain_metadata} />}
                             {postTool === 'openings' && <HookLab content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
                             {postTool === 'variants' && <VariantsPanel content={content} brainMetadata={draft.brain_metadata} onApply={setContent} disabled={draft.status === 'published'} />}
                             {postTool === 'preview' && (format === 'x_thread'
