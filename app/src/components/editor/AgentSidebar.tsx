@@ -46,6 +46,11 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
     }, [messages, activeTab]);
 
     const handleRefine = async (customInstruction?: string) => {
+        const activeInstruction = customInstruction || instruction;
+        if (!activeInstruction || !currentContent) return;
+        // Busy before the limit check's round trip, so the tap shows at once
+        setLoading(true);
+
         // LIMIT CHECK
         try {
             const res = await fetch('/api/user/status');
@@ -58,20 +63,17 @@ export function AgentSidebar({ currentContent, beliefContext, onApplyParams, ava
                     limit: data.usage.limit
                 });
                 setLimitModalOpen(true);
+                setLoading(false);
                 return;
             }
         } catch (e) {
             console.error("Limit check failed", e);
         }
 
-        const activeInstruction = customInstruction || instruction;
-        if (!activeInstruction || !currentContent) return;
-
         // Add user message
         const userMsg: Message = { role: 'user', content: activeInstruction };
         setMessages(prev => [...prev, userMsg]);
         setInstruction("");
-        setLoading(true);
 
         try {
             const res = await fetch('/api/refine', {

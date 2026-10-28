@@ -7,6 +7,7 @@ import PostHogPageView from "./PostHogPageView";
 import { FloatingFeedbackButton } from "@/components/shared/FloatingFeedbackButton";
 import { Toaster } from 'sonner';
 import { CouponClaimer } from "@/components/auth/CouponClaimer";
+import { NavProgress } from "@/components/shared/NavProgress";
 
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex-sans",
@@ -76,6 +77,7 @@ export default function RootLayout({
         <CSPostHogProvider>
           <body>
             <PostHogPageView />
+            <NavProgress />
             <FloatingFeedbackButton />
             <CouponClaimer />
             {children}

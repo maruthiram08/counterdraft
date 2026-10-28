@@ -585,15 +585,24 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
             setStep('outline');
             generateOutline();
         } else if (step === 'outline' && outlineApproved) {
-            checkLimit().then(allowed => {
-                if (!allowed) return;
+            whenAllowed(setAskingQuestions, () => {
                 if (readSkipQuestions()) {
+                    setAskingQuestions(false);
                     writeDraft();
                     return;
                 }
                 askBeforeDrafting();
             });
         }
+    };
+
+    // The limit check is a round trip, so the busy state goes up first: the tap shows at once, not after the check
+    const whenAllowed = (setBusy: (busy: boolean) => void, run: () => void) => {
+        setBusy(true);
+        checkLimit().then(allowed => {
+            if (allowed) run();
+            else setBusy(false);
+        });
     };
 
     const writeDraft = (answers: DraftAnswer[] = []) => {
@@ -638,9 +647,9 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
 
     // Reframe: the pre-draft questions, then the draft. Answers already given skip the questions.
     const startReframe = () => {
-        checkLimit().then(allowed => {
-            if (!allowed) return;
+        whenAllowed(setAskingQuestions, () => {
             if (readSkipQuestions() || latestBrainMetadata.current?.draftNotes?.length) {
+                setAskingQuestions(false);
                 writeDraft();
                 return;
             }
@@ -1009,11 +1018,11 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 suggestions={localBrainMetadata?.draftSuggestions || []}
                                 onKeepSuggestion={(text) => updateMetadata({ draftSuggestions: liveSuggestions(draftContent, localBrainMetadata?.draftSuggestions).filter(s => s !== text) })}
                                 draftError={draftError}
-                                onWriteDraft={quickReframe ? startReframe : () => checkLimit().then(allowed => { if (allowed) generateDraft(); })}
+                                onWriteDraft={quickReframe ? startReframe : () => whenAllowed(setLoading, () => generateDraft())}
                                 onRebuild={() => {
                                     // A reframe has no outline: redraft from the post with the new strategy
                                     if (quickReframe) {
-                                        checkLimit().then(allowed => { if (allowed) generateDraft(); });
+                                        whenAllowed(setLoading, () => generateDraft());
                                         return;
                                     }
                                     // The draft follows the outline, so a new strategy starts from a new outline

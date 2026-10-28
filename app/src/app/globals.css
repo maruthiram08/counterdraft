@@ -164,11 +164,40 @@ html {
   text-size-adjust: 100%;
 }
 
-/* Taps press the control (shadow-pressed); no grey flash box on top of it */
+/* Taps press the control (shadow-pressed); no grey flash box on top of it.
+   touch-action: manipulation drops the wait Safari keeps for a double-tap zoom. */
 a,
 button,
-[role="button"] {
+[role="button"],
+label,
+summary,
+input,
+select,
+textarea {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* A tap shows the moment the finger lands: the press shrinks the control a touch
+   and snaps the pressed shadow in with no fade (transition-all would otherwise ease
+   it in over 150ms, which a quick tap ends before you see). Release eases back. */
+button:not(:disabled, [aria-disabled="true"]):active,
+[role="button"]:not([aria-disabled="true"]):active,
+a.btn:active {
+  scale: 0.97;
+  transition-duration: 0s;
+}
+
+/* Link taps start this bar at once (NavProgress); it finishes when the page arrives */
+.nav-progress-run {
+  width: 0;
+  animation: nav-progress 8s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes nav-progress {
+  0% { width: 0; }
+  5% { width: 35%; }
+  100% { width: 90%; }
 }
 
 /* iOS Safari zooms the page into any field under 16px when it gets focus, and

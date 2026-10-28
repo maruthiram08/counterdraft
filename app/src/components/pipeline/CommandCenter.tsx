@@ -276,6 +276,8 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
     };
 
     const handleNewDraftClick = async () => {
+        // Open at once; the limit check runs behind it and swaps in the limit notice if needed
+        setIsNewDraftModalOpen(true);
         try {
             const res = await fetch('/api/user/status');
             const data = await res.json();
@@ -285,13 +287,12 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                     usage: data.usage.count,
                     limit: data.usage.limit
                 });
+                setIsNewDraftModalOpen(false);
                 setLimitModalOpen(true);
-                return;
             }
         } catch (e) {
             console.error("Failed to check limit", e);
         }
-        setIsNewDraftModalOpen(true);
     };
 
     const ideas = items.filter(i => i.stage === 'idea');

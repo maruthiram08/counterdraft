@@ -6,7 +6,8 @@ import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as Us
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
+import { useNavigate } from "@/components/shared/NavProgress";
+import { toast } from 'sonner';
 
 interface IntegrationStatus {
     platform: string;
@@ -39,7 +40,7 @@ const PLATFORM_INFO: Record<string, { name: string; description: string; icon: s
 };
 
 export default function SettingsPage() {
-    const router = useRouter();
+    const navigate = useNavigate();
     const [integrations, setIntegrations] = useState<IntegrationStatus[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -73,13 +74,15 @@ export default function SettingsPage() {
     };
 
     const handleDisconnect = async (platform: string) => {
+        const pending = toast.loading('Disconnecting...');
         try {
             const res = await fetch(`/api/${platform}/disconnect`, { method: 'POST' });
-            if (res.ok) {
-                fetchIntegrations();
-            }
+            if (!res.ok) throw new Error(`Disconnect returned ${res.status}`);
+            await fetchIntegrations();
+            toast.success('Disconnected', { id: pending });
         } catch (err) {
             console.error('Failed to disconnect:', err);
+            toast.error("Couldn't disconnect. Please try again.", { id: pending });
         }
     };
 
@@ -109,19 +112,19 @@ export default function SettingsPage() {
                 onNavigate={(section) => {
                     if (section === 'settings') return; // Already here
                     if (section === 'style') {
-                        router.push('/style');
+                        navigate('/style');
                         return;
                     }
                     // Navigate back to workspace with tab
-                    router.push(`/workspace?tab=${section}`);
+                    navigate(`/workspace?tab=${section}`);
                 }}
                 onNewDraft={() => {
                     // Navigate to workspace to open modal
-                    router.push('/workspace?action=new-draft');
+                    navigate('/workspace?action=new-draft');
                 }}
                 onImport={() => {
                     // Navigate to workspace to open import
-                    router.push('/workspace?action=import');
+                    navigate('/workspace?action=import');
                 }}
             />
 
@@ -205,10 +208,10 @@ export default function SettingsPage() {
                 onNavigate={(section) => {
                     if (section === 'settings') return;
                     if (section === 'style') {
-                        router.push('/style');
+                        navigate('/style');
                         return;
                     }
-                    router.push(`/workspace?tab=${section}`);
+                    navigate(`/workspace?tab=${section}`);
                 }}
             />
         </div>

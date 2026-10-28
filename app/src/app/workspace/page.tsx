@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { YourMind } from "@/components/thinking/YourMind";
 import { GenealogyTree } from "@/components/thinking/GenealogyTree";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useNavigate } from "@/components/shared/NavProgress";
 
 export default function WorkspacePage() {
     return (
@@ -39,6 +40,7 @@ export default function WorkspacePage() {
 
 function WorkspaceContent() {
     const router = useRouter();
+    const navigate = useNavigate();
     const searchParams = useSearchParams();
 
     // Support URL-based persistence for sections
@@ -140,12 +142,13 @@ function WorkspaceContent() {
 
     // A published post stays as it went out; reusing it starts a fresh draft with the same text
     const handleDuplicate = async (draft: Draft) => {
+        const pending = toast.loading("Making a new draft...");
         const copy = await saveDraft(draft.belief_text || 'Untitled', draft.content || '');
         if (!copy) {
-            toast.error("Couldn't make a new draft", { description: "You may have hit your draft limit." });
+            toast.error("Couldn't make a new draft", { id: pending, description: "You may have hit your draft limit." });
             return;
         }
-        toast.success("New draft ready", { description: "The published post is unchanged." });
+        toast.success("New draft ready", { id: pending, description: "The published post is unchanged." });
         setPostsTab('drafts');
         selectDraft(copy.id);
     };
@@ -216,9 +219,9 @@ function WorkspaceContent() {
                 activeSection={effectiveSection}
                 onNavigate={(section) => {
                     if (section === 'settings') {
-                        router.push('/settings');
+                        navigate('/settings');
                     } else if (section === 'style') {
-                        router.push('/style');
+                        navigate('/style');
                     } else {
                         if (isSection(section)) {
                             setActiveSection(section);
@@ -506,7 +509,7 @@ function WorkspaceContent() {
                                 const params = new URLSearchParams(searchParams.toString());
                                 params.set('tab', 'drafts');
                                 params.set('draftId', draftId);
-                                router.push(`/workspace?${params.toString()}`);
+                                navigate(`/workspace?${params.toString()}`);
                                 setSelectedDraftId(draftId);
                                 setActiveSection('drafts');
 
@@ -727,11 +730,11 @@ function WorkspaceContent() {
                 activeSection={effectiveSection}
                 onNavigate={(section) => {
                     if (section === 'settings') {
-                        router.push('/settings');
+                        navigate('/settings');
                         return;
                     }
                     if (section === 'style') {
-                        router.push('/style');
+                        navigate('/style');
                         return;
                     }
                     if (isSection(section)) {

@@ -8,7 +8,7 @@ import { PenTool, Wand2, RefreshCw, CheckCircle, XCircle, Plus, X, Save, Edit2, 
 import { toast } from "sonner";
 import { TidyRulesPanel } from "@/components/voice/TidyRulesPanel";
 import { cleanOrigins, MAX_RULES, TidyProposal } from "@/lib/voice/rules";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@/components/shared/NavProgress";
 
 interface VoiceProfile {
     id: string;
@@ -20,7 +20,7 @@ interface VoiceProfile {
 }
 
 export default function StylePage() {
-    const router = useRouter();
+    const navigate = useNavigate();
     const [profile, setProfile] = useState<VoiceProfile | null>(null);
     const [profiles, setProfiles] = useState<VoiceProfile[]>([]); // NEW
     const [loading, setLoading] = useState(true);
@@ -259,12 +259,12 @@ export default function StylePage() {
                 onNavigate={(section) => {
                     if (section === 'style') return;
                     if (section === 'settings') {
-                        router.push('/settings');
+                        navigate('/settings');
                     } else {
-                        router.push(`/workspace?tab=${section}`);
+                        navigate(`/workspace?tab=${section}`);
                     }
                 }}
-                onNewDraft={() => router.push('/workspace?new=true')}
+                onNewDraft={() => navigate('/workspace?new=true')}
                 onImport={() => { }}
             />
 
@@ -562,7 +562,7 @@ export default function StylePage() {
                 activeSection="style"
                 onNavigate={(section) => {
                     if (section === 'style') return;
-                    router.push(`/workspace?tab=${section}`);
+                    navigate(`/workspace?tab=${section}`);
                 }}
             />
 
