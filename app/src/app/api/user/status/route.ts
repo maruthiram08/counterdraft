@@ -4,6 +4,7 @@ import { getOrCreateUser } from '@/lib/user-sync';
 import { UsageService } from '@/lib/billing/usage';
 import { PRICING_CONFIG, Tier } from '@/lib/constants/pricing';
 import { isSubscriptionLive } from '@/lib/billing/plans';
+import { applyApprovedInvite } from '@/lib/billing/invites';
 
 export async function GET() {
     try {
@@ -15,7 +16,7 @@ export async function GET() {
 
         const { data: user, error } = await supabaseAdmin
             .from('users')
-            .select('onboarding_completed, role, context, voice_tone')
+            .select('onboarding_completed, role, context, voice_tone, email')
             .eq('id', userId)
             .single();
 
@@ -25,7 +26,14 @@ export async function GET() {
         }
 
         // Check Limits
-        const limitCheck = await UsageService.checkDraftLimit(userId);
+        let limitCheck = await UsageService.checkDraftLimit(userId);
+
+        // Free account with an approved beta request: apply its invite, wherever they signed up
+        let inviteApplied: string | null = null;
+        if (limitCheck.tier === 'free') {
+            inviteApplied = await applyApprovedInvite(userId, user.email);
+            if (inviteApplied) limitCheck = await UsageService.checkDraftLimit(userId);
+        }
 
         // When the current Pro period ends (for the renewal reminder); null = no end date or not Pro
         const { data: sub } = await supabaseAdmin
@@ -54,7 +62,8 @@ export async function GET() {
                 limit: limitCheck.limit,
                 search_limit: searchLimit,
                 pro_until: proUntil,
-            }
+            },
+            invite_applied: inviteApplied,
         });
     } catch (error) {
         console.error("Status API Error:", error);

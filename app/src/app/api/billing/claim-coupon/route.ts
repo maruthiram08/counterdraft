@@ -1,105 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getOrCreateUser } from '@/lib/user-sync';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
-
+import { claimInvite } from '@/lib/billing/invites';
 
 export async function POST(req: NextRequest) {
     try {
         const userId = await getOrCreateUser();
 
-        // 0. Rate Limiting (Brute force protection)
+        // Brute force protection
         const ip = getClientIp(req);
         const limitResult = rateLimit(`coupon:${userId || ip}`, { windowMs: 15 * 60 * 1000, max: 5 });
         if (!limitResult.allowed) {
-            return NextResponse.json({ error: 'Too many attempts. Please try again in 15 minutes.' }, { status: 429 });
+            return NextResponse.json({ error: 'Too many tries. Wait 15 minutes and try again.', code: 'rate_limited' }, { status: 429 });
         }
 
         if (!userId) {
-            console.error('[ClaimCoupon] Unauthorized: No userId found.');
-            return NextResponse.json({ error: 'Unauthorized (No Session)' }, { status: 401 });
+            return NextResponse.json({ error: 'Sign in first, then use your invite.', code: 'signed_out' }, { status: 401 });
         }
 
-        const body = await req.json();
-        const { code } = body;
-
-        if (!code) {
-            return NextResponse.json({ error: 'Code is required' }, { status: 400 });
+        const { code } = await req.json();
+        if (!code || typeof code !== 'string') {
+            return NextResponse.json({ error: 'Enter an invite code.', code: 'missing' }, { status: 400 });
         }
 
-        // 1. Fetch Coupon (Check validity)
-        const { data: coupon, error: fetchError } = await supabase
-            .from('coupons')
-            .select('*')
-            .eq('code', code)
-            .single();
-
-        if (fetchError || !coupon) {
-            return NextResponse.json({ error: 'Invalid or expired coupon' }, { status: 404 });
+        const result = await claimInvite(userId, code);
+        if (!result.ok) {
+            return NextResponse.json({ error: result.error, code: result.code, period_end: result.periodEnd ?? null }, { status: result.status });
         }
 
-        // 2. Check Expiry
-        if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-            return NextResponse.json({ error: 'Coupon has expired' }, { status: 410 });
-        }
-
-        // 3. Check Usage Limits
-        if (coupon.redemptions_count >= coupon.max_redemptions) {
-            return NextResponse.json({ error: 'Coupon fully redeemed' }, { status: 409 });
-        }
-
-        // 3.5. Discount codes are used at checkout, not claimed for free access
-        if ((coupon.discount_percent ?? 100) < 100) {
-            return NextResponse.json({ error: 'This is a discount code. Use it on the Pricing page.' }, { status: 400 });
-        }
-
-        // 4. ATOMIC REDEMPTION (RPC or Safe Update)
-        // Since we don't have a stored procedure for this specific lock, we rely on the WHERE clause condition.
-        // "Update set count = count + 1 WHERE code = X AND count < max"
-        const { data: updatedCoupon, error: updateError } = await supabase
-            .from('coupons')
-            .update({ redemptions_count: coupon.redemptions_count + 1 })
-            .eq('code', code)
-            .lt('redemptions_count', coupon.max_redemptions) // Atomic Guard
-            .select()
-            .single();
-
-        if (updateError || !updatedCoupon) {
-            return NextResponse.json({ error: 'Coupon redemption failed (Race condition or limit reached)' }, { status: 409 });
-        }
-
-        // 5. Create Subscription
-        // Calculate end date based on plan
-        const { data: plan } = await supabase.from('access_plans').select('*').eq('id', coupon.plan_id).single();
-        if (!plan) throw new Error('Plan not found for coupon');
-
-        const startDate = new Date();
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + (plan.validity_days || 30));
-
-        const { error: subError } = await supabase
-            .from('subscriptions')
-            .upsert({
-                user_id: userId,
-                plan_id: plan.id,
-                status: 'active',
-                source: 'coupon',
-                coupon_code: code,
-                start_date: startDate.toISOString(),
-                current_period_end: endDate.toISOString()
-            });
-
-        if (subError) {
-            console.error('Sub Error:', subError);
-            // ROLLBACK COUPON? Ideally yes, but rare. Manual fix for beta.
-            return NextResponse.json({ error: 'Failed to apply subscription' }, { status: 500 });
-        }
-
-        return NextResponse.json({ success: true, plan: plan });
-
+        return NextResponse.json({ success: true, plan: { id: result.planId, display_name: result.planName }, period_end: result.periodEnd });
     } catch (err: unknown) {
         console.error('Claim error:', err);
-        const message = err instanceof Error ? err.message : 'Internal Server Error';
-        return NextResponse.json({ error: message }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong. Try again in a minute.", code: 'error' }, { status: 500 });
     }
 }

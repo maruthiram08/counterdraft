@@ -15,7 +15,7 @@ export default function UsersClient({ requests, subscriptions, userMap }: { requ
             const { link } = await approveRequest(id);
             // No email provider yet: hand the link over to send by hand
             try { await navigator.clipboard.writeText(link); } catch { /* clipboard blocked */ }
-            prompt('Approved. Send this invite link to them (already copied):', link);
+            prompt('Approved. Email them this link (already copied). If they sign up with the email they requested with, Pro is added by itself even without the link:', link);
         } catch (e: any) { alert(e.message); }
     };
 

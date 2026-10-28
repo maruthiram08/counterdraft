@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { formatInviteDate } from "@/lib/billing/invite-utils";
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
     const { user, isLoaded } = useUser();
@@ -29,6 +30,9 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
                 const res = await fetch('/api/user/status');
                 if (res.ok) {
                     const data = await res.json();
+                    if (data.invite_applied) {
+                        toast.success(`Your invite is on your account. You're on Pro until ${formatInviteDate(data.invite_applied)}.`, { duration: 8000 });
+                    }
                     if (!data.onboarding_completed) {
                         router.push('/onboarding');
                         return;

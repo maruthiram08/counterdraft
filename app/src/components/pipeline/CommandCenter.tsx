@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { CheckCircle, FileText, Lightbulb, Settings, User } from "lucide-react";
+import { CheckCircle, FileText, Lightbulb, Lock, Settings, User } from "lucide-react";
 import { toast } from "sonner";
 import { DevelopmentWizard } from "./DevelopmentWizard";
 import { NewDraftModal } from "./NewDraftModal";
@@ -35,6 +35,7 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
     // Limit State
     const [limitModalOpen, setLimitModalOpen] = useState(false);
     const [limitState, setLimitState] = useState({ tier: 'free', usage: 0, limit: 0 });
+    const [isFreePlan, setIsFreePlan] = useState(false);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -64,6 +65,7 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
         try {
             const res = await fetch('/api/user/status');
             const data = await res.json();
+            setIsFreePlan(data.usage?.tier === 'free' && data.usage?.is_allowed === false);
             // If any field is missing, show banner
             if (data.profile && (!data.profile.role || !data.profile.context || !data.profile.voice_tone)) {
                 setShowProfileBanner(true);
@@ -311,7 +313,35 @@ export function CommandCenter({ onEdit, onDraftCreated, autoOpenItemId, onAutoOp
                     onNewDraft={handleNewDraftClick}
                 />
 
-                {showProfileBanner && (
+                {isFreePlan && (
+                    <div className="p-4 pl-5 bg-ember-50 rounded-tile shadow-raised flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-canvas shadow-raised text-ember-500 rounded-full flex items-center justify-center shrink-0">
+                                <Lock size={16} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-ink">You&apos;re on the free plan</h3>
+                                <p className="text-sm text-ink-soft">Look around as much as you like. Writing drafts needs Pro.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setLimitModalOpen(true)}
+                                className="flex-1 sm:flex-none text-sm font-medium bg-canvas text-ink shadow-raised h-11 px-4 rounded-full hover:text-ember-600 active:shadow-pressed transition-all"
+                            >
+                                I have a code
+                            </button>
+                            <a
+                                href="/pricing"
+                                className="flex-1 sm:flex-none text-sm font-medium bg-ink text-white h-11 px-5 rounded-full hover:bg-ink/90 transition-colors inline-flex items-center justify-center"
+                            >
+                                See plans
+                            </a>
+                        </div>
+                    </div>
+                )}
+
+                {showProfileBanner && !isFreePlan && (
                     <div className="p-4 pl-5 bg-ember-50 rounded-tile shadow-raised flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-ember-500 rounded-full flex items-center justify-center text-white shrink-0">
