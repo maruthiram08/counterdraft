@@ -1,6 +1,6 @@
 
 import { useMemo, useRef, useState } from "react";
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool, Gauge, NotebookPen, AlertCircle, RotateCcw } from "lucide-react";
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool, Gauge, NotebookPen, AlertCircle, RotateCcw, Users } from "lucide-react";
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
@@ -13,16 +13,18 @@ import { PlaceholderNotice } from "@/components/editor/PlaceholderNotice";
 import { findPlaceholders, markPlaceholders, Placeholder } from "@/lib/editor/placeholders";
 import { VariantsPanel } from "@/components/editor/VariantsPanel";
 import { CraftScorePanel } from "@/components/editor/CraftScorePanel";
+import { ReaderPanel } from "@/components/editor/ReaderPanel";
 import { paragraphAt, replaceRange, Span, DraftAnswer } from "@/lib/editor/draft-tools";
 import { findSuggestions, Suggestion } from "@/lib/editor/suggestions";
 import { SuggestionNotice } from "@/components/editor/SuggestionNotice";
 import { DraftNotesPanel } from "@/components/editor/DraftNotesPanel";
 
-type DraftTool = 'notes' | 'craft' | 'openings' | 'preview' | 'rewrite' | 'variants';
+type DraftTool = 'notes' | 'craft' | 'readers' | 'openings' | 'preview' | 'rewrite' | 'variants';
 
 const TOOLS: { key: DraftTool; label: string; Icon: typeof Eye }[] = [
     { key: 'notes', label: 'Your notes', Icon: NotebookPen },
     { key: 'craft', label: 'Craft score', Icon: Gauge },
+    { key: 'readers', label: 'Reader panel', Icon: Users },
     { key: 'openings', label: 'Openings', Icon: Wand2 },
     { key: 'rewrite', label: 'Rewrite paragraph', Icon: PenTool },
     { key: 'variants', label: 'Variants', Icon: Layers },
@@ -280,6 +282,11 @@ export function DraftStep({
                         {tool === 'craft' && (
                             <div className="px-4 py-4 md:px-6 border-b border-line">
                                 <CraftScorePanel content={draftContent} brainMetadata={brainMetadata} onApply={onUpdateDraft} disabled={readOnly} />
+                            </div>
+                        )}
+                        {tool === 'readers' && (
+                            <div className="px-4 py-4 md:px-6 border-b border-line">
+                                <ReaderPanel content={draftContent} brainMetadata={brainMetadata} />
                             </div>
                         )}
                         {tool === 'openings' && (
