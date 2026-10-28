@@ -22,10 +22,15 @@ export async function approveRequest(id: string): Promise<{ code: string; link: 
         });
     if (couponError) throw new Error(couponError.message);
 
-    const { error } = await supabase
+    // invite_code lets the app add Pro by itself when they sign up with this email
+    let { error } = await supabase
         .from('beta_requests')
-        .update({ status: 'approved' })
+        .update({ status: 'approved', invite_code: code })
         .eq('id', id);
+    if (error && /invite_code/.test(error.message)) {
+        // Column not added yet (supabase/migrations/20261028_beta_invite_code.sql): approve without it
+        ({ error } = await supabase.from('beta_requests').update({ status: 'approved' }).eq('id', id));
+    }
 
     if (error) throw new Error(error.message);
     revalidatePath('/users');

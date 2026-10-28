@@ -8,6 +8,8 @@ import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import Link from "next/link";
 import { useNavigate } from "@/components/shared/NavProgress";
 import { toast } from 'sonner';
+import { LimitModal } from '@/components/modal/LimitModal';
+import { formatInviteDate } from '@/lib/billing/invite-utils';
 
 interface IntegrationStatus {
     platform: string;
@@ -460,8 +462,9 @@ function ExtensionSection() {
 }
 
 function UsageSection() {
-    const [usage, setUsage] = useState<{ usage: number; limit: number; tier: string } | null>(null);
+    const [usage, setUsage] = useState<{ usage: number; limit: number | null; tier: string; pro_until?: string | null; pro_source?: string | null } | null>(null);
     const [loading, setLoading] = useState(true);
+    const [codeOpen, setCodeOpen] = useState(false);
 
     useEffect(() => {
         fetch('/api/user/usage')
@@ -479,57 +482,81 @@ function UsageSection() {
     if (loading) return null;
     if (!usage) return null;
 
-    const effectiveLimit = (usage.limit === Infinity || usage.limit === null) ? Infinity : usage.limit;
-    const percent = effectiveLimit === Infinity ? 0 : Math.min(100, (usage.usage / effectiveLimit) * 100);
     const isUnlimited = usage.limit === Infinity || usage.limit === null;
+    const isLocked = !isUnlimited && usage.limit === 0;
+    const percent = isUnlimited || !usage.limit ? 0 : Math.min(100, (usage.usage / usage.limit) * 100);
+    const until = formatInviteDate(usage.pro_until);
 
     return (
         <section className="mb-8">
             <h2 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink mb-1 flex items-center gap-2">
-                <Settings size={20} className="text-ember-500" /> {/* Reusing icon for visual consistency */}
-                Plan & Usage
+                <Settings size={20} className="text-ember-500" />
+                Plan
             </h2>
             <p className="text-sm text-ink-soft mb-6">
-                Your monthly content generation limits.
+                What your account can do, and until when.
             </p>
 
             <div className="bg-surface rounded-card shadow-card p-6 md:p-8">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink capitalize">{usage.tier} Plan</h3>
-                            {usage.tier === 'free' && (
-                                <div className="flex gap-2 items-center">
-                                    <Link
-                                        href="/pricing"
-                                        className="text-xs h-8 px-3 inline-flex items-center rounded-full bg-ember-500 text-white font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
-                                    >
-                                        Upgrade to Pro
-                                    </Link>
-                                </div>
-                            )}
+                {isLocked ? (
+                    <div className="flex flex-col gap-4">
+                        <div>
+                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Free plan</h3>
+                            <p className="text-sm text-ink-soft mt-1">Writing drafts needs Pro. Buy a plan, or use an invite code if someone sent you one.</p>
                         </div>
-                        <p className="text-sm text-ink-muted">
-                            {isUnlimited ? 'Unlimited drafts' : `${usage.limit} drafts per month`}
-                        </p>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-4xl font-medium tracking-[-0.03em] text-ink">
-                            {usage.usage} <span className="text-sm text-ink-muted font-normal">/ {isUnlimited ? '∞' : usage.limit}</span>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Link
+                                href="/pricing"
+                                className="h-11 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all inline-flex items-center justify-center"
+                            >
+                                See plans
+                            </Link>
+                            <button
+                                onClick={() => setCodeOpen(true)}
+                                className="h-11 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                            >
+                                Use an invite code
+                            </button>
                         </div>
-                        <div className="text-xs text-ink-muted">Drafts used</div>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="min-w-0">
+                                <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink capitalize">{usage.tier} plan</h3>
+                                <p className="text-sm text-ink-muted mt-0.5">
+                                    {isUnlimited ? 'Unlimited drafts' : `${usage.limit} drafts a month`}
+                                    {until && <> · until {until}</>}
+                                </p>
+                                {until && usage.pro_source === 'coupon' && (
+                                    <p className="text-xs text-ink-muted mt-1">From your invite. It doesn&apos;t renew by itself.</p>
+                                )}
+                            </div>
+                            <div className="text-right shrink-0">
+                                <div className="text-4xl font-medium tracking-[-0.03em] text-ink">{usage.usage}</div>
+                                <div className="text-xs text-ink-muted">drafts this month</div>
+                            </div>
+                        </div>
 
-                {!isUnlimited && (
-                    <div className="w-full bg-canvas shadow-well rounded-full h-2.5 overflow-hidden">
-                        <div
-                            className={`h-2.5 rounded-full ${percent >= 90 ? 'bg-rose-500' : 'bg-ember-500'}`}
-                            style={{ width: `${percent}%` }}
-                        ></div>
-                    </div>
+                        {!isUnlimited && (
+                            <div className="mt-4 w-full bg-canvas shadow-well rounded-full h-2.5 overflow-hidden">
+                                <div
+                                    className={`h-2.5 rounded-full ${percent >= 90 ? 'bg-rose-500' : 'bg-ember-500'}`}
+                                    style={{ width: `${percent}%` }}
+                                ></div>
+                            </div>
+                        )}
+
+                        {until && (
+                            <Link href="/pricing" className="mt-4 inline-flex h-11 items-center text-sm font-medium text-ember-600 hover:text-ember-700">
+                                See plans to keep Pro after {until}
+                            </Link>
+                        )}
+                    </>
                 )}
             </div>
+
+            <LimitModal isOpen={codeOpen} onClose={() => setCodeOpen(false)} tier={usage.tier} usage={usage.usage} limit={usage.limit ?? 0} />
         </section>
     );
 }

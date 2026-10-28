@@ -13,9 +13,11 @@ export default function InviteFactory() {
     const [formData, setFormData] = useState({
         code: '',
         planId: 'pro_beta_2026',
-        maxUses: 100,
-        discount: 100
+        maxUses: 1,
+        discount: 100,
+        validDays: 14
     });
+    const [copied, setCopied] = useState(false);
 
     const generateRandomCode = () => {
         // 10 random characters (no look-alikes like 0/O, 1/I) so codes can't be guessed
@@ -113,15 +115,31 @@ export default function InviteFactory() {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">Max Redemptions</label>
-                            <input
-                                type="number"
-                                className="w-full p-3 border border-neutral-300 rounded-lg"
-                                value={formData.maxUses}
-                                onChange={e => setFormData({ ...formData, maxUses: parseInt(e.target.value) })}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Max Redemptions <span className="font-normal text-neutral-400">(people)</span></label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    className="w-full p-3 border border-neutral-300 rounded-lg"
+                                    value={formData.maxUses}
+                                    onChange={e => setFormData({ ...formData, maxUses: parseInt(e.target.value) })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Link valid for <span className="font-normal text-neutral-400">(days, 0 = no end)</span></label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    className="w-full p-3 border border-neutral-300 rounded-lg"
+                                    value={formData.validDays}
+                                    onChange={e => setFormData({ ...formData, validDays: parseInt(e.target.value) })}
+                                />
+                            </div>
                         </div>
+                        {formData.discount >= 100 && formData.maxUses > 1 && (
+                            <p className="text-xs text-amber-700 -mt-3">This free invite can be used by {formData.maxUses} people. Anyone the link is forwarded to gets free Pro.</p>
+                        )}
 
                         {error && (
                             <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100">
@@ -136,7 +154,21 @@ export default function InviteFactory() {
                                     <p className="font-bold">Coupon Created!</p>
                                     <p className="font-mono mt-1">{success.code}</p>
                                     {(success.discount_percent ?? 100) >= 100 ? (
-                                        <p className="text-xs mt-2 text-green-600">Free invite. Share this link: <span className="font-mono">counterdraft.com/invite/{success.code}</span></p>
+                                        <div className="mt-2 text-xs text-green-600">
+                                            <p>Free invite{success.max_redemptions === 1 ? ', works once' : `, works ${success.max_redemptions} times`}{success.expires_at ? `, until ${new Date(success.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}. Share this link:</p>
+                                            <div className="mt-1 flex items-center gap-2">
+                                                <span className="font-mono">https://counterdraft.com/invite/{success.code}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        try { await navigator.clipboard.writeText(`https://counterdraft.com/invite/${success.code}`); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard blocked */ }
+                                                    }}
+                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white border border-green-200 text-green-700 hover:bg-green-100"
+                                                >
+                                                    {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied' : 'Copy'}
+                                                </button>
+                                            </div>
+                                        </div>
                                     ) : (
                                         <p className="text-xs mt-2 text-green-600">{success.discount_percent}% off at checkout. Share this link: <span className="font-mono">counterdraft.com/pricing?coupon={success.code}</span>, or the code to type on Pricing.</p>
                                     )}
