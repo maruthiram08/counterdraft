@@ -111,6 +111,8 @@ export function YourMind({ onOpenItem }: YourMindProps) {
     };
 
     const handleWriteAbout = async (beliefData: { id: string; text: string; type: string; tags?: string[]; entities?: string[]; context?: string; urls?: string[] }) => {
+        // Shown on the tap, since saving and opening the pipeline takes a moment
+        const pending = toast.loading('Adding it to your ideas...');
         try {
             const res = await fetch('/api/content/create', {
                 method: 'POST',
@@ -132,7 +134,10 @@ export function YourMind({ onOpenItem }: YourMindProps) {
             if (res.ok) {
                 // Redirect to pipeline (Command Center) where Ideas live
                 window.location.href = `/workspace?tab=pipeline`;
-            } else if (res.status === 403) {
+                return;
+            }
+            toast.dismiss(pending);
+            if (res.status === 403) {
                 const data = await res.json();
                 setLimitState({
                     tier: data.usage?.tier || 'free',
@@ -145,7 +150,7 @@ export function YourMind({ onOpenItem }: YourMindProps) {
             }
         } catch (error) {
             console.error('Error creating draft:', error);
-            toast.error("Network error");
+            toast.error("Network error", { id: pending });
         }
     };
 
@@ -157,8 +162,9 @@ export function YourMind({ onOpenItem }: YourMindProps) {
     };
 
     const handleTurnTensionIntoIdea = async (tensionData: { id: string; tension: string; sideA: string; sideB: string }) => {
+        const pending = toast.loading('Turning it into an idea...');
         try {
-            await fetch('/api/content/create', {
+            const res = await fetch('/api/content/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -168,9 +174,12 @@ export function YourMind({ onOpenItem }: YourMindProps) {
                     sourceId: tensionData.id
                 }),
             });
+            if (!res.ok) throw new Error(`Create returned ${res.status}`);
             setClassifiedTensionIds(prev => new Set([...prev, tensionData.id]));
+            toast.success('Added to your ideas', { id: pending });
         } catch (error) {
             console.error('Error creating draft from tension:', error);
+            toast.error("Couldn't turn it into an idea", { id: pending });
         }
     };
 
