@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getArtifacts, deleteArtifact } from '@/app/brain/actions';
+import { getArtifacts, deleteArtifact, setArtifactKind } from '@/app/brain/actions';
 import { ArtifactCard } from './ArtifactCard';
 import { CaptureIdeasModal } from './CaptureIdeasModal';
 import { ReframeSheet } from './ReframeSheet';
@@ -88,6 +88,22 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
 
     const shown = kindFilter === 'all' ? artifacts : artifacts.filter(a => captureKind(a) === kindFilter);
 
+    // Older captures only have a guessed kind; one tap corrects it and moves the card to that filter
+    const handleChangeKind = async (artifact: Artifact, kind: 'snip' | 'frame') => {
+        const before = artifact.ai_metadata;
+        const patch = (meta: Artifact['ai_metadata']) =>
+            setArtifacts(prev => prev.map(a => a.id === artifact.id ? { ...a, ai_metadata: meta } : a));
+        patch({ ...(before || {}), kind });
+        try {
+            await setArtifactKind(artifact.id, kind);
+            toast.success(`Moved to ${kind === 'frame' ? 'Frames' : 'Snips'}`);
+        } catch (e) {
+            console.error(e);
+            patch(before);
+            toast.error("Couldn't change the type. Try again.");
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm("Delete this snippet?")) return;
         setArtifacts(prev => prev.filter(a => a.id !== id)); // Optimistic
@@ -143,19 +159,24 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
                 )}
             </div>
 
-            {/* Kind filter */}
-            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1" role="tablist" aria-label="Capture type">
-                {KIND_FILTERS.map(f => (
-                    <button
-                        key={f.id}
-                        role="tab"
-                        aria-selected={kindFilter === f.id}
-                        onClick={() => setKindFilter(f.id)}
-                        className={`h-11 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all ${kindFilter === f.id ? 'bg-surface shadow-raised text-ink' : 'bg-canvas text-ink-muted hover:text-ink'}`}
-                    >
-                        {f.label}
-                    </button>
-                ))}
+            {/* Kind filter: flat pills, the chosen one solid */}
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1" role="tablist" aria-label="Capture type">
+                {KIND_FILTERS.map(f => {
+                    const active = kindFilter === f.id;
+                    const count = f.id === 'all' ? artifacts.length : artifacts.filter(a => captureKind(a) === f.id).length;
+                    return (
+                        <button
+                            key={f.id}
+                            role="tab"
+                            aria-selected={active}
+                            onClick={() => setKindFilter(f.id)}
+                            className={`h-11 md:h-10 px-4 shrink-0 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ember-200 ${active ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink hover:bg-surface'}`}
+                        >
+                            {f.label}
+                            {!loading && <span className={`text-xs tabular-nums ${active ? 'text-white/70' : 'text-ink-muted'}`}>{count}</span>}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Grid */}
@@ -193,6 +214,7 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
                                 onDelete={handleDelete}
                                 onFindIdeas={a => setIdeasFor([a])}
                                 onReframe={setReframing}
+                                onChangeKind={handleChangeKind}
                                 selecting={isSelectMode}
                                 selected={selectedIds.has(artifact.id)}
                             />

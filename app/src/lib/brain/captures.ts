@@ -52,12 +52,18 @@ export function isCaptureKind(value: unknown): value is CaptureKind {
 }
 
 // Captures saved before Lens 1.0.3 have no kind: a bookmark is the one with ai_metadata.type 'bookmark'.
-// An older snip and frame can't be told apart, so those stay unlabelled.
-export function captureKind(row: Pick<CaptureRow, 'ai_metadata'>): CaptureKind | undefined {
+// Nothing recorded whether an older image capture was a snip or a frame. A frame copies a whole post or
+// section, a snip is a small box drawn on screen, so long or many-line text is read as a frame.
+// Either guess can be corrected on the card, which saves the kind.
+export const LEGACY_FRAME_CHARS = 300;
+export function captureKind(row: Pick<CaptureRow, 'ai_metadata' | 'ocr_text' | 'image_path'>): CaptureKind | undefined {
     const meta = row.ai_metadata;
     if (isCaptureKind(meta?.kind)) return meta.kind;
     if (meta?.type === 'bookmark') return 'bookmark';
-    return undefined;
+    const text = (row.ocr_text || '').trim();
+    if (!text && !row.image_path) return undefined;
+    const lines = text.split('\n').filter(line => line.trim()).length;
+    return text.length >= LEGACY_FRAME_CHARS || lines >= 4 ? 'frame' : 'snip';
 }
 
 // The column first; a Style capture saved before the database allowed it keeps its intent in ai_metadata

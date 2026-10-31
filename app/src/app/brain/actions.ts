@@ -76,3 +76,28 @@ export async function deleteArtifact(id: string) {
     await Promise.all((deleted || []).map(row => removeCaptureImage(row.image_path)));
     return true;
 }
+
+// Correct whether an image capture is a snip or a frame; older captures only have a guess
+export async function setArtifactKind(id: string, kind: 'snip' | 'frame') {
+    if (kind !== 'snip' && kind !== 'frame') throw new Error('Invalid capture type');
+    const { userId: clerkId } = await auth();
+    if (!clerkId) throw new Error('Unauthorized');
+
+    const userId = await getOrCreateUser();
+    if (!userId) throw new Error('User sync failed');
+
+    const { data: row, error: readError } = await supabase
+        .from('thinking_artifacts')
+        .select('ai_metadata')
+        .match({ id, user_id: userId })
+        .single();
+    if (readError || !row) throw new Error(readError?.message || 'Capture not found');
+
+    const ai_metadata = { ...(row.ai_metadata || {}), kind };
+    const { error } = await supabase
+        .from('thinking_artifacts')
+        .update({ ai_metadata })
+        .match({ id, user_id: userId });
+    if (error) throw new Error(error.message);
+    return ai_metadata;
+}
