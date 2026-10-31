@@ -252,6 +252,19 @@ export default function StylePage() {
         setEditedProfile({ ...editedProfile, [field]: newList });
     };
 
+    // Open edit mode with an empty row ready in one list
+    const startEditAdding = (field: 'rules' | 'anti_patterns') => {
+        if (!profile) return;
+        const copy: VoiceProfile = JSON.parse(JSON.stringify(profile));
+        copy[field] = [...(copy[field] || []), ""];
+        setEditedProfile(copy);
+        setIsEditing(true);
+    };
+
+    const ruleCount = profile?.rules?.length || 0;
+    const antiCount = profile?.anti_patterns?.length || 0;
+    const learnedCount = (profile?.rules || []).filter(r => learnedOn(r)).length;
+
     return (
         <div className="flex h-dvh bg-canvas overflow-hidden">
             <GlobalSidebar
@@ -269,24 +282,22 @@ export default function StylePage() {
             />
 
             <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-y-auto bg-canvas">
-                <div className="max-w-5xl mx-auto w-full px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12">
+                <div className="max-w-[1440px] mx-auto w-full px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12 flex flex-col gap-5">
 
-                    {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
-                        <div>
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 shrink-0 rounded-full bg-canvas shadow-raised text-ember-500 flex items-center justify-center">
-                                    <PenTool size={22} />
-                                </div>
-                                <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink">Your Voice</h1>
-                            </div>
-                            <p className="mt-1 text-sm text-ink-soft max-w-2xl">
-                                Manage the writing style Counterdraft uses to generate your content.
+                    {/* Header: title on the left, voice picker on the right */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+                        <div className="min-w-0">
+                            <h1 className="text-2xl md:text-[32px] md:leading-tight font-medium tracking-[-0.02em] text-ink flex items-center gap-3">
+                                <PenTool size={24} className="text-ember-500 shrink-0" />
+                                Your Voice
+                            </h1>
+                            <p className="mt-1 text-sm text-ink-soft">
+                                How Counterdraft writes as you: your tone, what to do and what to avoid.
                             </p>
                         </div>
 
-                        {/* Profile Selector */}
-                        <div className="flex items-center gap-3 bg-canvas shadow-well rounded-full h-12 px-4">
+                        <label className="flex items-center gap-2 bg-canvas shadow-well rounded-full h-11 md:h-10 pl-4 pr-3 self-start md:self-auto">
+                            <span className="text-xs text-ink-muted shrink-0">Voice</span>
                             <select
                                 value={profile?.id || ""}
                                 onChange={(e) => {
@@ -296,9 +307,10 @@ export default function StylePage() {
                                         handleSwitchProfile(e.target.value);
                                     }
                                 }}
-                                className="bg-transparent text-sm font-medium text-ink outline-none cursor-pointer min-w-[150px]"
+                                className="bg-transparent text-sm font-medium text-ink outline-none cursor-pointer min-w-[140px] max-w-[220px]"
+                                aria-label="Voice profile"
                             >
-                                <option value="" disabled>Select Profile</option>
+                                <option value="" disabled>Select a voice</option>
                                 {profiles.map(p => (
                                     <option key={p.id} value={p.id}>
                                         {p.name || "Untitled Voice"} {p.id === profile?.id ? "(Active)" : ""}
@@ -306,254 +318,202 @@ export default function StylePage() {
                                 ))}
                                 <option value="new">+ Create New Voice</option>
                             </select>
-                        </div>
+                        </label>
                     </div>
 
-                    {/* Create New Modal/Input Area (Inline for now) */}
+                    {/* Create new voice (inline) */}
                     {isCreating && (
-                        <div className="mb-8 bg-surface rounded-card shadow-card p-6 md:p-8 animate-in fade-in slide-in-from-top-4">
-                            <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-4">Create New Voice Profile</h3>
+                        <div className="bg-surface rounded-tile shadow-card p-5 animate-in fade-in slide-in-from-top-4">
+                            <h3 className="text-[17px] font-medium tracking-[-0.01em] text-ink mb-3">Create a new voice</h3>
                             <div className="flex flex-col md:flex-row gap-3">
                                 <input
                                     value={newProfileName}
                                     onChange={(e) => setNewProfileName(e.target.value)}
                                     placeholder="e.g. LinkedIn Professional, Casual Blog..."
-                                    className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
+                                    className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-2.5 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
                                     autoFocus
                                 />
-                                <button
-                                    onClick={handleCreateProfile}
-                                    disabled={!newProfileName.trim()}
-                                    className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
-                                >
-                                    Create Profile
-                                </button>
-                                <button
-                                    onClick={() => setIsCreating(false)}
-                                    className="h-12 px-5 rounded-full text-sm font-medium text-ink-muted hover:text-ink active:shadow-pressed transition-all"
-                                >
-                                    Cancel
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleCreateProfile}
+                                        disabled={!newProfileName.trim()}
+                                        className="flex-1 md:flex-none h-11 md:h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
+                                    >
+                                        Create voice
+                                    </button>
+                                    <button
+                                        onClick={() => setIsCreating(false)}
+                                        className="h-11 md:h-10 px-4 rounded-full text-sm font-medium text-ink-muted hover:text-ink active:shadow-pressed transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Action Bar */}
-                    <div className="flex flex-wrap justify-end gap-2.5 mb-8">
-                        {isEditing ? (
-                            <>
-                                <button
-                                    onClick={handleCancelEdit}
-                                    disabled={saving}
-                                    className="h-12 px-5 rounded-full text-sm font-medium text-ink-soft hover:text-ink active:shadow-pressed transition-all disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    className="flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
-                                >
-                                    {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-                                    Save Changes
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                {profile && (
-                                    <>
-                                        <button
-                                            onClick={handleDelete}
-                                            className="w-12 h-12 rounded-full flex items-center justify-center bg-canvas shadow-raised text-rose-500 hover:text-rose-700 active:shadow-pressed transition-all"
-                                            title="Delete this profile"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                        <div className="w-px bg-line mx-1"></div>
-                                        {(profile.rules?.length || 0) + (profile.anti_patterns?.length || 0) >= 2 && (
-                                            <button
-                                                onClick={handleTidy}
-                                                disabled={tidying}
-                                                className="flex items-center gap-2 h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
-                                                title="Merge repeated rules and find ones that contradict each other"
-                                            >
-                                                {tidying ? <RefreshCw size={16} className="animate-spin text-ember-500" /> : <Sparkles size={16} className="text-ember-500" />}
-                                                Tidy up
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={handleStartEdit}
-                                            className="flex items-center gap-2 h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
-                                        >
-                                            <Edit2 size={16} className="text-ember-500" />
-                                            Manual Edit
-                                        </button>
-                                    </>
-                                )}
-                                <button
-                                    onClick={() => setIsAnalysisOpen(true)}
-                                    className="flex items-center gap-2 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
-                                >
-                                    <Wand2 size={16} />
-                                    {profile ? 'Re-analyze Samples' : 'Analyze My Style'}
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    {tidy && profile && !isEditing && (
-                        <TidyRulesPanel
-                            proposal={tidy}
-                            before={{ rules: profile.rules?.length || 0, anti_patterns: profile.anti_patterns?.length || 0 }}
-                            saving={saving}
-                            onApply={handleApplyTidy}
-                            onCancel={() => setTidy(null)}
-                        />
-                    )}
-
-                    {/* Content Area */}
                     {loading ? (
                         <div className="flex items-center justify-center py-20 text-ink-muted">
                             <RefreshCw size={24} className="animate-spin mr-3" />
                             Loading profile...
                         </div>
                     ) : !profile ? (
-                        <div className="text-center py-20 px-6 bg-surface rounded-card shadow-card">
-                            <PenTool size={48} className="mx-auto text-ember-200 mb-6" />
-                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">No Voice Profile Selected</h2>
-                            <p className="text-ink-soft mb-8 max-w-md mx-auto">
-                                Create a new profile or select one from the list to get started.
+                        <div className="text-center py-16 px-6 bg-surface rounded-card shadow-card">
+                            <PenTool size={40} className="mx-auto text-ember-200 mb-5" />
+                            <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">No voice yet</h2>
+                            <p className="text-sm text-ink-soft mb-6 max-w-md mx-auto">
+                                Analyze a few of your posts so Counterdraft learns how you write, or create an empty voice and add rules yourself.
                             </p>
-                            <button
-                                onClick={() => setIsCreating(true)}
-                                className="h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
-                            >
-                                Create New Profile
-                            </button>
+                            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                                <button
+                                    onClick={() => setIsAnalysisOpen(true)}
+                                    className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                                >
+                                    <Wand2 size={16} />
+                                    Analyze my style
+                                </button>
+                                <button
+                                    onClick={() => setIsCreating(true)}
+                                    className="h-11 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                                >
+                                    Create empty voice
+                                </button>
+                            </div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up">
-                            {/* Tone Card */}
-                            <div className="col-span-1 lg:col-span-3 bg-surface rounded-card shadow-card p-6 md:p-8 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 text-ember-500 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <PenTool size={120} />
-                                </div>
-                                <h3 className="text-sm text-ink-muted mb-4">Voice Tone</h3>
-                                {isEditing && editedProfile ? (
-                                    <input
-                                        type="text"
-                                        value={editedProfile.voice_tone}
-                                        onChange={(e) => setEditedProfile({ ...editedProfile, voice_tone: e.target.value })}
-                                        className="text-4xl md:text-5xl font-medium tracking-[-0.03em] w-full bg-canvas shadow-well rounded-2xl px-4 py-3 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
-                                        placeholder="e.g. Direct, Cynical, Warm"
-                                    />
-                                ) : (
-                                    <div className="text-4xl md:text-5xl font-medium tracking-[-0.03em] text-ink leading-tight">
-                                        {profile.voice_tone || "Neutral"}
+                        <>
+                            {/* Summary strip: tone + counts + actions, one slim row */}
+                            <div className="bg-surface rounded-tile shadow-card p-4 md:px-5 flex flex-col lg:flex-row lg:items-center gap-4 animate-fade-in-up">
+                                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-x-5 gap-y-3">
+                                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                                        <span className="text-sm text-ink-muted shrink-0">Tone</span>
+                                        {isEditing && editedProfile ? (
+                                            <input
+                                                type="text"
+                                                value={editedProfile.voice_tone}
+                                                onChange={(e) => setEditedProfile({ ...editedProfile, voice_tone: e.target.value })}
+                                                className="flex-1 min-w-[200px] h-10 bg-canvas shadow-well rounded-full px-4 text-sm text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200"
+                                                placeholder="e.g. Direct, Cynical, Warm"
+                                            />
+                                        ) : (
+                                            toneChips(profile.voice_tone).map(t => (
+                                                <span key={t} className="h-7 px-3 inline-flex items-center rounded-full bg-ember-100 text-ember-700 text-xs font-medium">
+                                                    {t}
+                                                </span>
+                                            ))
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                    {!isEditing && (
+                                        <p className="text-xs text-ink-muted sm:border-l sm:border-line sm:pl-5">
+                                            {ruleCount} {ruleCount === 1 ? 'do' : "do's"} · {antiCount} {antiCount === 1 ? "don't" : "don'ts"}
+                                            {learnedCount > 0 && <> · {learnedCount} learned from your edits</>}
+                                        </p>
+                                    )}
+                                </div>
 
-                            {/* Rules Card */}
-                            <div className="bg-surface rounded-card shadow-card p-6 md:p-8 flex flex-col">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center">
-                                        <CheckCircle size={20} />
-                                    </div>
-                                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Do&apos;s (Rules)</h3>
-                                </div>
-                                {(profile.rules?.length || 0) >= MAX_RULES - 2 && (
-                                    <p className="-mt-3 mb-4 text-xs text-ink-muted">{profile.rules.length} of {MAX_RULES}. New rules learned from your edits replace the oldest learned ones.</p>
-                                )}
-                                <div className="space-y-4 flex-1">
-                                    {isEditing && editedProfile ? (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {isEditing ? (
                                         <>
-                                            {editedProfile.rules.map((rule, i) => (
-                                                <div key={i} className="flex gap-2">
-                                                    <input
-                                                        value={rule}
-                                                        onChange={(e) => updateList('rules', i, e.target.value)}
-                                                        className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-2.5 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm"
-                                                        placeholder="Add a rule..."
-                                                    />
-                                                    <button onClick={() => removeListItem('rules', i)} className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-500 active:shadow-pressed">
-                                                        <X size={16} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <button onClick={() => addListItem('rules')} className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas shadow-raised text-sm font-medium text-ink hover:text-ember-600 active:shadow-pressed transition-all mt-2">
-                                                <Plus size={14} /> Add Rule
+                                            <button
+                                                onClick={handleCancelEdit}
+                                                disabled={saving}
+                                                className="h-11 md:h-10 px-4 rounded-full text-sm font-medium text-ink-soft hover:text-ink active:shadow-pressed transition-all disabled:opacity-50"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleSave}
+                                                disabled={saving}
+                                                className="flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
+                                            >
+                                                {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                                                Save changes
                                             </button>
                                         </>
                                     ) : (
-                                        <ul className="space-y-4">
-                                            {profile.rules && profile.rules.length > 0 ? (
-                                                profile.rules.map((rule, i) => (
-                                                    <li key={i} className="flex gap-3 text-ink-soft text-sm leading-relaxed">
-                                                        <span className="text-sage-500 font-medium">•</span>
-                                                        <span>
-                                                            {rule}
-                                                            {learnedOn(rule) && (
-                                                                <span className="block text-xs text-ink-muted" title={ruleOrigins[rule]?.why}>
-                                                                    Learned from your edits, {learnedOn(rule)}
-                                                                </span>
-                                                            )}
-                                                        </span>
-                                                    </li>
-                                                ))
-                                            ) : (
-                                                <li className="text-ink-muted italic text-sm">No specific rules defined.</li>
+                                        <>
+                                            <button
+                                                onClick={handleDelete}
+                                                className="w-11 h-11 md:w-10 md:h-10 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-600 hover:bg-rose-100 active:shadow-pressed transition-all"
+                                                title="Delete this voice"
+                                                aria-label="Delete this voice"
+                                            >
+                                                <Trash2 size={17} />
+                                            </button>
+                                            {ruleCount + antiCount >= 2 && (
+                                                <button
+                                                    onClick={handleTidy}
+                                                    disabled={tidying}
+                                                    className="flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                                                    title="Merge repeated rules and find ones that contradict each other"
+                                                >
+                                                    {tidying ? <RefreshCw size={15} className="animate-spin text-ember-500" /> : <Sparkles size={15} className="text-ember-500" />}
+                                                    Tidy up
+                                                </button>
                                             )}
-                                        </ul>
+                                            <button
+                                                onClick={handleStartEdit}
+                                                className="flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                                            >
+                                                <Edit2 size={15} className="text-ember-500" />
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => setIsAnalysisOpen(true)}
+                                                className="w-full sm:w-auto justify-center flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                                            >
+                                                <Wand2 size={15} />
+                                                Re-analyze
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Anti-Patterns Card */}
-                            <div className="bg-surface rounded-card shadow-card p-6 md:p-8 flex flex-col">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center">
-                                        <XCircle size={20} />
-                                    </div>
-                                    <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Don&apos;ts (Anti-Patterns)</h3>
-                                </div>
-                                <div className="space-y-4 flex-1">
-                                    {isEditing && editedProfile ? (
-                                        <>
-                                            {editedProfile.anti_patterns.map((pattern, i) => (
-                                                <div key={i} className="flex gap-2">
-                                                    <input
-                                                        value={pattern}
-                                                        onChange={(e) => updateList('anti_patterns', i, e.target.value)}
-                                                        className="flex-1 bg-canvas shadow-well rounded-2xl px-4 py-2.5 text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm"
-                                                        placeholder="Add an anti-pattern..."
-                                                    />
-                                                    <button onClick={() => removeListItem('anti_patterns', i)} className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-500 active:shadow-pressed">
-                                                        <X size={16} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <button onClick={() => addListItem('anti_patterns')} className="flex items-center gap-2 h-10 px-4 rounded-full bg-canvas shadow-raised text-sm font-medium text-ink hover:text-rose-700 active:shadow-pressed transition-all mt-2">
-                                                <Plus size={14} /> Add Anti-Pattern
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <ul className="space-y-4">
-                                            {profile.anti_patterns && profile.anti_patterns.length > 0 ? (
-                                                profile.anti_patterns.map((pattern, i) => (
-                                                    <li key={i} className="flex gap-3 text-ink-soft text-sm leading-relaxed">
-                                                        <span className="text-rose-500 font-medium">×</span>
-                                                        {pattern}
-                                                    </li>
-                                                ))
-                                            ) : (
-                                                <li className="text-ink-muted italic text-sm">No anti-patterns defined.</li>
-                                            )}
-                                        </ul>
-                                    )}
-                                </div>
+                            {tidy && !isEditing && (
+                                <TidyRulesPanel
+                                    proposal={tidy}
+                                    before={{ rules: ruleCount, anti_patterns: antiCount }}
+                                    saving={saving}
+                                    onApply={handleApplyTidy}
+                                    onCancel={() => setTidy(null)}
+                                />
+                            )}
+
+                            {/* Do's and Don'ts side by side, filling the width */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start animate-fade-in-up">
+                                <RuleCard
+                                    tone="do"
+                                    title="Do's"
+                                    hint="Rules Counterdraft follows when it writes as you."
+                                    items={profile.rules || []}
+                                    note={ruleCount >= MAX_RULES - 2 ? `${ruleCount} of ${MAX_RULES}. New rules learned from your edits replace the oldest learned ones.` : undefined}
+                                    editing={isEditing && !!editedProfile}
+                                    editItems={editedProfile?.rules || []}
+                                    onChange={(i, v) => updateList('rules', i, v)}
+                                    onRemove={(i) => removeListItem('rules', i)}
+                                    onAdd={() => addListItem('rules')}
+                                    onStartAdd={() => startEditAdding('rules')}
+                                    addLabel="Add a do"
+                                    emptyText="No rules yet."
+                                    meta={(rule) => learnedOn(rule) ? { text: `Learned from your edits, ${learnedOn(rule)}`, title: ruleOrigins[rule]?.why } : null}
+                                />
+                                <RuleCard
+                                    tone="dont"
+                                    title="Don'ts"
+                                    hint="Things Counterdraft avoids in your drafts."
+                                    items={profile.anti_patterns || []}
+                                    editing={isEditing && !!editedProfile}
+                                    editItems={editedProfile?.anti_patterns || []}
+                                    onChange={(i, v) => updateList('anti_patterns', i, v)}
+                                    onRemove={(i) => removeListItem('anti_patterns', i)}
+                                    onAdd={() => addListItem('anti_patterns')}
+                                    onStartAdd={() => startEditAdding('anti_patterns')}
+                                    addLabel="Add a don't"
+                                    emptyText="Nothing to avoid yet. Add phrases or habits you never want in your posts, like hashtags or 'In today's fast-paced world'."
+                                />
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
             </main>
@@ -572,5 +532,112 @@ export default function StylePage() {
                 onComplete={handleAnalysisComplete}
             />
         </div>
+    );
+}
+
+// "Direct, warm and a bit cynical" -> ["Direct", "warm", "a bit cynical"]
+function toneChips(tone: string | undefined): string[] {
+    const parts = (tone || '')
+        .split(/,|;|\/|\band\b|&/i)
+        .map(t => t.trim())
+        .filter(Boolean);
+    const unique = Array.from(new Set(parts)).slice(0, 6);
+    return unique.length ? unique.map(t => t[0].toUpperCase() + t.slice(1)) : ['Neutral'];
+}
+
+interface RuleCardProps {
+    tone: 'do' | 'dont';
+    title: string;
+    hint: string;
+    items: string[];
+    note?: string;
+    editing: boolean;
+    editItems: string[];
+    onChange: (index: number, value: string) => void;
+    onRemove: (index: number) => void;
+    onAdd: () => void;
+    onStartAdd: () => void;
+    addLabel: string;
+    emptyText: string;
+    meta?: (item: string) => { text: string; title?: string } | null;
+}
+
+function RuleCard({ tone, title, hint, items, note, editing, editItems, onChange, onRemove, onAdd, onStartAdd, addLabel, emptyText, meta }: RuleCardProps) {
+    const isDo = tone === 'do';
+    const Icon = isDo ? CheckCircle : XCircle;
+    const count = editing ? editItems.length : items.length;
+    return (
+        <section className="bg-surface rounded-card shadow-card p-5 md:p-6">
+            <div className="flex items-start gap-3">
+                <div className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center ${isDo ? 'bg-sage-100 text-sage-700' : 'bg-rose-100 text-rose-700'}`}>
+                    <Icon size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-medium tracking-[-0.02em] text-ink">{title}</h2>
+                        <span className="min-w-6 h-6 px-2 inline-flex items-center justify-center rounded-full bg-canvas shadow-well text-xs font-medium text-ink-soft">{count}</span>
+                    </div>
+                    <p className="mt-0.5 text-sm text-ink-muted">{hint}</p>
+                </div>
+            </div>
+            {note && !editing && <p className="mt-3 text-xs text-ink-muted">{note}</p>}
+
+            {editing ? (
+                <div className="mt-4 space-y-2">
+                    {editItems.map((item, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                            <textarea
+                                rows={1}
+                                value={item}
+                                onChange={(e) => onChange(i, e.target.value)}
+                                className="flex-1 min-w-0 resize-none [field-sizing:content] bg-canvas shadow-well rounded-2xl px-4 py-2.5 leading-relaxed text-ink placeholder:text-ink-muted border-0 focus:outline-none focus:ring-2 focus:ring-ember-200 text-sm"
+                                placeholder={isDo ? 'Add a rule...' : 'Add something to avoid...'}
+                                autoFocus={item === '' && i === editItems.length - 1}
+                            />
+                            <button
+                                onClick={() => onRemove(i)}
+                                className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-500 active:shadow-pressed"
+                                aria-label="Remove"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                    ))}
+                    <button
+                        onClick={onAdd}
+                        className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas shadow-raised text-sm font-medium text-ink hover:text-ember-600 active:shadow-pressed transition-all"
+                    >
+                        <Plus size={14} /> {addLabel}
+                    </button>
+                </div>
+            ) : items.length > 0 ? (
+                <ul className="mt-3 divide-y divide-line">
+                    {items.map((item, i) => {
+                        const m = meta?.(item);
+                        return (
+                            <li key={i} className="flex gap-3 py-3 last:pb-0 text-sm leading-relaxed text-ink-soft">
+                                <span className={`mt-[7px] w-1.5 h-1.5 shrink-0 rounded-full ${isDo ? 'bg-sage-500' : 'bg-rose-500'}`} />
+                                <span className="min-w-0">
+                                    {item}
+                                    {m && (
+                                        <span className="block text-xs text-ink-muted" title={m.title}>{m.text}</span>
+                                    )}
+                                </span>
+                            </li>
+                        );
+                    })}
+                </ul>
+            ) : (
+                <div className="mt-4 rounded-tile bg-surface-muted p-4">
+                    <p className="text-sm text-ink-soft">{emptyText}</p>
+                    <button
+                        onClick={onStartAdd}
+                        className="mt-3 flex items-center gap-1.5 h-10 px-4 rounded-full bg-canvas shadow-raised text-sm font-medium text-ink hover:text-ember-600 active:shadow-pressed transition-all"
+                    >
+                        <Plus size={14} /> {addLabel}
+                    </button>
+                </div>
+            )}
+        </section>
     );
 }
