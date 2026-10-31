@@ -38,6 +38,14 @@ export default function WorkspacePage() {
     );
 }
 
+// The draft the sidebar lists first: top-level drafts, latest edit first
+function firstOpenDraft<T extends { id: string; status?: string; updated_at: string | Date; labels?: { parentId?: string } | null }>(drafts: T[]): T | undefined {
+    const open = drafts.filter(d => d.status === 'draft');
+    return open
+        .filter(d => !d.labels?.parentId || !open.some(p => p.id === d.labels?.parentId))
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
+}
+
 function WorkspaceContent() {
     const router = useRouter();
     const navigate = useNavigate();
@@ -62,10 +70,18 @@ function WorkspaceContent() {
     const [classifiedTensionIds, setClassifiedTensionIds] = useState<Set<string>>(new Set());
     const { drafts, loading: draftsLoading, updateDraft, saveDraft, markPosted, moveBackToDrafts, refetch } = useDrafts();
     const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
-    const activeDraftId = urlDraftId ?? selectedDraftId;
-    const selectedDraft = drafts.find(d => d.id === activeDraftId) || null;
     const [postsTab, setPostsTab] = useState<'drafts' | 'published'>('drafts');
     const effectiveSection: Section = urlDraftId ? 'drafts' : (isSection(urlTab) ? urlTab : activeSection);
+    // Mobile detection for responsive layouts
+    const [isMobile, setIsMobile] = useState(false);
+    // On a wide screen the Drafts tab opens the first draft in the list instead of an empty editor.
+    // Phones keep the list first, since there the editor covers it.
+    const pickedDraftId = selectedDraftId && drafts.some(d => d.id === selectedDraftId) ? selectedDraftId : null;
+    const firstDraftId = !isMobile && effectiveSection === 'drafts' && postsTab === 'drafts' && !urlDraftId && !pickedDraftId
+        ? firstOpenDraft(drafts)?.id ?? null
+        : null;
+    const activeDraftId = urlDraftId ?? pickedDraftId ?? firstDraftId;
+    const selectedDraft = drafts.find(d => d.id === activeDraftId) || null;
     const effectivePostsTab = selectedDraft?.status === 'published' ? 'published' : postsTab;
 
     // Handle Deep Linking
@@ -167,9 +183,6 @@ function WorkspaceContent() {
 
     // Auto-navigation state
     const [autoNavToWizardId, setAutoNavToWizardId] = useState<string | undefined>(undefined);
-
-    // Mobile detection for responsive layouts
-    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);

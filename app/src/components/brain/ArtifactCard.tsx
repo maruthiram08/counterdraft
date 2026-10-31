@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Trash2, Lightbulb, Copy, Check, MessageSquareQuote, ChevronDown } from 'lucide-react';
+import { ExternalLink, Trash2, Lightbulb, Copy, Check, MessageSquareQuote, ChevronDown, ArrowLeftRight } from 'lucide-react';
 import { useState } from 'react';
 import type { Artifact } from '@/types';
 import { captureAuthor, captureIntent, captureKind } from '@/lib/brain/captures';
@@ -16,6 +16,8 @@ interface ArtifactCardProps {
     onDelete: (id: string) => void;
     onFindIdeas: (artifact: Artifact) => void;
     onReframe: (artifact: Artifact) => void;
+    // Swap an image capture between snip and frame
+    onChangeKind?: (artifact: Artifact, kind: 'snip' | 'frame') => void;
     // Picking several for Find ideas: the whole card is the tap target and its own buttons step aside
     selecting?: boolean;
     selected?: boolean;
@@ -24,7 +26,7 @@ interface ArtifactCardProps {
 // Past this, the text is clamped and "Show all" opens it in place
 const LONG_TEXT = 320;
 
-export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, selecting, selected }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onChangeKind, selecting, selected }: ArtifactCardProps) {
     const kind = captureKind(artifact);
     const author = captureAuthor(artifact);
     const reframable = canReframe(artifact);
@@ -144,7 +146,17 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, selec
             {/* Footer: what it is, then what to do with it */}
             <div className="px-5 pb-5 pt-3 flex flex-col gap-3 mt-auto">
                 <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                    {kind && (
+                    {kind && kind !== 'bookmark' && onChangeKind && !selecting ? (
+                        <button
+                            onClick={() => onChangeKind(artifact, kind === 'frame' ? 'snip' : 'frame')}
+                            title={`Wrong type? Mark it as a ${kind === 'frame' ? 'snip' : 'frame'}`}
+                            aria-label={`${KIND_LABELS[kind]}. Mark it as a ${kind === 'frame' ? 'snip' : 'frame'} instead`}
+                            className="group/kind inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium bg-canvas shadow-well text-ink-soft hover:text-ink transition-colors"
+                        >
+                            {KIND_LABELS[kind]}
+                            <ArrowLeftRight size={11} className="text-ink-muted group-hover/kind:text-ember-600" />
+                        </button>
+                    ) : kind && (
                         <span className="inline-block h-7 leading-7 px-3 rounded-full text-xs font-medium bg-canvas shadow-well text-ink-soft">
                             {KIND_LABELS[kind]}
                         </span>

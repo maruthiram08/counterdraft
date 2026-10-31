@@ -22,6 +22,16 @@ describe('captures', () => {
         expect(captureKind({ ai_metadata: {} })).toBeUndefined();
     });
 
+    it('guesses snip or frame for image captures saved before Lens recorded the kind', () => {
+        const article = 'Every policy issue we researched led back to disconnection. '.repeat(10);
+        expect(captureKind({ ai_metadata: { key_insight: 'x' }, ocr_text: article })).toBe('frame');
+        expect(captureKind({ ai_metadata: {}, ocr_text: 'one\ntwo\nthree\nfour' })).toBe('frame');
+        expect(captureKind({ ai_metadata: {}, ocr_text: 'A short quote' })).toBe('snip');
+        expect(captureKind({ ai_metadata: {}, image_path: 'u/1.png' })).toBe('snip');
+        // A saved kind always wins over the guess
+        expect(captureKind({ ai_metadata: { kind: 'snip' }, ocr_text: article })).toBe('snip');
+    });
+
     it('turns a capture into a source that keeps its text, note and intent', () => {
         const source = captureToSource(frame);
         expect(source).toMatchObject({
