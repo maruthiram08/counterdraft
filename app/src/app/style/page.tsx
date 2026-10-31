@@ -402,6 +402,16 @@ export default function StylePage() {
                                                 </span>
                                             ))
                                         )}
+                                        {!isEditing && (
+                                            <button
+                                                onClick={handleDelete}
+                                                className="lg:hidden ml-auto w-11 h-11 -my-2 -mr-2 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-600 active:shadow-pressed transition-all"
+                                                title="Delete this voice"
+                                                aria-label="Delete this voice"
+                                            >
+                                                <Trash2 size={17} />
+                                            </button>
+                                        )}
                                     </div>
                                     {!isEditing && (
                                         <p className="text-xs text-ink-muted sm:border-l sm:border-line sm:pl-5">
@@ -411,20 +421,20 @@ export default function StylePage() {
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex items-center gap-2">
                                     {isEditing ? (
                                         <>
                                             <button
                                                 onClick={handleCancelEdit}
                                                 disabled={saving}
-                                                className="h-11 md:h-10 px-4 rounded-full text-sm font-medium text-ink-soft hover:text-ink active:shadow-pressed transition-all disabled:opacity-50"
+                                                className="flex-1 lg:flex-none h-11 md:h-10 px-4 rounded-full text-sm font-medium text-ink-soft hover:text-ink active:shadow-pressed transition-all disabled:opacity-50"
                                             >
                                                 Cancel
                                             </button>
                                             <button
                                                 onClick={handleSave}
                                                 disabled={saving}
-                                                className="flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
+                                                className="flex-1 lg:flex-none justify-center flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                                             >
                                                 {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
                                                 Save changes
@@ -434,7 +444,7 @@ export default function StylePage() {
                                         <>
                                             <button
                                                 onClick={handleDelete}
-                                                className="w-11 h-11 md:w-10 md:h-10 rounded-full flex items-center justify-center text-ink-muted hover:text-rose-600 hover:bg-rose-100 active:shadow-pressed transition-all"
+                                                className="hidden lg:flex w-10 h-10 rounded-full items-center justify-center text-ink-muted hover:text-rose-600 hover:bg-rose-100 active:shadow-pressed transition-all"
                                                 title="Delete this voice"
                                                 aria-label="Delete this voice"
                                             >
@@ -444,25 +454,25 @@ export default function StylePage() {
                                                 <button
                                                     onClick={handleTidy}
                                                     disabled={tidying}
-                                                    className="flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                                                    className="flex-1 lg:flex-none justify-center flex items-center gap-1.5 whitespace-nowrap h-11 md:h-10 px-3 lg:px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                                                     title="Merge repeated rules and find ones that contradict each other"
                                                 >
-                                                    {tidying ? <RefreshCw size={15} className="animate-spin text-ember-500" /> : <Sparkles size={15} className="text-ember-500" />}
+                                                    {tidying ? <RefreshCw size={15} className="animate-spin text-ember-500" /> : <Sparkles size={15} className="hidden sm:block text-ember-500" />}
                                                     Tidy up
                                                 </button>
                                             )}
                                             <button
                                                 onClick={handleStartEdit}
-                                                className="flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
+                                                className="flex-1 lg:flex-none justify-center flex items-center gap-1.5 whitespace-nowrap h-11 md:h-10 px-3 lg:px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all"
                                             >
-                                                <Edit2 size={15} className="text-ember-500" />
+                                                <Edit2 size={15} className="hidden sm:block text-ember-500" />
                                                 Edit
                                             </button>
                                             <button
                                                 onClick={() => setIsAnalysisOpen(true)}
-                                                className="w-full sm:w-auto justify-center flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
+                                                className="flex-1 lg:flex-none justify-center flex items-center gap-1.5 whitespace-nowrap h-11 md:h-10 px-3 lg:px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all"
                                             >
-                                                <Wand2 size={15} />
+                                                <Wand2 size={15} className="hidden sm:block" />
                                                 Re-analyze
                                             </button>
                                         </>
