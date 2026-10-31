@@ -427,7 +427,12 @@ describe('ExploreWorkspace', () => {
         render(<ExploreWorkspace />);
         search('ai tutors');
 
-        expect(await screen.findByText('Schools are restricting chatbots')).toBeInTheDocument();
+        // The takes fold away so the stories come first
+        const takesToggle = await screen.findByRole('button', { name: /The takes so far/ });
+        expect(takesToggle).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByText('Schools are restricting chatbots')).not.toBeInTheDocument();
+        fireEvent.click(takesToggle);
+        expect(screen.getByText('Schools are restricting chatbots')).toBeInTheDocument();
         expect(screen.getByText('2 stories')).toBeInTheDocument();
         const debateCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/debate');
         expect(JSON.parse(debateCall[1].body).stories).toHaveLength(3);
@@ -439,6 +444,39 @@ describe('ExploreWorkspace', () => {
         await within(details).findByText('Docs beat meetings');
         const ideasCall = (global.fetch as jest.Mock).mock.calls.find(([url]) => url === '/api/explore/ideas');
         expect(JSON.parse(ideasCall[1].body).context).toBe('ai tutors. The angle to take, which the coverage is missing: Nobody asks what teachers stop doing');
+    });
+
+        it('shows every story behind a take when it is picked', async () => {
+        feeds['ai tutors'] = {
+            feed: [story('Schools ban chatbots'), story('AI tutor lifts maths scores'), story('Districts restrict AI')],
+            related: [],
+        };
+        const base = global.fetch as jest.Mock;
+        global.fetch = jest.fn((url: string, init?: RequestInit) => {
+            if (url === '/api/explore/debate') {
+                return Promise.resolve({ ok: true, json: () => Promise.resolve({ debate: {
+                    takes: [{ take: 'Schools are restricting chatbots', stories: [0, 2] }, { take: 'AI tutors raise scores', stories: [1] }],
+                    gap: null,
+                } }) });
+            }
+            return base(url, init);
+        }) as unknown as typeof fetch;
+
+        render(<ExploreWorkspace />);
+        search('ai tutors');
+
+        fireEvent.click(await screen.findByRole('button', { name: /The takes so far/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Schools are restricting chatbots/ }));
+
+        const list = screen.getByRole('region', { name: 'Stories' });
+        expect(within(list).getByText('2 stories say')).toBeInTheDocument();
+        expect(within(list).getByRole('button', { name: /Schools ban chatbots/ })).toBeInTheDocument();
+        expect(within(list).getByRole('button', { name: /Districts restrict AI/ })).toBeInTheDocument();
+        expect(within(list).queryByRole('button', { name: /AI tutor lifts maths scores/ })).not.toBeInTheDocument();
+        expect(within(screen.getByRole('region', { name: 'Story details' })).getByRole('heading', { name: 'Schools ban chatbots' })).toBeInTheDocument();
+
+        fireEvent.click(within(list).getByRole('button', { name: 'Show all 3' }));
+        expect(within(list).getByRole('button', { name: /AI tutor lifts maths scores/ })).toBeInTheDocument();
     });
 
         it('restores the exploration after a remount and starts over with New', async () => {
