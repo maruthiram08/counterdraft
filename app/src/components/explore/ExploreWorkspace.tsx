@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
     Search, Loader2, ExternalLink, Lightbulb, Check, X,
-    ChevronRight, ChevronLeft, RotateCcw, Layers, Bookmark, ThumbsUp, ThumbsDown,
+    ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Layers, Bookmark, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { CompassIcon, RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
@@ -298,6 +298,9 @@ export function ExploreWorkspace() {
     const [ideaPrefs, setIdeaPrefs] = useState<{ stance: Stance; platform: Platform }>({ stance: 'any', platform: 'linkedin' });
     const [chatInput, setChatInput] = useState("");
     const [surprisesSeen, setSurprisesSeen] = useState<string[]>([]);
+    // "The takes so far" folds away so the stories come first; picking a take narrows the list to its stories
+    const [takesOpen, setTakesOpen] = useState(false);
+    const [takeFilter, setTakeFilter] = useState<number | null>(null);
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     // "For you" is filled from the writer's profile and only shows once it has topics
@@ -320,6 +323,23 @@ export function ExploreWorkspace() {
     const showingCombined = focusKey === COMBINED_KEY && selectedStories.length >= 2;
     const showingGap = focusKey === GAP_KEY && Boolean(step?.debate?.gap);
     const showingFollowUp = focusKey === FOLLOW_UP_KEY && Boolean(step?.history?.before);
+    const activeTake = takeFilter !== null ? step?.debate?.takes[takeFilter] ?? null : null;
+    const listedStories = activeTake ? activeTake.stories.map(i => stories[i]).filter(Boolean) : stories;
+
+    // A take belongs to the search it was made for
+    useEffect(() => { setTakeFilter(null); setTakesOpen(false); }, [activeStep, step?.query]);
+
+    const pickTake = (index: number) => {
+        const take = step?.debate?.takes[index];
+        if (!take) return;
+        setTakeFilter(index);
+        setTakesOpen(false);
+        setPaneView('stories');
+        // On a wide screen the first of its stories opens beside the list; on phones the list stays in view
+        const first = stories[take.stories[0]];
+        if (first && typeof window !== 'undefined' && !window.matchMedia?.('(max-width: 767px)').matches) setFocusKey(first.sourceUrl);
+        requestAnimationFrame(() => document.getElementById('take-filter')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }));
+    };
 
     useEffect(() => {
         const fetchRealTrends = async () => {
@@ -1452,28 +1472,8 @@ export function ExploreWorkspace() {
                             aria-label="Stories"
                             className={`w-full md:w-[45%] overflow-y-auto p-4 md:p-4 ${selectedStories.length >= 2 ? 'pb-48' : 'pb-28'} md:pb-4 md:bg-canvas md:shadow-pressed md:rounded-card ${showDetailOnMobile ? 'hidden md:block' : ''}`}
                         >
-                            {step?.related && step.related.length > 0 && (
-                                <div className="mb-4">
-                                    <span className="text-xs font-medium text-ink-muted flex items-center gap-1 mb-2">
-                                        <AnimatedIcon icon={CompassIcon} size={12} /> Explore next
-                                    </span>
-                                    <div className="flex flex-wrap gap-2">
-                                        {step.related.map(r => (
-                                            <button
-                                                key={r.label}
-                                                onClick={() => runSearch(r.query)}
-                                                disabled={loading}
-                                                className="h-8 px-3 text-xs font-medium bg-canvas shadow-raised text-ink-soft rounded-full hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
-                                            >
-                                                {r.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
                             {step?.banner && (
-                                <p className="mb-3 p-3 rounded-tile bg-ember-50 text-xs text-ember-700">
+                                <p className="mb-3 p-3 rounded-tile bg-ember-50 text-xs text-ember-700 line-clamp-2" title={step.banner.text}>
                                     <span className="font-medium">{step.banner.label}</span> {step.banner.text}
                                 </p>
                             )}
@@ -1534,44 +1534,74 @@ export function ExploreWorkspace() {
                                         <p className="text-xs text-ink-muted mb-3">New ground: you haven&apos;t written on this yet.</p>
                                     )}
                                     {step?.debateLoading && (
-                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Mapping the takes">
+                                        <div className="mb-3 h-11 px-3.5 flex items-center gap-3 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Mapping the takes">
                                             <span className="text-xs font-medium text-ink-muted">The takes so far</span>
-                                            <div className="mt-2.5 space-y-3">
-                                                {['w-5/6', 'w-3/4'].map(w => <div key={w} className={`h-3.5 ${w} rounded-full bg-canvas shadow-well`} />)}
-                                            </div>
-                                            <div className="mt-3 h-10 w-full rounded-tile bg-canvas shadow-well" />
+                                            <div className="h-3 flex-1 rounded-full bg-canvas shadow-well" />
                                         </div>
                                     )}
                                     {step?.debate && (
-                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card">
-                                            <span className="text-xs font-medium text-ink-muted">The takes so far</span>
-                                            <ul className="mt-1.5 space-y-1">
-                                                {step.debate.takes.map(t => (
-                                                    <li key={t.take}>
+                                        <div className="mb-3 rounded-tile bg-surface shadow-card">
+                                            <button
+                                                onClick={() => setTakesOpen(o => !o)}
+                                                aria-expanded={takesOpen}
+                                                className="w-full min-h-11 px-3.5 py-2.5 flex items-center gap-2 text-left"
+                                            >
+                                                <span className="text-xs font-medium text-ink-muted">The takes so far</span>
+                                                <span className="flex-1 min-w-0 text-xs text-ink-soft truncate">
+                                                    {step.debate.takes.length > 0 && `${step.debate.takes.length} ${step.debate.takes.length === 1 ? 'take' : 'takes'}`}
+                                                    {step.debate.takes.length > 0 && step.debate.gap && ' · '}
+                                                    {step.debate.gap && <span className="text-ember-700">one nobody&apos;s making</span>}
+                                                </span>
+                                                <ChevronDown size={14} className={`shrink-0 text-ink-muted transition-transform ${takesOpen ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {takesOpen && (
+                                                <div className="px-3.5 pb-3.5">
+                                                    <ul className="space-y-1">
+                                                        {step.debate.takes.map((t, i) => (
+                                                            <li key={t.take}>
+                                                                <button
+                                                                    onClick={() => pickTake(i)}
+                                                                    className={`w-full min-h-11 text-left text-sm leading-snug py-1.5 hover:text-ember-600 flex items-start justify-between gap-3 ${takeFilter === i ? 'text-ember-700 font-medium' : 'text-ink'}`}
+                                                                >
+                                                                    <span>{t.take}</span>
+                                                                    <span className="text-xs text-ink-muted font-normal whitespace-nowrap pt-0.5">{t.stories.length} {t.stories.length === 1 ? 'story' : 'stories'}</span>
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                    {step.debate.gap && (
                                                         <button
-                                                            onClick={() => { const first = stories[t.stories[0]]; if (first) openStory(first); }}
-                                                            className="w-full text-left text-sm leading-snug py-1 text-ink hover:text-ember-600 flex items-start justify-between gap-3"
+                                                            onClick={() => { setFocusKey(GAP_KEY); setShowDetailOnMobile(true); }}
+                                                            className={`mt-2 w-full text-left p-3 rounded-tile bg-ember-50 hover:ring-2 hover:ring-ember-200 transition-all ${focusKey === GAP_KEY ? 'ring-2 ring-ember-200' : ''}`}
                                                         >
-                                                            <span>{t.take}</span>
-                                                            <span className="text-xs text-ink-muted whitespace-nowrap pt-0.5">{t.stories.length} {t.stories.length === 1 ? 'story' : 'stories'}</span>
+                                                            <span className="block text-xs font-medium text-ember-700">Nobody&apos;s saying</span>
+                                                            <span className="block text-sm text-ink mt-0.5">{step.debate.gap.take}</span>
+                                                            <span className="mt-1 text-xs font-medium text-ember-700 flex items-center gap-0.5">Get ideas for this angle <ChevronRight size={12} /></span>
                                                         </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                            {step.debate.gap && (
-                                                <button
-                                                    onClick={() => { setFocusKey(GAP_KEY); setShowDetailOnMobile(true); }}
-                                                    className={`mt-2 w-full text-left p-3 rounded-tile bg-ember-50 hover:ring-2 hover:ring-ember-200 transition-all ${focusKey === GAP_KEY ? 'ring-2 ring-ember-200' : ''}`}
-                                                >
-                                                    <span className="block text-xs font-medium text-ember-700">Nobody&apos;s saying</span>
-                                                    <span className="block text-sm text-ink mt-0.5">{step.debate.gap.take}</span>
-                                                    <span className="mt-1 text-xs font-medium text-ember-700 flex items-center gap-0.5">Get ideas for this angle <ChevronRight size={12} /></span>
-                                                </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     )}
+                                    {activeTake && (
+                                        <div id="take-filter" className="mb-3 p-3 rounded-tile bg-ember-50 flex items-start gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <span className="block text-xs font-medium text-ember-700">
+                                                    {listedStories.length} {listedStories.length === 1 ? 'story says' : 'stories say'}
+                                                </span>
+                                                <span className="block text-sm text-ink mt-0.5">{activeTake.take}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => setTakeFilter(null)}
+                                                className="shrink-0 h-9 px-3 -my-1 rounded-full text-xs font-medium text-ember-700 hover:bg-surface active:shadow-pressed transition-all"
+                                            >
+                                                Show all {stories.length}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <ul className="space-y-2">{listedStories.map(renderItem)}</ul>
                                     {step?.questionsLoading && (
-                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Finding what people ask">
+                                        <div className="mt-4 p-3.5 rounded-tile bg-surface shadow-card animate-pulse" aria-label="Finding what people ask">
                                             <span className="text-xs font-medium text-ink-muted">People are asking</span>
                                             <div className="mt-2.5 space-y-3">
                                                 {['w-11/12', 'w-4/5', 'w-2/3'].map(w => <div key={w} className={`h-3.5 ${w} rounded-full bg-canvas shadow-well`} />)}
@@ -1580,7 +1610,7 @@ export function ExploreWorkspace() {
                                         </div>
                                     )}
                                     {questions.length > 0 && (
-                                        <div className="mb-4 p-3.5 rounded-tile bg-surface shadow-card">
+                                        <div className="mt-4 p-3.5 rounded-tile bg-surface shadow-card">
                                             <span className="text-xs font-medium text-ink-muted">People are asking</span>
                                             <ul className="mt-1.5 space-y-1">
                                                 {questions.slice(0, 3).map(q => (
@@ -1603,9 +1633,28 @@ export function ExploreWorkspace() {
                                             </button>
                                         </div>
                                     )}
-                                    <ul className="space-y-2">{stories.map(renderItem)}</ul>
                                 </>
                             )}
+                            {paneView === 'stories' && step?.related && step.related.length > 0 && (
+                                <div className="mt-5">
+                                    <span className="text-xs font-medium text-ink-muted flex items-center gap-1 mb-2">
+                                        <AnimatedIcon icon={CompassIcon} size={12} /> Explore next
+                                    </span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {step.related.map(r => (
+                                            <button
+                                                key={r.label}
+                                                onClick={() => runSearch(r.query)}
+                                                disabled={loading}
+                                                className="h-8 px-3 text-xs font-medium bg-canvas shadow-raised text-ink-soft rounded-full hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                                            >
+                                                {r.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                         </section>
 
                         {/* The story being looked at, with its angles */}
