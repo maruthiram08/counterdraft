@@ -1,6 +1,6 @@
 
 import { useMemo, useRef, useState } from "react";
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Loader2, Wand2, Eye, Layers, PenTool, Gauge, NotebookPen, AlertCircle, RotateCcw, Users } from "lucide-react";
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, Copy, Target, Wand2, Eye, Layers, PenTool, Gauge, NotebookPen, AlertCircle, RotateCcw, Users } from "lucide-react";
 import { toast } from "sonner";
 import { StrategyFeedbackPanel } from "../StrategyFeedbackPanel";
 import { BrainMetadata } from "@/types";
@@ -18,6 +18,7 @@ import { paragraphAt, replaceRange, Span, DraftAnswer } from "@/lib/editor/draft
 import { findSuggestions, Suggestion } from "@/lib/editor/suggestions";
 import { SuggestionNotice } from "@/components/editor/SuggestionNotice";
 import { DraftNotesPanel } from "@/components/editor/DraftNotesPanel";
+import { Loader, Spinner } from "@/components/shared/Loading";
 
 type DraftTool = 'notes' | 'craft' | 'readers' | 'openings' | 'preview' | 'rewrite' | 'variants';
 
@@ -162,10 +163,7 @@ export function DraftStep({
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center py-12 text-ink-muted">
-                <Loader2 size={32} className="animate-spin mb-4 text-ember-500" />
-                <p>Writing your draft...</p>
-            </div>
+            <Loader tray label="Writing your draft…" />
         );
     }
 
@@ -250,7 +248,7 @@ export function DraftStep({
                                 disabled={verifyingStrategy}
                                 className="shrink-0 whitespace-nowrap flex items-center gap-1.5 h-8 px-3 rounded-full bg-ember-100 text-ember-700 text-xs font-medium hover:bg-ember-200 active:shadow-pressed transition-all disabled:opacity-50"
                             >
-                                {verifyingStrategy ? <Loader2 size={12} className="animate-spin" /> : <Target size={12} />}
+                                {verifyingStrategy ? <Spinner size={12} /> : <Target size={12} />}
                                 Check Strategy
                             </button>
                             {TOOLS.map(({ key, label, Icon }) => (
@@ -330,7 +328,7 @@ export function DraftStep({
                                                 disabled={rewriting || !target || readOnly}
                                                 className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                                             >
-                                                {rewriting ? <Loader2 size={12} className="animate-spin" /> : <PenTool size={12} />}
+                                                {rewriting ? <Spinner size={12} /> : <PenTool size={12} />}
                                                 Rewrite this paragraph
                                             </button>
                                         </div>

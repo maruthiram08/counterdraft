@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { X, Loader2, ExternalLink, Check, AlertCircle, Copy } from 'lucide-react';
+import { X, ExternalLink, Check, AlertCircle, Copy } from 'lucide-react';
 import { AnimatedIcon } from '@/components/icons/AnimatedIcon';
 import { SendIcon } from '@/components/icons/animated';
 import { POST_PLATFORMS, postUrl, isManualRecord, postPlatformFor } from '@/lib/posts/posted';
@@ -9,6 +9,7 @@ import { ThreadPreview } from './ThreadPreview';
 import { NewsletterPreview } from './NewsletterPreview';
 import type { Draft } from '@/types';
 import type { PostedDetails } from '@/hooks/useDrafts';
+import { Spinner } from "@/components/shared/Loading";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -247,7 +248,7 @@ export function PostSheet({ isOpen, onClose, draft, content, mode, onMarkPosted,
                                         disabled={publishing || tooLongForLinkedIn}
                                         className="w-full h-11 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {publishing ? <Loader2 size={16} className="animate-spin" /> : <AnimatedIcon icon={SendIcon} size={15} />}
+                                        {publishing ? <Spinner size={16} /> : <AnimatedIcon icon={SendIcon} size={15} />}
                                         {publishing ? 'Posting…' : 'Post to LinkedIn'}
                                     </button>
                                     {tooLongForLinkedIn && (
@@ -287,7 +288,7 @@ export function PostSheet({ isOpen, onClose, draft, content, mode, onMarkPosted,
                                 disabled={saving || publishing}
                                 className="flex-1 md:flex-none h-12 md:h-11 px-6 rounded-full bg-ember-500 hover:bg-ember-600 text-white text-sm font-medium shadow-ember active:shadow-pressed transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                             >
-                                {saving && <Loader2 size={16} className="animate-spin" />}
+                                {saving && <Spinner size={16} />}
                                 {mode === 'details' ? 'Save' : 'Mark as posted'}
                             </button>
                         </>

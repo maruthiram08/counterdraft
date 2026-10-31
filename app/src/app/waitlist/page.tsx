@@ -2,8 +2,9 @@
 
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { Check, Loader2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
+import { Spinner } from "@/components/shared/Loading";
 
 export default function WaitlistPage() {
     const [email, setEmail] = useState('');
@@ -101,7 +102,7 @@ export default function WaitlistPage() {
                         `}
                     >
                         {status === 'loading' ? (
-                            <Loader2 size={20} className="animate-spin" />
+                            <Spinner size={20} />
                         ) : status === 'success' ? (
                             "You're on the list"
                         ) : (

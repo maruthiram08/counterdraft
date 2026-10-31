@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, User, Briefcase, PenTool, Wand2 } from "lucide-react";
+import { X, User, Briefcase, PenTool, Wand2 } from "lucide-react";
 import { StyleAnalysisModal } from "./StyleAnalysisModal";
+import { Spinner } from "@/components/shared/Loading";
 
 interface ProfileSetupModalProps {
     isOpen: boolean;
@@ -132,7 +133,7 @@ export function ProfileSetupModal({ isOpen, onClose, onComplete }: ProfileSetupM
                         disabled={!role || !context || !voice || loading}
                         className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        {loading && <Loader2 className="animate-spin" size={16} />}
+                        {loading && <Spinner size={16} />}
                         Save Profile
                     </button>
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Plus, X, NotebookPen } from "lucide-react";
+import { Plus, X, NotebookPen } from "lucide-react";
 import type { DraftAnswer } from "@/lib/editor/draft-tools";
 import { MAX_DRAFT_NOTES } from "@/lib/editor/draft-tools";
+import { Spinner } from "@/components/shared/Loading";
 
 interface DraftNotesPanelProps {
     notes: DraftAnswer[];
@@ -74,7 +75,7 @@ export function DraftNotesPanel({ notes, onChange, onWorkIn, working, disabled }
                     disabled={disabled || working || (!notes.length && !text.trim())}
                     className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                 >
-                    {working ? <Loader2 size={12} className="animate-spin" /> : <NotebookPen size={12} />}
+                    {working ? <Spinner size={12} /> : <NotebookPen size={12} />}
                     Work my notes into the draft
                 </button>
                 <button

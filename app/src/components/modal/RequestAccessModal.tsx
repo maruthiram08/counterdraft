@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Send, Loader2, Check } from 'lucide-react';
+import { X, Send, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { Spinner } from "@/components/shared/Loading";
 
 interface RequestAccessModalProps {
     isOpen: boolean;
@@ -134,7 +135,7 @@ export function RequestAccessModal({ isOpen, onClose }: RequestAccessModalProps)
                                 disabled={loading}
                                 className="w-full mt-1 h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-70 flex items-center justify-center gap-2"
                             >
-                                {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                                {loading ? <Spinner size={18} /> : <Send size={18} />}
                                 {loading ? 'Sending…' : 'Send request'}
                             </button>
                         </form>

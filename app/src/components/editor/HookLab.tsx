@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, RotateCcw, Users, Wand2 } from "lucide-react";
+import { RotateCcw, Users, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import type { BrainMetadata } from "@/types";
 import { OpeningsResult, replaceOpening, seeMoreCut, splitOpening } from "@/lib/editor/openings";
 import { openingVotes } from "@/lib/editor/readers";
 import { fetchReaders } from "./ReaderPanel";
+import { Spinner } from "@/components/shared/Loading";
 
 interface HookLabProps {
     content: string;
@@ -122,7 +123,7 @@ export function HookLab({ content, brainMetadata, onApply, disabled }: HookLabPr
                         disabled={loading || disabled || content.trim().length < 80}
                         className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                     >
-                        {loading ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                        {loading ? <Spinner size={12} /> : <Wand2 size={12} />}
                         {result ? 'Try 3 more' : 'Try 3 other openings'}
                     </button>
                 </div>
@@ -135,7 +136,7 @@ export function HookLab({ content, brainMetadata, onApply, disabled }: HookLabPr
                         disabled={asking || loading}
                         className="flex items-center gap-1.5 h-11 md:h-9 px-4 rounded-full bg-canvas shadow-raised text-xs font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                     >
-                        {asking ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
+                        {asking ? <Spinner size={12} /> : <Users size={12} />}
                         {asking ? 'Asking...' : shownVotes ? 'Ask other readers' : 'Ask readers which they\'d open'}
                     </button>
                     {shownVotes && <span className="text-[11px] text-ink-muted">Imagined readers from your audience. A second opinion, not a forecast.</span>}

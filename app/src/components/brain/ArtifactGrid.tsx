@@ -6,12 +6,13 @@ import { getArtifacts, deleteArtifact, setArtifactKind } from '@/app/brain/actio
 import { ArtifactCard } from './ArtifactCard';
 import { CaptureIdeasModal } from './CaptureIdeasModal';
 import { ReframeSheet } from './ReframeSheet';
-import { Loader2, Search, MousePointerClick } from 'lucide-react';
+import { Search, MousePointerClick } from 'lucide-react';
 import { captureKind } from '@/lib/brain/captures';
 import { canReframe } from '@/lib/brain/reframe';
 import { toast } from 'sonner';
 
 import { Artifact, CaptureKind } from '@/types';
+import { Loader } from "@/components/shared/Loading";
 
 interface ArtifactGridProps {
     // Opens a saved idea in the writing wizard
@@ -181,9 +182,7 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
 
             {/* Grid */}
             {loading ? (
-                <div className="py-20 flex justify-center">
-                    <Loader2 className="animate-spin text-ember-500" />
-                </div>
+                <Loader label="Loading your captures" />
             ) : shown.length === 0 ? (
                 <div className="py-20 text-center bg-canvas shadow-pressed rounded-card">
                     <p className="text-ink-muted">{artifacts.length ? 'Nothing of this type yet.' : 'No captures yet. Save one with CounterDraft Lens.'}</p>

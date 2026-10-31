@@ -2,7 +2,8 @@
 
 import { useTensions } from "@/hooks/useTensions";
 import { useState } from "react";
-import { Loader2, Filter, Archive } from "lucide-react";
+import { Filter, Archive } from "lucide-react";
+import { Loader } from "@/components/shared/Loading";
 
 type FilterType = 'pending' | 'resolved' | 'all';
 
@@ -74,10 +75,7 @@ export default function TensionsPage() {
                     </div>
 
                     {loading ? (
-                        <div className="text-center py-20">
-                            <Loader2 className="mx-auto animate-spin mb-4 text-ember-500" />
-                            <p className="text-ink-muted">Loading tensions...</p>
-                        </div>
+                        <Loader label="Loading tensions" />
                     ) : filteredList.length === 0 ? (
                         <div className="text-center py-20 bg-canvas shadow-pressed rounded-card">
                             <Archive className="mx-auto mb-4 text-ink-muted" />

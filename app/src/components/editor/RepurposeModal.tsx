@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import type { ComponentType } from "react";
-import { X, ArrowLeft, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Loader2, Zap, LayoutTemplate, Palette, MessagesSquare, Mail } from "lucide-react";
+import { X, ArrowLeft, FileText, Instagram, Image as ImageIcon, Check, Hash, ExternalLink, Sparkles, Zap, LayoutTemplate, Palette, MessagesSquare, Mail } from "lucide-react";
 import { SmartStudioPanel } from "./SmartStudioPanel";
 import type { SlideContent } from "@/lib/pptx-generator";
+import { Spinner } from "@/components/shared/Loading";
 
 interface OptionChoice {
     value: string;
@@ -494,7 +495,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                                                             disabled={generatingField === opt.id}
                                                             className="h-8 px-3 text-xs font-medium flex items-center gap-1.5 rounded-full bg-canvas shadow-raised text-ink hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                                                         >
-                                                            {generatingField === opt.id ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                                                            {generatingField === opt.id ? <Spinner size={10} /> : <Sparkles size={10} />}
                                                             Auto-Generate
                                                         </button>
                                                     )}
@@ -547,7 +548,7 @@ export function RepurposeModal({ isOpen, onClose, onRepurpose, isProcessing, onD
                             >
                                 {isProcessing ? (
                                     <>
-                                        <Loader2 size={16} className="animate-spin" />
+                                        <Spinner size={16} />
                                         Creating...
                                     </>
                                 ) : (

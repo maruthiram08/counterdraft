@@ -3,9 +3,10 @@
 import { useBeliefs } from "@/hooks/useBeliefs";
 import { useDrafts } from "@/hooks/useDrafts";
 import { useState } from "react";
-import { Loader2, Check, Edit2, X, Archive, Filter } from "lucide-react";
+import { Check, Edit2, X, Archive, Filter } from "lucide-react";
 import { GenealogyTree } from "@/components/thinking/GenealogyTree";
 import { useRouter } from "next/navigation";
+import { Loader } from "@/components/shared/Loading";
 
 type FilterType = 'all' | 'core' | 'emerging' | 'overused' | 'confirmed' | 'tree';
 
@@ -120,10 +121,7 @@ export default function BeliefsPage() {
                             </div>
 
                             {loading ? (
-                                <div className="text-center py-20">
-                                    <Loader2 className="mx-auto animate-spin mb-4 text-ember-500" />
-                                    <p className="text-ink-muted">Loading your beliefs...</p>
-                                </div>
+                                <Loader label="Loading your beliefs" />
                             ) : filteredList.length === 0 ? (
                                 <div className="text-center py-20 bg-canvas shadow-pressed rounded-card">
                                     <Archive className="mx-auto mb-4 text-ink-muted" />

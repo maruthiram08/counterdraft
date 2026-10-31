@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, MessageSquare, Pen, Loader2 } from "lucide-react";
+import { Check, X, MessageSquare, Pen } from "lucide-react";
+import { Spinner } from "@/components/shared/Loading";
 
 interface BeliefCardProps {
     belief: string;
@@ -135,7 +136,7 @@ export function BeliefCard({ belief, sourceCount, type, beliefId, onFeedback, on
                                 className="h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed flex items-center gap-1.5 transition-all disabled:opacity-50"
                             >
                                 {writingAbout ? (
-                                    <><Loader2 size={14} className="animate-spin" /> Adding...</>
+                                    <><Spinner size={14} /> Adding...</>
                                 ) : (
                                     <><Pen size={14} /> Write about this</>
                                 )}

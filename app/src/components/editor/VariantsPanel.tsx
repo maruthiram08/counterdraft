@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Layers, Loader2, RotateCcw } from "lucide-react";
+import { Layers, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { BrainMetadata } from "@/types";
 import { DraftVariant, VARIANT_LABELS } from "@/lib/editor/draft-tools";
+import { Spinner } from "@/components/shared/Loading";
 
 interface VariantsPanelProps {
     content: string;
@@ -61,7 +62,7 @@ export function VariantsPanel({ content, brainMetadata, onApply, disabled }: Var
                         disabled={loading || disabled || content.trim().length < 80}
                         className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                     >
-                        {loading ? <Loader2 size={12} className="animate-spin" /> : <Layers size={12} />}
+                        {loading ? <Spinner size={12} /> : <Layers size={12} />}
                         {variants ? 'Make new variants' : 'Make variants'}
                     </button>
                 </div>

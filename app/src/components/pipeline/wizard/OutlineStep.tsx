@@ -7,9 +7,9 @@ import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { RefreshCWIcon } from "@/components/icons/animated";
 import { ResearchPoint } from "./types";
 import { ResearchItem } from "../ResearchItem";
-import { Loader2 } from "lucide-react";
 import { StrategyChangedBanner } from "./StrategyChangedBanner";
 import type { OutlineShapeOption } from "@/lib/editor/draft-tools";
+import { Loader, Spinner } from "@/components/shared/Loading";
 
 // Helper Sortable Component
 function SortableOutlineItem({
@@ -112,10 +112,7 @@ export function OutlineStep({
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center py-12 text-ink-muted">
-                <Loader2 size={32} className="animate-spin mb-4 text-ember-500" />
-                <p>Generating outline...</p>
-            </div>
+            <Loader tray label="Building your outline…" />
         );
     }
 
@@ -142,7 +139,7 @@ export function OutlineStep({
                             className="flex items-center gap-1.5 h-9 md:h-10 px-3.5 md:px-4 rounded-full bg-canvas text-ink text-[13px] md:text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                             title="See this post built two other ways"
                         >
-                            {findingShapes ? <Loader2 size={14} className="animate-spin text-ember-500" /> : <Shapes size={14} className="text-ember-500" />}
+                            {findingShapes ? <Spinner size={14} className="text-ember-500" /> : <Shapes size={14} className="text-ember-500" />}
                             Other shapes
                         </button>
                     )}

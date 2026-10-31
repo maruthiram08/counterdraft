@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldAlert, ShieldCheck, ShieldQuestion, ExternalLink, RefreshCw, X, Search, FileCheck, MessageSquareX, BarChart3, Plus, Globe } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { RefreshCWIcon, ShieldCheckIcon, SparklesIcon } from "@/components/icons/animated";
+import { Loader, Spinner } from "@/components/shared/Loading";
 
 export interface VerificationResult {
     claim: string;
@@ -153,10 +154,7 @@ export function VerificationSidebar({
                 {activeTab === 'fact' && (
                     <>
                         {factLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
-                                <RefreshCw className="animate-spin text-ember-500" size={32} />
-                                <p className="text-sm">Verifying claims against the web...</p>
-                            </div>
+                            <Loader className="h-48 !py-0" label="Verifying claims against the web…" />
                         ) : factResults.length === 0 ? (
                             <div className="text-center py-12 px-4 text-ink-soft">
                                 <p className="mb-4">No claims analyzed yet.</p>
@@ -229,10 +227,7 @@ export function VerificationSidebar({
                 {activeTab === 'plagiarism' && (
                     <>
                         {plagiarismLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
-                                <RefreshCw className="animate-spin text-ember-500" size={32} />
-                                <p className="text-sm">Checking uniqueness across the web...</p>
-                            </div>
+                            <Loader className="h-48 !py-0" label="Checking uniqueness across the web…" />
                         ) : !plagiarismResult ? (
                             <div className="text-center py-12 px-4 text-ink-soft">
                                 <FileCheck className="mx-auto mb-4 text-ember-200" size={48} />
@@ -313,10 +308,7 @@ export function VerificationSidebar({
                 {activeTab === 'style' && (
                     <>
                         {slopLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
-                                <RefreshCw className="animate-spin text-ember-500" size={32} />
-                                <p className="text-sm">Scanning for AI-isms...</p>
-                            </div>
+                            <Loader className="h-48 !py-0" label="Scanning for AI-isms…" />
                         ) : (!metrics.style.hasRun) ? (
                             <div className="text-center py-12 px-4 text-ink-soft">
                                 <MessageSquareX className="mx-auto mb-4 text-ember-200" size={48} />
@@ -415,10 +407,7 @@ export function VerificationSidebar({
                         </div>
 
                         {competitorLoading ? (
-                            <div className="flex flex-col items-center justify-center h-48 text-ink-muted space-y-3">
-                                <RefreshCw className="animate-spin text-ember-500" size={32} />
-                                <p className="text-sm">Analyzing competitors...</p>
-                            </div>
+                            <Loader className="h-48 !py-0" label="Analyzing competitors…" />
                         ) : !competitorResult ? (
                             <div className="text-center py-12 px-4 text-ink-soft">
                                 <Globe className="mx-auto mb-4 text-ember-200" size={48} />
@@ -517,7 +506,7 @@ export function VerificationSidebar({
                         onClick={onRunAll}
                         className="h-10 px-4 rounded-full bg-ink text-white text-xs font-medium hover:bg-ink/90 shadow-raised active:shadow-pressed transition-all flex items-center gap-2"
                     >
-                        <RefreshCw size={14} className={metrics.fact.loading || metrics.uniqueness.loading ? "animate-spin" : ""} />
+                        {metrics.fact.loading || metrics.uniqueness.loading ? <Spinner size={14} /> : <RefreshCw size={14} />}
                         Run Audit
                     </button>
                 </div>

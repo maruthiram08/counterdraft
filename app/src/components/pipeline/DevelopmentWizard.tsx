@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Check, X, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { Check, X, ArrowLeft, ArrowRight } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { CircleCheckIcon, RefreshCWIcon } from "@/components/icons/animated";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import { DraftQuestionsStep } from "./wizard/DraftQuestionsStep";
 import { OriginalityCheck } from "./wizard/OriginalityCheck";
 import { CaptureSourcesStrip } from "./wizard/CaptureSourcesStrip";
 import { reframeModeLabel } from "@/lib/brain/reframe";
+import { Spinner } from "@/components/shared/Loading";
 
 // Set when the writer ticks "Don't ask me before drafting"
 const SKIP_QUESTIONS_KEY = 'cd-skip-draft-questions';
@@ -1098,7 +1099,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 className="h-11 md:h-12 px-4 md:px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-70 disabled:cursor-wait flex items-center gap-2"
                             >
                                 {completing ? (
-                                    <><Loader2 size={16} className="animate-spin" /> Saving your draft...</>
+                                    <><Spinner size={16} /> Saving your draft...</>
                                 ) : (
                                     <><AnimatedIcon icon={CircleCheckIcon} size={16} /> Complete & Save</>
                                 )}
@@ -1110,7 +1111,7 @@ export function DevelopmentWizard({ item, onClose, onComplete }: DevelopmentWiza
                                 className="h-11 md:h-12 px-4 md:px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 {askingQuestions
-                                    ? <><Loader2 size={16} className="animate-spin" /> One moment...</>
+                                    ? <><Spinner size={16} /> One moment...</>
                                     : draftQuestions
                                         ? <><ArrowRight size={16} /> Write the draft</>
                                         : <><ArrowRight size={16} /> Next Step</>}

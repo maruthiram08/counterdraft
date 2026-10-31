@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, Check, Lightbulb, Rocket, Loader2 } from "lucide-react";
+import { X, Check, Lightbulb, Rocket } from "lucide-react";
+import { Spinner } from "@/components/shared/Loading";
 
 interface TensionCardProps {
     tension: string;
@@ -124,7 +125,7 @@ export function TensionCard({ tension, sideA, sideB, tensionId, initialClassific
                         className="flex items-center gap-2 h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                     >
                         {converting ? (
-                            <><Loader2 size={16} className="animate-spin" /> Converting...</>
+                            <><Spinner size={16} /> Converting...</>
                         ) : (
                             <><Rocket size={16} /> Turn into Post Idea</>
                         )}

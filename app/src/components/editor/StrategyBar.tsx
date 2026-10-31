@@ -1,12 +1,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Target, LayoutTemplate, Scale, Users, ChevronDown, ChevronUp, Loader2, Flame, Megaphone, Ruler, ListChecks, Ban, HeartCrack, MessageCircleQuestion, X } from "lucide-react";
+import { Target, LayoutTemplate, Scale, Users, ChevronDown, ChevronUp, Flame, Megaphone, Ruler, ListChecks, Ban, HeartCrack, MessageCircleQuestion, X } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { SparklesIcon } from "@/components/icons/animated";
 import type { LucideIcon } from "lucide-react";
 import { Draft, BrainMetadata } from "@/types";
 import { formatLabel, hasStrategy, FORMAT_PRESETS, GOAL_PRESETS } from "@/lib/brain/strategy";
 import { toast } from "sonner";
+import { Spinner } from "@/components/shared/Loading";
 
 interface StrategyBarProps {
     draft: Draft & { title?: string; hook?: string };
@@ -314,7 +315,7 @@ export function StrategyBar({ draft, onUpdate, enableCoach = true, onStrategySha
                                         disabled={isParsing}
                                         className={`shrink-0 h-10 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 active:shadow-pressed transition-all disabled:opacity-50 ${briefChanged ? 'bg-ember-500 text-white hover:bg-ember-600 shadow-ember' : 'bg-canvas text-ink shadow-raised hover:text-ember-600'}`}
                                     >
-                                        {isParsing ? <Loader2 size={14} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={14} className={briefChanged ? '' : 'text-ember-500'} />}
+                                        {isParsing ? <Spinner size={14} /> : <AnimatedIcon icon={SparklesIcon} size={14} className={briefChanged ? '' : 'text-ember-500'} />}
                                         {brief.trim() ? "Shape strategy" : "Infer strategy"}
                                     </button>
                                 </div>

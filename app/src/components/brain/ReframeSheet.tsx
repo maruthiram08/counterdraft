@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, PenTool } from "lucide-react";
+import { X, PenTool } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact, ReframeMode } from "@/types";
 import { captureAuthor, captureDomain } from "@/lib/brain/captures";
 import { REFRAME_FORMATS, REFRAME_MODES, buildReframeItem, startingMode, whosePost } from "@/lib/brain/reframe";
+import { Spinner } from "@/components/shared/Loading";
 
 interface ReframeSheetProps {
     capture: Artifact;
@@ -158,7 +159,7 @@ export function ReframeSheet({ capture, onClose, onOpenItem, onSaved }: ReframeS
                             disabled={busy || needsTake}
                             className="h-11 px-5 shrink-0 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                         >
-                            {busy ? <Loader2 size={16} className="animate-spin" /> : <PenTool size={14} />}
+                            {busy ? <Spinner size={16} /> : <PenTool size={14} />}
                             Write my take
                         </button>
                     </div>

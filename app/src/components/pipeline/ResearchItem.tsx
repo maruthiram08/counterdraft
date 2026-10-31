@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Edit2, Check, X, Trash2, Loader2 } from "lucide-react";
+import { MessageSquare, Edit2, Check, X, Trash2 } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { RefreshCWIcon } from "@/components/icons/animated";
+import { Spinner } from "@/components/shared/Loading";
 
 interface ResearchItemProps {
     text: string;
@@ -92,7 +93,7 @@ export function ResearchItem({ text, notes = [], isNew = false, showBullet = tru
                         <p className="text-sm text-ink-soft leading-relaxed">
                             {loading ? (
                                 <span className="flex items-center gap-2 text-ink-muted italic">
-                                    <Loader2 size={14} className="animate-spin" /> Refining...
+                                    <Spinner size={14} /> Refining...
                                 </span>
                             ) : text}
                         </p>

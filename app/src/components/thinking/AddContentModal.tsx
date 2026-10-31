@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, Upload, Loader2 } from "lucide-react";
+import { X, Upload } from "lucide-react";
+import { Spinner } from "@/components/shared/Loading";
 
 interface AddContentModalProps {
     isOpen: boolean;
@@ -97,7 +98,7 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
 
                     {status && !error && (
                         <p className="text-ember-600 text-sm mt-2 flex items-center gap-2">
-                            {loading && <Loader2 size={14} className="animate-spin" />}
+                            {loading && <Spinner size={14} />}
                             {status}
                         </p>
                     )}
@@ -115,7 +116,7 @@ export function AddContentModal({ isOpen, onClose, onSuccess }: AddContentModalP
                     >
                         {loading ? (
                             <>
-                                <Loader2 size={16} className="animate-spin" />
+                                <Spinner size={16} />
                                 Analyzing...
                             </>
                         ) : (

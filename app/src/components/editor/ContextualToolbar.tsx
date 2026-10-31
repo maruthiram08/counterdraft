@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, Eraser } from "lucide-react";
+import { Eraser } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { SparklesIcon } from "@/components/icons/animated";
+import { Spinner } from "@/components/shared/Loading";
 
 interface ContextualToolbarProps {
     position: { top: number; left: number } | null;
@@ -67,7 +68,7 @@ export function ContextualToolbar({ position, onOptionSelect, onCustomInput, onC
         >
             {loading ? (
                 <div className="flex items-center justify-center gap-2 p-6 text-sm text-ink-muted">
-                    <Sparkles size={16} className="animate-spin text-ember-500" />
+                    <Spinner size={16} className="text-ember-500" />
                     <span className="font-medium">Refining selection...</span>
                 </div>
             ) : (

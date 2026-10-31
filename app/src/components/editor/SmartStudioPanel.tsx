@@ -1,10 +1,11 @@
 
 import { useState, useEffect, useMemo } from "react";
-import { Sparkles, RefreshCw, Download, Palette, ChevronLeft, ChevronRight, Layers } from "lucide-react";
+import { RefreshCw, Download, Palette, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import { calculateCarousel } from "@/lib/smart-engine/carousel";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import Image from "next/image";
+import { Spinner } from "@/components/shared/Loading";
 
 interface SmartStudioPanelProps {
     content: string;
@@ -148,7 +149,7 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
             <div className="flex-1 bg-canvas shadow-pressed rounded-card flex items-center justify-center p-4 relative overflow-hidden group min-h-[320px]">
                 {isLoading && (
                     <div className="absolute inset-0 bg-surface/50 backdrop-blur-sm z-10 flex items-center justify-center">
-                        <Sparkles className="animate-spin text-ember-500" />
+                        <Spinner size={24} className="text-ember-500" />
                     </div>
                 )}
 
@@ -201,7 +202,7 @@ export function SmartStudioPanel({ content, onDownload }: SmartStudioPanelProps)
                             disabled={extractedQuotes.length === 0}
                             className="h-8 px-3 rounded-full bg-canvas text-ink text-xs font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all flex items-center gap-1.5 disabled:opacity-70"
                         >
-                            <RefreshCw size={12} className={extractedQuotes.length === 0 ? "animate-spin text-ink-muted" : "text-ember-500"} />
+                            {extractedQuotes.length === 0 ? <Spinner size={12} className="text-ink-muted" /> : <RefreshCw size={12} className="text-ember-500" />}
                             Shuffle
                         </button>
                     )}

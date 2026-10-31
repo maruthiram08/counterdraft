@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { ArrowUp, Plus, Loader2, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowUp, Plus, CheckCircle2, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Loader, Spinner } from "@/components/shared/Loading";
 
 type Feature = {
     id: string;
@@ -127,7 +128,7 @@ export default function WishlistPage() {
                     {/* List Column */}
                     <div className="flex-1">
                         {loading ? (
-                            <div className="flex justify-center py-20"><Loader2 className="animate-spin text-ink-muted" /></div>
+                            <Loader />
                         ) : features.length === 0 ? (
                             <div className="text-center py-12 md:py-20 px-6 bg-canvas shadow-pressed rounded-card">
                                 <p className="text-ink-muted font-medium">No active features yet. Be the first!</p>
@@ -241,7 +242,7 @@ export default function WishlistPage() {
                                     disabled={submitStatus === 'loading' || submitStatus === 'success'}
                                     className="flex-[2] h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center justify-center gap-2"
                                 >
-                                    {submitStatus === 'loading' ? <Loader2 className="animate-spin" size={18} /> :
+                                    {submitStatus === 'loading' ? <Spinner size={18} /> :
                                         submitStatus === 'success' ? <CheckCircle2 size={18} /> : 'Submit Request'}
                                 </button>
                             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { Settings, Link2, Loader2, Check, X, ExternalLink, RefreshCw, User as UserIcon, Puzzle, Download } from "lucide-react";
+import { Settings, Link2, Check, X, ExternalLink, RefreshCw, User as UserIcon, Puzzle, Download } from "lucide-react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { useNavigate } from "@/components/shared/NavProgress";
 import { toast } from 'sonner';
 import { LimitModal } from '@/components/modal/LimitModal';
 import { formatInviteDate } from '@/lib/billing/invite-utils';
+import { Loader } from "@/components/shared/Loading";
 
 interface IntegrationStatus {
     platform: string;
@@ -161,9 +162,7 @@ export default function SettingsPage() {
                             </p>
 
                             {loading ? (
-                                <div className="flex items-center justify-center py-12">
-                                    <Loader2 className="animate-spin text-ink-muted" size={24} />
-                                </div>
+                                <Loader className="!py-12" />
                             ) : error ? (
                                 <div className="p-4 bg-rose-100 rounded-tile text-rose-700">
                                     {error}

@@ -90,6 +90,19 @@ Rule: neumorphic controls sit on `bg-canvas`; content that has to be read sits o
 - Nav item: round 44px; active is `shadow-pressed` with an ember icon (desktop sidebar). Phone bottom nav: active tab gets a `w-14 h-8 rounded-full bg-ember-100` capsule behind an `ember-600` icon and a semibold label; no pressed pill.
 - Stat strip: label, big number, row of thin tick bars filled in the stage colour (borrowed from the reference's Proposal Progress card).
 
+## Loading (one system, `components/shared/Loading.tsx`)
+
+Every wait in the app uses one of four patterns. Pick by what the person is waiting for, never by taste.
+
+1. **Moving to another page:** the thin ember bar at the top (`NavProgress`, `useNavigate()`). Nothing else.
+2. **Content whose shape we know** (lists, cards, rows, a page like Your Voice): skeletons. Use `<Skeleton className="h-4 w-2/3" />` blocks laid out like the real content, inside the real card shells, so nothing jumps when data lands. Grey `bg-surface-muted` pills that pulse; no text.
+3. **A block with no known shape** (a route gate, a panel, a modal body, AI work): `<Loader label="Writing your draft…" />`. Always the ember 24px spinner, then one `text-sm text-ink-muted` line underneath. `fullScreen` for route gates and Suspense fallbacks, `tray` for AI work in the writing wizard (pressed tray), `hint` for an optional second line. Label in plain words, sentence case, ending in `…` for AI work; no label for a plain fetch.
+4. **A button doing work:** `<Spinner size={…} />` replaces the button's own icon at the same size and takes the button's text colour; the button is disabled; the label may change to the "-ing" word ("Save" -> "Saving…"). Set the busy state before any `await` so the spinner shows on the tap (see PR #69). A button with no icon puts the spinner before its label.
+
+Inline status inside a card (for example "Checking the piece…"): `<Spinner size={12-14} />` plus a `text-xs`/`text-sm text-ink-muted` line.
+
+Not allowed: spinning any icon other than `Loader2` through `Spinner` (no spinning `RefreshCw`, `Sparkles`, or bordered CSS rings), pulsing text on its own ("Loading…" with `animate-pulse`), bouncing dots, or `animate-ping` halos. Two exceptions: a Refresh/Sync button may spin its own refresh icon while it refreshes, and the AI chat may show its three typing dots while a reply is coming.
+
 ## Class recipes (Tailwind, copy these)
 
 Page shell: `h-full overflow-y-auto bg-canvas` > `max-w-[1440px] mx-auto px-4 md:px-10 pt-5 md:pt-7 pb-28 md:pb-12 flex flex-col gap-5`.

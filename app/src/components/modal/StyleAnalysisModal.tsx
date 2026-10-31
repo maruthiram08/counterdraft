@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Loader2, PenTool, ArrowRight, Wand2, CheckCircle, AlertCircle, Link as LinkIcon, Upload, FileText } from "lucide-react";
+import { X, PenTool, ArrowRight, Wand2, CheckCircle, AlertCircle, Link as LinkIcon, Upload, FileText } from "lucide-react";
+import { Loader, Spinner } from "@/components/shared/Loading";
 
 interface StyleAnalysisResult {
     voice_tone: string;
@@ -240,7 +241,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                                         disabled={!urlInput.trim() || importLoading}
                                         className="h-12 px-5 rounded-full bg-ink text-white text-sm font-medium hover:bg-ink/90 active:shadow-pressed transition-all disabled:opacity-50 min-w-[100px] flex items-center justify-center"
                                     >
-                                        {importLoading ? <Loader2 size={16} className="animate-spin" /> : "Fetch All"}
+                                        {importLoading ? <Spinner size={16} /> : "Fetch All"}
                                     </button>
                                 </div>
                             )}
@@ -255,7 +256,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                                         onChange={handleFileUpload}
                                     />
                                     {importLoading ? (
-                                        <Loader2 size={32} className="text-ember-500 animate-spin mb-2" />
+                                        <Spinner size={32} className="text-ember-500 mb-2" />
                                     ) : (
                                         <FileText size={32} className="text-ember-500 mb-2" />
                                     )}
@@ -291,22 +292,7 @@ export function StyleAnalysisModal({ isOpen, onClose, onComplete }: StyleAnalysi
                     )}
 
                     {step === 'analyzing' && (
-                        <div className="flex flex-col items-center justify-center py-12 space-y-6 text-center">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-ember-200 rounded-full animate-ping opacity-30"></div>
-                                <div className="relative bg-canvas p-4 rounded-full shadow-raised">
-                                    <Loader2 className="w-8 h-8 text-ember-500 animate-spin" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="text-2xl font-medium tracking-[-0.02em] text-ink">Studying your syntax...</h3>
-                                <div className="flex gap-1 justify-center">
-                                    <span className="w-2 h-2 bg-ink-muted/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                    <span className="w-2 h-2 bg-ink-muted/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                    <span className="w-2 h-2 bg-ink-muted/50 rounded-full animate-bounce"></span>
-                                </div>
-                            </div>
-                        </div>
+                        <Loader className="!py-12" label="Studying how you write…" />
                     )}
 
                     {step === 'result' && result && (

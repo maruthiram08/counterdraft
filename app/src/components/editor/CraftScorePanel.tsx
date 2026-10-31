@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Gauge, Loader2, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { Gauge, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { BrainMetadata } from "@/types";
 import { CRAFT_DONE_RATING, CraftCriterion, CraftScore, measureText, rateReadability, rateRhythm } from "@/lib/editor/craft-score";
+import { Spinner } from "@/components/shared/Loading";
 
 interface CraftScorePanelProps {
     content: string;
@@ -128,7 +129,7 @@ export function CraftScorePanel({ content, brainMetadata, onApply, disabled }: C
                         disabled={checking || !!fixing || tooShort}
                         className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                     >
-                        {checking ? <Loader2 size={12} className="animate-spin" /> : check ? <RefreshCw size={12} /> : <Gauge size={12} />}
+                        {checking ? <Spinner size={12} /> : check ? <RefreshCw size={12} /> : <Gauge size={12} />}
                         {check ? 'Re-check' : 'Check craft'}
                     </button>
                 </div>
@@ -161,7 +162,7 @@ export function CraftScorePanel({ content, brainMetadata, onApply, disabled }: C
                                 title={c.fix}
                                 className="self-start flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface shadow-raised text-xs font-medium text-ink-soft hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                             >
-                                {fixing === c.key ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                {fixing === c.key ? <Spinner size={12} /> : <Sparkles size={12} />}
                                 {fixing === c.key ? 'Fixing...' : `Fix ${c.label.toLowerCase()}`}
                             </button>
                         )}
