@@ -3,8 +3,9 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { BeliefExtractionResult } from "@/types";
-import { ArrowRight, Upload, FileText, Zap, Check, Loader2 } from "lucide-react";
+import { ArrowRight, Upload, FileText, Zap, Check } from "lucide-react";
 import { toast } from "sonner";
+import { Spinner } from "@/components/shared/Loading";
 
 type Step = 'screening' | 'ingest' | 'analyzing' | 'complete';
 
@@ -128,7 +129,7 @@ export default function OnboardingPage() {
                                     <Zap size={24} />
                                 </div>
                                 {loading ? (
-                                    <Loader2 className="animate-spin text-ink-muted" />
+                                    <Spinner size={24} className="text-ink-muted" />
                                 ) : (
                                     <div>
                                         <h3 className="text-xl md:text-2xl font-medium tracking-[-0.02em] text-ink mb-1">Start writing</h3>
@@ -200,13 +201,7 @@ export default function OnboardingPage() {
                 {/* --- Step 3: Analyzing --- */}
                 {step === 'analyzing' && (
                     <div className="text-center py-20 animate-fade-in">
-                        <div className="relative w-20 h-20 mx-auto mb-8">
-                            <div className="absolute inset-0 border-4 border-line rounded-full"></div>
-                            <div className="absolute inset-0 border-4 border-ember-500 rounded-full border-t-transparent animate-spin"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Zap className="text-ember-500 fill-ember-500" size={24} />
-                            </div>
-                        </div>
+                        <Spinner size={24} className="mx-auto mb-5 text-ember-500" />
                         <h2 className="text-2xl font-medium tracking-[-0.02em] text-ink mb-2">Reading your writing…</h2>
                         <p className="text-ink-soft">Picking out the beliefs and tensions you write from.</p>
                     </div>

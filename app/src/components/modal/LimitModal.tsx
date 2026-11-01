@@ -1,9 +1,10 @@
 import React from 'react';
-import { X, Lock, Loader2 } from 'lucide-react';
+import { X, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { RequestAccessModal } from './RequestAccessModal';
 import { formatInviteDate } from '@/lib/billing/invite-utils';
+import { Spinner } from "@/components/shared/Loading";
 
 interface LimitModalProps {
     isOpen: boolean;
@@ -119,7 +120,7 @@ export function LimitModal({ isOpen, onClose }: LimitModalProps) {
                                 disabled={!code.trim() || busy}
                                 className="h-12 px-5 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                             >
-                                {busy && <Loader2 size={16} className="animate-spin" />}
+                                {busy && <Spinner size={16} />}
                                 Use code
                             </button>
                         </div>

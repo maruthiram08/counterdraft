@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { X, Loader2, Lightbulb, Check, PenTool, RefreshCw } from "lucide-react";
+import { X, Lightbulb, Check, PenTool, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { Artifact, ExploreOrigin } from "@/types";
 import { captureKind } from "@/lib/brain/captures";
+import { Loader, Spinner } from "@/components/shared/Loading";
 
 interface CaptureIdea {
     hook: string;
@@ -163,10 +164,7 @@ export function CaptureIdeasModal({ captures, onClose, onOpenItem, onSaved }: Ca
 
                     <div className="flex-1 overflow-y-auto px-5 md:px-6 py-3 flex flex-col gap-3">
                         {loading ? (
-                            <div className="py-14 flex flex-col items-center gap-3 text-ink-soft text-sm">
-                                <Loader2 className="animate-spin text-ember-500" />
-                                Reading your {captures.length === 1 ? 'capture' : 'captures'}…
-                            </div>
+                            <Loader label={`Reading your ${captures.length === 1 ? 'capture' : 'captures'}…`} />
                         ) : (
                             <>
                                 {error && (
@@ -195,7 +193,7 @@ export function CaptureIdeasModal({ captures, onClose, onOpenItem, onSaved }: Ca
                                                     disabled={!!busy || isSaved}
                                                     className="h-11 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-2"
                                                 >
-                                                    {isBusy ? <Loader2 size={16} className="animate-spin" /> : <PenTool size={14} />}
+                                                    {isBusy ? <Spinner size={16} /> : <PenTool size={14} />}
                                                     Start writing
                                                 </button>
                                                 <button

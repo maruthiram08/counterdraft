@@ -1,6 +1,6 @@
 import React from 'react';
 import { StrategyAnalysis } from '@/lib/brain/strategy';
-import { AlertTriangle, CheckCircle, Target, Lightbulb, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, Target, Lightbulb } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { RefreshCWIcon, SparklesIcon } from "@/components/icons/animated";
 
@@ -38,11 +38,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
 
     if (loading) {
         return (
-            <div className="p-6 flex flex-col items-center justify-center min-h-[200px] rounded-tile bg-surface shadow-card animate-pulse">
-                <div className="w-8 h-8 rounded-full border-2 border-ember-500 border-t-transparent animate-spin mb-4" />
-                <p className="text-sm text-ink-soft font-medium">Analyzing strategy...</p>
-                <p className="text-xs text-ink-muted mt-1">Checking audience match & tone</p>
-            </div>
+            <Loader className="min-h-[200px] rounded-tile bg-surface shadow-card" label="Checking your strategy…" hint="Audience match and tone" />
         );
     }
 
@@ -116,7 +112,7 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                                 disabled={isFixing}
                                 className="h-10 px-4 rounded-full bg-ember-500 hover:bg-ember-600 text-white text-sm font-medium shadow-ember active:shadow-pressed transition-all flex items-center gap-2 disabled:opacity-50 w-full justify-center"
                             >
-                                {isFixing ? <Loader2 size={14} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={14} />}
+                                {isFixing ? <Spinner size={14} /> : <AnimatedIcon icon={SparklesIcon} size={14} />}
                                 {isFixing ? 'Applying Fix...' : 'Auto-Fix Draft'}
                             </button>
                         </div>
@@ -144,8 +140,9 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
                         <button
                             onClick={onFactVerify}
                             disabled={factLoading}
-                            className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink font-medium hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
+                            className="h-8 px-3 rounded-full bg-canvas shadow-raised text-xs text-ink font-medium hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50 flex items-center gap-1.5"
                         >
+                            {factLoading && <Spinner size={12} />}
                             {factLoading ? 'Checking...' : 'Verify Claims'}
                         </button>
                     </div>
@@ -183,3 +180,4 @@ export function StrategyFeedbackPanel({ analysis, loading, isFixing, onVerify, o
 
 // Helper icons
 import { ShieldCheck } from 'lucide-react';
+import { Loader, Spinner } from "@/components/shared/Loading";

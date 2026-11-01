@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { Belief, Draft } from '@/types';
-import { GitBranch, FileText, ChevronRight, Target, Sparkles, Loader2, ChevronDown } from 'lucide-react';
+import { GitBranch, FileText, ChevronRight, Target, Sparkles, ChevronDown } from 'lucide-react';
+import { Spinner } from "@/components/shared/Loading";
 
 interface GenealogyTreeProps {
     beliefs: Belief[];
@@ -165,7 +166,7 @@ export function GenealogyTree({ beliefs, drafts, onSelectDraft }: GenealogyTreeP
                 >
                     {isBootstrapping ? (
                         <>
-                            <Loader2 size={16} className="animate-spin" />
+                            <Spinner size={16} />
                             Mapping Your Mind...
                         </>
                     ) : (

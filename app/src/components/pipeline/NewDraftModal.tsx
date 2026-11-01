@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, Sparkles, Target, Users, Scale, ArrowRight, Loader2 } from "lucide-react";
+import { X, Sparkles, Target, Users, Scale, ArrowRight } from "lucide-react";
 import { BrainMetadata, Outcome, Stance, Audience, ContentReference } from "@/types";
 import { ReferenceSection } from "../common/ReferenceSection";
+import { Spinner } from "@/components/shared/Loading";
 
 interface NewDraftModalProps {
     isOpen: boolean;
@@ -182,7 +183,7 @@ export function NewDraftModal({ isOpen, onClose, onStart }: NewDraftModalProps) 
                     >
                         {isSubmitting ? (
                             <>
-                                <Loader2 size={16} className="animate-spin" />
+                                <Spinner size={16} />
                                 Starting...
                             </>
                         ) : (

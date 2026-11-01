@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-    Search, Loader2, ExternalLink, Lightbulb, Check, X,
+    Search, ExternalLink, Lightbulb, Check, X,
     ChevronRight, ChevronLeft, ChevronDown, RotateCcw, Layers, Bookmark, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
@@ -15,6 +15,7 @@ import type { ChatTurn } from "@/lib/explore/story-chat";
 import { monthLabel, type TopicHistory } from "@/lib/explore/history";
 import { EMPTY_TASTE, addToTaste, cleanTaste, tasteKey, type Taste, type TasteKind } from "@/lib/explore/taste";
 import { MOMENTUM_HINTS, MOMENTUM_LABELS, storyMomentum, topicMomentum, type Momentum } from "@/lib/explore/momentum";
+import { Spinner } from "@/components/shared/Loading";
 
 // One step of the user's exploration path: a search and what it found
 interface ExploreStep {
@@ -892,7 +893,7 @@ export function ExploreWorkspace() {
                         disabled={generatingKey !== null}
                         className="btn btn-primary w-full disabled:opacity-50"
                     >
-                        {generating ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} />}
+                        {generating ? <Spinner size={16} /> : <Lightbulb size={16} />}
                         {generating ? 'Finding angles...' : 'Get post ideas'}
                     </button>
                 )}
@@ -915,7 +916,7 @@ export function ExploreWorkspace() {
                                             disabled={savingIdea === idea.hook}
                                             className="text-xs h-7 px-3 rounded-full bg-ember-500 text-white font-medium hover:bg-ember-600 transition-colors disabled:opacity-50"
                                         >
-                                            {savingIdea === idea.hook ? <Loader2 size={12} className="animate-spin" /> : 'Save to Pipeline'}
+                                            {savingIdea === idea.hook ? <Spinner size={12} /> : 'Save to Pipeline'}
                                         </button>
                                     )}
                                 </div>
@@ -1030,7 +1031,7 @@ export function ExploreWorkspace() {
                     </ul>
                 )}
                 {asking && (
-                    <p className="mb-2 text-xs text-ink-muted flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" /> Checking the piece...</p>
+                    <p className="mb-2 text-xs text-ink-muted flex items-center gap-1.5"><Spinner size={12} /> Checking the piece...</p>
                 )}
                 <form
                     onSubmit={(e) => { e.preventDefault(); askAboutStory(story, chatInput); }}
@@ -1287,7 +1288,7 @@ export function ExploreWorkspace() {
                                 disabled={savingIdea === topicKey(focusedStory)}
                                 className="h-8 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                             >
-                                {savingIdea === topicKey(focusedStory) && <Loader2 size={12} className="animate-spin" />} Save to Pipeline
+                                {savingIdea === topicKey(focusedStory) && <Spinner size={12} />} Save to Pipeline
                             </button>
                         </div>
                     </form>
@@ -1317,7 +1318,7 @@ export function ExploreWorkspace() {
                     disabled={!input.trim() || loading}
                     className={`absolute right-1.5 top-1/2 -translate-y-1/2 ${size === 'large' ? 'w-11 h-11' : 'w-9 h-9'} flex items-center justify-center rounded-full bg-ember-500 text-white shadow-ember hover:bg-ember-600 disabled:opacity-30 disabled:shadow-none transition-all`}
                 >
-                    {loading ? <Loader2 size={16} className="animate-spin" /> : <ChevronRight size={16} />}
+                    {loading ? <Spinner size={16} /> : <ChevronRight size={16} />}
                 </button>
             </form>
             {size === 'compact' && (
@@ -1403,7 +1404,7 @@ export function ExploreWorkspace() {
                                     ? 'bg-ember-50 text-ember-700 shadow-pressed'
                                     : 'bg-canvas text-ember-700 shadow-raised hover:text-ember-600 active:shadow-pressed active:bg-ember-50 disabled:opacity-50'}`}
                             >
-                                {surprising ? <Loader2 size={16} className="animate-spin" /> : <AnimatedIcon icon={SparklesIcon} size={16} />}
+                                {surprising ? <Spinner size={16} /> : <AnimatedIcon icon={SparklesIcon} size={16} />}
                                 {surprising ? 'Finding something new...' : 'Surprise me'}
                             </button>
                             {watched.length > 0 && (
@@ -1435,7 +1436,7 @@ export function ExploreWorkspace() {
                         </div>
                         {loading && (
                             <div className="mt-6 flex items-center gap-2 text-ink-muted text-sm">
-                                <Loader2 size={16} className="animate-spin" /> Searching...
+                                <Spinner size={16} /> Searching...
                             </div>
                         )}
                     </div>
@@ -1462,7 +1463,7 @@ export function ExploreWorkspace() {
                                     </button>
                                 </li>
                             ))}
-                            {loading && <li className="flex items-center gap-1 text-ink-muted"><ChevronRight size={12} /><Loader2 size={12} className="animate-spin" /></li>}
+                            {loading && <li className="flex items-center gap-1 text-ink-muted"><ChevronRight size={12} /><Spinner size={12} /></li>}
                         </ol>
                     </nav>
 
@@ -1491,7 +1492,7 @@ export function ExploreWorkspace() {
                                         >
                                             {view === 'stories' ? `Stories (${stories.length})` : 'Questions people ask'}
                                             {view === 'questions' && (step?.questionsLoading
-                                                ? <Loader2 size={12} className="animate-spin" />
+                                                ? <Spinner size={12} />
                                                 : <span>({questions.length})</span>)}
                                         </button>
                                     ))}
@@ -1500,7 +1501,7 @@ export function ExploreWorkspace() {
 
                             {paneView === 'questions' ? (
                                 step?.questionsLoading ? (
-                                    <p className="text-sm text-ink-muted flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Finding what people ask on Reddit, Quora and Hacker News...</p>
+                                    <p className="text-sm text-ink-muted flex items-center gap-2"><Spinner size={14} /> Finding what people ask on Reddit, Quora and Hacker News...</p>
                                 ) : (
                                     <div className="space-y-4">
                                         <p className="text-xs text-ink-muted">Real questions from community threads. Open one to get post ideas that answer it.</p>

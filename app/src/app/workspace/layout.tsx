@@ -4,9 +4,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { Loader2 } from "lucide-react";
+
 import { toast } from "sonner";
 import { formatInviteDate } from "@/lib/billing/invite-utils";
+import { Loader } from "@/components/shared/Loading";
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
     const { user, isLoaded } = useUser();
@@ -51,9 +52,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
 
     if (showLoading(isLoaded, checking)) {
         return (
-            <div className="h-dvh flex items-center justify-center bg-canvas">
-                <Loader2 className="animate-spin text-ember-500" size={32} />
-            </div>
+            <Loader fullScreen />
         );
     }
 

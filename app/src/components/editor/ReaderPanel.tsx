@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, RefreshCw, Users } from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { BrainMetadata } from "@/types";
 import { PANEL_SIZE, Reader, ReaderPanelResult } from "@/lib/editor/readers";
+import { Spinner } from "@/components/shared/Loading";
 
 interface ReaderPanelProps {
     content: string;
@@ -65,7 +66,7 @@ export function ReaderPanel({ content, brainMetadata }: ReaderPanelProps) {
                         disabled={loading || tooShort}
                         className="flex items-center gap-1.5 h-11 md:h-9 px-4 rounded-full bg-ember-500 text-white text-xs font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                     >
-                        {loading ? <Loader2 size={12} className="animate-spin" /> : panel ? <RefreshCw size={12} /> : <Users size={12} />}
+                        {loading ? <Spinner size={12} /> : panel ? <RefreshCw size={12} /> : <Users size={12} />}
                         {loading ? 'Asking...' : panel ? 'Ask them again' : 'Ask readers'}
                     </button>
                 </div>

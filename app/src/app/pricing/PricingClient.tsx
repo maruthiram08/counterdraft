@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Script from 'next/script';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
-import { Loader2 } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { PAID_PLANS, discountedAmount, formatAmount } from '@/lib/billing/plans';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
+import { Spinner } from "@/components/shared/Loading";
 
 interface PricingClientProps {
     initialCountry: string; // 'IN' or 'US', expected
@@ -374,7 +375,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                                         disabled={couponChecking || !couponInput.trim()}
                                         className="shrink-0 h-11 px-4 rounded-full bg-white text-ink text-sm font-medium disabled:opacity-60 flex items-center gap-1.5"
                                     >
-                                        {couponChecking && <Loader2 size={14} className="animate-spin" />}
+                                        {couponChecking && <Spinner size={14} />}
                                         Apply
                                     </button>
                                 </form>
@@ -394,7 +395,7 @@ export default function PricingClient({ initialCountry }: PricingClientProps) {
                             disabled={checkingOut}
                             className="w-full h-12 px-5 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all mb-10 flex items-center justify-center gap-2 relative z-10 disabled:opacity-70"
                         >
-                            {checkingOut && <Loader2 size={16} className="animate-spin" />}
+                            {checkingOut && <Spinner size={16} />}
                             Upgrade to Pro
                             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                         </button>

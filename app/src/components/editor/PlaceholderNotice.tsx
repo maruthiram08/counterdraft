@@ -1,7 +1,8 @@
 "use client";
 
-import { Loader2, PenLine, Sparkles } from "lucide-react";
+import { PenLine, Sparkles } from "lucide-react";
 import { Placeholder } from "@/lib/editor/placeholders";
+import { Spinner } from "@/components/shared/Loading";
 
 interface PlaceholderNoticeProps {
     placeholders: Placeholder[];
@@ -40,7 +41,7 @@ export function PlaceholderNotice({ placeholders, onJump, onFill, filling }: Pla
                     disabled={filling}
                     className="mt-3 flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface shadow-raised text-xs font-medium text-ember-700 hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                 >
-                    {filling ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    {filling ? <Spinner size={12} /> : <Sparkles size={12} />}
                     Suggest something for {count === 1 ? 'it' : 'these'}
                 </button>
             )}

@@ -6,7 +6,7 @@ import { useBeliefs } from "@/hooks/useBeliefs";
 import { TensionCard } from "@/components/thinking/TensionCard";
 import { DirectionCard } from "@/components/thinking/DirectionCard";
 import { AddContentModal } from "@/components/thinking/AddContentModal";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { AnimatedIcon } from "@/components/icons/AnimatedIcon";
 import { SparklesIcon } from "@/components/icons/animated";
 import { useDirections } from "@/hooks/useDirections";
@@ -29,10 +29,11 @@ import { YourMind } from "@/components/thinking/YourMind";
 import { GenealogyTree } from "@/components/thinking/GenealogyTree";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useNavigate } from "@/components/shared/NavProgress";
+import { Loader } from "@/components/shared/Loading";
 
 export default function WorkspacePage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-canvas"><div className="text-sm text-ink-muted animate-pulse">Loading workspace...</div></div>}>
+        <Suspense fallback={<Loader fullScreen />}>
             <WorkspaceContent />
         </Suspense>
     );
@@ -193,9 +194,7 @@ function WorkspaceContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-canvas">
-                <div className="text-sm text-ink-muted animate-pulse">Loading your belief graph...</div>
-            </div>
+            <Loader fullScreen label="Loading your belief graph" />
         );
     }
 
@@ -401,10 +400,7 @@ function WorkspaceContent() {
                                         </div>
                                     )}
                                     {tensionsLoading && (
-                                        <div className="text-center py-16">
-                                            <Loader2 size={32} className="mx-auto animate-spin text-ember-500 mb-4" />
-                                            <p className="text-ink-muted">Loading tensions...</p>
-                                        </div>
+                                        <Loader label="Loading tensions" />
                                     )}
 
                                     {!tensionsLoading && tensions.filter(t => !classifiedTensionIds.has(t.id)).length === 0 && (
@@ -471,10 +467,7 @@ function WorkspaceContent() {
                                     )}
 
                                     {directionsLoading && (
-                                        <div className="text-center py-16">
-                                            <Loader2 size={32} className="mx-auto animate-spin text-ember-500 mb-4" />
-                                            <p className="text-ink-muted">Generating ideas...</p>
-                                        </div>
+                                        <Loader label="Generating ideas…" />
                                     )}
 
                                     {generated && directions.length > 0 && (

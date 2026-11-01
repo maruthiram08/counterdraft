@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { Spinner } from "@/components/shared/Loading";
 
 export const OPEN_FEEDBACK_EVENT = 'cd:open-feedback';
 
@@ -100,7 +101,7 @@ export const FloatingFeedbackButton = () => {
                             className="w-full h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {status === 'loading' ? (
-                                <Loader2 size={16} className="animate-spin" />
+                                <Spinner size={16} />
                             ) : status === 'success' ? (
                                 "Sent!"
                             ) : (

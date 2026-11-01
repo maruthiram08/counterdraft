@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { GlobalSidebar } from "@/components/navigation/GlobalSidebar";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import { StyleAnalysisModal } from "@/components/modal/StyleAnalysisModal";
-import { PenTool, Wand2, RefreshCw, CheckCircle, XCircle, Plus, X, Save, Edit2, Trash2, Sparkles } from "lucide-react";
+import { PenTool, Wand2, CheckCircle, XCircle, Plus, X, Save, Edit2, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { TidyRulesPanel } from "@/components/voice/TidyRulesPanel";
 import { cleanOrigins, MAX_RULES, TidyProposal } from "@/lib/voice/rules";
 import { useNavigate } from "@/components/shared/NavProgress";
+import { Skeleton, Spinner } from "@/components/shared/Loading";
 
 interface VoiceProfile {
     id: string;
@@ -353,10 +354,7 @@ export default function StylePage() {
                     )}
 
                     {loading ? (
-                        <div className="flex items-center justify-center py-20 text-ink-muted">
-                            <RefreshCw size={24} className="animate-spin mr-3" />
-                            Loading profile...
-                        </div>
+                        <VoiceSkeleton />
                     ) : !profile ? (
                         <div className="text-center py-16 px-6 bg-surface rounded-card shadow-card">
                             <PenTool size={40} className="mx-auto text-ember-200 mb-5" />
@@ -436,7 +434,7 @@ export default function StylePage() {
                                                 disabled={saving}
                                                 className="flex-1 lg:flex-none justify-center flex items-center gap-1.5 h-11 md:h-10 px-4 rounded-full bg-ember-500 text-white text-sm font-medium hover:bg-ember-600 shadow-ember active:shadow-pressed transition-all disabled:opacity-50"
                                             >
-                                                {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                                                {saving ? <Spinner size={16} /> : <Save size={16} />}
                                                 Save changes
                                             </button>
                                         </>
@@ -457,7 +455,7 @@ export default function StylePage() {
                                                     className="flex-1 lg:flex-none justify-center flex items-center gap-1.5 whitespace-nowrap h-11 md:h-10 px-3 lg:px-4 rounded-full bg-canvas text-ink text-sm font-medium shadow-raised hover:text-ember-600 active:shadow-pressed transition-all disabled:opacity-50"
                                                     title="Merge repeated rules and find ones that contradict each other"
                                                 >
-                                                    {tidying ? <RefreshCw size={15} className="animate-spin text-ember-500" /> : <Sparkles size={15} className="hidden sm:block text-ember-500" />}
+                                                    {tidying ? <Spinner size={15} className="text-ember-500" /> : <Sparkles size={15} className="hidden sm:block text-ember-500" />}
                                                     Tidy up
                                                 </button>
                                             )}
@@ -649,5 +647,45 @@ function RuleCard({ tone, title, hint, items, note, editing, editItems, onChange
                 </div>
             )}
         </section>
+    );
+}
+
+// Same shape as the loaded page (summary row, then Do's and Don'ts side by side), so nothing jumps when it arrives
+function VoiceSkeleton() {
+    return (
+        <div role="status" aria-label="Loading your voice" className="flex flex-col gap-5">
+            <div className="bg-surface rounded-tile shadow-card p-4 md:px-5 flex flex-col lg:flex-row lg:items-center gap-4">
+                <div className="flex-1 flex items-center gap-2">
+                    <Skeleton className="h-4 w-10" />
+                    <Skeleton className="h-7 w-20" />
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="hidden sm:block h-3 w-32 ml-3" />
+                </div>
+                <div className="flex gap-2">
+                    <Skeleton className="flex-1 lg:flex-none h-11 md:h-10 lg:w-24" />
+                    <Skeleton className="flex-1 lg:flex-none h-11 md:h-10 lg:w-20" />
+                    <Skeleton className="flex-1 lg:flex-none h-11 md:h-10 lg:w-28" />
+                </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+                {[0, 1].map(i => (
+                    <div key={i} className="bg-surface rounded-card shadow-card p-5 md:p-6">
+                        <div className="flex items-start gap-3 mb-5">
+                            <Skeleton className="w-9 h-9 shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <Skeleton className="h-5 w-24" />
+                                <Skeleton className="h-3 w-3/4" />
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-5/6" />
+                            <Skeleton className="h-4 w-11/12" />
+                            <Skeleton className="h-4 w-2/3" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }
