@@ -21,19 +21,23 @@ interface ArtifactCardProps {
     // Picking several for Find ideas: the whole card is the tap target and its own buttons step aside
     selecting?: boolean;
     selected?: boolean;
+    // Wide: on tablets and up the details sit in a left column and the text fills the rest,
+    // so a long frame reads across the row instead of down a narrow column
+    wide?: boolean;
 }
 
-// Past this, the text is clamped and "Show all" opens it in place
+// Past this, the text is cut short with a fade and "Show all" opens it in place.
+// A height cap, not line-clamp: line-clamp puts the ellipsis on blank lines and shows half a line below.
 const LONG_TEXT = 320;
 
-export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onChangeKind, selecting, selected }: ArtifactCardProps) {
+export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onChangeKind, selecting, selected, wide }: ArtifactCardProps) {
     const kind = captureKind(artifact);
     const author = captureAuthor(artifact);
     const reframable = canReframe(artifact);
     const intent = captureIntent(artifact);
     const [copied, setCopied] = useState(false);
     const [expanded, setExpanded] = useState(false);
-    const isLong = (artifact.ocr_text?.length || 0) > LONG_TEXT || (artifact.ocr_text?.split('\n').length || 0) > 8;
+    const isLong = (artifact.ocr_text?.length || 0) > (wide ? 400 : LONG_TEXT) || (artifact.ocr_text?.split('\n').length || 0) > (wide ? 6 : 8);
 
     const handleCopy = () => {
         const text = artifact.ocr_text || artifact.user_note || "";
@@ -42,8 +46,8 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onCha
         setTimeout(() => setCopied(false), 2000);
     };
 
-    return (
-        <div className={`bg-surface rounded-tile shadow-card transition-all duration-200 overflow-hidden flex flex-col mb-4 break-inside-avoid ${selected ? 'ring-2 ring-ember-400' : ''} ${selecting ? '' : 'hover:shadow-float hover:-translate-y-0.5'}`}>
+    const header = (
+        <>
             {/* Header */}
             <div className="px-5 pt-5 pb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2 overflow-hidden">
@@ -91,60 +95,18 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onCha
                     </button>
                 )}
             </div>
+        </>
+    );
 
-            {/* Note (if exists) */}
-            {artifact.user_note && (
-                <div className="px-5 pt-3 pb-1">
-                    <p className="text-[17px] font-medium tracking-[-0.01em] text-ink italic">&quot;{artifact.user_note}&quot;</p>
-                </div>
-            )}
+    // The user's own note, if any
+    const note = artifact.user_note && (
+        <div className="px-5 pt-3 pb-1">
+            <p className="text-[17px] font-medium tracking-[-0.01em] text-ink italic">&quot;{artifact.user_note}&quot;</p>
+        </div>
+    );
 
-            {/* Content Body */}
-            <div className="flex-1 relative group">
-                <div className="px-5 py-2 flex flex-col gap-2">
-                    {artifact.imageUrl && (
-                        <a
-                            href={artifact.imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`block rounded-2xl overflow-hidden bg-surface-muted max-h-64 ${selecting ? 'pointer-events-none' : ''}`}
-                            tabIndex={selecting ? -1 : undefined}
-                            title="Open the full image"
-                        >
-                            {/* eslint-disable-next-line @next/next/no-img-element -- stored capture, any size */}
-                            <img src={artifact.imageUrl} alt={`Capture from ${artifact.source_domain || 'a page'}`} loading="lazy" className="w-full h-auto object-cover object-top" />
-                        </a>
-                    )}
-                    {artifact.ocr_text ? (
-                        <div className="bg-surface-muted rounded-2xl flex flex-col">
-                            <p className={`text-sm text-ink-soft leading-relaxed p-3 whitespace-pre-line ${expanded ? '' : artifact.imageUrl ? 'line-clamp-4' : 'line-clamp-[10]'}`}>
-                                {artifact.ocr_text}
-                            </p>
-                            {isLong && !selecting && (
-                                <button
-                                    onClick={() => setExpanded(e => !e)}
-                                    aria-expanded={expanded}
-                                    className="self-start h-11 px-3 -mt-1 flex items-center gap-1 text-xs font-medium text-ink-soft hover:text-ember-600"
-                                >
-                                    {expanded ? 'Show less' : 'Show all'}
-                                    <ChevronDown size={14} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="text-sm bg-surface-muted p-3 rounded-2xl flex flex-col gap-1">
-                            <p className="text-ink-soft">{artifact.source_title || 'No text saved.'}</p>
-                            {kind === 'bookmark' && <p className="text-xs text-ink-muted">The page is read when you find ideas.</p>}
-                            {kind !== 'bookmark' && artifact.ai_metadata?.analysis_failed && (
-                                <p className="text-xs text-ink-muted">The text in this image couldn&apos;t be read when it was saved. The image is kept.</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Footer: what it is, then what to do with it */}
-            <div className="px-5 pb-5 pt-3 flex flex-col gap-3 mt-auto">
+    const chips = (
+        <>
                 <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                     {kind && kind !== 'bookmark' && onChangeKind && !selecting ? (
                         <button
@@ -172,7 +134,11 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onCha
                         </span>
                     )}
                 </div>
+        </>
+    );
 
+    const actions = (
+        <>
                 {!selecting && <div className="flex items-center gap-1">
                     <button
                         onClick={handleCopy}
@@ -213,6 +179,92 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onCha
                         </button>
                     )}
                 </div>}
+        </>
+    );
+
+    const content = (
+        <>
+            {/* Content Body */}
+            <div className="flex-1 relative group">
+                <div className="px-5 py-2 flex flex-col gap-2">
+                    {artifact.imageUrl && (
+                        <a
+                            href={artifact.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`block rounded-2xl overflow-hidden bg-surface-muted max-h-64 ${selecting ? 'pointer-events-none' : ''}`}
+                            tabIndex={selecting ? -1 : undefined}
+                            title="Open the full image"
+                        >
+                            {/* eslint-disable-next-line @next/next/no-img-element -- stored capture, any size */}
+                            <img src={artifact.imageUrl} alt={`Capture from ${artifact.source_domain || 'a page'}`} loading="lazy" className="w-full h-auto object-cover object-top" />
+                        </a>
+                    )}
+                    {artifact.ocr_text ? (
+                        <div className="bg-surface-muted rounded-2xl flex flex-col">
+                            <p className={`text-sm text-ink-soft leading-relaxed p-3 whitespace-pre-line ${expanded ? '' : `overflow-hidden ${artifact.imageUrl ? 'max-h-28' : wide ? 'max-h-40' : 'max-h-64'} ${isLong ? '[mask-image:linear-gradient(to_bottom,black_65%,transparent)]' : ''}`}`}>
+                                {artifact.ocr_text}
+                            </p>
+                            {isLong && !selecting && (
+                                <button
+                                    onClick={() => setExpanded(e => !e)}
+                                    aria-expanded={expanded}
+                                    className="self-start h-11 px-3 -mt-1 flex items-center gap-1 text-xs font-medium text-ink-soft hover:text-ember-600"
+                                >
+                                    {expanded ? 'Show less' : 'Show all'}
+                                    <ChevronDown size={14} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="text-sm bg-surface-muted p-3 rounded-2xl flex flex-col gap-1">
+                            <p className="text-ink-soft">{artifact.source_title || 'No text saved.'}</p>
+                            {kind === 'bookmark' && <p className="text-xs text-ink-muted">The page is read when you find ideas.</p>}
+                            {kind !== 'bookmark' && artifact.ai_metadata?.analysis_failed && (
+                                <p className="text-xs text-ink-muted">The text in this image couldn&apos;t be read when it was saved. The image is kept.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+
+    const cardClass = `bg-surface rounded-tile shadow-card transition-all duration-200 overflow-hidden mb-4 break-inside-avoid ${selected ? 'ring-2 ring-ember-400' : ''} ${selecting ? '' : 'hover:shadow-float hover:-translate-y-0.5'}`;
+
+    if (wide) {
+        return (
+            <div className={`${cardClass} flex flex-col md:grid md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)]`}>
+                {/* Left: where it came from, the note and what it is */}
+                <div className="flex flex-col md:pb-5">
+                    {header}
+                    {note}
+                    <div className="px-5 pt-3 pb-1 md:pb-0 md:mt-auto hidden md:block">
+                        {chips}
+                    </div>
+                </div>
+                {/* Right: the text, then what to do with it */}
+                <div className="flex flex-col md:pt-3">
+                    {content}
+                    <div className="px-5 pb-5 pt-3 flex flex-col gap-3 mt-auto">
+                        <div className="md:hidden">{chips}</div>
+                        {actions}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`${cardClass} flex flex-col`}>
+            {header}
+            {note}
+            {content}
+
+            {/* Footer: what it is, then what to do with it */}
+            <div className="px-5 pb-5 pt-3 flex flex-col gap-3 mt-auto">
+                {chips}
+                {actions}
             </div>
         </div>
     );

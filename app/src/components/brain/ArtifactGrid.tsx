@@ -87,6 +87,7 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
         setSelectedIds(new Set());
     };
 
+    const wideCards = kindFilter === 'frame';
     const shown = kindFilter === 'all' ? artifacts : artifacts.filter(a => captureKind(a) === kindFilter);
 
     // Older captures only have a guessed kind; one tap corrects it and moves the card to that filter
@@ -188,7 +189,8 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
                     <p className="text-ink-muted">{artifacts.length ? 'Nothing of this type yet.' : 'No captures yet. Save one with CounterDraft Lens.'}</p>
                 </div>
             ) : (
-                <div className="columns-1 md:columns-2 lg:columns-3 gap-5 space-y-5">
+                // Frames are long reads: one wide card per row so the text runs across, not down a narrow column
+                <div className={wideCards ? 'max-w-5xl' : 'columns-1 md:columns-2 lg:columns-3 gap-5 space-y-5'}>
                     {shown.map(artifact => (
                         <div
                             key={artifact.id}
@@ -216,6 +218,7 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
                                 onChangeKind={handleChangeKind}
                                 selecting={isSelectMode}
                                 selected={selectedIds.has(artifact.id)}
+                                wide={wideCards}
                             />
                         </div>
                     ))}
