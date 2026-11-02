@@ -188,11 +188,11 @@ export function ArtifactGrid({ onOpenItem }: ArtifactGridProps) {
                     <p className="text-ink-muted">{artifacts.length ? 'Nothing of this type yet.' : 'No captures yet. Save one with CounterDraft Lens.'}</p>
                 </div>
             ) : (
-                <div className="columns-1 md:columns-2 lg:columns-3 gap-5 space-y-5">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] items-start gap-5">
                     {shown.map(artifact => (
                         <div
                             key={artifact.id}
-                            className={`relative group break-inside-avoid mb-4 ${isSelectMode ? 'cursor-pointer rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300' : ''}`}
+                            className={`relative group min-w-0 ${isSelectMode ? 'cursor-pointer rounded-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300' : ''}`}
                             // While picking, the whole card is the checkbox, so it's easy to hit on a phone
                             {...(isSelectMode ? {
                                 role: 'checkbox',

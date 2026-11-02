@@ -43,7 +43,7 @@ export function ArtifactCard({ artifact, onDelete, onFindIdeas, onReframe, onCha
     };
 
     return (
-        <div className={`bg-surface rounded-tile shadow-card transition-all duration-200 overflow-hidden flex flex-col mb-4 break-inside-avoid ${selected ? 'ring-2 ring-ember-400' : ''} ${selecting ? '' : 'hover:shadow-float hover:-translate-y-0.5'}`}>
+        <div className={`bg-surface rounded-tile shadow-card transition-all duration-200 overflow-hidden flex flex-col ${selected ? 'ring-2 ring-ember-400' : ''} ${selecting ? '' : 'hover:shadow-float hover:-translate-y-0.5'}`}>
             {/* Header */}
             <div className="px-5 pt-5 pb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2 overflow-hidden">
